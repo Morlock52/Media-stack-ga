@@ -1,0 +1,726 @@
+networks:
+  mediastack:
+    name: ${DOCKER_NETWORK}
+    driver: bridge
+
+volumes:
+  redis_data:
+
+services:
+  # ===========================================
+  # POSTGRESQL - Database for *Arr Apps
+  # ===========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=postgres
+    volumes:
+      - ${CONFIG_ROOT}/postgres:/var/lib/postgresql/data
+    networks:
+      - mediastack
+    profiles: ["arr", "db"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # AUTOHEAL - Container Auto-healing
+  # ===========================================
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Autoheal"
+      - "homepage.icon=autoheal.png"
+      - "homepage.description=Container Health Monitor"
+
+  # ===========================================
+  # CLOUDFLARE TUNNEL
+  # ===========================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: ${CLOUDFLARED_COMMAND}
+    volumes:
+      - ${CONFIG_ROOT}/cloudflared:/home/nonroot/.cloudflared
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Cloudflare Tunnel"
+      - "homepage.icon=cloudflare.png"
+      - "homepage.href=https://one.dash.cloudflare.com"
+      - "homepage.description=Remote Access Tunnel"
+
+  # ===========================================
+  # WATCHTOWER - Auto-update Containers
+  # ===========================================
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 4 * * * # Run at 4am daily
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Watchtower"
+      - "homepage.icon=watchtower.png"
+      - "homepage.description=Auto-updater"
+      - "homepage.widget.type=watchtower"
+      - "homepage.widget.url=http://watchtower:8080"
+
+  # ===========================================
+  # DOZZLE - Log Viewer
+  # ===========================================
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Dozzle"
+      - "homepage.icon=dozzle.png"
+      - "homepage.href=http://dozzle.${DOMAIN}"
+      - "homepage.description=Log Viewer"
+    expose:
+      - 8080
+
+  # ===========================================
+  # HOMEPAGE - Dashboard
+  # ===========================================
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG_ROOT}/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mediastack
+    expose:
+      - 3000
+
+  # ===========================================
+  # PORTAINER - Docker Management UI
+  # ===========================================
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONFIG_ROOT}/portainer:/data
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Portainer"
+      - "homepage.icon=portainer.png"
+      - "homepage.href=http://portainer.${DOMAIN}"
+      - "homepage.description=Docker Management"
+      - "homepage.widget.type=portainer"
+      - "homepage.widget.url=http://portainer:9000"
+      - "homepage.widget.env=PORTAINER_TOKEN"
+    expose:
+      - 9000
+
+  # ===========================================
+  # AUTHELIA - Authentication & Authorization
+  # ===========================================
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    environment:
+      - TZ=${TIMEZONE}
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+      - AUTHELIA_SESSION_REDIS_PASSWORD=${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "authelia", "healthcheck", "--scheme", "http", "--port", "9091"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ${CONFIG_ROOT}/authelia:/config
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=Authelia"
+      - "homepage.icon=authelia.png"
+      - "homepage.href=https://auth.${DOMAIN}"
+      - "homepage.description=SSO & Auth"
+    expose:
+      - 9091
+    depends_on:
+      - redis
+
+  # ===========================================
+  # REDIS - Session storage for Authelia
+  # ===========================================
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - redis_data:/data
+    networks:
+      - mediastack
+    expose:
+      - 6379
+
+
+  # ===========================================
+  # JELLYFIN - Media Server
+  # ===========================================
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/jellyfin:/config
+      - ${MOVIES_PATH}:/data/movies
+      - ${TV_SHOWS_PATH}:/data/tvshows
+      - ${MUSIC_PATH}:/data/music
+      - ${TRANSCODE_PATH}:/cache
+    networks:
+      - mediastack
+    profiles: ["jellyfin"]
+    labels:
+      - "homepage.group=Media"
+      - "homepage.name=Jellyfin"
+      - "homepage.icon=jellyfin.png"
+      - "homepage.href=http://jellyfin.${DOMAIN}"
+      - "homepage.description=Media Server"
+      - "homepage.widget.type=jellyfin"
+      - "homepage.widget.url=http://jellyfin:8096"
+      - "homepage.widget.key=${JELLYFIN_API_KEY}"
+    expose:
+      - 8096
+    devices:
+      - /dev/dri:/dev/dri # For hardware transcoding (optional)
+
+  # ===========================================
+  # PLEX - Alternative Media Server
+  # ===========================================
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - ${CONFIG_ROOT}/plex:/config
+      - ${MOVIES_PATH}:/movies
+      - ${TV_SHOWS_PATH}:/tv
+      - ${MUSIC_PATH}:/music
+      - ${TRANSCODE_PATH}:/transcode
+    networks:
+      - mediastack
+    profiles: ["plex"]
+    labels:
+      - "homepage.group=Media"
+      - "homepage.name=Plex"
+      - "homepage.icon=plex.png"
+      - "homepage.href=http://plex.${DOMAIN}"
+      - "homepage.description=Media Server"
+      - "homepage.widget.type=plex"
+      - "homepage.widget.url=http://plex:32400"
+      - "homepage.widget.key=${PLEX_TOKEN}"
+    expose:
+      - 32400
+
+  # ===========================================
+  # SONARR - TV Show Management
+  # ===========================================
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_MAIN_DB=sonarr
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config
+      - ${TV_SHOWS_PATH}:/tv
+      - ${DOWNLOADS_PATH}:/downloads
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    labels:
+      - "homepage.group=Automation"
+      - "homepage.name=Sonarr"
+      - "homepage.icon=sonarr.png"
+      - "homepage.href=http://sonarr.${DOMAIN}"
+      - "homepage.description=TV Shows"
+      - "homepage.widget.type=sonarr"
+      - "homepage.widget.url=http://sonarr:8989"
+      - "homepage.widget.key=${SONARR_API_KEY}"
+    expose:
+      - 8989
+
+  # ===========================================
+  # RADARR - Movie Management
+  # ===========================================
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_MAIN_DB=radarr
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${MOVIES_PATH}:/movies
+      - ${DOWNLOADS_PATH}:/downloads
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    labels:
+      - "homepage.group=Automation"
+      - "homepage.name=Radarr"
+      - "homepage.icon=radarr.png"
+      - "homepage.href=http://radarr.${DOMAIN}"
+      - "homepage.description=Movies"
+      - "homepage.widget.type=radarr"
+      - "homepage.widget.url=http://radarr:7878"
+      - "homepage.widget.key=${RADARR_API_KEY}"
+    expose:
+      - 7878
+
+  # ===========================================
+  # PROWLARR - Indexer Manager
+  # ===========================================
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    depends_on:
+      - flaresolverr
+      - postgres
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_MAIN_DB=prowlarr
+      - FLARESOLVERR_URL=http://flaresolverr:8191
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    labels:
+      - "homepage.group=Automation"
+      - "homepage.name=Prowlarr"
+      - "homepage.icon=prowlarr.png"
+      - "homepage.href=http://prowlarr.${DOMAIN}"
+      - "homepage.description=Indexers"
+      - "homepage.widget.type=prowlarr"
+      - "homepage.widget.url=http://prowlarr:9696"
+      - "homepage.widget.key=${PROWLARR_API_KEY}"
+    expose:
+      - 9696
+
+  # ===========================================
+  # FLARESOLVERR - Cloudflare Bypass
+  # ===========================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TIMEZONE}
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    expose:
+      - 8191
+
+  # ===========================================
+  # QBITTORRENT - Download Client (via Gluetun)
+  # ===========================================
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    network_mode: service:gluetun # Route traffic through VPN
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${CONFIG_ROOT}/qbittorrent_init:/init_data
+      - ${DOWNLOADS_PATH}:/downloads
+    depends_on:
+      - gluetun
+    profiles: ["torrent"]
+    labels:
+      - "homepage.group=Downloads"
+      - "homepage.name=qBittorrent"
+      - "homepage.icon=qbittorrent.png"
+      - "homepage.href=http://qbt.${DOMAIN}"
+      - "homepage.description=Torrents"
+      - "homepage.widget.type=qbittorrent"
+      - "homepage.widget.url=http://qbittorrent:8080"
+      - "homepage.widget.username=admin"
+      - "homepage.widget.password=adminadmin"
+
+  # ===========================================
+  # GLUETUN - VPN Client
+  # ===========================================
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp # HTTP proxy
+      - 8388:8388/tcp # Shadowsocks
+      - 8388:8388/udp # Shadowsocks
+      - 8080:8080 # qBittorrent WebUI
+      - 6881:6881 # qBittorrent TCP
+      - 6881:6881/udp # qBittorrent UDP
+    volumes:
+      - ${CONFIG_ROOT}/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=custom # Change to your provider
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
+      - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
+      - WIREGUARD_ENDPOINT_IP=${WIREGUARD_ENDPOINT_IP}
+      - WIREGUARD_ENDPOINT_PORT=${WIREGUARD_ENDPOINT_PORT}
+    networks:
+      - mediastack
+    profiles: ["vpn"]
+    labels:
+      - "homepage.group=Downloads"
+      - "homepage.name=Gluetun VPN"
+      - "homepage.icon=gluetun.png"
+      - "homepage.description=VPN Tunnel"
+      - "homepage.widget.type=gluetun"
+      - "homepage.widget.url=http://gluetun:8000"
+
+  # ===========================================
+  # OVERSEERR - Request Management
+  # ===========================================
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/overseerr:/config
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    labels:
+      - "homepage.group=Automation"
+      - "homepage.name=Overseerr"
+      - "homepage.icon=overseerr.png"
+      - "homepage.href=http://request.${DOMAIN}"
+      - "homepage.description=Requests"
+      - "homepage.widget.type=overseerr"
+      - "homepage.widget.url=http://overseerr:5055"
+      - "homepage.widget.key=${OVERSEERR_API_KEY}"
+    expose:
+      - 5055
+
+  # ===========================================
+  # BAZARR - Subtitle Management (Optional)
+  # ===========================================
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/bazarr:/config
+      - ${MOVIES_PATH}:/movies
+      - ${TV_SHOWS_PATH}:/tv
+    networks:
+      - mediastack
+    profiles: ["arr"]
+    labels:
+      - "homepage.group=Automation"
+      - "homepage.name=Bazarr"
+      - "homepage.icon=bazarr.png"
+      - "homepage.href=http://bazarr.${DOMAIN}"
+      - "homepage.description=Subtitles"
+      - "homepage.widget.type=bazarr"
+      - "homepage.widget.url=http://bazarr:6767"
+      - "homepage.widget.key=${BAZARR_API_KEY}"
+    expose:
+      - 6767
+
+  # ===========================================
+  # TAUTULLI - Plex Statistics (Optional)
+  # ===========================================
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/tautulli:/config
+    networks:
+      - mediastack
+    profiles: ["stats"]
+    labels:
+      - "homepage.group=Monitoring"
+      - "homepage.name=Tautulli"
+      - "homepage.icon=tautulli.png"
+      - "homepage.href=http://tautulli.${DOMAIN}"
+      - "homepage.description=Plex Stats"
+      - "homepage.widget.type=tautulli"
+      - "homepage.widget.url=http://tautulli:8181"
+      - "homepage.widget.key=${TAUTULLI_API_KEY}"
+    expose:
+      - 8181
+
+  # ===========================================
+  # TDARR - Transcoding Server
+  # ===========================================
+  tdarr:
+    container_name: tdarr
+    image: ghcr.io/haveagitgat/tdarr:latest
+    restart: unless-stopped
+    ports:
+      - 8265:8265 # WebUI
+      - 8266:8266 # Server
+    environment:
+      - TZ=${TIMEZONE}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - inContainer=true
+      - nodeName=MyTdarrNode
+    volumes:
+      - ${CONFIG_ROOT}/tdarr/server:/app/server
+      - ${CONFIG_ROOT}/tdarr/configs:/app/configs
+      - ${CONFIG_ROOT}/tdarr/logs:/app/logs
+      - ${MOVIES_PATH}:/media/movies
+      - ${TV_SHOWS_PATH}:/media/tv
+      - ${TRANSCODE_PATH}:/temp
+    networks:
+      - mediastack
+    profiles: ["transcode"]
+    labels:
+      - "homepage.group=Transcoding"
+      - "homepage.name=Tdarr"
+      - "homepage.icon=tdarr.png"
+      - "homepage.href=http://tdarr.${DOMAIN}"
+      - "homepage.description=Transcoding"
+      - "homepage.widget.type=tdarr"
+      - "homepage.widget.url=http://tdarr:8265"
+    devices:
+      - /dev/dri:/dev/dri # Hardware transcoding
+
+  # ===========================================
+  # MEALIE - Recipe Manager
+  # ===========================================
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:latest
+    container_name: mealie
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/mealie:/app/data
+    networks:
+      - mediastack
+    profiles: ["mealie"]
+    labels:
+      - "homepage.group=Apps"
+      - "homepage.name=Mealie"
+      - "homepage.icon=mealie.png"
+      - "homepage.href=http://mealie.${DOMAIN}"
+      - "homepage.description=Recipes & meal plans"
+    expose:
+      - 9000
+
+  # ===========================================
+  # KAVITA - Comics & Books Server
+  # ===========================================
+  kavita:
+    image: lscr.io/linuxserver/kavita:latest
+    container_name: kavita
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/kavita:/config
+      - ${BOOKS_PATH}:/books
+    networks:
+      - mediastack
+    profiles: ["kavita"]
+    labels:
+      - "homepage.group=Apps"
+      - "homepage.name=Kavita"
+      - "homepage.icon=kavita.png"
+      - "homepage.href=http://kavita.${DOMAIN}"
+      - "homepage.description=Comics & manga"
+    expose:
+      - 5000
+
+  # ===========================================
+  # AUDIOBOOKSHELF - Audiobooks & Podcasts
+  # ===========================================
+  audiobookshelf:
+    image: lscr.io/linuxserver/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/audiobookshelf:/config
+      - ${AUDIOBOOKS_PATH}:/audiobooks
+      - ${AUDIOBOOKS_PATH}:/podcasts
+    networks:
+      - mediastack
+    profiles: ["audiobookshelf"]
+    labels:
+      - "homepage.group=Media"
+      - "homepage.name=Audiobookshelf"
+      - "homepage.icon=audiobookshelf.png"
+      - "homepage.href=http://audiobookshelf.${DOMAIN}"
+      - "homepage.description=Audiobooks & podcasts"
+    expose:
+      - 13378
+
+  # ===========================================
+  # PHOTOPRISM - Photo Library
+  # ===========================================
+  photoprism:
+    image: lscr.io/linuxserver/photoprism:latest
+    container_name: photoprism
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - PHOTOPRISM_ADMIN_PASSWORD=${PHOTOPRISM_ADMIN_PASSWORD}
+    volumes:
+      - ${CONFIG_ROOT}/photoprism:/config
+      - ${PHOTOS_PATH}:/photos
+    networks:
+      - mediastack
+    profiles: ["photoprism"]
+    labels:
+      - "homepage.group=Apps"
+      - "homepage.name=PhotoPrism"
+      - "homepage.icon=photoprism.png"
+      - "homepage.href=http://photoprism.${DOMAIN}"
+      - "homepage.description=Photo library"
+    expose:
+      - 2342
+
+  # ===========================================
+  # NOTIFIARR - Notifications
+  # ===========================================
+  notifiarr:
+    container_name: notifiarr
+    image: golift/notifiarr
+    restart: unless-stopped
+    ports:
+      - 5454:5454
+    volumes:
+      - ${CONFIG_ROOT}/notifiarr:/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TIMEZONE}
+    networks:
+      - mediastack
+    profiles: ["notify"]
+    labels:
+      - "homepage.group=Monitoring"
+      - "homepage.name=Notifiarr"
+      - "homepage.icon=notifiarr.png"
+      - "homepage.href=http://notifiarr.${DOMAIN}"
+      - "homepage.description=Notifications"

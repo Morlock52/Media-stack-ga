@@ -1,0 +1,71 @@
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # IMPORTANT: Replace *.example.com entries with the subdomains built from DOMAIN in .env
+  # Homepage Dashboard
+  - hostname: hub.moroksmaze.com
+    service: http://homepage:3000
+
+  # Authelia - Authentication portal
+  - hostname: auth.moroksmaze.com
+    service: http://authelia:9091
+  
+  # Portainer - Docker Management
+  - hostname: portainer.moroksmaze.com
+    service: http://portainer:9000
+
+  # Dozzle - Logs
+  - hostname: dozzle.moroksmaze.com
+    service: http://dozzle:8080
+
+  # Plex Media Server
+  - hostname: plex.moroksmaze.com
+    service: http://plex:32400
+  
+  # Jellyfin Media Server
+  - hostname: jellyfin.moroksmaze.com
+    service: http://jellyfin:8096
+  
+  # Sonarr - TV Shows
+  - hostname: sonarr.moroksmaze.com
+    service: http://sonarr:8989
+  
+  # Radarr - Movies
+  - hostname: radarr.moroksmaze.com
+    service: http://radarr:7878
+  
+  # Prowlarr - Indexer Manager
+  - hostname: prowlarr.moroksmaze.com
+    service: http://prowlarr:9696
+  
+  # qBittorrent - Download Client
+  - hostname: qbt.moroksmaze.com
+    service: http://qbittorrent:8080
+  
+  # Overseerr - Request Management
+  - hostname: request.moroksmaze.com
+    service: http://overseerr:5055
+
+  # Tautulli - Plex Statistics
+  - hostname: tautulli.moroksmaze.com
+    service: http://tautulli:8181
+
+  # Bazarr - Subtitles
+  - hostname: bazarr.moroksmaze.com
+    service: http://bazarr:6767
+
+  # Tdarr - Transcoding
+  - hostname: tdarr.moroksmaze.com
+    service: http://tdarr:8265
+  
+  # Notifiarr - Notifications
+  - hostname: notifiarr.moroksmaze.com
+    service: http://notifiarr:5454
+  
+  # Catch-all rule (required)
+  - service: http_status:404
+
+# Optional: Enable Cloudflare Access for additional security
+# warp-routing:
+#   enabled: true

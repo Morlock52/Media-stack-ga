@@ -1,0 +1,135 @@
+import { useState } from 'react'
+import {
+    AppsOverview,
+    PlexGuide,
+    MealieGuide,
+    JellyfinGuide,
+    EmbyGuide,
+    ArrStackGuide,
+    OverseerrGuide,
+    TautulliGuide,
+    AudiobookshelfGuide,
+    PhotoPrismGuide,
+    SonarrGuide,
+    RadarrGuide,
+    ProwlarrGuide,
+    BazarrGuide,
+    QBittorrentGuide,
+    GluetunGuide,
+    HomepageGuide,
+    AutheliaGuide,
+    PortainerGuide,
+    TdarrGuide,
+    NotifiarrGuide,
+    CloudflaredGuide,
+    DozzleGuide,
+    FlareSolverrGuide,
+    RedisGuide,
+    WatchtowerGuide,
+} from '../components/docs'
+import type { AppId } from '../components/docs/appData'
+import { AIAssistant } from '../components/AIAssistant'
+import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
+import { useSetupStore } from '../store/setupStore'
+
+export function DocsPage() {
+    const [selectedAppId, setSelectedAppId] = useState<AppId>('plex')
+    const { config } = useSetupStore()
+
+    return (
+        <main className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
+            {/* Navigation Header */}
+            <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-white text-lg">Media Stack Docs</h1>
+                            <p className="text-xs text-gray-500">App guides & tutorials</p>
+                        </div>
+                    </div>
+                    <a
+                        href="/"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Wizard
+                    </a>
+                </div>
+            </header>
+
+            {/* Hero Section */}
+            <section className="pt-32 pb-16 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent pointer-events-none" />
+                <div className="container mx-auto px-4 text-center relative z-10">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
+                        <Sparkles className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm text-purple-300">Non-technical friendly</span>
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-4">
+                        App Guides & Documentation
+                    </h1>
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                        Click-by-click instructions to set up each app in your media stack.
+                        No jargon, just clear steps anyone can follow.
+                    </p>
+                </div>
+            </section>
+
+            <AppsOverview onSelectApp={setSelectedAppId} />
+
+            <section className="pb-10">
+                {selectedAppId === 'plex' && <PlexGuide />}
+                {selectedAppId === 'mealie' && <MealieGuide />}
+                {selectedAppId === 'jellyfin' && <JellyfinGuide />}
+                {selectedAppId === 'emby' && <EmbyGuide />}
+                {selectedAppId === 'arr' && <ArrStackGuide />}
+                {selectedAppId === 'overseerr' && <OverseerrGuide />}
+                {selectedAppId === 'tautulli' && <TautulliGuide />}
+                {selectedAppId === 'audiobookshelf' && <AudiobookshelfGuide />}
+                {selectedAppId === 'photoprism' && <PhotoPrismGuide />}
+                
+                {/* New Guides */}
+                {selectedAppId === 'sonarr' && <SonarrGuide />}
+                {selectedAppId === 'radarr' && <RadarrGuide />}
+                {selectedAppId === 'prowlarr' && <ProwlarrGuide />}
+                {selectedAppId === 'bazarr' && <BazarrGuide />}
+                {selectedAppId === 'qbittorrent' && <QBittorrentGuide />}
+                {selectedAppId === 'gluetun' && <GluetunGuide />}
+                {selectedAppId === 'homepage' && <HomepageGuide />}
+                {selectedAppId === 'authelia' && <AutheliaGuide />}
+                {selectedAppId === 'portainer' && <PortainerGuide />}
+                {selectedAppId === 'tdarr' && <TdarrGuide />}
+                {selectedAppId === 'notifiarr' && <NotifiarrGuide />}
+                {selectedAppId === 'cloudflared' && <CloudflaredGuide />}
+                {selectedAppId === 'dozzle' && <DozzleGuide />}
+                {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
+                {selectedAppId === 'redis' && <RedisGuide />}
+                {selectedAppId === 'watchtower' && <WatchtowerGuide />}
+            </section>
+
+            <footer className="py-12 border-t border-white/10 mt-10">
+                <div className="container mx-auto px-4 text-center">
+                    <p className="text-gray-400">
+                        Media Stack Docs • Powered by your setup wizard
+                    </p>
+                    <a
+                        href="/"
+                        className="inline-flex items-center gap-2 mt-4 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Return to Setup Wizard
+                    </a>
+                </div>
+            </footer>
+
+            {/* AI Assistant - Multi-Agent System */}
+            <AIAssistant 
+                currentApp={selectedAppId}
+                openaiKey={config.openaiApiKey}
+            />
+        </main>
+    )
+}

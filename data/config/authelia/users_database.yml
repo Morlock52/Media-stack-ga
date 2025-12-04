@@ -1,0 +1,8 @@
+---
+users:
+  demo:
+    displayname: "Media Stack Admin"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$jKO6lHg6negR3vFw7GjykA$1b7HjxkIdcLcWqfTWoJrC7aznbrcoR2ivjqPn455/G0"  # Password: ChangeMe123!
+    email: demo@example.com
+    groups:
+      - admins

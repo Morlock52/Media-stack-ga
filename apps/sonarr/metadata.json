@@ -1,0 +1,9 @@
+{
+    "id": "sonarr",
+    "name": "Sonarr",
+    "description": "Smart TV show PVR for automatic downloading and management.",
+    "category": "media-management",
+    "icon": "tv",
+    "port": 8989,
+    "docs": "https://wiki.servarr.com/sonarr"
+}

@@ -1,0 +1,95 @@
+---
+# Homepage Services Configuration
+
+- Core:
+    - Homepage:
+        icon: homepage.png
+        href: https://hub.moroksmaze.com
+        description: Unified start page for the entire stack
+        container: homepage
+    - Authelia:
+        icon: authelia.png
+        href: https://auth.moroksmaze.com
+        description: Single Sign-On with MFA support
+        container: authelia
+    - Cloudflare Tunnel:
+        icon: cloudflare.png
+        href: https://dash.cloudflare.com
+        description: Remote access via Zero Trust tunnel
+        container: cloudflared
+
+- Media Servers:
+    - Plex:
+        icon: plex.png
+        href: https://plex.moroksmaze.com
+        description: Premium media server (requires Plex Pass for HW transcoding)
+        container: plex
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://jellyfin.moroksmaze.com
+        description: Open-source media server alternative
+        container: jellyfin
+    - Overseerr:
+        icon: overseerr.png
+        href: https://request.moroksmaze.com
+        description: Request portal for Plex/Jellyfin libraries
+        container: overseerr
+    - Tdarr:
+        icon: tdarr.png
+        href: https://tdarr.moroksmaze.com
+        description: Automated transcoding and library optimization
+        container: tdarr
+    - Tautulli:
+        icon: tautulli.png
+        href: https://tautulli.moroksmaze.com
+        description: Plex analytics and notifications
+        container: tautulli
+    - Bazarr:
+        icon: bazarr.png
+        href: https://bazarr.moroksmaze.com
+        description: Subtitle automation for Movies & TV
+        container: bazarr
+
+- Automation & Downloads:
+    - Sonarr:
+        icon: sonarr.png
+        href: https://sonarr.moroksmaze.com
+        description: TV show automation
+        container: sonarr
+    - Radarr:
+        icon: radarr.png
+        href: https://radarr.moroksmaze.com
+        description: Movie automation
+        container: radarr
+    - Prowlarr:
+        icon: prowlarr.png
+        href: https://prowlarr.moroksmaze.com
+        description: Centralized indexer management
+        container: prowlarr
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: https://qbt.moroksmaze.com
+        description: Torrent client routed through Gluetun VPN
+        container: qbittorrent
+    - Notifiarr:
+        icon: notifiarr.png
+        href: https://notifiarr.moroksmaze.com
+        description: Unified notifications for your media stack (Discord, Slack, etc.)
+        container: notifiarr
+
+- Operations:
+    - Portainer:
+        icon: portainer.png
+        href: https://portainer.moroksmaze.com
+        description: Docker management UI
+        container: portainer
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.moroksmaze.com
+        description: Real-time container logs
+        container: dozzle
+    - Watchtower:
+        icon: watchtower.png
+        href: https://containrrr.dev/watchtower/
+        description: Automated Docker image updates
+        container: watchtower
