@@ -1614,3 +1614,75 @@ Node.js v22.16.0
       "statusCode": 200
     }
     [35mresponseTime[39m: 221.07450000196695
+[16:01:57.098] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:57.098] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-e"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50881
+    }
+[16:01:57.357] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-e"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 258.7531669996679
+[16:02:07.098] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:02:07.098] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-f"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50901
+    }
+[16:02:07.334] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-f"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 235.66862500086427
+[16:02:17.096] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-g"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50941
+    }
+[16:02:17.323] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-g"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 226.87933299690485
+[16:02:17.096] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
