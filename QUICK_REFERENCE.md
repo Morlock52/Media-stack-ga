@@ -54,25 +54,34 @@ docker-compose up -d
 
 After setup, access services using the subdomains defined in `.env`:
 
-- **Homepage:** `https://hub.${DOMAIN}` (Dashboard)
-- **Authelia:** `https://auth.${DOMAIN}`
-- **Plex:** `https://plex.${DOMAIN}`
-- **Jellyfin:** `https://jellyfin.${DOMAIN}`
-- **Sonarr:** `https://sonarr.${DOMAIN}`
-- **Radarr:** `https://radarr.${DOMAIN}`
-- **Prowlarr:** `https://prowlarr.${DOMAIN}`
-- **qBittorrent:** `https://qbt.${DOMAIN}`
-- **Overseerr:** `https://request.${DOMAIN}`
-- **Portainer:** `https://portainer.${DOMAIN}`
-- **Dozzle:** `https://dozzle.${DOMAIN}`
-- **Bazarr:** `https://bazarr.${DOMAIN}`
-- **Tautulli:** `https://tautulli.${DOMAIN}`
-- **Tdarr:** `https://tdarr.${DOMAIN}`
-- **Notifiarr:** `https://notifiarr.${DOMAIN}`
 - **Audiobookshelf:** `https://audiobookshelf.${DOMAIN}`
+- **Authelia:** `https://auth.${DOMAIN}`
+- **Bazarr:** `https://bazarr.${DOMAIN}`
+- **Dozzle:** `https://logs.${DOMAIN}`
+- **Homepage:** `https://hub.${DOMAIN}` (Dashboard)
+- **Jellyfin:** `https://jellyfin.${DOMAIN}`
 - **Kavita:** `https://kavita.${DOMAIN}`
 - **Mealie:** `https://mealie.${DOMAIN}`
+- **Monitor:** `https://monitor.${DOMAIN}`
+- **Notifiarr:** `https://notifiarr.${DOMAIN}`
+- **Overseerr:** `https://request.${DOMAIN}`
 - **PhotoPrism:** `https://photoprism.${DOMAIN}`
+- **Plex:** `https://plex.${DOMAIN}`
+- **Portainer:** `https://portainer.${DOMAIN}`
+- **Prowlarr:** `https://prowlarr.${DOMAIN}`
+- **qBittorrent:** `https://torrent.${DOMAIN}`
+- **Radarr:** `https://radarr.${DOMAIN}`
+- **Sonarr:** `https://sonarr.${DOMAIN}`
+- **Tautulli:** `https://tautulli.${DOMAIN}`
+- **Tdarr:** `https://tdarr.${DOMAIN}`
+
+## 🎙️ AI Voice Tips
+
+- **Wake Word**: None. Just click the mic button.
+- **Microphone Issues?**: Use the **Text Input** box at the bottom of the specialized modal.
+- **Privacy**: No audio is recorded to disk. Transcripts are sent to OpenAI for processing only.
+- **Context**: The AI knows about "Plex", "Arr stack", "NAS", and "VPS". Use these terms for best results.
+
 
 ## 🔑 Default Credentials
 

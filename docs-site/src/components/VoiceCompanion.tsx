@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send } from 'lucide-react'
 import { buildControlServerUrl } from '../utils/controlServer'
 
 export interface VoicePlanSummary {
@@ -30,6 +30,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const [isSpeechSupported, setIsSpeechSupported] = useState(false)
   const isRecordingRef = useRef(false)
   const processTranscriptRef = useRef<(text: string) => void>(() => { })
+  const [manualInput, setManualInput] = useState('')
+
   const statusMessages: Record<typeof status, string> = {
     idle: 'Waiting to start',
     listening: 'Listening... (speak clearly)',
@@ -62,7 +64,17 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       }
     }
 
-    window.speechSynthesis.speak(utterance)
+    // Handle speech synthesis errors/interruptions
+    utterance.onerror = () => {
+      setStatus('idle')
+    }
+
+    try {
+      window.speechSynthesis.speak(utterance)
+    } catch (e) {
+      console.warn('Speech synthesis failed:', e)
+      setStatus('idle')
+    }
   }, [])
 
   // Pre-load voices
@@ -127,21 +139,27 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       if (event.error === 'aborted') return
 
       const errorMessages: Record<string, string> = {
-        'not-allowed': 'Microphone access denied. Please allow microphone permissions.',
+        'not-allowed': 'Microphone access denied. Please allow microphone permissions or use text input.',
         'no-speech': 'No speech detected. Try speaking louder or closer to the microphone.',
-        'network': 'Speech service could not reach the recognition servers. Check your internet connection and try again.',
-        'audio-capture': 'No microphone found. Please connect a microphone.',
+        'network': 'Speech service unavailable. Please check your connection or use the text input below.',
+        'audio-capture': 'No microphone found. Please connect a microphone or use text input.',
       }
-      setError(errorMessages[event.error] || `Speech error: ${event.error}`)
+
+      const msg = errorMessages[event.error] || `Speech error: ${event.error}`
+      console.warn('Speech recognition error:', event.error)
+
+      // Don't override a previous network error if we are just re-initializing
+      setError(prev => prev === errorMessages['network'] ? prev : msg)
+
       stopRecognition()
-      if (event.error === 'network') {
-        // Recreate the recognizer in case the internal connection broke.
-        initializeSpeechRecognition()
-      }
+
+      // Auto-recovery for transient network connectivity issues shouldn't loop infinitely
+      // Instead, we stop and let the user decide to retry or type.
     }
 
     recognition.onend = () => {
       if (isRecordingRef.current) {
+        // Did we mean to stop?
         isRecordingRef.current = false
         setIsRecording(false)
         setStatus('idle')
@@ -173,8 +191,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       console.error('Failed to start speech recognition:', err)
       isRecordingRef.current = false
       setIsRecording(false)
-      setStatus('idle')
-      setError('Microphone is still initializing. Please try again in a few seconds.')
+      setStatus('idle') // Reset status so user can try again
+      setError('Microphone initialization failed. Please try again or use text input.')
+
+      // Force re-init
+      initializeSpeechRecognition()
     }
   }, [initializeSpeechRecognition])
 
@@ -183,6 +204,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     return () => {
       if (speechRecognitionRef.current) {
         try {
+          // Nullify handlers to prevent state updates after unmount
           speechRecognitionRef.current.onresult = null
           speechRecognitionRef.current.onerror = null
           speechRecognitionRef.current.onend = null
@@ -235,14 +257,22 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         setStatus('idle')
         stopRecognition()
       } else {
-        // Auto-restart recognition to continue the conversation
-        startRecognition()
+        // Auto-restart recognition only if we are still in voice mode?
+        // Actually for chat flow, better to stop and let user reply manually or by clicking mic again
+        // to avoid "listening to itself" or awkward loops.
+        // But the original design had 'startRecognition()' here.
+        // Let's rely on user action or 'always listening' mode. 
+        // Best practice: Stop and wait for user to speak again (click mic) or type. 
+        // However, to keep conversational flow, we can restart IF it was voice-initiated.
+        // But since we now support text, let's keep it manual-ish.
+        // Or re-enable if manual input wasn't used?
+        setStatus('idle')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error')
       setStatus('idle')
     }
-  }, [addTranscriptLine, startRecognition, stopRecognition])
+  }, [addTranscriptLine, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
 
   useEffect(() => {
     processTranscriptRef.current = (userContent: string) => {
@@ -261,6 +291,15 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     }
   }
 
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualInput.trim()) return
+    const text = manualInput.trim()
+    setManualInput('')
+    setError(null)
+    processTranscriptRef.current(text)
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -274,10 +313,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-4xl bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           >
-            <div className="flex flex-col md:flex-row">
-              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/20 to-pink-600/10 border-b md:border-b-0 md:border-r border-white/10">
+            <div className="flex flex-col md:flex-row h-full">
+              {/* Left Panel - Status & Controls */}
+              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/20 to-pink-600/10 border-b md:border-b-0 md:border-r border-white/10 flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
                     <Mic className="w-6 h-6 text-white" />
@@ -288,14 +328,14 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-white/80">
+                <div className="space-y-2 text-sm text-white/80 flex-1">
                   <p>
                     I\'ll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I\'ll provide a summary before applying changes.
                   </p>
-                  <ul className="space-y-1 text-white/70 text-xs">
+                  <ul className="space-y-1 text-white/70 text-xs mt-4">
                     <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
                     <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
-                    <li>• Let me know comfort level so I can adjust instructions.</li>
+                    <li>• You can speak or type your answers below.</li>
                   </ul>
                 </div>
 
@@ -315,7 +355,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                 <div className="mt-6 flex flex-col gap-3">
                   {!isSpeechSupported && (
                     <p className="text-sm text-yellow-200 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" /> Voice recognition is not supported in this browser. Please use Chrome desktop or type manually.
+                      <AlertTriangle className="w-4 h-4" /> Voice recognition is not supported in this browser. Please use Chrome desktop or type below.
                     </p>
                   )}
                   <div className="flex gap-3">
@@ -326,7 +366,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                         className="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold shadow-lg shadow-purple-500/40 hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span className="flex items-center justify-center gap-2">
-                          <Mic className="w-4 h-4" /> Start Interview
+                          <Mic className="w-4 h-4" /> Start Speaking
                         </span>
                       </button>
                     ) : (
@@ -350,61 +390,55 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                 </div>
               </div>
 
-              <div className="md:w-1/2 flex flex-col">
+              {/* Right Panel - Transcript & Input */}
+              <div className="md:w-1/2 flex flex-col bg-slate-900/50">
                 <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                   <p className="text-xs uppercase tracking-widest text-white/60">Transcript</p>
                   <div className="space-y-3 text-sm text-white/80">
                     {transcript.map((line, index) => (
-                      <div key={index} className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                      <div key={index} className={`p-3 rounded-2xl border ${line.startsWith('🤖') ? 'bg-purple-500/10 border-purple-500/20 mr-8' : 'bg-white/5 border-white/5 ml-8'}`}>
                         {line}
                       </div>
                     ))}
                     {partialTranscript && (
-                      <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-white/60">
+                      <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-white/60 animate-pulse">
                         {partialTranscript}...
                       </div>
                     )}
                   </div>
                 </div>
 
+                <div className="p-4 border-t border-white/10 bg-black/20">
+                  <form onSubmit={handleManualSubmit} className="relative flex gap-2">
+                    <input
+                      type="text"
+                      value={manualInput}
+                      onChange={(e) => setManualInput(e.target.value)}
+                      placeholder={isRecording ? "Listening..." : "Type your answer here..."}
+                      disabled={isRecording || status === 'thinking' || status === 'speaking'}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500/50 transition"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!manualInput.trim() || status === 'thinking'}
+                      className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </form>
+                </div>
+
                 <div className="border-t border-white/10">
                   {plan ? (
-                    <div className="p-6 space-y-4">
+                    <div className="p-6 space-y-4 bg-green-500/5">
                       <div className="flex items-center gap-2 text-green-400">
                         <CheckCircle2 className="w-5 h-5" />
                         <p className="text-sm font-semibold">Plan ready!</p>
                       </div>
                       <div className="space-y-3 text-sm text-white/80">
-                        {plan.services && (
-                          <div>
-                            <p className="text-xs uppercase text-white/60 mb-1">Recommended Services</p>
-                            <div className="flex flex-wrap gap-2">
-                              {plan.services.map((svc) => (
-                                <span key={svc} className="px-3 py-1 rounded-full bg-white/5 text-xs border border-white/10">
-                                  {svc}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {plan.hosting && (
-                          <div>
-                            <p className="text-xs uppercase text-white/60 mb-1">Hosting Preference</p>
-                            <p>{plan.hosting}</p>
-                          </div>
-                        )}
-                        {plan.domain && (
-                          <div>
-                            <p className="text-xs uppercase text-white/60 mb-1">Domain</p>
-                            <p>{plan.domain}</p>
-                          </div>
-                        )}
-                        {plan.notes && (
-                          <div>
-                            <p className="text-xs uppercase text-white/60 mb-1">Notes</p>
-                            <p>{plan.notes}</p>
-                          </div>
-                        )}
+                        {/* Plan details rendering */}
+                        <p className="text-xs text-white/60">Services: {plan.services.join(', ')}</p>
+                        <p className="text-xs text-white/60">Domain: {plan.domain}</p>
                       </div>
                       <div className="flex gap-3">
                         <button
@@ -422,8 +456,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       </div>
                     </div>
                   ) : (
-                    <div className="p-6 text-sm text-white/60 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> I\'ll summarize your plan once we finish chatting.
+                    <div className="p-4 text-xs text-white/40 flex items-center justify-center gap-2">
+                      <Sparkles className="w-3 h-3" /> AI will verify requirements before finalizing.
                     </div>
                   )}
                 </div>

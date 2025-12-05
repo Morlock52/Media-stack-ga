@@ -6,7 +6,7 @@ import { RemoteDeployModal } from './components/RemoteDeployModal'
 import { AIAssistant } from './components/AIAssistant'
 import { useSetupStore } from './store/setupStore'
 import { TopologyMap } from './components/TopologyMap'
-import { Sparkles, Rocket, Shield, BookOpen, Server } from 'lucide-react'
+import { Sparkles, Rocket, Shield, BookOpen, Server, Mic } from 'lucide-react'
 
 function App() {
   const [showDeployModal, setShowDeployModal] = useState(false)
@@ -84,12 +84,12 @@ function App() {
       {/* Quick Features */}
       <section className="py-20 border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             <div className="text-center p-6">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 mb-4">
                 <Sparkles className="w-8 h-8 text-purple-400" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Configuration</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Config</h3>
               <p className="text-muted-foreground text-sm">
                 Step-by-step wizard guides you through every setting
               </p>
@@ -112,6 +112,16 @@ function App() {
               <h3 className="text-lg font-semibold text-foreground mb-2">Save Progress</h3>
               <p className="text-muted-foreground text-sm">
                 Auto-saves to localStorage - pick up where you left off
+              </p>
+            </div>
+
+            <div className="text-center p-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-500/10 border border-pink-500/20 mb-4">
+                <Mic className="w-8 h-8 text-pink-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Voice Companion</h3>
+              <p className="text-muted-foreground text-sm">
+                Hands-free setup for newbies. Just say "I want a media server."
               </p>
             </div>
           </div>

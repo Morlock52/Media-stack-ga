@@ -7,7 +7,7 @@
 <!-- markdownlint-disable MD013 -->
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready"/>
-  <img src="https://img.shields.io/badge/Security-Authelia-FF6C37?style=for-the-badge&logo=auth0&logoColor=white" alt="Authelia"/>
+  <img src="https://img.shields.io/badge/Security-Authelia-1F2D3D?style=for-the-badge&logo=authelia&logoColor=white" alt="Authelia"/>
   <img src="https://img.shields.io/badge/VPN-Protected-00C853?style=for-the-badge&logo=wireguard&logoColor=white" alt="VPN"/>
   <img src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Cross-Platform"/>
@@ -67,12 +67,12 @@
 
 | Layer | Components | Highlights |
 | --- | --- | --- |
-| Access & Security | Cloudflare Tunnel, Authelia, Redis | Zero Trust edge, SSO/2FA, centralized session store, Argon2 hashing |
-| Media Core | Plex, Jellyfin, Tdarr, Audiobookshelf | Dual media servers, audiobooks/podcasts, hardware-friendly transcoding |
-| Automation & Requests | Sonarr, Radarr, Prowlarr, Bazarr, Overseerr | Auto-search, quality enforcement, subtitle syncing, user-friendly requests |
-| Library Extensions | Kavita, Mealie, PhotoPrism | Comics/Manga, Recipe Manager, AI Photo Organization |
-| Downloads | Gluetun, qBittorrent, FlareSolverr | VPN-only download path, captcha bypass, kill-switch firewall |
-| Ops & DX | Homepage, Portainer, Dozzle, Watchtower, Notifiarr | Auto-discovered dashboard, GUI container management, live logs, proactive updates/alerts |
+| Access & Security | ![](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white) ![](https://img.shields.io/badge/Authelia-1F2D3D?style=flat-square&logo=authelia&logoColor=white) ![](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | Zero Trust edge, SSO/2FA, centralized session store, Argon2 hashing |
+| Media Core | ![](https://img.shields.io/badge/Plex-E5A00D?style=flat-square&logo=plex&logoColor=white) ![](https://img.shields.io/badge/Jellyfin-00A4DC?style=flat-square&logo=jellyfin&logoColor=white) ![](https://img.shields.io/badge/Tdarr-2A3C4D?style=flat-square) ![](https://img.shields.io/badge/Audiobookshelf-A88203?style=flat-square&logo=audiobookshelf&logoColor=white) | Dual media servers, audiobooks/podcasts, hardware-friendly transcoding |
+| Automation & Requests | ![](https://img.shields.io/badge/Sonarr-32C3E6?style=flat-square&logo=sonarr&logoColor=white) ![](https://img.shields.io/badge/Radarr-FFC230?style=flat-square&logo=radarr&logoColor=white) ![](https://img.shields.io/badge/Prowlarr-D52216?style=flat-square&logo=prowlarr&logoColor=white) ![](https://img.shields.io/badge/Overseerr-DBA538?style=flat-square&logo=overseerr&logoColor=white) | Auto-search, quality enforcement, subtitle syncing, user-friendly requests |
+| Library Extensions | ![](https://img.shields.io/badge/Kavita-444444?style=flat-square&logo=kavita&logoColor=white) ![](https://img.shields.io/badge/Mealie-E7A42B?style=flat-square&logo=mealie&logoColor=white) ![](https://img.shields.io/badge/PhotoPrism-6A5ACD?style=flat-square&logo=photoprism&logoColor=white) | Comics/Manga, Recipe Manager, AI Photo Organization |
+| Downloads | ![](https://img.shields.io/badge/Gluetun-252525?style=flat-square&logo=wireguard&logoColor=green) ![](https://img.shields.io/badge/qBittorrent-2F67BA?style=flat-square&logo=qbittorrent&logoColor=white) | VPN-only download path, captcha bypass, kill-switch firewall |
+| Ops & DX | ![](https://img.shields.io/badge/Homepage-4A90E2?style=flat-square&logo=homepage&logoColor=white) ![](https://img.shields.io/badge/Portainer-13BEF9?style=flat-square&logo=portainer&logoColor=white) ![](https://img.shields.io/badge/Dozzle-000000?style=flat-square&logo=dozzle&logoColor=white) | Auto-discovered dashboard, GUI container management, live logs, proactive updates/alerts |
 
 ## 🤖 AI Assistants (NEW!)
 
@@ -308,6 +308,28 @@ graph TB
 | 1. Install Docker.<br>2. Run setup:<br>`./setup.sh`<br>3. Run dashboard locally:<br>`cd docs-site`<br>`npm install`<br>`npm run dev` | 1. Install Docker.<br>2. Configure `.env` with **absolute paths**.<br>3. Run dashboard in container:<br>`docker compose -f docker-compose.wizard.yml up -d`<br>4. Open `http://localhost:3000`. | 1. Manual config.<br>2. Generate `.env`:<br>`./setup_auto.sh`<br>3. Launch stack:<br>`docker-compose up -d`<br>4. Secrets management via Vault/GitOps. |
 
 > 💡 Both paths converge on the same Docker Compose stack—pick the experience that matches today’s confidence level.
+
+## 🎙️ AI Voice Companion (Newbie Optimized)
+
+> **Status**: Beta | **Privacy**: Data processed via OpenAI (Your Key) | **Fallback**: Text Input Available
+
+For users who don't know "Containers" from "Compose files," the **Voice Companion** acts as a human-friendly onboarding agent. It conducts a short interview to build your stack for you.
+
+### How to Use
+1.  **Open the Wizard**: Go to `http://localhost:3000` (or `3002`).
+2.  **Click "Start Interview"**: Look for the microphone icon in the "Newbie" path.
+3.  **Speak Naturally**:
+    *   *"I want to build a Netflix for my family on my old gaming PC."*
+    *   *"I need to download anime and I have a Synology NAS."*
+4.  **Review & Apply**: The AI will generate a structured plan (Services, Hosting, Storage). Click **Apply Plan** to auto-fill the wizard.
+
+### Example Interaction
+| 🗣️ You (Voice or Text) | 🤖 AI Response | ⚙️ Result |
+| :--- | :--- | :--- |
+| "I have a Synology 920+ and I want to use Plex." | "Excellent choice. Since you're on a Synology, I'll recommend the Docker method with hardware transcoding enabled. Do you need a way to request movies?" | - Sets Platform: `Synology`<br>- Adds: `Plex`, `Tautulli`<br>- Prompts for: `Overseerr` |
+| "Yes, and I use private torrent trackers." | "Understood. I'll add Prowlarr for indexer management and qBittorrent for downloads. Be sure to configure your VPN." | - Adds: `Prowlarr`, `qBittorrent`<br>- Adds: `Gluetun` (VPN container) |
+
+**Pro Tip**: If your environment is noisy, use the **manual text input** at the bottom of the voice panel.
 
 ## 🥟 Deploy with Bun
 
