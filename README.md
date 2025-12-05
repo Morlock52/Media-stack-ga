@@ -100,6 +100,21 @@ We maintain rigorous documentation to ensure enterprise-grade reliability.
 - 🎤 **Voice Companion** — voice-guided instructions for screen-free setup sessions.
 - 🟢 **Status Chips & Health Monitor** — real-time chips show what the AI is doing; the health monitor auto-detects broken containers and suggests remediation.
 
+## 🎛️ Configuration & Management
+
+### 📥 Save & Load Profiles
+Never lose a configuration again. The wizard includes a robust **Profile Manager** that lets you:
+- **Save** your current stack selection, domain, and storage settings as a named profile (e.g., "Home Server", "Test Lab").
+- **Load** any saved profile to instantly restore your wizard state.
+- **Export** your configuration to a JSON file for backup or sharing.
+- **Import** configurations from other users or backups.
+
+### ➕ Add/Remove Services
+The **Stack Selection** step allows for granular control over your media empire:
+- **Add Services**: Toggle on any of the supported 20+ applications (Plex, Jellyfin, Sonarr, Radarr, etc.) from the catalog.
+- **Remove Services**: Disable any default service you don't need with a single click.
+- **Smart Dependencies**: The wizard automatically handles dependencies (e.g., selecting Sonarr adds Prowlarr recommendations).
+
 ## 📸 Screens & Storyboard
 
 <div align="center">

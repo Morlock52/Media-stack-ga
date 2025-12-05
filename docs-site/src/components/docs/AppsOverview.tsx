@@ -36,8 +36,9 @@ export function AppsOverview({ onSelectApp, customApps = [] }: AppsOverviewProps
 
                 <div className="grid md:grid-cols-3 gap-5">
                     {allApps.map((app) => {
-                        // Handle custom icons if needed, or fallback generic
+                        // Handle custom icons/logos if needed
                         const Icon = (app as any).icon || appCards[0].icon
+                        const logo = (app as any).logo
 
                         return (
                             <button
@@ -46,8 +47,12 @@ export function AppsOverview({ onSelectApp, customApps = [] }: AppsOverviewProps
                                 className="group text-left rounded-2xl border border-white/10 bg-slate-900/70 hover:border-purple-500/40 hover:bg-slate-900/90 transition-all p-4 flex flex-col h-full"
                             >
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                                        <Icon className="w-5 h-5 text-purple-100" />
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${logo ? 'bg-transparent p-0.5' : 'bg-purple-500/20'}`}>
+                                        {logo ? (
+                                            <img src={logo} alt={app.name} className="w-full h-full object-contain" />
+                                        ) : (
+                                            <Icon className="w-5 h-5 text-purple-100" />
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-xs uppercase tracking-wide text-gray-500">{app.category}</p>

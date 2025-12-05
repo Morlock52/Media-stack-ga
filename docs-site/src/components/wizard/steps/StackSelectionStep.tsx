@@ -106,9 +106,13 @@ export function StackSelectionStep({ mode, setMode, selectedServices, services, 
                                     whileTap={!isDisabled ? { scale: 0.95 } : {}}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'
-                                            }`}>
-                                            <Icon className="w-4 h-4" />
+                                        <div className={`rounded-lg ${isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'
+                                            } ${service.logo ? 'p-1' : 'p-2'}`}>
+                                            {service.logo ? (
+                                                <img src={service.logo} alt={service.name} className="w-6 h-6 object-contain" />
+                                            ) : (
+                                                <Icon className="w-4 h-4" />
+                                            )}
                                         </div>
                                         {isSelected && (
                                             <motion.div
