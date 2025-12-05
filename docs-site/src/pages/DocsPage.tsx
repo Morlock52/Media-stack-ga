@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     AppsOverview,
     PlexGuide,
@@ -28,23 +28,46 @@ import {
     WatchtowerGuide,
 } from '../components/docs'
 import { Link } from 'react-router-dom'
-import { appCards, type AppId } from '../components/docs/appData'
+import { appCards } from '../components/docs/appData'
+import { CustomAppGuide } from '../components/docs/CustomAppGuide'
 import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
 import { BookOpen, ArrowLeft, Sparkles, Plus } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 
 export function DocsPage() {
-    const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
+    const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [customApps, setCustomApps] = useState<any[]>([])
     const { config } = useSetupStore()
 
-    const handleSelectApp = (id: AppId) => {
+    // Load custom apps from registry
+    useEffect(() => {
+        fetch('http://localhost:3001/api/registry/apps')
+            .then(res => res.json())
+            .then(data => Array.isArray(data) ? setCustomApps(data) : setCustomApps([]))
+            .catch(console.error)
+    }, [])
+
+    const handleSelectApp = (id: string) => {
         setSelectedAppId(id)
         setIsModalOpen(true)
     }
 
-    const selectedApp = appCards.find(app => app.id === selectedAppId)
+    const handleDeleteApp = async (id: string) => {
+        if (!confirm('Are you sure you want to remove this app and its documentation?')) return
+        try {
+            await fetch(`http://localhost:3001/api/registry/apps/${id}`, { method: 'DELETE' })
+            setCustomApps(prev => prev.filter(app => app.id !== id))
+            setIsModalOpen(false)
+            setSelectedAppId(null)
+        } catch (error) {
+            console.error('Failed to delete app:', error)
+        }
+    }
+
+    const customApp = customApps.find(app => app.id === selectedAppId)
+    const selectedApp = appCards.find(app => app.id === selectedAppId) || customApp
 
     return (
         <main className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
@@ -98,7 +121,7 @@ export function DocsPage() {
                 </div>
             </section>
 
-            <AppsOverview onSelectApp={handleSelectApp} />
+            <AppsOverview onSelectApp={handleSelectApp} customApps={customApps} />
 
             <footer className="py-12 border-t border-white/10 mt-10">
                 <div className="container mx-auto px-4 text-center">
@@ -147,6 +170,9 @@ export function DocsPage() {
                 {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
                 {selectedAppId === 'redis' && <RedisGuide />}
                 {selectedAppId === 'watchtower' && <WatchtowerGuide />}
+
+                {/* Custom Apps */}
+                {customApp && <CustomAppGuide app={customApp} onDelete={handleDeleteApp} />}
             </GuideModal>
 
             {/* AI Assistant - Multi-Agent System */}

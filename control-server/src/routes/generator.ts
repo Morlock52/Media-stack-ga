@@ -63,21 +63,26 @@ export async function generatorRoutes(fastify: FastifyInstance) {
 
         // 3. Prompt AI
         const systemPrompt = `You are a DevOps & Integration specialist.
-User wants to add the app "${repo}" (by ${owner}) to their Media Stack.
+Analyze the repository "${owner}/${repo}" to integrate it into a user's self-hosted media stack.
 
-Analyze the README content and generate 3 artifacts in a single JSON object:
+Generate a JSON object with these keys: "homepage", "docs", "compose", "iconName".
+
 1. "homepage": YAML configuration block for 'gethomepage.dev'.
-   - Use the official widget if you recognize the app, otherwise generic 'Custom Service'.
-   - Icon: Use \`shakker/${repo}.png\`.
+   - Use correct widgets/API integration if the app is supported.
    - Category: "My Apps".
-2. "docs": A Markdown setup guide.
-   - Headers: "About", "Prerequisites", "Installation", "Configuration".
-   - Keep it concise.
-3. "compose": A 'docker-compose.yml' service snippet.
-   - Use reasonable defaults for ports/volumes (mount to \`\${DATA_ROOT}/...\`).
-   - Use 'image: ghcr.io/${owner}/${repo}:latest' or standard docker hub image if mentioned in README.
 
-Output JSON ONLY with keys: { "homepage": "...", "docs": "...", "compose": "..." }`;
+2. "docs": Detailed Markdown setup guide.
+   - Headers: "About", "Prerequisites", "Installation", "Configuration", "Tips".
+   - Include specific env vars explained.
+   - If README contains screenshot URLs (ending in png, jpg, webp), include them in the "About" section as Markdown images.
+
+3. "compose": 'docker-compose.yml' service snippet.
+   - Use \`\${DATA_ROOT}/...\` for volumes.
+   - Use specific ports if standard.
+
+4. "iconName": The single best 'Lucide React' icon name (PascalCase) that represents this app (e.g., "Film", "Database", "Shield", "Activity", "Box"). Do NOT return a generic name unless necessary.
+
+Output JSON ONLY with keys: { "homepage": "...", "docs": "...", "compose": "...", "iconName": "..." }`;
 
         try {
             const response = await fetch('https://api.openai.com/v1/chat/completions', {

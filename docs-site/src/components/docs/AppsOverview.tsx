@@ -1,9 +1,27 @@
 import { appCards, type AppId } from './appData'
+import { getIconByName } from '../ui/IconMapper'
 
 interface AppsOverviewProps {
-    onSelectApp?: (id: AppId) => void
+    onSelectApp?: (id: AppId | string) => void
+    customApps?: any[]
 }
-export function AppsOverview({ onSelectApp }: AppsOverviewProps) {
+
+export function AppsOverview({ onSelectApp, customApps = [] }: AppsOverviewProps) {
+    // Combine standard apps and custom apps
+    const allApps = [
+        ...appCards,
+        ...customApps.map(app => ({
+            id: app.id,
+            name: app.name,
+            category: 'Custom',
+            description: `Generated from ${app.repo}`,
+            icon: getIconByName(app.iconName),
+            difficulty: 'Medium',
+            time: 'Custom',
+            isCustom: true // marker
+        }))
+    ]
+
     return (
         <section id="apps" className="py-20 border-t border-white/10 bg-slate-950/40">
             <div className="container mx-auto px-4 max-w-5xl">
@@ -17,8 +35,10 @@ export function AppsOverview({ onSelectApp }: AppsOverviewProps) {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-5">
-                    {appCards.map((app) => {
-                        const Icon = app.icon
+                    {allApps.map((app) => {
+                        // Handle custom icons if needed, or fallback generic
+                        const Icon = (app as any).icon || appCards[0].icon
+
                         return (
                             <button
                                 key={app.id}

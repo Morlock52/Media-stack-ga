@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "repo": "https://github.com/mealie-recipes/mealie",
+    "homepage": "services:\n  - name: Mealie\n    logo: shakker/mealie.png\n    categories:\n      - My Apps\n    type: custom\n    description: A self hosted recipe manager, meal planner, and shopping list.\n    url: https://demo.mealie.io\n    auth: none\n    icon: shakker/mealie.png",
+    "docs": "# About\nMealie is a self-hosted recipe manager, meal planner, and shopping list application. It features a REST API backend and a reactive frontend built in Vue. Users can add recipes by URL or manually, plan meals, and organize shopping lists.\n\n# Prerequisites\n- Docker installed on your server\n- Sufficient storage for your recipes and data\n\n# Installation\n1. Clone the Mealie repository.\n2. Navigate to the directory where you want to set up Mealie.\n3. Use the provided Docker Compose snippet to deploy the application.\n\n# Configuration\n- Access the Mealie web interface via the configured port (default is 9925).\n- Configure your recipes, meal plans, and shopping lists through the UI.\n- For advanced configurations, refer to the [Mealie documentation](https://docs.mealie.io/).",
+    "compose": "services:\n  mealie:\n    image: ghcr.io/mealie-recipes/mealie:latest\n    container_name: mealie\n    ports:\n      - \"9925:80\"\n    volumes:\n      - ${DATA_ROOT}/mealie/data:/app/data\n      - ${DATA_ROOT}/mealie/config:/app/config\n    environment:\n      - TZ=UTC\n    restart: unless-stopped",
+    "id": "mealie",
+    "name": "mealie",
+    "updatedAt": "2025-12-05T21:05:17.219Z",
+    "createdAt": "2025-12-05T21:05:17.219Z"
+  }
+]

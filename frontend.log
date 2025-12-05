@@ -3,9 +3,8 @@
 > vite
 
 
-  VITE v5.4.21  ready in 1217 ms
+  VITE v5.4.21  ready in 2279 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
-4:01:09 PM [vite] hmr update /src/pages/ServiceGeneratorPage.tsx, /src/index.css
