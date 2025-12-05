@@ -1,0 +1,1616 @@
+
+> media-stack-control-server@1.0.0 dev
+> nodemon --exec tsx src/index.ts
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[15:53:53.293] [32mINFO[39m (69532): [36mServer listening at http://127.0.0.1:3001[39m
+[15:53:53.294] [32mINFO[39m (69532): [36mServer listening at http://192.168.1.247:3001[39m
+[15:53:53.294] [32mINFO[39m (69532): [36mControl Server started[39m
+    [35mprojectRoot[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:53:57.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:53:57.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49648
+    }
+[15:53:57.142] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-2"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.155] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-2"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12.64954200014472
+[15:53:57.159] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-3"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.160] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-3"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.5909169986844063
+[15:53:57.161] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-4"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.162] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-4"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.6158749982714653
+[15:53:57.163] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-5"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.164] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-5"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.6540419980883598
+[15:53:57.392] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-6"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/settings/openai-key",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.393] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-6"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.8975000008940697
+[15:53:57.395] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-7"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/settings/openai-key",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49650
+    }
+[15:53:57.396] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-7"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.5872499980032444
+[15:53:57.670] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 576.8692910000682
+[15:53:57.672] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-8"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49648
+    }
+[15:53:57.672] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:53:57.944] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-8"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 271.81983299925923
+[15:54:07.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:07.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-9"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49684
+    }
+[15:54:07.328] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-9"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 234.0071250014007
+[15:54:08.180] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-a"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49684
+    }
+[15:54:08.182] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-a"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1.167417000979185
+[15:54:08.182] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-b"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49684
+    }
+[15:54:08.183] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-b"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.4911249987781048
+[15:54:17.092] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-c"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49732
+    }
+[15:54:17.335] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-c"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 243.15154200047255
+[15:54:17.092] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:27.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-d"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49755
+    }
+[15:54:27.542] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-d"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 448.25308300182223
+[15:54:27.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:35.192] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-e"
+    [35mreq[39m: {
+      "method": "OPTIONS",
+      "url": "/api/generator/analyze",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49777
+    }
+[15:54:35.195] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-e"
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 1.2358339987695217
+[15:54:35.197] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-f"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/generator/analyze",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49777
+    }
+[15:54:37.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-g"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49785
+    }
+[15:54:37.409] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-g"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 316.52316599711776
+[15:54:37.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:44.261] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-f"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9063.294541999698
+[15:54:47.092] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-h"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49816
+    }
+[15:54:47.410] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-h"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 317.23520899936557
+[15:54:47.092] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:57.096] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:54:57.096] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-i"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49853
+    }
+[15:54:57.771] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-i"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 673.1692079976201
+[15:55:07.099] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:07.098] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-j"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49904
+    }
+[15:55:07.676] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-j"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 577.3828749991953
+[15:55:08.078] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-k"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49909
+    }
+[15:55:08.111] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-l"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/settings/openai-key",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49911
+    }
+[15:55:08.112] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-l"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.6805000007152557
+[15:55:08.116] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-m"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49913
+    }
+[15:55:08.117] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-m"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.5055410005152225
+[15:55:08.120] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-n"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/settings/openai-key",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49913
+    }
+[15:55:08.121] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-n"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.4033749997615814
+[15:55:08.121] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-o"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49911
+    }
+[15:55:08.122] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-o"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.9469579979777336
+[15:55:08.081] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:08.977] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-k"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 898.8578340001404
+[15:55:08.978] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-p"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49909
+    }
+[15:55:08.978] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:09.640] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-p"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 661.7302090004086
+[15:55:17.096] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:17.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-q"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49943
+    }
+[15:55:17.436] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-q"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 340.2521669976413
+[15:55:18.084] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-r"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49947
+    }
+[15:55:18.084] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:18.599] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-s"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49957
+    }
+[15:55:18.601] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-s"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1.8132079988718033
+[15:55:18.620] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-t"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/agents",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49957
+    }
+[15:55:18.621] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-t"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.492832999676466
+[15:55:27.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:27.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-u"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 49973
+    }
+[15:55:27.430] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-u"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 336.86016600206494
+[15:55:37.099] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:37.099] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-v"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50000
+    }
+[15:55:37.794] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-v"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 694.6850840002298
+[15:55:47.117] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:47.117] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-w"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50041
+    }
+[15:55:47.868] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-w"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 750.551249999553
+[15:55:57.486] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:55:57.470] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-x"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50056
+    }
+[15:56:01.632] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-x"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4142.9177919998765
+[15:56:01.960] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-y"
+    [35mreq[39m: {
+      "method": "OPTIONS",
+      "url": "/api/generator/analyze",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50068
+    }
+[15:56:01.966] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-y"
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 4.50433300063014
+[15:56:01.966] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-z"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/generator/analyze",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50068
+    }
+[15:56:07.097] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:07.096] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-10"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50081
+    }
+[15:56:07.685] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-10"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 588.2329999990761
+[15:56:12.085] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-z"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10118.630708999932
+[15:56:17.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:17.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-11"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50109
+    }
+[15:56:17.453] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-11"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 359.3732500001788
+[15:56:27.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:27.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-12"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50126
+    }
+[15:56:27.500] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-12"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 406.7716250009835
+[15:56:37.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:37.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-13"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50149
+    }
+[15:56:37.427] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-13"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 333.1404590010643
+[15:56:47.102] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:47.099] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-14"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50176
+    }
+[15:56:47.478] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-14"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 376.7592500001192
+[15:56:57.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:56:57.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-15"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50195
+    }
+[15:56:57.394] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-15"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 299.3020000010729
+[15:57:07.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-16"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50215
+    }
+[15:57:07.312] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-16"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 217.30200000107288
+[15:57:07.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:17.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-17"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50237
+    }
+[15:57:17.336] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-17"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 242.54979199916124
+[15:57:17.093] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:27.093] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-18"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50252
+    }
+[15:57:27.300] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-18"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 206.08854099735618
+[15:57:27.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:37.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-19"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50277
+    }
+[15:57:37.327] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-19"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 232.90433399751782
+[15:57:37.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:47.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1a"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50302
+    }
+[15:57:47.339] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1a"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 243.04487499967217
+[15:57:47.096] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:57.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:57:57.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1b"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50318
+    }
+[15:57:57.345] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1b"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 250.91399999707937
+[15:58:07.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:07.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1c"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50337
+    }
+[15:58:07.335] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1c"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 240.02695799991488
+[15:58:17.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:17.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1d"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50360
+    }
+[15:58:17.334] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1d"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 239.6735000014305
+[15:58:27.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:27.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1e"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50375
+    }
+[15:58:27.313] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1e"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 219.04116700217128
+[15:58:37.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:37.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1f"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50393
+    }
+[15:58:37.396] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1f"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 301.140625
+[15:58:47.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:47.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1g"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50419
+    }
+[15:58:47.326] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1g"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 231.23716700077057
+[15:58:57.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:58:57.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1h"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50441
+    }
+[15:58:57.306] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1h"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 211.43737499788404
+[15:59:07.096] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1i"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50463
+    }
+[15:59:07.340] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1i"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 243.10616700351238
+[15:59:07.097] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:59:17.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1j"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50500
+    }
+[15:59:17.332] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1j"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 236.93050000071526
+[15:59:17.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:59:27.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1k"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50521
+    }
+[15:59:27.337] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1k"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 242.01608299836516
+[15:59:27.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:59:37.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1l"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50541
+    }
+[15:59:37.318] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1l"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 223.1979580000043
+[15:59:37.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:59:47.098] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1m"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50569
+    }
+[15:59:47.326] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1m"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 228.2883750014007
+[15:59:47.098] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[15:59:57.094] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1n"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50593
+    }
+[15:59:57.334] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1n"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 239.86083300039172
+[15:59:57.094] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:07.095] [32mINFO[39m (69532): [36mincoming request[39m
+    [35mreqId[39m: "req-1o"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50614
+    }
+[16:00:07.334] [32mINFO[39m (69532): [36mrequest completed[39m
+    [35mreqId[39m: "req-1o"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 238.6510830000043
+[16:00:07.095] [32mINFO[39m (69532): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[16:00:14.707] [32mINFO[39m (72373): [36mServer listening at http://127.0.0.1:3001[39m
+[16:00:14.707] [32mINFO[39m (72373): [36mServer listening at http://192.168.1.247:3001[39m
+[16:00:14.707] [32mINFO[39m (72373): [36mControl Server started[39m
+    [35mprojectRoot[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:17.099] [32mINFO[39m (72373): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:17.098] [32mINFO[39m (72373): [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50644
+    }
+[16:00:17.352] [32mINFO[39m (72373): [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 253.31329100206494
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server/src/app.ts:55
+    await app.register(generatorRoutes);
+                       ^
+
+
+ReferenceError: registryRoutes is not defined
+    at buildApp (/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server/src/app.ts:55:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async start (/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server/src/index.ts:8:17)
+
+Node.js v22.16.0
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[16:00:23.131] [32mINFO[39m (72637): [36mServer listening at http://127.0.0.1:3001[39m
+[16:00:23.131] [32mINFO[39m (72637): [36mServer listening at http://192.168.1.247:3001[39m
+[16:00:23.131] [32mINFO[39m (72637): [36mControl Server started[39m
+    [35mprojectRoot[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[16:00:24.238] [32mINFO[39m (72742): [36mServer listening at http://127.0.0.1:3001[39m
+[16:00:24.238] [32mINFO[39m (72742): [36mServer listening at http://192.168.1.247:3001[39m
+[16:00:24.238] [32mINFO[39m (72742): [36mControl Server started[39m
+    [35mprojectRoot[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:27.097] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:27.097] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50667
+    }
+[16:00:27.354] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 256.7801670022309
+[16:00:37.113] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:37.112] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-2"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50690
+    }
+[16:00:37.414] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-2"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 300.9158749990165
+[16:00:47.099] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:47.098] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-3"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50720
+    }
+[16:00:47.346] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-3"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 247.90566700324416
+[16:00:57.096] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:00:57.096] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-4"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50735
+    }
+[16:00:57.350] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-4"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 253.79645900055766
+[16:01:07.096] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:07.096] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-5"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50749
+    }
+[16:01:07.305] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-5"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 207.32379199936986
+[16:01:09.572] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-6"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/registry/apps",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50749
+    }
+[16:01:09.655] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-6"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 81.57425000146031
+[16:01:09.655] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-7"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/registry/apps",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50749
+    }
+[16:01:09.672] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-7"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13.04212499782443
+[16:01:09.673] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-8"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/registry/apps",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50766
+    }
+[16:01:09.674] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-8"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 0.9290829971432686
+[16:01:09.679] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-9"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/registry/apps",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50766
+    }
+[16:01:09.686] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-9"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6.006833001971245
+[16:01:17.097] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:17.097] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-a"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50792
+    }
+[16:01:17.336] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-a"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 239.5665839985013
+[16:01:27.097] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:27.096] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-b"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50808
+    }
+[16:01:27.333] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-b"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 236.6901669986546
+[16:01:37.099] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:37.099] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-c"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50836
+    }
+[16:01:37.336] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-c"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 237.1166669987142
+[16:01:47.098] [32mINFO[39m (72742): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[16:01:47.097] [32mINFO[39m (72742): [36mincoming request[39m
+    [35mreqId[39m: "req-d"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 50865
+    }
+[16:01:47.319] [32mINFO[39m (72742): [36mrequest completed[39m
+    [35mreqId[39m: "req-d"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 221.07450000196695

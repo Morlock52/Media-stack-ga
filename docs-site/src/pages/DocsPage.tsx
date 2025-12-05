@@ -27,10 +27,11 @@ import {
     RedisGuide,
     WatchtowerGuide,
 } from '../components/docs'
+import { Link } from 'react-router-dom'
 import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
-import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
+import { BookOpen, ArrowLeft, Sparkles, Plus } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 
 export function DocsPage() {
@@ -59,13 +60,23 @@ export function DocsPage() {
                             <p className="text-xs text-gray-500">App guides & tutorials</p>
                         </div>
                     </div>
-                    <a
-                        href="/"
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Wizard
-                    </a>
+
+                    <div className="flex items-center gap-3">
+                        <Link
+                            to="/add-service"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20 border border-blue-500/20 rounded-lg text-sm text-blue-300 hover:text-white transition-all group"
+                        >
+                            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                            <span className="hidden sm:inline">Add Service</span>
+                        </Link>
+                        <a
+                            href="/"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Back to Wizard
+                        </a>
+                    </div>
                 </div>
             </header>
 

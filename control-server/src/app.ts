@@ -7,6 +7,8 @@ import { dockerRoutes } from './routes/docker.js';
 import multipart from '@fastify/multipart';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
+import { generatorRoutes } from './routes/generator.js';
+import { registryRoutes } from './routes/registry.js';
 
 export const buildApp = async (): Promise<FastifyInstance> => {
     const app = Fastify({
@@ -50,6 +52,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(dockerRoutes);
     await app.register(aiRoutes);
     await app.register(remoteRoutes);
+    await app.register(generatorRoutes);
+    await app.register(registryRoutes);
 
     return app;
 };
