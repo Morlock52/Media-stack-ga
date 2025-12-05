@@ -1,0 +1,37 @@
+services:
+  wizard-web:
+    build:
+      context: ./docs-site
+      dockerfile: Dockerfile
+    container_name: media-stack-wizard-web
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    depends_on:
+      - wizard-api
+    networks:
+      - wizard-net
+
+  wizard-api:
+    build:
+      context: ./control-server
+      dockerfile: Dockerfile
+    container_name: media-stack-wizard-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - PROJECT_ROOT=/project
+      # Set PUID/PGID to 0 (root) by default for docker socket access, 
+      # or users must configure their own id mapping.
+      # Ideally we use the same user as the host docker group.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/project
+    restart: unless-stopped
+    networks:
+      - wizard-net
+
+networks:
+  wizard-net:
+    driver: bridge

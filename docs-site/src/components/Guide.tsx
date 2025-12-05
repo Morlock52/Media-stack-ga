@@ -98,7 +98,7 @@ export const Guide: React.FC = () => {
                 <GuideSection
                     id="dashboard"
                     title="The Dashboard (Homepage)"
-                    imageSrc="/images/dashboard_mockup.png"
+                    imageSrc="/images/dashboard_mockup.webp"
                     imageAlt="Homepage Dashboard Interface"
                     reverse
                 >
@@ -122,7 +122,7 @@ export const Guide: React.FC = () => {
                 <GuideSection
                     id="requesting-media"
                     title="Requesting Media (Overseerr)"
-                    imageSrc="/images/request_ui_mockup.png"
+                    imageSrc="/images/request_ui_mockup.webp"
                     imageAlt="Overseerr Request Interface"
                 >
                     <p>
@@ -146,7 +146,7 @@ export const Guide: React.FC = () => {
                 <GuideSection
                     id="downloads"
                     title="Monitoring Downloads"
-                    imageSrc="/images/download_client_mockup.png"
+                    imageSrc="/images/download_client_mockup.webp"
                     imageAlt="qBittorrent Download Interface"
                     reverse
                 >

@@ -68,8 +68,9 @@
 | Layer | Components | Highlights |
 | --- | --- | --- |
 | Access & Security | Cloudflare Tunnel, Authelia, Redis | Zero Trust edge, SSO/2FA, centralized session store, Argon2 hashing |
-| Media Core | Plex, Jellyfin, Tdarr | Dual media servers, hardware-friendly transcoding, format normalization |
+| Media Core | Plex, Jellyfin, Tdarr, Audiobookshelf | Dual media servers, audiobooks/podcasts, hardware-friendly transcoding |
 | Automation & Requests | Sonarr, Radarr, Prowlarr, Bazarr, Overseerr | Auto-search, quality enforcement, subtitle syncing, user-friendly requests |
+| Library Extensions | Kavita, Mealie, PhotoPrism | Comics/Manga, Recipe Manager, AI Photo Organization |
 | Downloads | Gluetun, qBittorrent, FlareSolverr | VPN-only download path, captcha bypass, kill-switch firewall |
 | Ops & DX | Homepage, Portainer, Dozzle, Watchtower, Notifiarr | Auto-discovered dashboard, GUI container management, live logs, proactive updates/alerts |
 
@@ -302,9 +303,9 @@ graph TB
 
 ## 🚀 Quick Start Paths
 
-| 🎓 Guided (New to self-hosting) | 🧠 Power User (Bring-your-own workflow) |
-| --- | --- |
-| 1. Install Docker (see [Requirements](#-requirements--prep)).<br>2. Run the guided setup:<br>`chmod +x setup.sh`<br>`./setup.sh`<br>3. Launch the docs site & AI copilots:<br>`cd docs-site`<br>`npm install`<br>`npm run dev` → open `http://localhost:5173`. | 1. Choose automated vs manual provisioning.<br>2. Automated `.env` generator:<br>`nano setup_auto.sh`<br>`./setup_auto.sh`<br>3. Manual control:<br>`cp .env.example .env`<br>`nano .env`<br>`docker-compose up -d`<br>4. Plug secrets into your preferred vault/GitOps workflows. |
+| 🎓 Guided (Host Mode) | 🐳 Guided (Docker Mode) | 🧠 Power User |
+| --- | --- | --- |
+| 1. Install Docker.<br>2. Run setup:<br>`./setup.sh`<br>3. Run dashboard locally:<br>`cd docs-site`<br>`npm install`<br>`npm run dev` | 1. Install Docker.<br>2. Configure `.env` with **absolute paths**.<br>3. Run dashboard in container:<br>`docker compose -f docker-compose.wizard.yml up -d`<br>4. Open `http://localhost:3000`. | 1. Manual config.<br>2. Generate `.env`:<br>`./setup_auto.sh`<br>3. Launch stack:<br>`docker-compose up -d`<br>4. Secrets management via Vault/GitOps. |
 
 > 💡 Both paths converge on the same Docker Compose stack—pick the experience that matches today’s confidence level.
 

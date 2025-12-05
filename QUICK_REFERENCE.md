@@ -12,6 +12,12 @@ docker-compose up -d
 docker-compose down
 ```
 
+### Start Wizard (Docker Mode)
+```bash
+docker compose -f docker-compose.wizard.yml up -d
+# Access at http://localhost:3000
+```
+
 ### View Logs
 ```bash
 # All services
@@ -63,6 +69,10 @@ After setup, access services using the subdomains defined in `.env`:
 - **Tautulli:** `https://tautulli.${DOMAIN}`
 - **Tdarr:** `https://tdarr.${DOMAIN}`
 - **Notifiarr:** `https://notifiarr.${DOMAIN}`
+- **Audiobookshelf:** `https://audiobookshelf.${DOMAIN}`
+- **Kavita:** `https://kavita.${DOMAIN}`
+- **Mealie:** `https://mealie.${DOMAIN}`
+- **PhotoPrism:** `https://photoprism.${DOMAIN}`
 
 ## 🔑 Default Credentials
 

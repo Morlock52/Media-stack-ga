@@ -1,3 +1,5 @@
+import { Container, Agent, AiChatRequest, AiChatResponse } from '../types/api';
+
 const getWindowOrigin = () =>
     typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : ''
 
@@ -28,7 +30,7 @@ export const buildControlServerUrl = (path: string) => {
 
 // API Client
 export const controlServer = {
-    getContainers: async () => {
+    getContainers: async (): Promise<Container[]> => {
         const res = await fetch(buildControlServerUrl('/api/containers'));
         if (!res.ok) throw new Error('Failed to fetch containers');
         return res.json();
@@ -44,13 +46,13 @@ export const controlServer = {
         return res.json();
     },
 
-    getAgents: async () => {
+    getAgents: async (): Promise<{ agents: Agent[] }> => {
         const res = await fetch(buildControlServerUrl('/api/agents'));
         if (!res.ok) throw new Error('Failed to fetch agents');
         return res.json();
     },
 
-    chat: async (payload: any) => {
+    chat: async (payload: AiChatRequest): Promise<AiChatResponse> => {
         const res = await fetch(buildControlServerUrl('/api/agent/chat'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -104,41 +104,54 @@ Enhance automation, monitoring, and usability:
 9. **Tdarr**: distributed H.265 transcoding.
 10. **Expanded Authelia/Cloudflare Coverage**: consistent protection and routing for every exposed service.
 
-## 🚀 Next Upgrade: 20 Functional Updates
+## Implemented Features (2025 Updates)
+The following features have been successfully integrated into the stack:
 
-The following improvements are scheduled for the next iteration to expand capabilities and robustness.
+### 📚 Library & Content
+1.  **Audiobookshelf**: Dedicated self-hosted audiobook and podcast server.
+2.  **Kavita**: Comic book and manga server with web reader.
+3.  **Mealie**: Self-hosted recipe manager and meal planner.
+4.  **PhotoPrism**: AI-powered photo management library.
+
+### 🧠 Automation & Intelligence
+5.  **Voice Companion**: AI-driven voice setup assistant.
+6.  **Dr. Debug**: Context-aware error analysis and suggestions.
+7.  **Web Wizard**: Interactive, React-based setup with Bento grid dashboard.
+8.  **Dockerized Control Plane**: Run the Wizard and Control Server entirely in Docker (`docker-compose.wizard.yml`).
+
+## 🚀 Future Roadmap: 20 Functional Updates
+
+The following improvements are scheduled for future iterations to expand capabilities and robustness.
 
 ### 📚 Library & Content Expansion
 
 1. **Lidarr**: Add music collection manager (similar to Sonarr/Radarr).
-2. **Readarr**: Add ebook and audiobook manager.
-3. **Audiobookshelf**: Dedicated self-hosted audiobook and podcast server.
-4. **Kavita/Komga**: Comic book and manga server with web reader.
-5. **Bazarr Providers**: Expand subtitle providers with additional API keys.
+2. **Readarr**: Add ebook and audiobook manager (alternative to Audiobookshelf).
+3. **Bazarr Providers**: Expand subtitle providers with additional API keys.
 
 ### 🧠 Automation & Intelligence
 
-6. **Recyclarr**: Automatically sync TRaSH guides (custom formats/quality profiles) to Sonarr/Radarr.
-7. **AutoBrr**: Real-time release automation (IRC announcer) for racing private trackers.
-8. **Cross-Seed**: Automatically cross-seed torrents across multiple trackers to build ratio.
-9. **Unpackerr**: Automated extraction of archives for Sonarr/Radarr/Lidarr downloads.
-10. **Plex Meta Manager (Kometa)**: Python script to update Plex metadata and build collections automatically.
+4. **Recyclarr**: Automatically sync TRaSH guides (custom formats/quality profiles) to Sonarr/Radarr.
+5. **AutoBrr**: Real-time release automation (IRC announcer) for racing private trackers.
+6. **Cross-Seed**: Automatically cross-seed torrents across multiple trackers to build ratio.
+7. **Unpackerr**: Automated extraction of archives for Sonarr/Radarr/Lidarr downloads.
+8. **Plex Meta Manager (Kometa)**: Python script to update Plex metadata and build collections automatically.
 
 ### 🛠️ System & Maintenance
 
-11. **Scrutiny**: Hard drive S.M.A.R.T. monitoring dashboard.
-12. **Uptime Kuma**: Sophisticated monitoring tool for services with status pages.
-13. **Speedtest-Tracker**: Continuous internet speed monitoring and history.
-14. **PostgreSQL Migration**: Migrate *Arr apps to PostgreSQL for improved performance on large libraries.
-15. **Backup Strategy**: Implement `restic` or similar for off-site backups of `${CONFIG_ROOT}`.
+9. **Scrutiny**: Hard drive S.M.A.R.T. monitoring dashboard.
+10. **Uptime Kuma**: Sophisticated monitoring tool for services with status pages.
+11. **Speedtest-Tracker**: Continuous internet speed monitoring and history.
+12. **PostgreSQL Migration**: Migrate *Arr apps to PostgreSQL for improved performance on large libraries.
+13. **Backup Strategy**: Implement `restic` or similar for off-site backups of `${CONFIG_ROOT}`.
 
 ### ⚡ Streaming & Transcoding
 
-16. **Threadfin**: M3U proxy server for IPTV management (replacing xTeVe).
-17. **ErsatzTV**: Create custom live channels from your media library.
-18. **Autoscan**: Replace Plex default scanning with webhook-based triggers for instant updates.
-19. **Jellyseerr**: Fork of Overseerr optimized specifically for Jellyfin users.
-20. **GPU Mapping**: Refine NVIDIA/Intel QSV pass-through for Tdarr nodes and Plex/Jellyfin.
+14. **Threadfin**: M3U proxy server for IPTV management (replacing xTeVe).
+15. **ErsatzTV**: Create custom live channels from your media library.
+16. **Autoscan**: Replace Plex default scanning with webhook-based triggers for instant updates.
+17. **Jellyseerr**: Fork of Overseerr optimized specifically for Jellyfin users.
+18. **GPU Mapping**: Refine NVIDIA/Intel QSV pass-through for Tdarr nodes and Plex/Jellyfin.
 
 ## Verification Plan
 

@@ -1,12 +1,9 @@
-import { Agent, AiChatRequest } from './types/index.js';
-
 /**
  * Multi-Agent AI System for Media Stack
  * Specialized agents that work together to guide users
  */
-
 // Agent Definitions with personalities and expertise
-export const AGENTS: Record<string, Agent & { expertise: string[], systemPrompt: string }> = {
+export const AGENTS = {
     setup: {
         id: 'setup',
         name: 'Setup Guide',
@@ -39,7 +36,6 @@ COMPUTER USE:
 
 When giving setup steps, format as a checklist the user can follow.`
     },
-
     troubleshoot: {
         id: 'troubleshoot',
         name: 'Dr. Debug',
@@ -77,7 +73,6 @@ Common issues you know well:
 - Network connectivity (check docker network)
 - Volume mount issues (check paths exist)`
     },
-
     apps: {
         id: 'apps',
         name: 'App Expert',
@@ -111,7 +106,6 @@ COMPUTER USE:
 
 Always explain what you plan to do before asking to use the computer.`
     },
-
     deploy: {
         id: 'deploy',
         name: 'Deploy Captain',
@@ -151,7 +145,6 @@ COMPUTER USE:
 - Offer to run SSH commands, copy files, or validate docker compose output via the computer tool when the user grants permission.
 - Describe the exact command you intend to run and ask before executing.`
     },
-
     general: {
         id: 'general',
         name: 'Stack Guide',
@@ -186,30 +179,25 @@ Default ports to remember:
 - Homepage: 3000, Portainer: 9000`
     }
 };
-
 // Detect which agent should handle a message
-export function detectAgent(message: string) {
+export function detectAgent(message) {
     const lower = message.toLowerCase();
-
     // Check each agent's expertise keywords
     for (const [id, agent] of Object.entries(AGENTS)) {
-        if (id === 'general') continue; // Check general last
-
+        if (id === 'general')
+            continue; // Check general last
         for (const keyword of agent.expertise) {
             if (lower.includes(keyword)) {
                 return agent;
             }
         }
     }
-
     return AGENTS.general;
 }
-
 // Get proactive nudges based on context
-export function getProactiveNudges(context: any) {
+export function getProactiveNudges(context) {
     const { currentApp, recentTopics, userProgress, config } = context;
     const nudges = [];
-
     // Suggest next steps based on app
     if (currentApp === 'sonarr' && !recentTopics?.includes('indexer')) {
         nudges.push({
@@ -217,14 +205,12 @@ export function getProactiveNudges(context: any) {
             message: "💡 Tip: Sonarr needs indexers to find content. Want me to explain how to set them up?"
         });
     }
-
     if (currentApp === 'plex' && !recentTopics?.includes('library')) {
         nudges.push({
             agent: 'apps',
             message: "💡 Have you added your media libraries to Plex yet? I can walk you through it!"
         });
     }
-
     // Context-aware nudges
     if (userProgress?.step === 'troubleshoot') {
         nudges.push({
@@ -232,14 +218,12 @@ export function getProactiveNudges(context: any) {
             message: "🔍 I see you're looking at troubleshooting. Need Dr. Debug to analyze your logs?"
         });
     }
-
     if (config?.profile === 'torrent' && !config?.vpnEnabled) {
         nudges.push({
             agent: 'setup',
             message: "🛡️ You selected the 'Torrent' profile but VPN is not enabled. I strongly recommend setting up Gluetun."
         });
     }
-
     // Setup progress nudges
     if (userProgress?.step === 'env' && !userProgress?.envComplete) {
         nudges.push({
@@ -247,16 +231,13 @@ export function getProactiveNudges(context: any) {
             message: "🔧 I notice you're working on the .env file. Need help with any settings?"
         });
     }
-
     return nudges;
 }
-
 // Build messages for OpenAI API
-export function buildAgentMessages(agent: any, userMessage: string, history: any[] = [], context: any = {}) {
+export function buildAgentMessages(agent, userMessage, history = [], context = {}) {
     const messages = [
         { role: 'system', content: agent.systemPrompt }
     ];
-
     // Add context about current app if relevant
     if (context.currentApp) {
         messages.push({
@@ -264,21 +245,17 @@ export function buildAgentMessages(agent: any, userMessage: string, history: any
             content: `User is currently viewing: ${context.currentApp}. Tailor your response accordingly.`
         });
     }
-
     // Add recent history (last 8 messages)
     const recentHistory = history.slice(-8);
     for (const msg of recentHistory) {
         messages.push({ role: msg.role, content: msg.content });
     }
-
     // Add current message
     messages.push({ role: 'user', content: userMessage });
-
     return messages;
 }
-
 // Fallback responses when no API key
-export const FALLBACK_RESPONSES: Record<string, { patterns: { match: string[], response: string }[], default: string }> = {
+export const FALLBACK_RESPONSES = {
     setup: {
         patterns: [
             { match: ['start', 'begin', 'first'], response: "Let's get started! First, make sure you have Docker installed. Run `docker --version` to check. Then we'll set up your .env file with your settings." },
@@ -319,18 +296,15 @@ export const FALLBACK_RESPONSES: Record<string, { patterns: { match: string[], r
         default: "Hi! I'm the Media Stack Assistant. I can help with:\n\n🚀 **Setup** - Initial configuration\n🔍 **Troubleshooting** - Fix problems\n📱 **App Help** - Learn about each app\n🚢 **Deployment** - Get running on a server\n\nWhat would you like help with?"
     }
 };
-
 // Get fallback response for an agent
-export function getFallbackResponse(agentId: string, message: string) {
+export function getFallbackResponse(agentId, message) {
     const agentFallbacks = FALLBACK_RESPONSES[agentId] || FALLBACK_RESPONSES.general;
     const lower = message.toLowerCase();
-
     // Check patterns
     for (const pattern of agentFallbacks.patterns || []) {
         if (pattern.match.some(m => lower.includes(m))) {
             return pattern.response;
         }
     }
-
     return agentFallbacks.default;
 }

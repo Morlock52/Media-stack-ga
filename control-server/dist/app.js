@@ -1,13 +1,9 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { PROJECT_ROOT } from './utils/env.js';
-import pino from 'pino';
-
 import { dockerRoutes } from './routes/docker.js';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
-
-export const buildApp = async (): Promise<FastifyInstance> => {
+export const buildApp = async () => {
     const app = Fastify({
         logger: {
             level: process.env.LOG_LEVEL || 'info',
@@ -19,34 +15,16 @@ export const buildApp = async (): Promise<FastifyInstance> => {
             }
         }
     });
-
     await app.register(cors, {
         origin: '*' // Configure appropriately for production
     });
-
     // Health Check
     app.get('/api/health', async (request, reply) => {
         return { status: 'online', version: '2.0.0', backend: 'fastify' };
     });
-
-    // Root Request (Friendly Message)
-    app.get('/', async (request, reply) => {
-        return {
-            service: 'Media Stack Control Server',
-            status: 'running',
-            version: '2.0.0',
-            endpoints: [
-                '/api/health',
-                '/api/containers',
-                '/api/agents'
-            ]
-        };
-    });
-
     // Register Routes
     await app.register(dockerRoutes);
     await app.register(aiRoutes);
     await app.register(remoteRoutes);
-
     return app;
 };

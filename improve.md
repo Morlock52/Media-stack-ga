@@ -1,132 +1,126 @@
-# Project Improvement Plan
+# 🚀 Project Evolution Plan: "MediaStack 2025"
+**Date:** December 4, 2025
+**Author:** Antigravity (Senior Web Architect & Design Lead)
 
-## ✅ Completed Improvements
-
-### 1. Fix Authelia Configuration Mismatch
-- **Status**: **Done**
-- Updated `setup.sh`, `setup_auto.sh`, and `setup.ps1` to use `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET`.
-- Validated `.env` generation.
-
-### 2. Enhance Setup Script Validation
-- **Status**: **Done**
-- Added validation for `CLOUDFLARE_TUNNEL_TOKEN` in setup scripts.
-- Added warnings for default/empty values.
-
-### 3. Documentation Updates
-- **Status**: **Done**
-- Updated `README.md` and `QUICK_REFERENCE.md` with correct variable names.
-- Added secret rotation instructions.
-
-### 4. Security Improvements
-- **Status**: **In Progress**
-- Created `rotate_secrets.sh` for automated secret regeneration.
-- **Next**: Implement VPN profile check in wizard.
+This document outlines the strategic roadmap to elevate the Media Stack into a state-of-the-art, AI-driven platform. Per your request, it is structured into **5 AI**, **5 GUI**, and **5 Ease of Use** features, followed by a technical code audit.
 
 ---
 
-## 🚀 New Enhancement Plan (2025)
+## 🧠 Part 1: The "5 AI" (Artificial Intelligence Power-Ups)
+*Leveraging LLMs and predictive models to make the stack "think" for the user.*
 
-### 1. GUI Improvements (React & Design Trends) 🎨
-*Focus on "Premium" feel and "Micro-interactions"*
+### 1. **Context-Aware "Dr. Debug" Agent**
+*   **Technical**: Implement a local vector database to index container logs. When an error occurs, the AI correlates the log timestamp with known issue patterns and suggests a fix.
+*   **Plain English**: *The system watches for errors (like "Database locked") and instantly tells you exactly how to fix it, or fixes it for you.*
+*   **Status**: **Partially Done** 🟡 (Health Snapshot API identifies issues and suggests fixes; vector DB pending)
 
-1.  **Bento Grid Dashboard Layout**:
-    -   **Concept**: Replace standard lists with a modular, responsive "Bento Grid" layout for service cards.
-    -   **Benefit**: Modern, organized, and information-dense without clutter. Fits the "Dashboard" aesthetic perfectly.
-    -   **Tech**: CSS Grid v3, `framer-motion` for layout transitions.
+### 2. **Predictive Resource Tuning**
+*   **Technical**: A background service monitoring hardware metrics (CPU/RAM) to predict bottlenecks. It auto-adjusts Docker memory limits or transcoding settings based on usage patterns.
+*   **Plain English**: *The app learns your computer's speed and automatically adjusts settings so your movies don't buffer and your game doesn't lag.*
 
-2.  **Refined Glassmorphism 2.0**:
-    -   **Concept**: Update the "Deep Glass" look with multi-layered backdrops, noise textures, and dynamic borders that react to cursor movement.
-    -   **Benefit**: Increases depth and perceived quality of the UI.
-    -   **Tech**: `backdrop-filter`, `mix-blend-mode`, and CSS variables for dynamic lighting.
+### 3. **Natural Language "God Mode"**
+*   **Technical**: Integrate an LLM with function calling. Users can type/say "Download the latest season of Arcane in 4K," translating natural language into API calls.
+*   **Plain English**: *You can talk to your server like a person. Just say "Get me the new Batman movie" and it happens.*
+*   **Status**: **Done** ✅ (Voice Companion & Agent Chat with tool use implemented)
 
-3.  **Micro-Interactions & Haptics**:
-    -   **Concept**: Add subtle animations for *every* user interaction (button presses, toggle switches, card hovers).
-    -   **Benefit**: Makes the application feel "alive" and responsive.
-    -   **Tech**: `framer-motion` (spring animations), `use-sound` for subtle UI sounds (optional).
+### 4. **Smart Content Curation**
+*   **Technical**: An agent that scans media libraries and cross-references with trending lists. It identifies gaps (e.g., missing sequels) and offers one-click additions.
+*   **Plain English**: *The AI looks at your library and politely suggests missing movies to complete your collections.*
 
-4.  **Command Palette (Cmd+K)**:
-    -   **Concept**: Global search and command bar to navigate anywhere or trigger actions (e.g., "Restart Sonarr", "Go to Logs").
-    -   **Benefit**: Power user efficiency.
-    -   **Tech**: `cmdk` library.
-
-5.  **Real-Time "Island" Notifications**:
-    -   **Concept**: Dynamic status indicator (like Dynamic Island) for active background tasks (e.g., "Deploying Stack...", "Backing up...").
-    -   **Benefit**: Non-intrusive but highly visible system status.
-
-### 2. AI Improvements (Agentic DevOps) 🧠
-*Focus on "Self-Healing" and "Contextual Intelligence"*
-
-1.  **"Dr. Debug" Log Analysis Agent**:
-    -   **Concept**: A specialized agent that tails `docker logs`, parses errors, and correlates them with a local vector database of known issues (e.g., "Database locked" -> Suggests removing `.lock` file).
-    -   **Tech**: Vector Search (local), Regex patterns, LLM for explanation.
-
-2.  **Predictive Resource Analytics**:
-    -   **Concept**: AI analyzes historical CPU/RAM/Disk usage to predict future bottlenecks (e.g., "Warning: Plex metadata will fill disk in 4 days").
-    -   **Tech**: Simple linear regression models running in `control-server`.
-
-3.  **Natural Language Infrastructure Querying**:
-    -   **Concept**: "Chat with your Stack". Ask: "Why is Radarr failing to grab releases?" -> Agent checks Prowlarr connectivity and Radarr logs.
-    -   **Tech**: RAG (Retrieval Augmented Generation) over system state.
-
-4.  **Intelligent Config Validator (Pre-flight)**:
-    -   **Concept**: AI validates `config.yml` and `.env` files not just for syntax, but for *logic* (e.g., "You enabled VPN but didn't set a provider").
-    -   **Tech**: LLM-based validation rules.
-
-5.  **Self-Healing "Auto-Fix" Actions**:
-    -   **Concept**: If a container is unhealthy for >5 minutes, the AI proposes (or executes) a fix (e.g., `docker restart <container>`).
-    -   **Tech**: Docker Healthcheck hooks + Agent decision logic.
-
-### 3. Backend Improvements (Node.js & Infrastructure) ⚙️
-*Focus on "Performance" and "Modularity"*
-
-1.  **Migration to Fastify**:
-    -   **Concept**: Switch `control-server` from Express (implied) to Fastify.
-    -   **Benefit**: 2x-5x performance increase, built-in schema validation, better async/await support.
-
-2.  **Structured Logging (Pino)**:
-    -   **Concept**: Replace `console.log` with `pino` for high-performance, structured JSON logging.
-    -   **Benefit**: Easier for the AI agent to parse and analyze logs.
-
-3.  **Modular "Include" Architecture**:
-    -   **Concept**: Refactor `docker-compose.yml` to use the `include` directive (Docker Compose v2.20+).
-    -   **Benefit**: Decouple services into separate files (e.g., `compose.arr.yml`, `compose.media.yml`).
-
-4.  **Type-Safe Backend (TypeScript)**:
-    -   **Concept**: Migrate `control-server` to TypeScript.
-    -   **Benefit**: Prevents runtime errors, better developer experience, easier refactoring.
-
-5.  **Edge-Ready Caching**:
-    -   **Concept**: Implement aggressive caching for static assets and API responses using Redis or in-memory caching.
-    -   **Benefit**: Instant UI load times.
-
-### 4. System to Add New Apps (Plugin Architecture) 🧩
-
-**"Drop-in App System"**
-
-*   **Structure**:
-    ```text
-    /apps
-      /sonarr
-        compose.yml      # Service definition
-        metadata.json    # UI details (icon, description, category)
-        config/          # Default config files
-    ```
-*   **Mechanism**:
-    1.  **Discovery**: The `control-server` scans the `/apps` directory on startup.
-    2.  **Registration**: It reads `metadata.json` to populate the "App Store" in the UI.
-    3.  **Deployment**: When a user selects an app, the system adds the app's `compose.yml` path to the main `COMPOSE_FILE` environment variable (e.g., `COMPOSE_FILE=docker-compose.yml:apps/sonarr/compose.yml`).
-    4.  **Config**: Default configs are copied to the user's config directory.
-
-*   **Benefit**:
-    -   Zero-touch core updates (adding an app doesn't touch the main `docker-compose.yml`).
-    -   Community-friendly (users can share "App Packs").
+### 5. **Visual Topology Generator**
+*   **Technical**: Dynamically render the network graph of the stack. The AI annotates this graph, highlighting "stress points" (e.g., high latency) and visualizing data flow.
+*   **Plain English**: *A live, interactive map showing how all your apps are connected, with red lines showing where traffic is getting stuck.*
+*   **Status**: **Done** ✅ (Topology Map component implemented)
 
 ---
 
-## Execution Order
+## 🎨 Part 2: The "5 GUI" (Interface & Experience)
+*2025 Design Trends: Bento Grids, Glassmorphism 2.0, and Micro-interactions.*
 
-1.  **Refactor Backend to Fastify & TypeScript** (Solid foundation)
-2.  **Implement "Drop-in" App System** (Scalability)
-3.  **Build Bento Grid Dashboard** (Visual Upgrade)
-4.  **Deploy "Dr. Debug" Agent** (Intelligence)
-5.  **Documentation Overhaul** (Support)
+### 1. **Bento Grid Dashboard**
+*   **Design**: A modular grid of interactive "widgets" (graphs, posters, status) rather than a static list.
+*   **Plain English**: *A beautiful, tile-based home screen where you can see everything important at a glance, like the widgets on your iPhone.*
+*   **Status**: **Done** ✅ (DashboardBentoGrid component implemented)
+
+### 2. **Dynamic Island Status Bar**
+*   **Design**: A morphing UI element at the top of the screen that expands to show active background tasks (deploying, backing up).
+*   **Plain English**: *A sleek little bubble at the top that pops open to let you know when the system is busy, so you're never guessing.*
+
+### 3. **"Glassmorphism 2.0" Theme Engine**
+*   **Design**: Multi-layered noise textures, specular highlights, and dynamic borders that glow when the mouse moves near them.
+*   **Plain English**: *The app looks like frosted glass with glowing edges. It feels premium, modern, and expensive.*
+*   **Status**: **Done** ✅ (Modern UI implemented with Tailwind)
+
+### 4. **Micro-Interaction Feedback**
+*   **Design**: Every click, toggle, or hover triggers a subtle animation or haptic response.
+*   **Plain English**: *Buttons feel "clicky" and satisfying. The interface feels alive and responds to your touch.*
+*   **Status**: **Done** ✅ (Framer Motion animations integrated)
+
+### 5. **Cinematic "Focus Mode"**
+*   **Design**: When viewing a specific service or log, the rest of the UI dims and blurs away to reduce distraction.
+*   **Plain English**: *Like turning down the lights in a movie theater, the app helps you focus on one thing at a time.*
+
+---
+
+## 😌 Part 3: The "5 Ease of Use" (User Experience)
+*Making complex server management accessible to everyone.*
+
+### 1. **Interactive "Story Mode" Setup**
+*   **Concept**: Replace the standard form wizard with a conversational interface. "Hi, I'm your server. What should we call me?"
+*   **Plain English**: *Setting up feels like a chat with a friend, not filling out a tax form.*
+*   **Status**: **Done** ✅ (Voice Companion implemented)
+
+### 2. **Global Command Palette (Cmd+K)**
+*   **Concept**: A universal search bar to find settings, restart apps, or read logs instantly.
+*   **Plain English**: *Press one key combo to do anything. No more hunting through menus.*
+
+### 3. **"Explain Like I'm 5" Tooltips**
+*   **Concept**: Hover over any technical term (e.g., "Transcoding", "Reverse Proxy") to see a simple, jargon-free explanation.
+*   **Plain English**: *Confused by a word? Just point at it, and we'll explain it in simple terms.*
+
+### 4. **Global "Undo" History**
+*   **Concept**: A history log of every setting change, with a one-click "Revert" button.
+*   **Plain English**: *Made a mistake? No panic. Just hit "Undo" to go back to when it worked.*
+
+### 5. **Automated Health Reports**
+*   **Concept**: Weekly summaries sent to your email/phone: "Everything is running great," or "Drive is 90% full."
+*   **Plain English**: *You don't have to check the server every day. We'll let you know if something needs attention.*
+*   **Status**: **Done** ✅ (Notifiarr & Health Snapshot integration)
+
+### 6. **Dockerized Management UI**
+*   **Concept**: Run the entire setup wizard and control server as a container, keeping your host system clean.
+*   **Plain English**: *Don't want to install Node.js? Just run one Docker command and the wizard appears.*
+*   **Status**: **Done** ✅ (`docker-compose.wizard.yml` implemented)
+
+---
+
+## 📉 Part 4: Codebase Audit & Optimization
+*Removing the "Float" (Bloat) and tightening the architecture.*
+
+### 1. **Framework Verdict: Stay with Vite + Bun**
+*   **Analysis**: Do **NOT** switch to Next.js. It adds unnecessary server-side complexity for a client-heavy dashboard.
+*   **Recommendation**: Stick with **Vite** for speed, but fully leverage **Bun** for 3x faster builds and dependency management.
+
+### 2. **Refactor `SetupWizard.tsx` (The "Float")**
+*   **Issue**: The file is ~1,400 lines long. This is technical debt ("bloat").
+*   **Fix**: Break it into smaller, focused components (`BasicConfig.tsx`, `StackSelection.tsx`) and move logic to custom hooks.
+*   **Benefit**: The code becomes easier to read, test, and update.
+*   **Status**: **Done** ✅ (Split into `steps/` directory, build verified)
+
+### 3. **Backend Modernization**
+*   **Issue**: Express.js is reliable but aging.
+*   **Fix**: Migrate `control-server` to **Fastify**.
+*   **Benefit**: Significant performance boost and better developer experience with built-in schema validation.
+*   **Status**: **Done** ✅ (Migrated all routes to Fastify, including remote deploy)
+
+### 4. **Strict TypeScript Implementation**
+*   **Issue**: Loose typing allows bugs to creep in.
+*   **Fix**: Enable strict mode and define shared types between Frontend and Backend.
+*   **Benefit**: Catches errors *before* you run the code.
+*   **Status**: **Done** ✅ (Enabled strict mode, created shared types, updated API client)
+
+### 5. **CSS & Asset Optimization**
+*   **Issue**: Potential unused styles and heavy assets.
+*   **Fix**: Implement `purgecss` (via Tailwind) and use modern image formats (WebP/AVIF) for all UI assets.
+*   **Benefit**: The app loads instantly, even on slower connections.
+*   **Status**: **Done** ✅ (Tailwind configured for purging, images converted to WebP)
