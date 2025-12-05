@@ -27,17 +27,17 @@ export const services: ServiceOption[] = [
     { id: 'bazarr', name: 'Bazarr', description: 'Subtitle management for Sonarr/Radarr', icon: Layers, logo: '/icons/bazarr.svg', profile: 'bazarr', category: 'automation' },
     { id: 'lidarr', name: 'Lidarr', description: 'Music collection manager', icon: Music, logo: '/icons/lidarr.svg', profile: 'lidarr', category: 'automation' },
     { id: 'readarr', name: 'Readarr', description: 'Book & audiobook manager', icon: BookOpen, logo: '/icons/readarr.svg', profile: 'readarr', category: 'automation' },
-    { id: 'transcode', name: 'Tdarr', description: 'Distributed transcoding', icon: Cpu, profile: 'transcode', category: 'automation' },
+    { id: 'transcode', name: 'Tdarr', description: 'Distributed transcoding', icon: Cpu, logo: '/icons/tdarr.png', profile: 'transcode', category: 'automation' },
 
     // DOWNLOADS
     { id: 'torrent', name: 'Torrent Client', description: 'qBittorrent for downloads', icon: DownloadIcon, logo: '/icons/qbittorrent.svg', profile: 'torrent', category: 'download' },
     { id: 'usenet', name: 'SABnzbd', description: 'Usenet downloader', icon: Inbox, logo: '/icons/sabnzbd.svg', profile: 'usenet', category: 'download' },
-    { id: 'vpn', name: 'Gluetun VPN', description: 'Secure VPN tunnel for privacy', icon: Shield, profile: 'vpn', category: 'download' },
+    { id: 'vpn', name: 'Gluetun VPN', description: 'Secure VPN tunnel for privacy', icon: Shield, logo: '/icons/gluetun.svg', profile: 'vpn', category: 'download' },
 
     // REQUEST & DISCOVERY
     { id: 'overseerr', name: 'Overseerr', description: 'Media request management', icon: Search, logo: '/icons/overseerr.svg', profile: 'overseerr', category: 'request' },
     { id: 'ombi', name: 'Ombi', description: 'User media requests', icon: ListVideo, logo: '/icons/ombi.svg', profile: 'ombi', category: 'request' },
-    { id: 'petio', name: 'Petio', description: 'Request manager with recommendations', icon: Clapperboard, profile: 'petio', category: 'request' },
+    { id: 'petio', name: 'Petio', description: 'Request manager with recommendations', icon: Clapperboard, logo: '/icons/petio.png', profile: 'petio', category: 'request' },
 
     // MONITORING & NOTIFICATIONS
     { id: 'stats', name: 'Tautulli', description: 'Plex usage statistics', icon: Activity, logo: '/icons/tautulli.svg', profile: 'stats', category: 'monitoring' },
