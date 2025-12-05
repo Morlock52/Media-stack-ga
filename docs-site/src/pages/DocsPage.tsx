@@ -27,19 +27,28 @@ import {
     RedisGuide,
     WatchtowerGuide,
 } from '../components/docs'
-import type { AppId } from '../components/docs/appData'
+import { appCards, type AppId } from '../components/docs/appData'
+import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
 import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 
 export function DocsPage() {
-    const [selectedAppId, setSelectedAppId] = useState<AppId>('plex')
+    const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
+    const [isModalOpen, setIsModalOpen] = useState(false)
     const { config } = useSetupStore()
+
+    const handleSelectApp = (id: AppId) => {
+        setSelectedAppId(id)
+        setIsModalOpen(true)
+    }
+
+    const selectedApp = appCards.find(app => app.id === selectedAppId)
 
     return (
         <main className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
             {/* Navigation Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+            <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
@@ -78,37 +87,7 @@ export function DocsPage() {
                 </div>
             </section>
 
-            <AppsOverview onSelectApp={setSelectedAppId} />
-
-            <section className="pb-10">
-                {selectedAppId === 'plex' && <PlexGuide />}
-                {selectedAppId === 'mealie' && <MealieGuide />}
-                {selectedAppId === 'jellyfin' && <JellyfinGuide />}
-                {selectedAppId === 'emby' && <EmbyGuide />}
-                {selectedAppId === 'arr' && <ArrStackGuide />}
-                {selectedAppId === 'overseerr' && <OverseerrGuide />}
-                {selectedAppId === 'tautulli' && <TautulliGuide />}
-                {selectedAppId === 'audiobookshelf' && <AudiobookshelfGuide />}
-                {selectedAppId === 'photoprism' && <PhotoPrismGuide />}
-                
-                {/* New Guides */}
-                {selectedAppId === 'sonarr' && <SonarrGuide />}
-                {selectedAppId === 'radarr' && <RadarrGuide />}
-                {selectedAppId === 'prowlarr' && <ProwlarrGuide />}
-                {selectedAppId === 'bazarr' && <BazarrGuide />}
-                {selectedAppId === 'qbittorrent' && <QBittorrentGuide />}
-                {selectedAppId === 'gluetun' && <GluetunGuide />}
-                {selectedAppId === 'homepage' && <HomepageGuide />}
-                {selectedAppId === 'authelia' && <AutheliaGuide />}
-                {selectedAppId === 'portainer' && <PortainerGuide />}
-                {selectedAppId === 'tdarr' && <TdarrGuide />}
-                {selectedAppId === 'notifiarr' && <NotifiarrGuide />}
-                {selectedAppId === 'cloudflared' && <CloudflaredGuide />}
-                {selectedAppId === 'dozzle' && <DozzleGuide />}
-                {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
-                {selectedAppId === 'redis' && <RedisGuide />}
-                {selectedAppId === 'watchtower' && <WatchtowerGuide />}
-            </section>
+            <AppsOverview onSelectApp={handleSelectApp} />
 
             <footer className="py-12 border-t border-white/10 mt-10">
                 <div className="container mx-auto px-4 text-center">
@@ -125,9 +104,43 @@ export function DocsPage() {
                 </div>
             </footer>
 
+            {/* Guide Modal */}
+            <GuideModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={selectedApp ? `${selectedApp.name} Guide` : 'App Guide'}
+            >
+                {selectedAppId === 'plex' && <PlexGuide />}
+                {selectedAppId === 'mealie' && <MealieGuide />}
+                {selectedAppId === 'jellyfin' && <JellyfinGuide />}
+                {selectedAppId === 'emby' && <EmbyGuide />}
+                {selectedAppId === 'arr' && <ArrStackGuide />}
+                {selectedAppId === 'overseerr' && <OverseerrGuide />}
+                {selectedAppId === 'tautulli' && <TautulliGuide />}
+                {selectedAppId === 'audiobookshelf' && <AudiobookshelfGuide />}
+                {selectedAppId === 'photoprism' && <PhotoPrismGuide />}
+
+                {selectedAppId === 'sonarr' && <SonarrGuide />}
+                {selectedAppId === 'radarr' && <RadarrGuide />}
+                {selectedAppId === 'prowlarr' && <ProwlarrGuide />}
+                {selectedAppId === 'bazarr' && <BazarrGuide />}
+                {selectedAppId === 'qbittorrent' && <QBittorrentGuide />}
+                {selectedAppId === 'gluetun' && <GluetunGuide />}
+                {selectedAppId === 'homepage' && <HomepageGuide />}
+                {selectedAppId === 'authelia' && <AutheliaGuide />}
+                {selectedAppId === 'portainer' && <PortainerGuide />}
+                {selectedAppId === 'tdarr' && <TdarrGuide />}
+                {selectedAppId === 'notifiarr' && <NotifiarrGuide />}
+                {selectedAppId === 'cloudflared' && <CloudflaredGuide />}
+                {selectedAppId === 'dozzle' && <DozzleGuide />}
+                {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
+                {selectedAppId === 'redis' && <RedisGuide />}
+                {selectedAppId === 'watchtower' && <WatchtowerGuide />}
+            </GuideModal>
+
             {/* AI Assistant - Multi-Agent System */}
-            <AIAssistant 
-                currentApp={selectedAppId}
+            <AIAssistant
+                currentApp={selectedAppId || undefined}
                 openaiKey={config.openaiApiKey}
             />
         </main>
