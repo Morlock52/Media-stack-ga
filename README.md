@@ -34,6 +34,7 @@
 
 - [Why Ultimate Media Stack](#-why-ultimate-media-stack)
 - [Stack at a Glance](#-stack-at-a-glance)
+- [Documentation & Reports](#-documentation--reports-new)
 - [AI Assistants](#-ai-assistants-new)
 - [Screens & Storyboard](#-screens--storyboard)
 - [Feature Highlights](#-feature-highlights)
@@ -53,6 +54,21 @@
 - [FAQ](#-faq)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
+
+## 📚 Documentation & Reports (NEW!)
+
+We maintain rigorous documentation to ensure enterprise-grade reliability.
+
+| Document | Description |
+| --- | --- |
+| 📊 [**Executive Summary**](docs/EXECUTIVE_SUMMARY.md) | High-level project status, scores, and deployment verdict. |
+| ⚡ [**Quick Wins**](docs/QUICK_WINS.md) | Immediate security and performance fixes (Copy-Paste ready). |
+| 🧬 [**Stress Test Report**](docs/STRESS_TEST_REPORT.md) | Comprehensive methodology and criteria for system validation. |
+| 📘 [**Best Practices**](docs/BEST_PRACTICES_REPORT.md) | Compliance analysis against December 2025 standards. |
+| 🧪 [**Functional Results**](docs/FUNCTIONAL_TEST_RESULTS.md) | Verification of all stack components and AI features. |
+| 🧹 [**Tech Bloat Removal**](docs/TECH_BLOAT_REMOVAL.md) | Strategy for minimizing dependencies and bundle size. |
+
+> **Note:** Older planning documents have been moved to [`docs/archive/`](docs/archive/) to keep the root clean.
 
 ## 💡 Why Ultimate Media Stack?
 

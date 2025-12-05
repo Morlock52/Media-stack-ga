@@ -1,0 +1,334 @@
+
+> media-stack-control-server@1.0.0 dev
+> nodemon --exec tsx src/index.ts
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+[13:23:56.344] [32mINFO[39m (15267): [36mServer listening at http://127.0.0.1:3001[39m
+[13:23:56.344] [32mINFO[39m (15267): [36mServer listening at http://192.168.1.247:3001[39m
+[13:23:56.344] [32mINFO[39m (15267): [36mControl Server started[39m
+    [35mprojectRoot[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[13:24:01.186] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:02.839] [32mINFO[39m (15267): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[13:24:02.838] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-2"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60190
+    }
+[13:24:02.987] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1799.7154170013964
+[13:24:03.289] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-2"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 450.289374999702
+[13:24:03.493] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-3"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:05.059] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-3"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1564.8410829994828
+[13:24:05.563] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-4"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:07.371] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-4"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1808.1928749997169
+[13:24:07.876] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-5"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:11.662] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-5"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3785.637250000611
+[13:24:12.164] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-6"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:12.840] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-7"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60257
+    }
+[13:24:13.182] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-7"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 341.8013749998063
+[13:24:12.841] [32mINFO[39m (15267): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[13:24:14.718] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-6"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2553.540709000081
+[13:24:15.222] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-8"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:16.247] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-8"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1024.4055420011282
+[13:24:16.753] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-9"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:18.323] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-9"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1570.0127499997616
+[13:24:18.825] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-a"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:19.585] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-a"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 760.203749999404
+[13:24:20.091] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-b"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:22.137] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-b"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2045.2551669999957
+[13:24:22.642] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-c"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:22.839] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-d"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60323
+    }
+[13:24:23.103] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-d"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 264.7361249998212
+[13:24:22.839] [32mINFO[39m (15267): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[13:24:24.643] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-c"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2000.3858750015497
+[13:24:25.147] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-e"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:26.547] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-e"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1400.0403339993209
+[13:24:27.049] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-f"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:28.265] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-f"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1215.490291999653
+[13:24:28.768] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-g"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:29.986] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-g"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1217.4723749998957
+[13:24:30.490] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-h"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:32.461] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-h"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1971.50075000152
+[13:24:32.838] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-i"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/api/containers",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60379
+    }
+[13:24:32.964] [32mINFO[39m (15267): [36mincoming request[39m
+    [35mreqId[39m: "req-j"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/voice-agent",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 60177
+    }
+[13:24:33.179] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-i"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 341.0073340013623
+[13:24:32.838] [32mINFO[39m (15267): [36mexecuting shell command[39m
+    [35mcommand[39m: "docker"
+    [35margs[39m: [
+      "ps",
+      "-a",
+      "--format",
+      "\"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}\""
+    ]
+    [35mcwd[39m: "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server"
+[13:24:35.202] [32mINFO[39m (15267): [36mrequest completed[39m
+    [35mreqId[39m: "req-j"
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2238.394040999934

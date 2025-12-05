@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { dockerRoutes } from './routes/docker.js';
+import multipart from '@fastify/multipart';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
 export const buildApp = async () => {
@@ -18,6 +19,7 @@ export const buildApp = async () => {
     await app.register(cors, {
         origin: '*' // Configure appropriately for production
     });
+    await app.register(multipart);
     // Health Check
     app.get('/api/health', async (request, reply) => {
         return { status: 'online', version: '2.0.0', backend: 'fastify' };
