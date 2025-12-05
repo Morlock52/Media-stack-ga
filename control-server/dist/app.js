@@ -22,6 +22,19 @@ export const buildApp = async () => {
     app.get('/api/health', async (request, reply) => {
         return { status: 'online', version: '2.0.0', backend: 'fastify' };
     });
+    // Root Request (Friendly Message)
+    app.get('/', async (request, reply) => {
+        return {
+            service: 'Media Stack Control Server',
+            status: 'running',
+            version: '2.0.0',
+            endpoints: [
+                '/api/health',
+                '/api/containers',
+                '/api/agents'
+            ]
+        };
+    });
     // Register Routes
     await app.register(dockerRoutes);
     await app.register(aiRoutes);

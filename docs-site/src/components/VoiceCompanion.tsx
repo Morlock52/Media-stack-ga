@@ -52,7 +52,12 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
     // Try to find a good voice
     const voices = window.speechSynthesis.getVoices()
-    const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'))
+    const preferredVoice = voices.find(v =>
+      v.name.includes('Google US English') ||
+      v.name.includes('Samantha') ||
+      v.name.includes('Microsoft') ||
+      v.name.includes('Online (Natural)')
+    )
     if (preferredVoice) utterance.voice = preferredVoice
 
     utterance.onstart = () => setStatus('speaking')
@@ -141,20 +146,25 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       const errorMessages: Record<string, string> = {
         'not-allowed': 'Microphone access denied. Please allow microphone permissions or use text input.',
         'no-speech': 'No speech detected. Try speaking louder or closer to the microphone.',
-        'network': 'Speech service unavailable. Please check your connection or use the text input below.',
+        'network': 'Speech service unavailable. Switching to high-accuracy server-side transcription...',
         'audio-capture': 'No microphone found. Please connect a microphone or use text input.',
+        'service-not-allowed': 'Browser speech service blocked. Switching to server-side.',
+      }
+
+      console.warn('Speech recognition error:', event.error)
+
+      if (event.error === 'network' || event.error === 'service-not-allowed') {
+        setError('Browser speech failed. Switching to server-mode...')
+        // Fallback to MediaRecorder
+        stopRecognition({ maintainStatus: true })
+        startMediaRecorder()
+        return
       }
 
       const msg = errorMessages[event.error] || `Speech error: ${event.error}`
-      console.warn('Speech recognition error:', event.error)
-
-      // Don't override a previous network error if we are just re-initializing
-      setError(prev => prev === errorMessages['network'] ? prev : msg)
-
-      stopRecognition()
-
-      // Auto-recovery for transient network connectivity issues shouldn't loop infinitely
-      // Instead, we stop and let the user decide to retry or type.
+      setError(msg)
+      setStatus('idle')
+      stopRecognition({ maintainStatus: true })
     }
 
     recognition.onend = () => {
@@ -224,9 +234,6 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     }
   }, [addTranscriptLine, isOpen, templateMode, transcript.length, speak])
 
-  const stopRecording = () => {
-    stopRecognition()
-  }
 
   const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
     try {
@@ -298,6 +305,82 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     setManualInput('')
     setError(null)
     processTranscriptRef.current(text)
+  }
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+
+  const startMediaRecorder = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); // Chrome/Firefox standard
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+        if (audioBlob.size < 1000) {
+          setError('Recording too short.');
+          setStatus('idle');
+          return;
+        }
+
+        setStatus('thinking');
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'voice.webm');
+
+        try {
+          const res = await fetch(buildControlServerUrl('/api/audio-transcription'), {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!res.ok) throw new Error('Transcription failed');
+
+          const data = await res.json();
+          if (data.text) {
+            processTranscriptRef.current(data.text);
+          } else {
+            throw new Error('No text detected');
+          }
+        } catch (err) {
+          setError('Server-side transcription failed. Please type.');
+          setStatus('idle');
+        }
+
+        // Cleanup tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      isRecordingRef.current = true;
+      setStatus('listening');
+      setError('Microphone Active (Server Mode)');
+
+    } catch (err) {
+      console.error('MediaRecorder failed', err);
+      setError('Could not access microphone for server-mode.');
+      setStatus('idle');
+    }
+  }
+
+  const stopRecording = () => {
+    if (speechRecognitionRef.current && isRecordingRef.current) {
+      stopRecognition();
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      isRecordingRef.current = false;
+    }
   }
 
   return (

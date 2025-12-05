@@ -354,22 +354,33 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
 
         try {
-            const prompt = `You are a voice onboarding companion for the Media Stack Maker wizard.
-Gather requirements from beginners and respond in short, friendly sentences.
-After each reply, emit a JSON object with the current structured plan.
-Plan schema:
+            const prompt = `You are a friendly, casual voice companion for the Media Stack Maker wizard.
+Think of yourself as a tech-savvy friend helping a newbie set up their home server.
+
+INSTRUCTIONS:
+1. **Persona**: Speak naturally, use contractions ("can't", "let's"), and be enthusiastic.
+2. **Brevity**: Keep spoken responses SHORT (under 2 sentences).
+3. **No Reading**: NEVER read the JSON or technical lists aloud.
+4. **Goal**: Gather: [Services (apps), Hosting (hardware), Domain].
+5. **The Plan**: Once you have the 3 key requirements, say "I've got a plan ready!" and THEN append the JSON block.
+
+OUTPUT COMPOSITION:
+[Conversational Response to User]
+[JSON Plan Object]
+
+Plan JSON Schema:
 {
-  "services": ["plex", "arr", "torrent", "vpn", "notify", "stats", "overseerr", "tautulli", "mealie", "audiobookshelf", "photoprism"],
-  "hosting": "nas | vps | raspberry pi | desktop | cloud",
+  "services": ["plex", "arr", "torrent", ...],
+  "hosting": "nas" | "vps" | "pi" | "desktop" | "cloud",
   "storagePaths": { "media": "/path", "downloads": "/path" },
   "domain": "example.com",
   "notes": "string"
 }
-Always include the JSON block as the last paragraph.
-Current conversation history:
+
+Current context:
 ${history.map((entry: any) => `${entry.role.toUpperCase()}: ${entry.content}`).join('\n')}
 
-Latest user utterance: ${transcript}`;
+User: ${transcript}`;
 
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -395,17 +406,21 @@ Latest user utterance: ${transcript}`;
             const data: any = await response.json();
             const content = data.choices?.[0]?.message?.content || 'Let me know more about your setup goals!';
 
-            const planMatch = content.match(/\{[\s\S]*\}$/);
+            // Robust regex to find the JSON block (last occurrence of {...})
+            const planMatch = content.match(/(\{[\s\S]*\})/);
             let plan = null;
             if (planMatch) {
                 try {
+                    // If matched, it might still have markdown inside if the regex captured too much, but usually greedy match from first { to last } works for single block
+                    // Safety: try parsing the match
                     plan = JSON.parse(planMatch[0]);
                 } catch (err) {
-                    fastify.log.warn({ err }, 'Failed to parse plan JSON from voice agent');
+                    fastify.log.warn({ err, match: planMatch[0] }, 'Failed to parse plan JSON from voice agent');
                 }
             }
 
-            const cleanedResponse = planMatch ? content.replace(planMatch[0], '').trim() : content;
+            // Remove the plan from the spoken response
+            const cleanedResponse = planMatch ? content.replace(planMatch[0], '').replace(/```json/g, '').replace(/```/g, '').trim() : content;
 
             return {
                 agentResponse: cleanedResponse,
@@ -445,4 +460,51 @@ Latest user utterance: ${transcript}`;
 
         return { suggestions: suggestions.slice(0, 5) };
     });
+
+    // Audio Transcription (Whisper API Fallback)
+    fastify.post('/api/audio-transcription', async (request, reply) => {
+        const data = await request.file();
+        if (!data) {
+            return reply.status(400).send({ error: 'No audio file uploaded' });
+        }
+
+        const effectiveApiKey = getOpenAIKey();
+        if (!effectiveApiKey) {
+            return reply.status(400).send({ error: 'OpenAI key not configured' });
+        }
+
+        const tempPath = path.join(PROJECT_ROOT, `temp_audio_${Date.now()}.webm`);
+
+        try {
+            await fs.promises.writeFile(tempPath, await data.toBuffer());
+
+            const formData = new FormData();
+            const fileBlob = new Blob([await fs.promises.readFile(tempPath)], { type: 'audio/webm' });
+            formData.append('file', fileBlob, 'audio.webm');
+            formData.append('model', 'whisper-1');
+
+            const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${effectiveApiKey}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`OpenAI Whisper error (${response.status}): ${errText}`);
+            }
+
+            const result: any = await response.json();
+            await fs.promises.unlink(tempPath).catch(() => { });
+            return { text: result.text };
+
+        } catch (error: any) {
+            await fs.promises.unlink(tempPath).catch(() => { });
+            fastify.log.error({ err: error }, 'Whisper transcription failed');
+            return reply.status(500).send({ error: error.message });
+        }
+    });
+
 }

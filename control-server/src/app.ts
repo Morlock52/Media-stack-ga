@@ -4,6 +4,7 @@ import { PROJECT_ROOT } from './utils/env.js';
 import pino from 'pino';
 
 import { dockerRoutes } from './routes/docker.js';
+import multipart from '@fastify/multipart';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
 
@@ -23,6 +24,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(cors, {
         origin: '*' // Configure appropriately for production
     });
+
+    await app.register(multipart);
 
     // Health Check
     app.get('/api/health', async (request, reply) => {

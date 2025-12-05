@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Assuming we are in /src/utils, project root is ../..
-export const PROJECT_ROOT = path.resolve(__dirname, '../../');
+// Allow overriding via environment variable (useful for Docker)
+export const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../');
 export const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.env');
 export const readEnvFile = () => {
     if (!fs.existsSync(ENV_FILE_PATH))
