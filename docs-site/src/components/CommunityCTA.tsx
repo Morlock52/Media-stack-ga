@@ -14,7 +14,7 @@ const channels = [
         title: 'GitHub Discussions',
         description: 'Roadmap voting, release previews, and automation snippets straight from contributors.',
         cta: 'Star the repo',
-        href: 'https://github.com',
+        href: 'https://github.com/Morlock52/Media-stack-ga',
     },
     {
         icon: MessageCircle,

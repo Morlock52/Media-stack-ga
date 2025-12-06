@@ -70,7 +70,7 @@ export function PlanChecklist() {
                             Every improvement on this page mirrors a requirement inside <code>plan.md</code>. Use this checklist as you ship your stack or coach your team.
                         </p>
                         <a
-                            href="https://github.com"
+                            href="https://github.com/Morlock52/Media-stack-ga"
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-semibold hover:scale-105 transition-transform"
                         >
                             Open plan.md

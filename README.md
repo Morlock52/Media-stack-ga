@@ -22,8 +22,8 @@
   <a href="#-table-of-contents">Explore the README</a> •
   <a href="#-quick-start-paths">Quick Start</a> •
   <a href="docs-site">Docs Site</a> •
-  <a href="https://github.com/yourusername/media-stack/issues">Issues</a> •
-  <a href="https://github.com/yourusername/media-stack/discussions">Discussions</a>
+  <a href="https://github.com/Morlock52/Media-stack-ga/issues">Issues</a> •
+  <a href="https://github.com/Morlock52/Media-stack-ga/discussions">Discussions</a>
 </p>
 
 ---
@@ -433,8 +433,8 @@ choco install docker-desktop
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/yourusername/media-stack.git
-cd media-stack
+git clone https://github.com/Morlock52/Media-stack-ga.git
+cd Media-stack-ga
 ```
 
 ### 2️⃣ Prime Your Environment
