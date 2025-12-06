@@ -11,9 +11,13 @@ import {
     Monitor, Moon, Music, Package, Phone,
     Play, Printer, Save, Search, Settings,
     Share, ShoppingBag, Smartphone, Speaker,
-    Star, Sun, Tablet, Tag, ThumbsUp, Tool,
+    Star, Sun, Tablet, Tag, ThumbsUp,
     Trash, Truck, Type, Unlock, Upload, User,
-    Video, Voicemail, Watch, Wrench
+    Video, Voicemail, Watch, Wrench,
+    // Added for App Registry compatibility
+    MonitorPlay, BookOpen, UtensilsCrossed, Clapperboard,
+    Inbox, ListVideo, Container, RefreshCw, Bug,
+    ShieldCheck, FileVideo, Languages, Utensils
 } from 'lucide-react'
 
 const iconMap: Record<string, any> = {
@@ -29,9 +33,13 @@ const iconMap: Record<string, any> = {
     Monitor, Moon, Music, Package, Phone,
     Play, Printer, Save, Search, Settings,
     Share, ShoppingBag, Smartphone, Speaker,
-    Star, Sun, Tablet, Tag, ThumbsUp, Tool,
+    Star, Sun, Tablet, Tag, ThumbsUp,
     Trash, Truck, Type, Unlock, Upload, User,
-    Video, Voicemail, Watch, Wrench
+    Video, Voicemail, Watch, Wrench,
+    // Added
+    MonitorPlay, BookOpen, UtensilsCrossed, Clapperboard,
+    Inbox, ListVideo, Container, RefreshCw, Bug,
+    ShieldCheck, FileVideo, Languages, Utensils
 }
 
 export const getIconByName = (name: string | undefined) => {
