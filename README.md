@@ -379,6 +379,14 @@ Prefer [Bun](https://bun.sh)? You can use it to speed up the setup and run the d
 
 ## 📋 Requirements & Prep
 
+> **Note:** We are actively implementing the [**Media-Stack GA Improvement Plan**](IMPROVEMENT_PLAN_GA.md) to ensure compliance with late 2025 best practices.
+
+### Prerequisites (Short List)
+*   **Knowledge**: Basic CLI familiarity (ssh, cd, ls).
+*   **Software**: Docker Engine 24+ & Docker Compose v2.
+*   **Hardware**: x86_64 CPU (common) or ARM64 (Raspberry Pi 4/5). 4GB+ RAM recommended.
+*   **Network**: Ability to open ports 80/443 (if not using Cloudflare Tunnel) or just outbound access (if using Tunnel).
+
 | Requirement | Description | Free Option |
 |------------|-------------|-------------|
 | 🐳 **Docker** | Container runtime | ✅ Yes |

@@ -1,5 +1,5 @@
 import {
-    Activity, Bell, Book, BookOpen, Clapperboard, Cpu, Download, Film, HardDrive, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, Search, Shield, Tv, UtensilsCrossed
+    Activity, Bell, Book, BookOpen, Brain, Clapperboard, Cpu, Download, Film, HardDrive, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, Search, Shield, Tv, UtensilsCrossed
 } from 'lucide-react'
 
 export interface ServiceOption {
@@ -219,5 +219,14 @@ export const services: ServiceOption[] = [
         logo: '/icons/filebrowser.svg', 
         profile: 'filebrowser', 
         category: 'Utility' 
+    },
+    { 
+        id: 'recommendarr', 
+        name: 'Recommendarr', 
+        description: 'AI-based media recommendations', 
+        icon: Brain, 
+        logo: '/icons/recommendarr.png', 
+        profile: 'ai', 
+        category: 'AI' 
     },
 ]

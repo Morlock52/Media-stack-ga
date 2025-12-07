@@ -66,6 +66,11 @@ services:
       - "homepage.icon=cloudflare.png"
       - "homepage.href=https://one.dash.cloudflare.com"
       - "homepage.description=Remote Access Tunnel"
+    healthcheck:
+      test: ["CMD", "pgrep", "cloudflared"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ===========================================
   # WATCHTOWER - Auto-update Containers
@@ -468,6 +473,37 @@ services:
       - "homepage.description=VPN Tunnel"
       - "homepage.widget.type=gluetun"
       - "homepage.widget.url=http://gluetun:8000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # RECOMMENDARR - AI Recommendations
+  # ===========================================
+  recommendarr:
+    image: ghcr.io/fingerthief/recommendarr:latest
+    container_name: recommendarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+      - PORT=3000
+    volumes:
+      - ${CONFIG_ROOT}/recommendarr:/config
+    networks:
+      - mediastack
+    profiles: ["ai"]
+    labels:
+      - "homepage.group=AI"
+      - "homepage.name=Recommendarr"
+      - "homepage.icon=recommendarr.png"
+      - "homepage.href=http://recommendarr.${DOMAIN}"
+      - "homepage.description=AI Recommendations"
+    expose:
+      - 3000
 
   # ===========================================
   # OVERSEERR - Request Management

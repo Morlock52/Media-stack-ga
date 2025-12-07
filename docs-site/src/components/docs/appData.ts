@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-    Activity, Bell, Book, BookOpen, Bug, Clapperboard, Cloud, Container, Cpu, Database, Download, Film, HardDrive, Home, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, RefreshCw, Search, Shield, Terminal, Tv, UtensilsCrossed
+    Activity, Bell, Book, BookOpen, Brain, Bug, Clapperboard, Cloud, Container, Cpu, Database, Download, Film, HardDrive, Home, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, RefreshCw, Search, Shield, Terminal, Tv, UtensilsCrossed
 } from 'lucide-react'
 
 export type AppId =
@@ -36,6 +36,7 @@ export type AppId =
     | 'watchtower'
     | 'flaresolverr'
     | 'cloudflared'
+    | 'recommendarr'
 
 export interface AppInfo {
     id: AppId
@@ -401,5 +402,16 @@ export const appCards: AppInfo[] = [
         difficulty: 'Medium',
         time: '20-30 min',
         guideComponent: 'CloudflaredGuide'
+    },
+    {
+        id: 'recommendarr',
+        name: 'Recommendarr',
+        category: 'AI',
+        description: 'AI-based media recommendations',
+        icon: Brain,
+        logo: '/icons/recommendarr.png',
+        difficulty: 'Medium',
+        time: '15-30 min',
+        guideComponent: ''
     },
 ]

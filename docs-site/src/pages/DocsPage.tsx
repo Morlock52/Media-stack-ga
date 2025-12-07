@@ -39,7 +39,8 @@ export function DocsPage() {
         }
     }
 
-    const customApp = customApps.find(app => app.id === selectedAppId)
+    const customAppRaw = customApps.find(app => app.id === selectedAppId)
+    const customApp = customAppRaw ? { ...customAppRaw, isCustom: true } : undefined
     const selectedApp = appCards.find(app => app.id === selectedAppId) || customApp
 
     return (

@@ -139,11 +139,11 @@ docker system df
 ## 🔄 Backup Commands
 
 ```bash
-# Backup configs
-tar -czf mediastack-configs-$(date +%Y%m%d).tar.gz /srv/mediastack/config
+# Automated backup (Configuration + Secrets)
+./scripts/backup.sh
 
-# Backup Authelia
-tar -czf authelia-backup-$(date +%Y%m%d).tar.gz config/authelia
+# The script creates backups in ./backups/ by default
+# It excludes heavy cache directories to keep archives small
 ```
 
 ## 🔐 Generate Secure Passwords

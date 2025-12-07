@@ -357,16 +357,5 @@
         "difficulty": "Medium",
         "setupTime": "20-30 min",
         "guideComponent": "CloudflaredGuide"
-    },
-    {
-        "id": "recommendarr",
-        "name": "Recommendarr",
-        "description": "AI-based media recommendations",
-        "category": "AI",
-        "icon": "Brain",
-        "logo": "/icons/recommendarr.png",
-        "profile": "ai",
-        "difficulty": "Medium",
-        "setupTime": "15-30 min"
     }
 ]

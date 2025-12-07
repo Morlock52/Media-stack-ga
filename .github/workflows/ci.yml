@@ -1,0 +1,30 @@
+name: Media-Stack CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  validate-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: |
+          # Create a dummy .env if it doesn't exist to prevent variable warnings
+          if [ ! -f .env ]; then
+            cp .env.example .env || touch .env
+          fi
+          
+          # Validate the main compose file
+          docker compose -f docker-compose.yml config > /dev/null
+          
+          # Validate the wizard compose file
+          docker compose -f docker-compose.wizard.yml config > /dev/null
+          
+          echo "✅ Docker Compose files are valid."
