@@ -1,0 +1,6 @@
+demo-lifecycle
+Demo Lifecycle App
+Shown to user
+System
+Activity
+demo-profile

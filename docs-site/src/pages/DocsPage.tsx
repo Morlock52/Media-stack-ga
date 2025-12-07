@@ -1,32 +1,5 @@
 import { useState, useEffect } from 'react'
-import {
-    AppsOverview,
-    PlexGuide,
-    MealieGuide,
-    JellyfinGuide,
-    EmbyGuide,
-    ArrStackGuide,
-    OverseerrGuide,
-    TautulliGuide,
-    AudiobookshelfGuide,
-    PhotoPrismGuide,
-    SonarrGuide,
-    RadarrGuide,
-    ProwlarrGuide,
-    BazarrGuide,
-    QBittorrentGuide,
-    GluetunGuide,
-    HomepageGuide,
-    AutheliaGuide,
-    PortainerGuide,
-    TdarrGuide,
-    NotifiarrGuide,
-    CloudflaredGuide,
-    DozzleGuide,
-    FlareSolverrGuide,
-    RedisGuide,
-    WatchtowerGuide,
-} from '../components/docs'
+import * as GuideComponents from '../components/docs'
 import { Link } from 'react-router-dom'
 import { appCards } from '../components/docs/appData'
 import { CustomAppGuide } from '../components/docs/CustomAppGuide'
@@ -121,7 +94,7 @@ export function DocsPage() {
                 </div>
             </section>
 
-            <AppsOverview onSelectApp={handleSelectApp} customApps={customApps} />
+            <GuideComponents.AppsOverview onSelectApp={handleSelectApp} customApps={customApps} />
 
             <footer className="py-12 border-t border-white/10 mt-10">
                 <div className="container mx-auto px-4 text-center">
@@ -144,35 +117,28 @@ export function DocsPage() {
                 onClose={() => setIsModalOpen(false)}
                 title={selectedApp ? `${selectedApp.name} Guide` : 'App Guide'}
             >
-                {selectedAppId === 'plex' && <PlexGuide />}
-                {selectedAppId === 'mealie' && <MealieGuide />}
-                {selectedAppId === 'jellyfin' && <JellyfinGuide />}
-                {selectedAppId === 'emby' && <EmbyGuide />}
-                {selectedAppId === 'arr' && <ArrStackGuide />}
-                {selectedAppId === 'overseerr' && <OverseerrGuide />}
-                {selectedAppId === 'tautulli' && <TautulliGuide />}
-                {selectedAppId === 'audiobookshelf' && <AudiobookshelfGuide />}
-                {selectedAppId === 'photoprism' && <PhotoPrismGuide />}
+                {(() => {
+                    if (!selectedApp) return null;
 
-                {selectedAppId === 'sonarr' && <SonarrGuide />}
-                {selectedAppId === 'radarr' && <RadarrGuide />}
-                {selectedAppId === 'prowlarr' && <ProwlarrGuide />}
-                {selectedAppId === 'bazarr' && <BazarrGuide />}
-                {selectedAppId === 'qbittorrent' && <QBittorrentGuide />}
-                {selectedAppId === 'gluetun' && <GluetunGuide />}
-                {selectedAppId === 'homepage' && <HomepageGuide />}
-                {selectedAppId === 'authelia' && <AutheliaGuide />}
-                {selectedAppId === 'portainer' && <PortainerGuide />}
-                {selectedAppId === 'tdarr' && <TdarrGuide />}
-                {selectedAppId === 'notifiarr' && <NotifiarrGuide />}
-                {selectedAppId === 'cloudflared' && <CloudflaredGuide />}
-                {selectedAppId === 'dozzle' && <DozzleGuide />}
-                {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
-                {selectedAppId === 'redis' && <RedisGuide />}
-                {selectedAppId === 'watchtower' && <WatchtowerGuide />}
+                    // 1. Check for Custom App (from API/Wizard)
+                    if ((selectedApp as any).isCustom) {
+                        return <CustomAppGuide app={selectedApp} onDelete={handleDeleteApp} />
+                    }
 
-                {/* Custom Apps */}
-                {customApp && <CustomAppGuide app={customApp} onDelete={handleDeleteApp} />}
+                    // 2. Check for Registry App (Dynamic Import)
+                    const ComponentName = selectedApp.guideComponent
+                    if (ComponentName && ComponentName in GuideComponents) {
+                        const GuideComponent = (GuideComponents as any)[ComponentName]
+                        return <GuideComponent />
+                    }
+
+                    // 3. Fallback
+                    return (
+                        <div className="p-4 text-center text-gray-400">
+                            Documentation for {selectedApp.name} is coming soon.
+                        </div>
+                    )
+                })()}
             </GuideModal>
 
             {/* AI Assistant - Multi-Agent System */}

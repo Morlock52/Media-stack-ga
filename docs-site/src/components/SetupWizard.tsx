@@ -718,11 +718,11 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                     )}
 
                     {/* Navigation Buttons */}
-                    {currentStep > 0 && (
+                    {currentStep >= 0 && (
                         <div className="flex justify-between items-center mt-8">
                             <button
                                 onClick={prevStep}
-                                className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all btn-lift bg-white/10 text-white hover:bg-white/20"
+                                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all btn-lift ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'bg-white/10 text-white hover:bg-white/20'}`}
                             >
                                 <ArrowLeft className="w-4 h-4" />
                                 Back

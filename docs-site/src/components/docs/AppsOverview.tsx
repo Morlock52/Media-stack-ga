@@ -42,7 +42,7 @@ export function AppsOverview({ onSelectApp, customApps = [] }: AppsOverviewProps
 
                         return (
                             <button
-                                key={app.id}
+                                key={`${app.id}-${app.category}`}
                                 onClick={() => onSelectApp?.(app.id as AppId)}
                                 className="group text-left rounded-2xl border border-white/10 bg-slate-900/70 hover:border-purple-500/40 hover:bg-slate-900/90 transition-all p-4 flex flex-col h-full"
                             >
