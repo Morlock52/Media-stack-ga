@@ -99,6 +99,7 @@ We maintain rigorous documentation to ensure enterprise-grade reliability.
 - 🚢 **Deploy Captain** — helps mirror this stack onto remote servers or friends' homelabs with templated commands.
 - 🎤 **Voice Companion** — voice-guided instructions for screen-free setup sessions.
 - 🟢 **Status Chips & Health Monitor** — real-time chips show what the AI is doing; the health monitor auto-detects broken containers and suggests remediation.
+- 🧩 **Agentic App Management** — Manage your stack via chat: "Add Paperless-ngx", "Update Plex guide", "Remove Tautulli". The AI handles the registry and documentation for you.
 
 ## 🎛️ Configuration & Management
 

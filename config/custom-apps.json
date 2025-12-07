@@ -1,24 +1,9 @@
 [
   {
-    "repo": "https://github.com/mealie-recipes/mealie",
-    "homepage": "name: Mealie\ncategory: My Apps\nicon: https://github.com/mealie-recipes/mealie/raw/main/docs/docs/assets/img/home_screenshot.png\nurl: https://demo.mealie.io",
-    "docs": "# About\n\nMealie is a self-hosted recipe manager, meal planner, and shopping list application with a REST API backend and a reactive frontend built in Vue. It offers features such as recipe imports, meal planning, and shopping list management. Mealie also provides an API for interactions from third-party applications.\n\n![Mealie Screenshot](https://github.com/mealie-recipes/mealie/raw/main/docs/docs/assets/img/home_screenshot.png)\n\n## Prerequisites\n\n- Docker\n- Docker Compose\n\n## Installation\n\n1. Clone the repository:\n   ```bash\n   git clone https://github.com/mealie-recipes/mealie.git\n   cd mealie\n   ```\n\n2. Set up the environment variables:\n   - `DB_ENGINE`: The database engine to use (e.g., `sqlite`, `postgres`)\n   - `DB_HOST`: The database host\n   - `DB_PORT`: The database port\n   - `DB_USER`: The database user\n   - `DB_PASSWORD`: The database password\n   - `DB_NAME`: The database name\n\n3. Start the application using Docker Compose:\n   ```bash\n   docker-compose up -d\n   ```\n\n## Configuration\n\n- Access the application at `http://localhost:9925`.\n- Configure the application settings via the UI or by editing the `config.yml` file located in `${DATA_ROOT}/mealie/config`.\n\n## Tips\n\n- Join the [Discord community](https://discord.gg/QuStdQGSGK) for support and discussions.\n- Explore the [documentation](https://docs.mealie.io/) for detailed setup and usage instructions.",
-    "compose": "  mealie:\n    image: hkotel/mealie:latest\n    container_name: mealie\n    ports:\n      - \"9925:80\"\n    environment:\n      - DB_ENGINE=sqlite\n      - DB_HOST=db\n      - DB_PORT=5432\n      - DB_USER=user\n      - DB_PASSWORD=pass\n      - DB_NAME=mealie\n    volumes:\n      - ${DATA_ROOT}/mealie/data:/app/data\n      - ${DATA_ROOT}/mealie/config:/app/config\n    restart: unless-stopped",
-    "iconName": "BookOpen",
-    "id": "mealie",
-    "name": "mealie",
-    "updatedAt": "2025-12-06T06:01:42.389Z",
-    "createdAt": "2025-12-06T06:01:42.389Z"
-  },
-  {
-    "repo": "https://github.com/nextcloud/vm",
-    "homepage": "nextcloud:\n  type: application\n  name: Nextcloud VM\n  category: My Apps\n  url: https://github.com/nextcloud/vm\n  api: nextcloud\n",
-    "docs": "## About\nThe Nextcloud VM (Virtual Machine) is designed to simplify the installation and management of a Nextcloud Server. It provides a guided installation process to set up a secure Nextcloud instance with optional curated apps.\n\n![Nextcloud](https://github.com/nextcloud/nextcloud.com/blob/master/assets/img/features/VMwelcome.png)\n![AdminNeo](https://i.imgur.com/tiF4chg.png)\n![Webmin](https://i.imgur.com/hLkmA1D.png)\n![TLS rating](https://i.imgur.com/nBEvczb.png)\n\n## Prerequisites\n- Ubuntu Server 24.04 LTS (minimal) 64-bit\n- Linux Kernel 6.8\n- Apache 2.4\n- PostgreSQL 16\n- PHP-FPM 8.3\n- Redis Memcache\n- PHP-igbinary\n- PHP-smbclient\n- Nextcloud Server Latest\n\n## Installation\n1. Download the Nextcloud VM from the [official website](https://download.nextcloud.com/vm/Official-Nextcloud-VM.zip).\n2. Follow the interactive guidance provided by the VM scripts to complete the installation.\n\n## Configuration\n- Use the Nextcloud app store to extend core features with additional apps.\n- For beta or RC versions, use the command `sudo bash /var/scripts/update.sh beta` or specify a version like `sudo bash /var/scripts/update.sh 23.0.1rc2`.\n\n## Tips\n- Ensure regular backups of your Nextcloud data.\n- Use the curated apps for enhanced functionality and management.\n- Monitor system updates and apply them to keep your instance secure.\n",
-    "compose": "  nextcloud:\n    image: nextcloud\n    ports:\n      - \"8080:80\"\n    volumes:\n      - ${DATA_ROOT}/nextcloud:/var/www/html\n    environment:\n      - POSTGRES_DB=nextcloud\n      - POSTGRES_USER=nextcloud\n      - POSTGRES_PASSWORD=example\n      - NEXTCLOUD_ADMIN_USER=admin\n      - NEXTCLOUD_ADMIN_PASSWORD=admin\n",
-    "iconName": "Cloud",
-    "id": "vm",
-    "name": "vm",
-    "updatedAt": "2025-12-06T06:05:25.786Z",
-    "createdAt": "2025-12-06T06:05:25.786Z"
+    "id": "paperless-ngx",
+    "name": "Paperless-ngx",
+    "repo": "https://github.com/paperless-ngx/paperless-ngx",
+    "description": "Document management system",
+    "createdAt": "2025-12-07T16:48:51.649Z"
   }
 ]

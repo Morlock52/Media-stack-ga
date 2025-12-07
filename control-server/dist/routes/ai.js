@@ -130,6 +130,61 @@ export async function aiRoutes(fastify) {
                                 required: ["filePath", "type"]
                             }
                         }
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "manage_app",
+                            description: "Manage custom applications in the registry. Use this to add, remove, or list apps. Useful for 'Add X app' requests.",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    action: {
+                                        type: "string",
+                                        enum: ["add", "remove", "list", "update"],
+                                        description: "The action to perform"
+                                    },
+                                    app: {
+                                        type: "object",
+                                        properties: {
+                                            id: { type: "string", description: "Unique ID (lowercase, no spaces)" },
+                                            name: { type: "string" },
+                                            repo: { type: "string", description: "Git URL" },
+                                            description: { type: "string" },
+                                            homepage: { type: "string" }
+                                        },
+                                        description: "App details. ID is required for remove/update. Name is required for add."
+                                    }
+                                },
+                                required: ["action"]
+                            }
+                        }
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "manage_doc",
+                            description: "Manage documentation files in the docs-site. Use this to create or update knowledge.",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    action: {
+                                        type: "string",
+                                        enum: ["read", "write", "delete"],
+                                        description: "The action to perform"
+                                    },
+                                    path: {
+                                        type: "string",
+                                        description: "Relative path to the doc file (e.g. 'docs/guides/new-app.md')"
+                                    },
+                                    content: {
+                                        type: "string",
+                                        description: "The Markdown content to write (only for write action)"
+                                    }
+                                },
+                                required: ["action", "path"]
+                            }
+                        }
                     }
                 ];
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -285,6 +340,152 @@ export async function aiRoutes(fastify) {
                         }
                         catch (err) {
                             answer = `Validation failed for ${args.filePath}: ${err.message}`;
+                        }
+                    }
+                    else if (toolCall.function.name === 'manage_app') {
+                        const args = JSON.parse(toolCall.function.arguments);
+                        const action = args.action;
+                        const appData = args.app || {};
+                        const registryPath = path.join(PROJECT_ROOT, 'config', 'custom-apps.json');
+                        fastify.log.info({ action, app: appData.name }, 'AI managing app');
+                        toolUsed = { command: `${action} app ${appData.name || ''}`, type: 'registry' };
+                        try {
+                            if (!fs.existsSync(registryPath)) {
+                                fs.mkdirSync(path.dirname(registryPath), { recursive: true });
+                                fs.writeFileSync(registryPath, '[]');
+                            }
+                            let registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8') || '[]');
+                            let result = '';
+                            if (action === 'list') {
+                                result = JSON.stringify(registry, null, 2);
+                            }
+                            else if (action === 'add' || action === 'update') {
+                                if (!appData.name && !appData.id)
+                                    throw new Error('App Name or ID required');
+                                // Generate ID if missing (from repo name or app name)
+                                // Clean name to be ID-safe
+                                const safeId = (appData.id || appData.name || 'unknown').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                                const existingIdx = registry.findIndex((a) => a.id === safeId);
+                                const newApp = {
+                                    id: safeId,
+                                    name: appData.name || safeId,
+                                    repo: appData.repo || '',
+                                    description: appData.description || '',
+                                    homepage: appData.homepage || '',
+                                    createdAt: new Date().toISOString(),
+                                    ...appData
+                                };
+                                if (existingIdx >= 0) {
+                                    registry[existingIdx] = { ...registry[existingIdx], ...newApp, updatedAt: new Date().toISOString() };
+                                    result = `Updated app: ${newApp.name} (ID: ${safeId})`;
+                                }
+                                else {
+                                    registry.push(newApp);
+                                    result = `Added app: ${newApp.name} (ID: ${safeId})`;
+                                }
+                                fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+                            }
+                            else if (action === 'remove') {
+                                if (!appData.id)
+                                    throw new Error('App ID required for removal');
+                                const initialLen = registry.length;
+                                registry = registry.filter((a) => a.id !== appData.id);
+                                if (registry.length === initialLen) {
+                                    result = `App not found: ${appData.id}`;
+                                }
+                                else {
+                                    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+                                    result = `Removed app: ${appData.id}`;
+                                }
+                            }
+                            messages.push(messageData);
+                            messages.push({
+                                role: "tool",
+                                tool_call_id: toolCall.id,
+                                content: result
+                            });
+                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${effectiveApiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: 'gpt-4o',
+                                    messages,
+                                    max_tokens: 1000,
+                                    temperature: 0.7
+                                })
+                            });
+                            const secondData = await secondResponse.json();
+                            answer = secondData.choices?.[0]?.message?.content;
+                        }
+                        catch (err) {
+                            answer = `Failed to manage app: ${err.message}`;
+                        }
+                    }
+                    else if (toolCall.function.name === 'manage_doc') {
+                        const args = JSON.parse(toolCall.function.arguments);
+                        const action = args.action;
+                        const docPath = args.path;
+                        // Ensure we target doc-site/docs or similar
+                        const fullPath = path.join(PROJECT_ROOT, 'docs-site', docPath);
+                        fastify.log.info({ action, path: docPath }, 'AI managing doc');
+                        toolUsed = { command: `${action} doc ${docPath}`, type: 'docs' };
+                        try {
+                            // Basic security check to prevent traversing outside docs-site
+                            if (!fullPath.startsWith(path.join(PROJECT_ROOT, 'docs-site'))) {
+                                throw new Error('Access denied: Cannot access files outside docs-site');
+                            }
+                            let result = '';
+                            if (action === 'read') {
+                                if (fs.existsSync(fullPath)) {
+                                    result = fs.readFileSync(fullPath, 'utf-8');
+                                }
+                                else {
+                                    result = 'File not found';
+                                }
+                            }
+                            else if (action === 'write') {
+                                if (!args.content)
+                                    throw new Error('Content required for write');
+                                fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+                                fs.writeFileSync(fullPath, args.content);
+                                result = `Successfully wrote to ${docPath}`;
+                            }
+                            else if (action === 'delete') {
+                                if (fs.existsSync(fullPath)) {
+                                    fs.unlinkSync(fullPath);
+                                    result = `Deleted ${docPath}`;
+                                }
+                                else {
+                                    result = 'File not found';
+                                }
+                            }
+                            messages.push(messageData);
+                            messages.push({
+                                role: "tool",
+                                tool_call_id: toolCall.id,
+                                content: result
+                            });
+                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${effectiveApiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: 'gpt-4o',
+                                    messages,
+                                    max_tokens: 1000,
+                                    temperature: 0.7
+                                })
+                            });
+                            const secondData = await secondResponse.json();
+                            answer = secondData.choices?.[0]?.message?.content;
+                        }
+                        catch (err) {
+                            answer = `Failed to manage doc: ${err.message}`;
                         }
                     }
                 }

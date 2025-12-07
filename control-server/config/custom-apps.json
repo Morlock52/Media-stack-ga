@@ -8,5 +8,14 @@
     "name": "mealie",
     "updatedAt": "2025-12-05T21:05:17.219Z",
     "createdAt": "2025-12-05T21:05:17.219Z"
+  },
+  {
+    "id": "uptime-kuma",
+    "name": "Uptime Kuma",
+    "repo": "https://github.com/louislam/uptime-kuma",
+    "description": "A self-hosted monitoring tool like 'Uptime Robot'",
+    "homepage": "https://github.com/louislam/uptime-kuma",
+    "createdAt": "2025-12-07T17:00:52.799Z",
+    "updatedAt": "2025-12-07T17:00:52.799Z"
   }
 ]
