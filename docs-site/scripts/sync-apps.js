@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Paths
 const REGISTRY_PATH = path.join(__dirname, '../src/data/apps-registry.json');
+const CUSTOM_APPS_PATH = path.join(__dirname, '../../config/custom-apps.json');
 const SERVICES_PATH = path.join(__dirname, '../src/data/services.ts');
 const APPDATA_PATH = path.join(__dirname, '../src/components/docs/appData.ts');
 const DOCS_INDEX_PATH = path.join(__dirname, '../src/components/docs/index.ts');
@@ -20,6 +21,27 @@ try {
 } catch (e) {
     console.error('Failed to read apps-registry.json', e);
     process.exit(1);
+}
+
+// Read Custom Apps
+if (fs.existsSync(CUSTOM_APPS_PATH)) {
+    try {
+        const customApps = JSON.parse(fs.readFileSync(CUSTOM_APPS_PATH, 'utf-8'));
+        // Normalize custom apps
+        const normalizedCustomApps = customApps.map(app => ({
+            ...app,
+            category: app.category || 'Utility',
+            icon: app.icon || 'Box', // Default icon
+            description: app.description || 'Custom Application',
+            difficulty: app.difficulty || 'Medium',
+            setupTime: app.setupTime || '15 min',
+            guideComponent: app.guideComponent // might be missing, handled later
+        }));
+        registry = [...registry, ...normalizedCustomApps];
+        console.log(`Loaded ${normalizedCustomApps.length} custom apps`);
+    } catch (e) {
+        console.warn('Failed to read custom-apps.json', e);
+    }
 }
 
 // Helper to get unique icons

@@ -13,9 +13,17 @@
     "id": "uptime-kuma",
     "name": "Uptime Kuma",
     "repo": "https://github.com/louislam/uptime-kuma",
-    "description": "A self-hosted monitoring tool like 'Uptime Robot'",
+    "description": "A self-hosted monitoring tool",
     "homepage": "https://github.com/louislam/uptime-kuma",
-    "createdAt": "2025-12-07T17:00:52.799Z",
-    "updatedAt": "2025-12-07T17:00:52.799Z"
+    "createdAt": "2025-12-07T18:29:49.069Z",
+    "updatedAt": "2025-12-07T18:29:49.069Z"
+  },
+  {
+    "id": "radarr",
+    "name": "Radarr",
+    "repo": "https://github.com/Radarr/Radarr",
+    "description": "A fork of Sonarr to work with movies à la Couchpotato.",
+    "homepage": "https://radarr.video/",
+    "createdAt": "2025-12-07T18:40:43.200Z"
   }
 ]

@@ -376,25 +376,53 @@ export async function aiRoutes(fastify: FastifyInstance) {
                         const appData = args.app || {};
                         const registryPath = path.join(PROJECT_ROOT, 'config', 'custom-apps.json');
 
-                        fastify.log.info({ action, app: appData.name }, 'AI managing app');
+                        fastify.log.info({ action, app: appData }, 'AI executing manage_app');
                         toolUsed = { command: `${action} app ${appData.name || ''}`, type: 'registry' };
 
                         try {
+                            // Validate Repo URL if provided (common failure point)
+                            if (appData.repo) {
+                                try {
+                                    const parsedUrl = new URL(appData.repo);
+                                    if (!['github.com', 'gitlab.com'].includes(parsedUrl.hostname)) {
+                                        fastify.log.warn({ repo: appData.repo }, 'Non-standard git host detected');
+                                    }
+                                } catch (e) {
+                                    throw new Error(`Invalid Repository URL provided: ${appData.repo}`);
+                                }
+                            }
+
+                            // Auto-extract name from repo if missing
+                            if (!appData.name && appData.repo) {
+                                const parts = appData.repo.split('/');
+                                const lastPart = parts[parts.length - 1];
+                                if (lastPart) {
+                                    appData.name = lastPart.replace(/\.git$/, '');
+                                    fastify.log.info({ inferredName: appData.name }, 'Inferred app name from repo URL');
+                                }
+                            }
+
                             if (!fs.existsSync(registryPath)) {
                                 fs.mkdirSync(path.dirname(registryPath), { recursive: true });
                                 fs.writeFileSync(registryPath, '[]');
                             }
-                            let registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8') || '[]');
+
+                            let registry;
+                            try {
+                                registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8') || '[]');
+                            } catch (parseError) {
+                                fastify.log.error({ err: parseError }, 'Corrupt registry file found, resetting');
+                                registry = []; // Fallback to empty if corrupt
+                            }
 
                             let result = '';
 
                             if (action === 'list') {
                                 result = JSON.stringify(registry, null, 2);
                             } else if (action === 'add' || action === 'update') {
-                                if (!appData.name && !appData.id) throw new Error('App Name or ID required');
+                                if (!appData.name && !appData.id) throw new Error('App Name or ID required (could not extract from repo)');
 
                                 // Generate ID if missing (from repo name or app name)
-                                // Clean name to be ID-safe
                                 const safeId = (appData.id || appData.name || 'unknown').toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
                                 const existingIdx = registry.findIndex((a: any) => a.id === safeId);
@@ -403,7 +431,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                                     id: safeId,
                                     name: appData.name || safeId,
                                     repo: appData.repo || '',
-                                    description: appData.description || '',
+                                    description: appData.description || 'Custom application added via AI',
                                     homepage: appData.homepage || '',
                                     createdAt: new Date().toISOString(),
                                     ...appData
@@ -412,20 +440,30 @@ export async function aiRoutes(fastify: FastifyInstance) {
                                 if (existingIdx >= 0) {
                                     registry[existingIdx] = { ...registry[existingIdx], ...newApp, updatedAt: new Date().toISOString() };
                                     result = `Updated app: ${newApp.name} (ID: ${safeId})`;
+                                    fastify.log.info({ id: safeId }, 'Custom app updated in registry');
                                 } else {
                                     registry.push(newApp);
                                     result = `Added app: ${newApp.name} (ID: ${safeId})`;
+                                    fastify.log.info({ id: safeId }, 'Custom app added to registry');
                                 }
-                                fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+
+                                try {
+                                    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+                                } catch (writeError) {
+                                    fastify.log.error({ err: writeError }, 'Failed to write to custom-apps.json');
+                                    throw new Error('System error: Could not save to app registry. Check server logs.');
+                                }
                             } else if (action === 'remove') {
                                 if (!appData.id) throw new Error('App ID required for removal');
                                 const initialLen = registry.length;
                                 registry = registry.filter((a: any) => a.id !== appData.id);
                                 if (registry.length === initialLen) {
                                     result = `App not found: ${appData.id}`;
+                                    fastify.log.warn({ id: appData.id }, 'Attempted to remove non-existent app');
                                 } else {
                                     fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
                                     result = `Removed app: ${appData.id}`;
+                                    fastify.log.info({ id: appData.id }, 'Custom app removed from registry');
                                 }
                             }
 
@@ -452,6 +490,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                             const secondData: any = await secondResponse.json();
                             answer = secondData.choices?.[0]?.message?.content;
                         } catch (err: any) {
+                            fastify.log.error({ err, action, app: appData }, 'manage_app tool failed');
                             answer = `Failed to manage app: ${err.message}`;
                         }
                     } else if (toolCall.function.name === 'manage_doc') {

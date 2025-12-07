@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-    Activity, Bell, Book, BookOpen, Brain, Bug, Clapperboard, Cloud, Container, Cpu, Database, Download, Film, HardDrive, Home, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, RefreshCw, Search, Shield, Terminal, Tv, UtensilsCrossed
+    Activity, Bell, Book, BookOpen, Box, Brain, Bug, Clapperboard, Cloud, Container, Cpu, Database, Download, Film, HardDrive, Home, Image, Inbox, Layers, ListVideo, MonitorPlay, Music, Radio, RefreshCw, Search, Shield, Terminal, Tv, UtensilsCrossed
 } from 'lucide-react'
 
 export type AppId =
@@ -37,6 +37,7 @@ export type AppId =
     | 'flaresolverr'
     | 'cloudflared'
     | 'recommendarr'
+    | 'paperless-ngx'
 
 export interface AppInfo {
     id: AppId
@@ -412,6 +413,17 @@ export const appCards: AppInfo[] = [
         logo: '/icons/recommendarr.png',
         difficulty: 'Medium',
         time: '15-30 min',
+        guideComponent: ''
+    },
+    {
+        id: 'paperless-ngx',
+        name: 'Paperless-ngx',
+        category: 'Utility',
+        description: 'Document management system',
+        icon: Box,
+        logo: '',
+        difficulty: 'Medium',
+        time: '15 min',
         guideComponent: ''
     },
 ]
