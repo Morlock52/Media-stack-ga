@@ -374,7 +374,8 @@ export async function aiRoutes(fastify: FastifyInstance) {
                         const args = JSON.parse(toolCall.function.arguments);
                         const action = args.action;
                         const appData = args.app || {};
-                        const registryPath = path.join(PROJECT_ROOT, 'config', 'custom-apps.json');
+                        // Fix: config is in repo root, not control-server root
+                        const registryPath = path.join(PROJECT_ROOT, '../config', 'custom-apps.json');
 
                         fastify.log.info({ action, app: appData }, 'AI executing manage_app');
                         toolUsed = { command: `${action} app ${appData.name || ''}`, type: 'registry' };

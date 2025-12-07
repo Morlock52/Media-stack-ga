@@ -37,7 +37,7 @@ export type AppId =
     | 'flaresolverr'
     | 'cloudflared'
     | 'recommendarr'
-    | 'paperless-ngx'
+    | 'uptime-kuma'
 
 export interface AppInfo {
     id: AppId
@@ -416,10 +416,10 @@ export const appCards: AppInfo[] = [
         guideComponent: ''
     },
     {
-        id: 'paperless-ngx',
-        name: 'Paperless-ngx',
+        id: 'uptime-kuma',
+        name: 'uptime-kuma',
         category: 'Utility',
-        description: 'Document management system',
+        description: 'Updated by AI Test',
         icon: Box,
         logo: '',
         difficulty: 'Medium',

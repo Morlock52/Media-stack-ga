@@ -1,9 +1,11 @@
 [
   {
-    "id": "paperless-ngx",
-    "name": "Paperless-ngx",
-    "repo": "https://github.com/paperless-ngx/paperless-ngx",
-    "description": "Document management system",
-    "createdAt": "2025-12-07T16:48:51.649Z"
+    "id": "uptime-kuma",
+    "name": "uptime-kuma",
+    "repo": "",
+    "description": "Updated by AI Test",
+    "homepage": "",
+    "createdAt": "2025-12-07T18:57:13.402Z",
+    "updatedAt": "2025-12-07T18:57:13.402Z"
   }
 ]
