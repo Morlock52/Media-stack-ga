@@ -16,7 +16,7 @@ export function DocsPage() {
 
     // Load custom apps from registry
     useEffect(() => {
-        fetch('http://localhost:3001/api/registry/apps')
+        fetch('http://127.0.0.1:3001/api/registry/apps')
             .then(res => res.json())
             .then(data => Array.isArray(data) ? setCustomApps(data) : setCustomApps([]))
             .catch(console.error)
@@ -30,7 +30,7 @@ export function DocsPage() {
     const handleDeleteApp = async (id: string) => {
         if (!confirm('Are you sure you want to remove this app and its documentation?')) return
         try {
-            await fetch(`http://localhost:3001/api/registry/apps/${id}`, { method: 'DELETE' })
+            await fetch(`http://127.0.0.1:3001/api/registry/apps/${id}`, { method: 'DELETE' })
             setCustomApps(prev => prev.filter(app => app.id !== id))
             setIsModalOpen(false)
             setSelectedAppId(null)

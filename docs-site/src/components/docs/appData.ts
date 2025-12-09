@@ -38,6 +38,7 @@ export type AppId =
     | 'cloudflared'
     | 'recommendarr'
     | 'uptime-kuma'
+    | 'dockge'
 
 export interface AppInfo {
     id: AppId
@@ -149,7 +150,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/lidarr.svg',
         difficulty: 'Medium',
         time: '15-30 min',
-        guideComponent: ''
+        guideComponent: 'LidarrGuide'
     },
     {
         id: 'readarr',
@@ -160,7 +161,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/readarr.svg',
         difficulty: 'Medium',
         time: '15-30 min',
-        guideComponent: ''
+        guideComponent: 'ReadarrGuide'
     },
     {
         id: 'tdarr',
@@ -193,7 +194,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/sabnzbd.svg',
         difficulty: 'Easy',
         time: '5-10 min',
-        guideComponent: ''
+        guideComponent: 'SABnzbdGuide'
     },
     {
         id: 'gluetun',
@@ -226,7 +227,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/ombi.svg',
         difficulty: 'Easy',
         time: '10-20 min',
-        guideComponent: ''
+        guideComponent: 'OmbiGuide'
     },
     {
         id: 'petio',
@@ -237,7 +238,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/petio.png',
         difficulty: 'Medium',
         time: '15-20 min',
-        guideComponent: ''
+        guideComponent: 'PetioGuide'
     },
     {
         id: 'tautulli',
@@ -281,7 +282,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/kavita.svg',
         difficulty: 'Easy',
         time: '10-15 min',
-        guideComponent: ''
+        guideComponent: 'KavitaGuide'
     },
     {
         id: 'audiobookshelf',
@@ -314,7 +315,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/filebrowser.svg',
         difficulty: 'Easy',
         time: '5 min',
-        guideComponent: ''
+        guideComponent: 'FileBrowserGuide'
     },
     {
         id: 'homepage',
@@ -413,7 +414,7 @@ export const appCards: AppInfo[] = [
         logo: '/icons/recommendarr.png',
         difficulty: 'Medium',
         time: '15-30 min',
-        guideComponent: ''
+        guideComponent: 'RecommendarrGuide'
     },
     {
         id: 'uptime-kuma',
@@ -424,6 +425,17 @@ export const appCards: AppInfo[] = [
         logo: '',
         difficulty: 'Medium',
         time: '15 min',
-        guideComponent: ''
+        guideComponent: 'uptimekumaGuide'
+    },
+    {
+        id: 'dockge',
+        name: 'Dockge',
+        category: 'Utility',
+        description: 'Dockge is a lightweight and efficient Docker management tool.',
+        icon: Box,
+        logo: '',
+        difficulty: 'Medium',
+        time: '15 min',
+        guideComponent: 'DockgeGuide'
     },
 ]

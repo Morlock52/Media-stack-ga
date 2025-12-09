@@ -98,6 +98,12 @@ ${wizardApps.map(app => `    {
     console.log('Generated services.ts');
 };
 
+// Helper to determine guide component name (shared logic)
+const getGuideComponentName = (app) => {
+    if (app.guideComponent) return app.guideComponent;
+    return app.name.replace(/[^a-zA-Z0-9]/g, '') + 'Guide';
+};
+
 // 2. Generate appData.ts
 const generateAppData = () => {
     const icons = getUniqueIcons(registry);
@@ -132,7 +138,7 @@ ${registry.map(app => `    {
         logo: '${app.logo || ''}',
         difficulty: '${app.difficulty || 'Medium'}',
         time: '${app.setupTime || '15-30 min'}',
-        guideComponent: '${app.guideComponent || ''}'
+        guideComponent: '${getGuideComponentName(app)}'
     },`).join('\n')}
 ]
 `;
