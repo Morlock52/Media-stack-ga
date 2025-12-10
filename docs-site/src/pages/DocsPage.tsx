@@ -1,47 +1,49 @@
-import { useState, useEffect } from 'react'
-import * as GuideComponents from '../components/docs'
-import { Link } from 'react-router-dom'
-import { appCards } from '../components/docs/appData'
-import { CustomAppGuide } from '../components/docs/CustomAppGuide'
+import { useState } from 'react'
+import {
+    AppsOverview,
+    PlexGuide,
+    MealieGuide,
+    JellyfinGuide,
+    EmbyGuide,
+    ArrStackGuide,
+    OverseerrGuide,
+    TautulliGuide,
+    AudiobookshelfGuide,
+    PhotoPrismGuide,
+    SonarrGuide,
+    RadarrGuide,
+    ProwlarrGuide,
+    BazarrGuide,
+    QBittorrentGuide,
+    GluetunGuide,
+    HomepageGuide,
+    AutheliaGuide,
+    PortainerGuide,
+    TdarrGuide,
+    NotifiarrGuide,
+    CloudflaredGuide,
+    DozzleGuide,
+    FlareSolverrGuide,
+    RedisGuide,
+    WatchtowerGuide,
+} from '../components/docs'
+import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
-import { BookOpen, ArrowLeft, Sparkles, Plus } from 'lucide-react'
+import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 
 export function DocsPage() {
-    const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
+    const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [customApps, setCustomApps] = useState<any[]>([])
     const { config } = useSetupStore()
 
-    // Load custom apps from registry
-    useEffect(() => {
-        fetch('http://127.0.0.1:3001/api/registry/apps')
-            .then(res => res.json())
-            .then(data => Array.isArray(data) ? setCustomApps(data) : setCustomApps([]))
-            .catch(console.error)
-    }, [])
-
-    const handleSelectApp = (id: string) => {
+    const handleSelectApp = (id: AppId) => {
         setSelectedAppId(id)
         setIsModalOpen(true)
     }
 
-    const handleDeleteApp = async (id: string) => {
-        if (!confirm('Are you sure you want to remove this app and its documentation?')) return
-        try {
-            await fetch(`http://127.0.0.1:3001/api/registry/apps/${id}`, { method: 'DELETE' })
-            setCustomApps(prev => prev.filter(app => app.id !== id))
-            setIsModalOpen(false)
-            setSelectedAppId(null)
-        } catch (error) {
-            console.error('Failed to delete app:', error)
-        }
-    }
-
-    const customAppRaw = customApps.find(app => app.id === selectedAppId)
-    const customApp = customAppRaw ? { ...customAppRaw, isCustom: true } : undefined
-    const selectedApp = appCards.find(app => app.id === selectedAppId) || customApp
+    const selectedApp = appCards.find(app => app.id === selectedAppId)
 
     return (
         <main className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
@@ -57,23 +59,13 @@ export function DocsPage() {
                             <p className="text-xs text-gray-500">App guides & tutorials</p>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <Link
-                            to="/add-service"
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20 border border-blue-500/20 rounded-lg text-sm text-blue-300 hover:text-white transition-all group"
-                        >
-                            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                            <span className="hidden sm:inline">Add Service</span>
-                        </Link>
-                        <a
-                            href="/"
-                            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Back to Wizard
-                        </a>
-                    </div>
+                    <a
+                        href="/"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Wizard
+                    </a>
                 </div>
             </header>
 
@@ -95,7 +87,7 @@ export function DocsPage() {
                 </div>
             </section>
 
-            <GuideComponents.AppsOverview onSelectApp={handleSelectApp} customApps={customApps} />
+            <AppsOverview onSelectApp={handleSelectApp} />
 
             <footer className="py-12 border-t border-white/10 mt-10">
                 <div className="container mx-auto px-4 text-center">
@@ -118,28 +110,32 @@ export function DocsPage() {
                 onClose={() => setIsModalOpen(false)}
                 title={selectedApp ? `${selectedApp.name} Guide` : 'App Guide'}
             >
-                {(() => {
-                    if (!selectedApp) return null;
+                {selectedAppId === 'plex' && <PlexGuide />}
+                {selectedAppId === 'mealie' && <MealieGuide />}
+                {selectedAppId === 'jellyfin' && <JellyfinGuide />}
+                {selectedAppId === 'emby' && <EmbyGuide />}
+                {selectedAppId === 'arr' && <ArrStackGuide />}
+                {selectedAppId === 'overseerr' && <OverseerrGuide />}
+                {selectedAppId === 'tautulli' && <TautulliGuide />}
+                {selectedAppId === 'audiobookshelf' && <AudiobookshelfGuide />}
+                {selectedAppId === 'photoprism' && <PhotoPrismGuide />}
 
-                    // 1. Check for Custom App (from API/Wizard)
-                    if ((selectedApp as any).isCustom) {
-                        return <CustomAppGuide app={selectedApp} onDelete={handleDeleteApp} />
-                    }
-
-                    // 2. Check for Registry App (Dynamic Import)
-                    const ComponentName = selectedApp.guideComponent
-                    if (ComponentName && ComponentName in GuideComponents) {
-                        const GuideComponent = (GuideComponents as any)[ComponentName]
-                        return <GuideComponent />
-                    }
-
-                    // 3. Fallback
-                    return (
-                        <div className="p-4 text-center text-gray-400">
-                            Documentation for {selectedApp.name} is coming soon.
-                        </div>
-                    )
-                })()}
+                {selectedAppId === 'sonarr' && <SonarrGuide />}
+                {selectedAppId === 'radarr' && <RadarrGuide />}
+                {selectedAppId === 'prowlarr' && <ProwlarrGuide />}
+                {selectedAppId === 'bazarr' && <BazarrGuide />}
+                {selectedAppId === 'qbittorrent' && <QBittorrentGuide />}
+                {selectedAppId === 'gluetun' && <GluetunGuide />}
+                {selectedAppId === 'homepage' && <HomepageGuide />}
+                {selectedAppId === 'authelia' && <AutheliaGuide />}
+                {selectedAppId === 'portainer' && <PortainerGuide />}
+                {selectedAppId === 'tdarr' && <TdarrGuide />}
+                {selectedAppId === 'notifiarr' && <NotifiarrGuide />}
+                {selectedAppId === 'cloudflared' && <CloudflaredGuide />}
+                {selectedAppId === 'dozzle' && <DozzleGuide />}
+                {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
+                {selectedAppId === 'redis' && <RedisGuide />}
+                {selectedAppId === 'watchtower' && <WatchtowerGuide />}
             </GuideModal>
 
             {/* AI Assistant - Multi-Agent System */}

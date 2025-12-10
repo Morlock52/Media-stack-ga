@@ -137,7 +137,7 @@ else
     # Expert Selection
     gum style --foreground 212 "🛠️  Expert Mode: Select Components"
     
-    SELECTIONS=$(gum choose --no-limit --header "Select Services (Space to select, Enter to confirm)" "Plex" "Jellyfin" "*Arr Stack (Sonarr/Radarr/etc)" "Torrent Client (qBit + VPN)" "Transcoding (Tdarr)" "Stats (Tautulli)" "Notifications (Notifiarr)" "AI Recommendations (Recommendarr)")
+    SELECTIONS=$(gum choose --no-limit --header "Select Services (Space to select, Enter to confirm)" "Plex" "Jellyfin" "*Arr Stack (Sonarr/Radarr/etc)" "Torrent Client (qBit + VPN)" "Transcoding (Tdarr)" "Stats (Tautulli)" "Notifications (Notifiarr)")
     
     if [[ "$SELECTIONS" == *"Plex"* ]]; then PROFILES="${PROFILES},plex"; fi
     if [[ "$SELECTIONS" == *"Jellyfin"* ]]; then PROFILES="${PROFILES},jellyfin"; fi
@@ -146,7 +146,6 @@ else
     if [[ "$SELECTIONS" == *"Transcoding"* ]]; then PROFILES="${PROFILES},transcode"; fi
     if [[ "$SELECTIONS" == *"Stats"* ]]; then PROFILES="${PROFILES},stats"; fi
     if [[ "$SELECTIONS" == *"Notifications"* ]]; then PROFILES="${PROFILES},notify"; fi
-    if [[ "$SELECTIONS" == *"AI"* ]]; then PROFILES="${PROFILES},ai"; fi
     
     # Remove leading comma
     PROFILES=$(echo $PROFILES | sed 's/^,//')
@@ -290,7 +289,7 @@ sudo mkdir -p "${TRANSCODE_PATH}"
 sudo mkdir -p "${DOWNLOADS_PATH}"
 
 # Create config subdirectories
-for service in authelia cloudflared plex jellyfin sonarr radarr prowlarr qbittorrent overseerr bazarr tautulli portainer watchtower dozzle homepage flaresolverr tdarr-server tdarr-node gluetun notifiarr mealie kavita audiobookshelf photoprism recommendarr; do
+for service in authelia cloudflared plex jellyfin sonarr radarr prowlarr qbittorrent overseerr bazarr tautulli portainer watchtower dozzle homepage flaresolverr tdarr-server tdarr-node gluetun notifiarr mealie kavita audiobookshelf photoprism; do
     if [ "$service" != "cloudflared" ]; then # cloudflared dir is already created
         sudo mkdir -p "${DATA_ROOT}/config/${service}"
     fi

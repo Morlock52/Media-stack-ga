@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/VPN-Protected-00C853?style=for-the-badge&logo=wireguard&logoColor=white" alt="VPN"/>
   <img src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Cross-Platform"/>
+  <img src="https://img.shields.io/badge/Verified-Dec%206%2C%202025-success?style=for-the-badge" alt="Last Verified"/>
 </p>
 <!-- markdownlint-enable MD013 -->
 
@@ -22,8 +23,8 @@
   <a href="#-table-of-contents">Explore the README</a> •
   <a href="#-quick-start-paths">Quick Start</a> •
   <a href="docs-site">Docs Site</a> •
-  <a href="https://github.com/Morlock52/Media-stack-ga/issues">Issues</a> •
-  <a href="https://github.com/Morlock52/Media-stack-ga/discussions">Discussions</a>
+  <a href="https://github.com/yourusername/media-stack/issues">Issues</a> •
+  <a href="https://github.com/yourusername/media-stack/discussions">Discussions</a>
 </p>
 
 ---
@@ -34,7 +35,6 @@
 
 - [Why Ultimate Media Stack](#-why-ultimate-media-stack)
 - [Stack at a Glance](#-stack-at-a-glance)
-- [Documentation & Reports](#-documentation--reports-new)
 - [AI Assistants](#-ai-assistants-new)
 - [Screens & Storyboard](#-screens--storyboard)
 - [Feature Highlights](#-feature-highlights)
@@ -54,21 +54,6 @@
 - [FAQ](#-faq)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
-
-## 📚 Documentation & Reports (NEW!)
-
-We maintain rigorous documentation to ensure enterprise-grade reliability.
-
-| Document | Description |
-| --- | --- |
-| 📊 [**Executive Summary**](docs/EXECUTIVE_SUMMARY.md) | High-level project status, scores, and deployment verdict. |
-| ⚡ [**Quick Wins**](docs/QUICK_WINS.md) | Immediate security and performance fixes (Copy-Paste ready). |
-| 🧬 [**Stress Test Report**](docs/STRESS_TEST_REPORT.md) | Comprehensive methodology and criteria for system validation. |
-| 📘 [**Best Practices**](docs/BEST_PRACTICES_REPORT.md) | Compliance analysis against December 2025 standards. |
-| 🧪 [**Functional Results**](docs/FUNCTIONAL_TEST_RESULTS.md) | Verification of all stack components and AI features. |
-| 🧹 [**Tech Bloat Removal**](docs/TECH_BLOAT_REMOVAL.md) | Strategy for minimizing dependencies and bundle size. |
-
-> **Note:** Older planning documents have been moved to [`docs/archive/`](docs/archive/) to keep the root clean.
 
 ## 💡 Why Ultimate Media Stack?
 
@@ -99,22 +84,6 @@ We maintain rigorous documentation to ensure enterprise-grade reliability.
 - 🚢 **Deploy Captain** — helps mirror this stack onto remote servers or friends' homelabs with templated commands.
 - 🎤 **Voice Companion** — voice-guided instructions for screen-free setup sessions.
 - 🟢 **Status Chips & Health Monitor** — real-time chips show what the AI is doing; the health monitor auto-detects broken containers and suggests remediation.
-- 🧩 **Agentic App Management** — Manage your stack via chat: "Add Paperless-ngx", "Update Plex guide", "Remove Tautulli". The AI handles the registry and documentation for you. [**See Training Guide**](docs/TRAINING_AGENTIC_MANAGEMENT.md).
-
-## 🎛️ Configuration & Management
-
-### 📥 Save & Load Profiles
-Never lose a configuration again. The wizard includes a robust **Profile Manager** that lets you:
-- **Save** your current stack selection, domain, and storage settings as a named profile (e.g., "Home Server", "Test Lab").
-- **Load** any saved profile to instantly restore your wizard state.
-- **Export** your configuration to a JSON file for backup or sharing.
-- **Import** configurations from other users or backups.
-
-### ➕ Add/Remove Services
-The **Stack Selection** step allows for granular control over your media empire:
-- **Add Services**: Toggle on any of the supported 20+ applications (Plex, Jellyfin, Sonarr, Radarr, etc.) from the catalog.
-- **Remove Services**: Disable any default service you don't need with a single click.
-- **Smart Dependencies**: The wizard automatically handles dependencies (e.g., selecting Sonarr adds Prowlarr recommendations).
 
 ## 📸 Screens & Storyboard
 
@@ -380,14 +349,6 @@ Prefer [Bun](https://bun.sh)? You can use it to speed up the setup and run the d
 
 ## 📋 Requirements & Prep
 
-> **Note:** We are actively implementing the [**Media-Stack GA Improvement Plan**](IMPROVEMENT_PLAN_GA.md) to ensure compliance with late 2025 best practices.
-
-### Prerequisites (Short List)
-*   **Knowledge**: Basic CLI familiarity (ssh, cd, ls).
-*   **Software**: Docker Engine 24+ & Docker Compose v2.
-*   **Hardware**: x86_64 CPU (common) or ARM64 (Raspberry Pi 4/5). 4GB+ RAM recommended.
-*   **Network**: Ability to open ports 80/443 (if not using Cloudflare Tunnel) or just outbound access (if using Tunnel).
-
 | Requirement | Description | Free Option |
 |------------|-------------|-------------|
 | 🐳 **Docker** | Container runtime | ✅ Yes |
@@ -442,8 +403,8 @@ choco install docker-desktop
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/Morlock52/Media-stack-ga.git
-cd Media-stack-ga
+git clone https://github.com/yourusername/media-stack.git
+cd media-stack
 ```
 
 ### 2️⃣ Prime Your Environment

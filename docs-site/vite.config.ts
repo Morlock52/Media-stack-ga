@@ -2,19 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-import { visualizer } from 'rollup-plugin-visualizer';
-
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [
-    react(),
-    visualizer({
-      open: false, // Don't open automatically in CI/CD
-      gzipSize: true,
-      brotliSize: true,
-    })
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -28,8 +19,7 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           ui: ['framer-motion', 'lucide-react', 'clsx'],
-          // Markdown chunk replaced. Shiki is handled dynamically.
-          markdown: ['marked', 'dompurify'],
+          markdown: ['react-markdown', 'react-syntax-highlighter'],
           forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
           state: ['zustand'],
         },
@@ -40,12 +30,5 @@ export default defineConfig({
     fs: {
       allow: [path.resolve(__dirname, "..")],
     },
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:3001',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
   },
 })

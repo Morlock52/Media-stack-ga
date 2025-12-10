@@ -1,4 +1,5 @@
 # Quick Reference Guide
+> **Last Updated:** December 6, 2025
 
 ## 🚀 Quick Commands
 
@@ -139,11 +140,11 @@ docker system df
 ## 🔄 Backup Commands
 
 ```bash
-# Automated backup (Configuration + Secrets)
-./scripts/backup.sh
+# Backup configs
+tar -czf mediastack-configs-$(date +%Y%m%d).tar.gz /srv/mediastack/config
 
-# The script creates backups in ./backups/ by default
-# It excludes heavy cache directories to keep archives small
+# Backup Authelia
+tar -czf authelia-backup-$(date +%Y%m%d).tar.gz config/authelia
 ```
 
 ## 🔐 Generate Secure Passwords

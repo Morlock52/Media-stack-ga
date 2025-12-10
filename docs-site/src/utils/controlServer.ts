@@ -1,13 +1,19 @@
 import { Container, Agent, AiChatRequest, AiChatResponse } from '../types/api';
 
+const getWindowOrigin = () =>
+    typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : ''
+
 const envUrl =
     typeof import.meta !== 'undefined' && import.meta.env?.VITE_CONTROL_SERVER_URL
         ? String(import.meta.env.VITE_CONTROL_SERVER_URL).trim().replace(/\/$/, '')
         : ''
 
+const isLocalHost = () => {
+    if (typeof window === 'undefined') return false
+    return ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
+}
 
-
-const inferredLocal = 'http://127.0.0.1:3001' // Direct connection to local backend
+const inferredLocal = isLocalHost() ? 'http://localhost:3001' : ''
 
 const explicitBase = envUrl || inferredLocal
 
@@ -15,11 +21,11 @@ export const controlServerBaseUrl = explicitBase
 
 export const buildControlServerUrl = (path: string) => {
     const normalized = path.startsWith('/') ? path : `/${path}`
-    // If explicit base is set (e.g. production URL), use it. Otherwise relative.
-    if (controlServerBaseUrl) {
-        return `${controlServerBaseUrl}${normalized}`
-    }
-    return normalized
+    const origin = controlServerBaseUrl || getWindowOrigin()
+    if (!origin) return normalized
+
+    const sameOrigin = origin === getWindowOrigin()
+    return sameOrigin ? normalized : `${origin}${normalized}`
 }
 
 // API Client

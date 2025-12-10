@@ -22,9 +22,10 @@ COPY . .
 # Build (compile TS to JS)
 RUN npm run build
 
-# Expose port 8080 for Google Cloud Run
-ENV PORT=8080
-EXPOSE 8080
+# Expose port
+EXPOSE 3001
 
-# Start using the built JS files
+# Start using the built JS files for better performance than ts-node/tsx in prod
+# Assuming command in package.json for start is "node dist/index.js" or similar
+# If "start" is "tsx src/index.ts", we should change CMD to run the compiled code.
 CMD ["node", "dist/index.js"]

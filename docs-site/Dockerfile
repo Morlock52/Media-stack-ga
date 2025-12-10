@@ -21,7 +21,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Add a healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget -q --spider http://localhost/ || exit 1
+    CMD view_file /usr/share/nginx/html/index.html || exit 1
 
 EXPOSE 80
 

@@ -130,61 +130,6 @@ export async function aiRoutes(fastify) {
                                 required: ["filePath", "type"]
                             }
                         }
-                    },
-                    {
-                        type: "function",
-                        function: {
-                            name: "manage_app",
-                            description: "Manage custom applications in the registry. Use this to add, remove, or list apps. Useful for 'Add X app' requests.",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    action: {
-                                        type: "string",
-                                        enum: ["add", "remove", "list", "update"],
-                                        description: "The action to perform"
-                                    },
-                                    app: {
-                                        type: "object",
-                                        properties: {
-                                            id: { type: "string", description: "Unique ID (lowercase, no spaces)" },
-                                            name: { type: "string" },
-                                            repo: { type: "string", description: "Git URL" },
-                                            description: { type: "string" },
-                                            homepage: { type: "string" }
-                                        },
-                                        description: "App details. ID is required for remove/update. Name is required for add."
-                                    }
-                                },
-                                required: ["action"]
-                            }
-                        }
-                    },
-                    {
-                        type: "function",
-                        function: {
-                            name: "manage_doc",
-                            description: "Manage documentation files in the docs-site. Use this to create or update knowledge.",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    action: {
-                                        type: "string",
-                                        enum: ["read", "write", "delete"],
-                                        description: "The action to perform"
-                                    },
-                                    path: {
-                                        type: "string",
-                                        description: "Relative path to the doc file (e.g. 'docs/guides/new-app.md')"
-                                    },
-                                    content: {
-                                        type: "string",
-                                        description: "The Markdown content to write (only for write action)"
-                                    }
-                                },
-                                required: ["action", "path"]
-                            }
-                        }
                     }
                 ];
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -342,191 +287,6 @@ export async function aiRoutes(fastify) {
                             answer = `Validation failed for ${args.filePath}: ${err.message}`;
                         }
                     }
-                    else if (toolCall.function.name === 'manage_app') {
-                        const args = JSON.parse(toolCall.function.arguments);
-                        const action = args.action;
-                        const appData = args.app || {};
-                        // Fix: config is in repo root, not control-server root
-                        const registryPath = path.join(PROJECT_ROOT, '../config', 'custom-apps.json');
-                        fastify.log.info({ action, app: appData }, 'AI executing manage_app');
-                        toolUsed = { command: `${action} app ${appData.name || ''}`, type: 'registry' };
-                        try {
-                            // Validate Repo URL if provided (common failure point)
-                            if (appData.repo) {
-                                try {
-                                    const parsedUrl = new URL(appData.repo);
-                                    if (!['github.com', 'gitlab.com'].includes(parsedUrl.hostname)) {
-                                        fastify.log.warn({ repo: appData.repo }, 'Non-standard git host detected');
-                                    }
-                                }
-                                catch (e) {
-                                    throw new Error(`Invalid Repository URL provided: ${appData.repo}`);
-                                }
-                            }
-                            // Auto-extract name from repo if missing
-                            if (!appData.name && appData.repo) {
-                                const parts = appData.repo.split('/');
-                                const lastPart = parts[parts.length - 1];
-                                if (lastPart) {
-                                    appData.name = lastPart.replace(/\.git$/, '');
-                                    fastify.log.info({ inferredName: appData.name }, 'Inferred app name from repo URL');
-                                }
-                            }
-                            if (!fs.existsSync(registryPath)) {
-                                fs.mkdirSync(path.dirname(registryPath), { recursive: true });
-                                fs.writeFileSync(registryPath, '[]');
-                            }
-                            let registry;
-                            try {
-                                registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8') || '[]');
-                            }
-                            catch (parseError) {
-                                fastify.log.error({ err: parseError }, 'Corrupt registry file found, resetting');
-                                registry = []; // Fallback to empty if corrupt
-                            }
-                            let result = '';
-                            if (action === 'list') {
-                                result = JSON.stringify(registry, null, 2);
-                            }
-                            else if (action === 'add' || action === 'update') {
-                                if (!appData.name && !appData.id)
-                                    throw new Error('App Name or ID required (could not extract from repo)');
-                                // Generate ID if missing (from repo name or app name)
-                                const safeId = (appData.id || appData.name || 'unknown').toLowerCase().replace(/[^a-z0-9-]/g, '-');
-                                const existingIdx = registry.findIndex((a) => a.id === safeId);
-                                const newApp = {
-                                    id: safeId,
-                                    name: appData.name || safeId,
-                                    repo: appData.repo || '',
-                                    description: appData.description || 'Custom application added via AI',
-                                    homepage: appData.homepage || '',
-                                    createdAt: new Date().toISOString(),
-                                    ...appData
-                                };
-                                if (existingIdx >= 0) {
-                                    registry[existingIdx] = { ...registry[existingIdx], ...newApp, updatedAt: new Date().toISOString() };
-                                    result = `Updated app: ${newApp.name} (ID: ${safeId})`;
-                                    fastify.log.info({ id: safeId }, 'Custom app updated in registry');
-                                }
-                                else {
-                                    registry.push(newApp);
-                                    result = `Added app: ${newApp.name} (ID: ${safeId})`;
-                                    fastify.log.info({ id: safeId }, 'Custom app added to registry');
-                                }
-                                try {
-                                    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-                                }
-                                catch (writeError) {
-                                    fastify.log.error({ err: writeError }, 'Failed to write to custom-apps.json');
-                                    throw new Error('System error: Could not save to app registry. Check server logs.');
-                                }
-                            }
-                            else if (action === 'remove') {
-                                if (!appData.id)
-                                    throw new Error('App ID required for removal');
-                                const initialLen = registry.length;
-                                registry = registry.filter((a) => a.id !== appData.id);
-                                if (registry.length === initialLen) {
-                                    result = `App not found: ${appData.id}`;
-                                    fastify.log.warn({ id: appData.id }, 'Attempted to remove non-existent app');
-                                }
-                                else {
-                                    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-                                    result = `Removed app: ${appData.id}`;
-                                    fastify.log.info({ id: appData.id }, 'Custom app removed from registry');
-                                }
-                            }
-                            messages.push(messageData);
-                            messages.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: result
-                            });
-                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${effectiveApiKey}`
-                                },
-                                body: JSON.stringify({
-                                    model: 'gpt-4o',
-                                    messages,
-                                    max_tokens: 1000,
-                                    temperature: 0.7
-                                })
-                            });
-                            const secondData = await secondResponse.json();
-                            answer = secondData.choices?.[0]?.message?.content;
-                        }
-                        catch (err) {
-                            fastify.log.error({ err, action, app: appData }, 'manage_app tool failed');
-                            answer = `Failed to manage app: ${err.message}`;
-                        }
-                    }
-                    else if (toolCall.function.name === 'manage_doc') {
-                        const args = JSON.parse(toolCall.function.arguments);
-                        const action = args.action;
-                        const docPath = args.path;
-                        // Ensure we target doc-site/docs or similar
-                        const fullPath = path.join(PROJECT_ROOT, 'docs-site', docPath);
-                        fastify.log.info({ action, path: docPath }, 'AI managing doc');
-                        toolUsed = { command: `${action} doc ${docPath}`, type: 'docs' };
-                        try {
-                            // Basic security check to prevent traversing outside docs-site
-                            if (!fullPath.startsWith(path.join(PROJECT_ROOT, 'docs-site'))) {
-                                throw new Error('Access denied: Cannot access files outside docs-site');
-                            }
-                            let result = '';
-                            if (action === 'read') {
-                                if (fs.existsSync(fullPath)) {
-                                    result = fs.readFileSync(fullPath, 'utf-8');
-                                }
-                                else {
-                                    result = 'File not found';
-                                }
-                            }
-                            else if (action === 'write') {
-                                if (!args.content)
-                                    throw new Error('Content required for write');
-                                fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                                fs.writeFileSync(fullPath, args.content);
-                                result = `Successfully wrote to ${docPath}`;
-                            }
-                            else if (action === 'delete') {
-                                if (fs.existsSync(fullPath)) {
-                                    fs.unlinkSync(fullPath);
-                                    result = `Deleted ${docPath}`;
-                                }
-                                else {
-                                    result = 'File not found';
-                                }
-                            }
-                            messages.push(messageData);
-                            messages.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: result
-                            });
-                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${effectiveApiKey}`
-                                },
-                                body: JSON.stringify({
-                                    model: 'gpt-4o',
-                                    messages,
-                                    max_tokens: 1000,
-                                    temperature: 0.7
-                                })
-                            });
-                            const secondData = await secondResponse.json();
-                            answer = secondData.choices?.[0]?.message?.content;
-                        }
-                        catch (err) {
-                            answer = `Failed to manage doc: ${err.message}`;
-                        }
-                    }
                 }
                 return {
                     answer: answer || 'Sorry, I could not generate a response.',
@@ -559,33 +319,22 @@ export async function aiRoutes(fastify) {
             return reply.status(400).send({ error: 'OpenAI key not configured. Add one in settings.' });
         }
         try {
-            const prompt = `You are a friendly, casual voice companion for the Media Stack Maker wizard.
-Think of yourself as a tech-savvy friend helping a newbie set up their home server.
-
-INSTRUCTIONS:
-1. **Persona**: Speak naturally, use contractions ("can't", "let's"), and be enthusiastic.
-2. **Brevity**: Keep spoken responses SHORT (under 2 sentences).
-3. **No Reading**: NEVER read the JSON or technical lists aloud.
-4. **Goal**: Gather: [Services (apps), Hosting (hardware), Domain].
-5. **The Plan**: Once you have the 3 key requirements, say "I've got a plan ready!" and THEN append the JSON block.
-
-OUTPUT COMPOSITION:
-[Conversational Response to User]
-[JSON Plan Object]
-
-Plan JSON Schema:
+            const prompt = `You are a voice onboarding companion for the Media Stack Maker wizard.
+Gather requirements from beginners and respond in short, friendly sentences.
+After each reply, emit a JSON object with the current structured plan.
+Plan schema:
 {
-  "services": ["plex", "arr", "torrent", ...],
-  "hosting": "nas" | "vps" | "pi" | "desktop" | "cloud",
+  "services": ["plex", "arr", "torrent", "vpn", "notify", "stats", "overseerr", "tautulli", "mealie", "audiobookshelf", "photoprism"],
+  "hosting": "nas | vps | raspberry pi | desktop | cloud",
   "storagePaths": { "media": "/path", "downloads": "/path" },
   "domain": "example.com",
   "notes": "string"
 }
-
-Current context:
+Always include the JSON block as the last paragraph.
+Current conversation history:
 ${history.map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`).join('\n')}
 
-User: ${transcript}`;
+Latest user utterance: ${transcript}`;
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -607,21 +356,17 @@ User: ${transcript}`;
             }
             const data = await response.json();
             const content = data.choices?.[0]?.message?.content || 'Let me know more about your setup goals!';
-            // Robust regex to find the JSON block (last occurrence of {...})
-            const planMatch = content.match(/(\{[\s\S]*\})/);
+            const planMatch = content.match(/\{[\s\S]*\}$/);
             let plan = null;
             if (planMatch) {
                 try {
-                    // If matched, it might still have markdown inside if the regex captured too much, but usually greedy match from first { to last } works for single block
-                    // Safety: try parsing the match
                     plan = JSON.parse(planMatch[0]);
                 }
                 catch (err) {
-                    fastify.log.warn({ err, match: planMatch[0] }, 'Failed to parse plan JSON from voice agent');
+                    fastify.log.warn({ err }, 'Failed to parse plan JSON from voice agent');
                 }
             }
-            // Remove the plan from the spoken response
-            const cleanedResponse = planMatch ? content.replace(planMatch[0], '').replace(/```json/g, '').replace(/```/g, '').trim() : content;
+            const cleanedResponse = planMatch ? content.replace(planMatch[0], '').trim() : content;
             return {
                 agentResponse: cleanedResponse,
                 plan,
@@ -655,43 +400,5 @@ User: ${transcript}`;
             suggestions.unshift({ text: 'How do I install Docker?', agent: 'setup' });
         }
         return { suggestions: suggestions.slice(0, 5) };
-    });
-    // Audio Transcription (Whisper API Fallback)
-    fastify.post('/api/audio-transcription', async (request, reply) => {
-        const data = await request.file();
-        if (!data) {
-            return reply.status(400).send({ error: 'No audio file uploaded' });
-        }
-        const effectiveApiKey = getOpenAIKey();
-        if (!effectiveApiKey) {
-            return reply.status(400).send({ error: 'OpenAI key not configured' });
-        }
-        const tempPath = path.join(PROJECT_ROOT, `temp_audio_${Date.now()}.webm`);
-        try {
-            await fs.promises.writeFile(tempPath, await data.toBuffer());
-            const formData = new FormData();
-            const fileBlob = new Blob([await fs.promises.readFile(tempPath)], { type: 'audio/webm' });
-            formData.append('file', fileBlob, 'audio.webm');
-            formData.append('model', 'whisper-1');
-            const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${effectiveApiKey}`
-                },
-                body: formData
-            });
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`OpenAI Whisper error (${response.status}): ${errText}`);
-            }
-            const result = await response.json();
-            await fs.promises.unlink(tempPath).catch(() => { });
-            return { text: result.text };
-        }
-        catch (error) {
-            await fs.promises.unlink(tempPath).catch(() => { });
-            fastify.log.error({ err: error }, 'Whisper transcription failed');
-            return reply.status(500).send({ error: error.message });
-        }
     });
 }
