@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+dist
+test
+tests
+.DS_Store
+coverage
+README.md
+junit.xml
+tsconfig.tsbuildinfo

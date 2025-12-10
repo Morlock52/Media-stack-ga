@@ -1,0 +1,12 @@
+[build]
+  command = "cd docs-site && npm install && npm run build"
+  publish = "docs-site/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Optional: handle SPA-style routing for the docs app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
