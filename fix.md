@@ -87,3 +87,17 @@
 - Keep `.env` secrets rotated; Authelia/Redis tokens in templates must be replaced before deploying.  
 - When running the docs site in dev mode, ensure the control server is reachable at `VITE_CONTROL_SERVER_URL` or via `localhost:3001` to keep the AI assistant fully functional.  
 - Shared metadata (`appData.ts`) prevents drift between the app cards and guide navigation—add new apps in one place to update both the overview grid and the detailed tabs.
+
+## 2025-12-10 – Docker Deployment Fixes
+
+- **Resolved macOS incompatibility**: Commented out `/dev/dri` device mappings for `tdarr` and `jellyfin` in `docker-compose.yml` as this device is unavailable on macOS hosts, causing startup failure.
+- **Fixed Authelia Crash**:
+    - Updated `config/authelia/configuration.yml` to use `{{ env "AUTHELIA_SESSION_REDIS_PASSWORD" }}` instead of a hardcoded value.
+    - Deleted stale `data/config/authelia/db.sqlite3` which had a key mismatch; Authelia successfully regenerated it and started up.
+- **Prevented Loop Crashes**:
+    - Removed `vpn` and `torrent` profiles from default `COMPOSE_PROFILES` in `.env` to prevent `gluetun` and `qbittorrent` from starting without valid VPN credentials.
+    - Added `profiles: ["cloudflared"]` to `docker-compose.yml` and corrected the dummy command in `.env` so `cloudflared` does not start by default and crash due to missing token.
+- **Verification**:
+    - `docker compose up -d` now succeeds with exit code 0.
+    - All services in the default profile (Plex, *Arr, Notify, Stats, Transcode) are running (`Up`) status.
+    - Authelia is successfully running and passed startup checks after database regeneration.
