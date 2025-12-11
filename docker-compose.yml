@@ -236,8 +236,7 @@ services:
       - "homepage.widget.key=${JELLYFIN_API_KEY}"
     expose:
       - 8096
-    # devices:
-      # - /dev/dri:/dev/dri # For hardware transcoding (optional)
+
 
   # ===========================================
   # PLEX - Alternative Media Server
@@ -594,8 +593,7 @@ services:
       - "homepage.description=Transcoding"
       - "homepage.widget.type=tdarr"
       - "homepage.widget.url=http://tdarr:8265"
-    # devices:
-      # - /dev/dri:/dev/dri # Hardware transcoding
+
 
   # ===========================================
   # MEALIE - Recipe Manager
