@@ -15,32 +15,84 @@ This document tracks "tech bloat"—unnecessary dependencies, unmanaged files, a
 - [x] Remove redundancy: Deleted `server.js` (Express bloat) and `agents.js` (Root redundant).
 
 ## 2. Frontend Dependencies (Docs Site)
-**Status**: ⚠️ MODERATE
+**Status**: ✅ OPTIMIZED
 ### `framer-motion`
 - **Size**: Large bundle impact (~30KB+ gzipped).
-- **Usage**: High (imported in 10+ components).
-- **Recommendation**: Retain for now due to high refactor cost, but consider transitioning to `motion-one` or Tailwind `animate-*` classes for new components.
+- **Usage**: High.
+- **Decision**: Retained for UX quality.
 
 ### `react-syntax-highlighter`
-- **Size**: Heavy syntax highlighting engine.
-- **Usage**: Low (only in `DocsViewer.tsx`).
-- **Recommendation**: Replace with a lighter alternative like `microlight.js`, `prismjs` (core only), or just CSS-styled `<pre><code>` blocks if syntax highlighting isn't critical.
+- **Status**: ✅ FIXED
+- **Action**: Switched to `PrismLight` build and registered specific languages (Bash, YAML, JSON, Docker, TS) only.
+- **Impact**: Significant bundle size reduction (removed unused languages).
 
 ## 3. Docker & Infrastructure
-**Status**: ⚠️ OPTIMIZABLE
+**Status**: ✅ OPTIMIZED
 ### Unused / Heavy Containers
-- **Tdarr / Jellyfin**: These are media processing heavyweights. On macOS credentials (without `/dev/dri` GPU passthrough), they are CPU intensive and large images.
-- **Recommendation**: If this is a "Wizard" / "Docs" app, do we need the full media stack running?
-    - **Optimized Profile**: Ensure `COMPOSE_PROFILES` defaults to *excluding* the heavy media stack unless explicitly enabled.
+- **Action**: Modified `.env` to default `COMPOSE_PROFILES` to empty ("Wizard Mode").
+- **Result**: Heavy apps (Plex, *Arr, Tdarr) no longer auto-start.
 
 ### Database Bloat
-- **Redis & Postgres**: Running full DB instances for a simple "Control Server" might be overkill if `sqlite` (which Authelia also supports) is sufficient.
-    - **Refactor Idea**: Migrate internal tools to SQLite to remove Postgres dependency if *Arr apps aren't the primary focus of this specific repo (which seems to be the "Media Stack **Anti**" / Wizard).
+- **Redis & Postgres**:
+    - **Analysis**: Authelia is configured to use SQLite for its primary database (Users/Config).
+    - **Redis**: Strictly required by Authelia for session management. Cannot be removed without replacing Authelia.
+    - **Conclusion**: Current setup (SQLite + Redis) is the minimal viable architecture for this stack.
 
 ## 4. Code Architecture
-- **Missing `src` in Control Server**: The `server.js` file sits in the root. A standardized `src/` structure would be cleaner (as implied by some existing metadata), but for a simple server, the root file is acceptable if `package.json` is present.
+- **Missing `src` in Control Server**: ✅ RESOLVED (Standardized to dist/src structure via build).
 
-## Next Steps
-1. Create `control-server/package.json` (Priority 1).
-2. Refactor `configuration.yml` (Authelia) to clean formatting (Completed).
-3. Investigate `DocsViewer` for lighter syntax highlighting.
+## 5. Future Optimization Roadmap (Q1 2026)
+
+### Phase 1: Frontend Bundle Diet
+**Goal**: Reduce `docs-site` initial load size by 40%.
+
+1.  **Motion Library Migration**
+    *   **Context**: `framer-motion` is powerful but huge (~30KB).
+    *   **Plan**: Migrate simple transitions to `motion-one` (~5KB) or pure CSS.
+    *   **Example**:
+        ```tsx
+        // Current (Framer Motion)
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
+
+        // Future (Motion One)
+        import { animate } from "motion"
+        useEffect(() => { animate("#target", { opacity: 1 }) }, [])
+        ```
+
+2.  **Tree-Shaking Audit**
+    *   **Context**: `lucide-react` icons can bloat bundles if imported incorrectly.
+    *   **Plan**: Install `rollup-plugin-visualizer` to identify large chunks.
+    *   **Check**: Verify `import { Home } from 'lucide-react'` isn't bundling the entire library.
+
+### Phase 2: Control Server Hardening
+**Goal**: Zero-dependency architecture where possible.
+
+1.  **Drop `node-ssh`**
+    *   **Context**: `node-ssh` adds significant weight for simple SSH connections.
+    *   **Plan**: Use native system SSH client via `child_process.spawn`.
+    *   **Benefit**: Removes a complex dependency chain; relies on OS-level stability.
+    *   **Example**:
+        ```javascript
+        spawn('ssh', ['-i', keyPath, 'user@host', 'docker ps'])
+        ```
+
+2.  **Schema-Based Validation**
+    *   **Context**: Manual `if (!body.x)` checks are verbose and error-prone.
+    *   **Plan**: Use Fastify's native JSON Schema validation for routes.
+    *   ** Benefit**: Less code, standard errors, faster execution.
+
+### Phase 3: Asset & Image Optimization
+**Goal**: Minimize static asset footprint.
+
+1.  **Icon Vectorization**
+    *   **Context**: `public/icons` contains raster (PNG) images for services.
+    *   **Plan**: Convert all service logos (Plex, Sonarr, etc.) to SVG.
+    *   **Benefit**: Crisp scaling on all displays, typically smaller file size (<2KB per logo).
+
+2.  **Gzip/Brotli Pre-Compression**
+    *   **Plan**: Configure Vite to pre-compress assets during build.
+    *   **Benefit**: Nginx serves static compressed files directly without CPU overhead.
+
+### Phase 4: CI/CD Hygiene
+1.  **Dependency Caching**: Ensure `~/.npm` is cached between workflow runs to speed up CI by ~50%.
+2.  **Lint-Staged**: Prevent "bloat" code (console.logs, unused imports) from ever entering the repo via pre-commit hooks.

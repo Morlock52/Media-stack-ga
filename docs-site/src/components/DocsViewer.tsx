@@ -1,10 +1,22 @@
 import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter'
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash'
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json'
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml'
+import docker from 'react-syntax-highlighter/dist/esm/languages/prism/docker'
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { readmeContent, quickRefContent } from '../lib/content'
+
+// Register languages for lighter bundle
+SyntaxHighlighter.registerLanguage('bash', bash)
+SyntaxHighlighter.registerLanguage('json', json)
+SyntaxHighlighter.registerLanguage('yaml', yaml)
+SyntaxHighlighter.registerLanguage('docker', docker)
+SyntaxHighlighter.registerLanguage('typescript', typescript)
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
     const [copied, setCopied] = useState(false)
