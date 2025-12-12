@@ -1,8 +1,11 @@
 ARG NODE_VERSION=lts
+ ARG VITE_OPENAI_MODEL
 
 FROM node:${NODE_VERSION}-alpine as build
 
 WORKDIR /app
+
+ ENV VITE_OPENAI_MODEL=${VITE_OPENAI_MODEL}
 
 # Copy package info first to leverage cache
 COPY package*.json ./
@@ -21,7 +24,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Add a healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD view_file /usr/share/nginx/html/index.html || exit 1
+    CMD test -f /usr/share/nginx/html/index.html || exit 1
 
 EXPOSE 80
 

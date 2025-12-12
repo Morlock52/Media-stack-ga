@@ -93,6 +93,10 @@ export function AIGuide({ currentStep, context: _context }: AIGuideProps) {
 
     const hasApiKey = !!config.openaiApiKey
 
+    const openAiModel = import.meta.env?.VITE_OPENAI_MODEL
+        ? String(import.meta.env.VITE_OPENAI_MODEL)
+        : 'gpt-4o-mini'
+
     // Update guidance when step changes
     useEffect(() => {
         const guidance = stepGuidance[currentStep]
@@ -143,7 +147,7 @@ Guidelines:
                     'Authorization': `Bearer ${config.openaiApiKey}`
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: openAiModel,
                     messages: [
                         { role: 'system', content: systemPrompt },
                         ...messages.map(m => ({ role: m.role, content: m.content })),

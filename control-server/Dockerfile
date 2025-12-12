@@ -1,8 +1,11 @@
 ARG NODE_VERSION=lts
+ ARG OPENAI_MODEL
 
 FROM node:${NODE_VERSION}-alpine
 
 WORKDIR /app
+
+ ENV OPENAI_MODEL=${OPENAI_MODEL}
 
 # Install dependencies including Docker CLI
 # We add them in the same layer as other system deps if any were needed

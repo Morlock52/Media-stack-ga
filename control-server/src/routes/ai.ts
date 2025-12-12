@@ -7,6 +7,8 @@ import path from 'path';
 import { exec } from 'child_process';
 import { AiChatRequest, AiChatResponse, Agent } from '../types/index.js';
 
+ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+
 const getOpenAIKey = () => {
     if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
     const envContent = readEnvFile();
@@ -152,7 +154,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                         'Authorization': `Bearer ${effectiveApiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'gpt-4o',
+                        model: OPENAI_MODEL,
                         messages,
                         tools,
                         tool_choice: "auto",
@@ -203,7 +205,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -242,7 +244,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -302,7 +304,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -378,7 +380,7 @@ Latest user utterance: ${transcript}`;
                     Authorization: `Bearer ${effectiveApiKey}`,
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o',
+                    model: OPENAI_MODEL,
                     messages: [
                         { role: 'system', content: prompt },
                     ],

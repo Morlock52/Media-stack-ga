@@ -128,6 +128,8 @@ interface RequestBody {
     history?: { role: 'user' | 'assistant'; content: string }[]
 }
 
+ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+
 export const handler: Handler = async (event: HandlerEvent) => {
     // Only allow POST
     if (event.httpMethod !== 'POST') {
@@ -196,7 +198,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
                 Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: OPENAI_MODEL,
                 messages,
                 max_tokens: 1000,
                 temperature: 0.7,

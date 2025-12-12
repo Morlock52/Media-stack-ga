@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, AlertCircle } from 'lucide-react'
+import { buildControlServerUrl } from '../utils/controlServer'
 
 interface Container {
     id: string
@@ -14,7 +15,7 @@ export function StatusBadge() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch('http://localhost:3001/api/containers')
+                const res = await fetch(buildControlServerUrl('/api/containers'))
                 if (!res.ok) throw new Error('Failed to fetch')
                 const data: Container[] = await res.json()
 

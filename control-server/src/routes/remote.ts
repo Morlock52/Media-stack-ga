@@ -54,21 +54,29 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             await ssh.connect(connectConfig);
             steps[steps.length - 1].status = 'done';
 
+            const homeResult = await ssh.execCommand('echo $HOME');
+            const remoteHome = (homeResult.stdout || '').trim();
+            const remoteDeployPath = safeDeployPath.startsWith('~/')
+                ? `${remoteHome}/${safeDeployPath.slice(2)}`
+                : safeDeployPath === '~'
+                    ? remoteHome
+                    : safeDeployPath;
+
             // Step 2: Create deploy directory
             steps.push({ step: 'Creating deploy directory...', status: 'running' });
-            await ssh.execCommand(`mkdir -p ${safeDeployPath}`);
+            await ssh.execCommand(`mkdir -p ${remoteDeployPath}`);
             steps[steps.length - 1].status = 'done';
 
             // Step 3: Upload docker-compose.yml
             steps.push({ step: 'Uploading docker-compose.yml...', status: 'running' });
-            await ssh.putFile(COMPOSE_FILE, `${safeDeployPath}/docker-compose.yml`);
+            await ssh.putFile(COMPOSE_FILE, `${remoteDeployPath}/docker-compose.yml`);
             steps[steps.length - 1].status = 'done';
 
             // Step 4: Upload .env if exists
             const envFile = path.join(PROJECT_ROOT, '.env');
             if (fs.existsSync(envFile)) {
                 steps.push({ step: 'Uploading .env...', status: 'running' });
-                await ssh.putFile(envFile, `${safeDeployPath}/.env`);
+                await ssh.putFile(envFile, `${remoteDeployPath}/.env`);
                 steps[steps.length - 1].status = 'done';
             }
 
@@ -80,9 +88,22 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             }
             steps[steps.length - 1].status = 'done';
 
+            // Step 5.5: Verify compose file exists on remote
+            steps.push({ step: 'Verifying docker-compose.yml on remote...', status: 'running' });
+            const composeFileCheck = await ssh.execCommand(`cd ${remoteDeployPath} && test -f docker-compose.yml`);
+            if (composeFileCheck.code !== 0) {
+                throw new Error('docker-compose.yml not found on remote server after upload');
+            }
+            steps[steps.length - 1].status = 'done';
+
+            // Determine compose command (Docker Compose v2 vs legacy docker-compose)
+            const composeV2Check = await ssh.execCommand('docker compose version');
+            const useComposeV2 = composeV2Check.code === 0;
+            const composeCommand = useComposeV2 ? 'docker compose' : 'docker-compose';
+
             // Step 6: Start the stack
             steps.push({ step: 'Starting media stack...', status: 'running' });
-            const startResult = await ssh.execCommand(`cd ${safeDeployPath} && docker compose up -d`);
+            const startResult = await ssh.execCommand(`cd ${remoteDeployPath} && ${composeCommand} -f docker-compose.yml up -d`);
             if (startResult.code !== 0 && startResult.stderr && !startResult.stderr.includes('Warning')) {
                 throw new Error(startResult.stderr);
             }
@@ -94,7 +115,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 success: true,
                 message: 'Deployment successful!',
                 steps,
-                serverInfo: { host, deployPath: safeDeployPath }
+                serverInfo: { host, deployPath: remoteDeployPath }
             };
 
         } catch (error: any) {
@@ -134,14 +155,15 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             // Quick checks
             const dockerCheck = await ssh.execCommand('docker --version');
-            const composeCheck = await ssh.execCommand('docker compose version');
+            const composeV2Check = await ssh.execCommand('docker compose version');
+            const composeV1Check = composeV2Check.code === 0 ? { code: 0 } : await ssh.execCommand('docker-compose --version');
 
             ssh.dispose();
 
             return {
                 success: true,
                 docker: dockerCheck.code === 0,
-                dockerCompose: composeCheck.code === 0,
+                dockerCompose: composeV2Check.code === 0 || (composeV1Check as any).code === 0,
                 message: dockerCheck.code === 0 ? 'Ready to deploy!' : 'Docker not found on server'
             };
 

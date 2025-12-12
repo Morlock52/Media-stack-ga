@@ -6,6 +6,10 @@ interface AIResponse {
     config?: Record<string, string>
 }
 
+ const OPENAI_MODEL = import.meta.env?.VITE_OPENAI_MODEL
+     ? String(import.meta.env.VITE_OPENAI_MODEL)
+     : 'gpt-4o-mini'
+
 export async function generateServiceConfig(
     serviceId: string,
     currentConfig: SetupConfig,
@@ -50,7 +54,7 @@ export async function generateServiceConfig(
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini', // Use a fast, capable model
+                model: OPENAI_MODEL, // Use a fast, capable model
                 messages: [
                     { role: 'system', content: 'You are a helpful DevOps assistant.' },
                     { role: 'user', content: prompt }
