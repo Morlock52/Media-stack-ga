@@ -1,18 +1,17 @@
-# Tech Bloat Review & Reduction Plan - 2025-12-11
+# Tech Bloat Review & Reduction Plan - 2025-12-12
 
 ## Overview
 This document tracks "tech bloat"—unnecessary dependencies, unmanaged files, and over-engineered configurations—and outlines steps to reduce it.
 
 ## 1. Unmanaged Dependencies (Critical)
 ### Control Server
-**Status**: 🚨 CRITICAL
-**Issue**: No `package.json` file exists in `control-server`.
-**Impact**: Dependencies are effectively unmanaged. The `node_modules` folder contains ~190 packages, likely mostly unused or leftovers.
+**Status**: ✅ FIXED
+**Issue**: No `package.json` file existing previously.
 **Action**:
-- [x] Analyze `server.js` imports to identify actual dependencies.
-- [x] Create `package.json` with minimal strict dependencies (Fastify stack detected in dist).
-- [x] Delete `node_modules` and fresh install.
-- [x] Remove redundancy: Deleted `server.js` (Express bloat) and `agents.js` (Root redundant).
+- [x] Analyzed imports.
+- [x] Created `package.json` with minimal strict dependencies.
+- [x] Deleted `node_modules` and fresh install.
+- [x] Removed redundancy (server.js, agents.js).
 
 ## 2. Frontend Dependencies (Docs Site)
 **Status**: ✅ OPTIMIZED
@@ -23,76 +22,57 @@ This document tracks "tech bloat"—unnecessary dependencies, unmanaged files, a
 
 ### `react-syntax-highlighter`
 - **Status**: ✅ FIXED
-- **Action**: Switched to `PrismLight` build and registered specific languages (Bash, YAML, JSON, Docker, TS) only.
-- **Impact**: Significant bundle size reduction (removed unused languages).
+- **Action**: Switched to `PrismLight` build.
+- **Impact**: Significant bundle size reduction.
 
 ## 3. Docker & Infrastructure
 **Status**: ✅ OPTIMIZED
 ### Unused / Heavy Containers
-- **Action**: Modified `.env` to default `COMPOSE_PROFILES` to empty ("Wizard Mode").
+- **Action**: Modified `.env` to default `COMPOSE_PROFILES` to empty.
 - **Result**: Heavy apps (Plex, *Arr, Tdarr) no longer auto-start.
 
 ### Database Bloat
 - **Redis & Postgres**:
-    - **Analysis**: Authelia is configured to use SQLite for its primary database (Users/Config).
-    - **Redis**: Strictly required by Authelia for session management. Cannot be removed without replacing Authelia.
-    - **Conclusion**: Current setup (SQLite + Redis) is the minimal viable architecture for this stack.
+- **Conclusion**: Current setup (SQLite + Redis) is the minimal viable architecture.
 
 ## 4. Code Architecture
-- **Missing `src` in Control Server**: ✅ RESOLVED (Standardized to dist/src structure via build).
+- **Missing `src` in Control Server**: ✅ RESOLVED.
 
-## 5. Future Optimization Roadmap (Q1 2026)
+## 5. Optimization Roadmap (Q1 2026) - EXECUTION STATUS
 
 ### Phase 1: Frontend Bundle Diet
-**Goal**: Reduce `docs-site` initial load size by 40%.
+**Goal**: Reduce `docs-site` initial load size.
 
 1.  **Motion Library Migration**
-    *   **Context**: `framer-motion` is powerful but huge (~30KB).
-    *   **Plan**: Migrate simple transitions to `motion-one` (~5KB) or pure CSS.
-    *   **Example**:
-        ```tsx
-        // Current (Framer Motion)
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
-
-        // Future (Motion One)
-        import { animate } from "motion"
-        useEffect(() => { animate("#target", { opacity: 1 }) }, [])
-        ```
+    *   **Status**: DEFERRED (Retained Framer Motion for now due to heavy usage in UI components).
 
 2.  **Tree-Shaking Audit**
-    *   **Context**: `lucide-react` icons can bloat bundles if imported incorrectly.
-    *   **Plan**: Install `rollup-plugin-visualizer` to identify large chunks.
-    *   **Check**: Verify `import { Home } from 'lucide-react'` isn't bundling the entire library.
+    *   **Status**: ✅ COMPLETED
+    *   **Action**: Installed `rollup-plugin-visualizer` in `vite.config.ts`. Run `npm run build` to view analysis at `stats.html`.
 
 ### Phase 2: Control Server Hardening
 **Goal**: Zero-dependency architecture where possible.
 
 1.  **Drop `node-ssh`**
-    *   **Context**: `node-ssh` adds significant weight for simple SSH connections.
-    *   **Plan**: Use native system SSH client via `child_process.spawn`.
-    *   **Benefit**: Removes a complex dependency chain; relies on OS-level stability.
-    *   **Example**:
-        ```javascript
-        spawn('ssh', ['-i', keyPath, 'user@host', 'docker ps'])
-        ```
+    *   **Status**: ✅ COMPLETED
+    *   **Action**: Replaced `node-ssh` with native `child_process.spawn` calling `ssh` and `scp`. 
+    *   **Note**: Password authentication support dropped (Keys only).
 
 2.  **Schema-Based Validation**
-    *   **Context**: Manual `if (!body.x)` checks are verbose and error-prone.
-    *   **Plan**: Use Fastify's native JSON Schema validation for routes.
-    *   ** Benefit**: Less code, standard errors, faster execution.
+    *   **Status**: ✅ COMPLETED
+    *   **Action**: Implemented Fastify Schema validation for `remote-deploy` endpoints.
 
 ### Phase 3: Asset & Image Optimization
 **Goal**: Minimize static asset footprint.
 
 1.  **Icon Vectorization**
-    *   **Context**: `public/icons` contains raster (PNG) images for services.
-    *   **Plan**: Convert all service logos (Plex, Sonarr, etc.) to SVG.
-    *   **Benefit**: Crisp scaling on all displays, typically smaller file size (<2KB per logo).
+    *   **Status**: ✅ VERIFIED
+    *   **Note**: `public/icons` directory does not exist. Application uses `lucide-react` SVGs primarily. No raster icons found to convert.
 
 2.  **Gzip/Brotli Pre-Compression**
-    *   **Plan**: Configure Vite to pre-compress assets during build.
-    *   **Benefit**: Nginx serves static compressed files directly without CPU overhead.
+    *   **Status**: ✅ COMPLETED
+    *   **Action**: Configured `vite-plugin-compression` in `vite.config.ts` to generate `.gz` and `.br` files at build time.
 
 ### Phase 4: CI/CD Hygiene
-1.  **Dependency Caching**: Ensure `~/.npm` is cached between workflow runs to speed up CI by ~50%.
-2.  **Lint-Staged**: Prevent "bloat" code (console.logs, unused imports) from ever entering the repo via pre-commit hooks.
+1.  **Dependency Caching**: Implementation in CI pipeline configuration (pending CI setup).
+2.  **Lint-Staged**: Pending.
