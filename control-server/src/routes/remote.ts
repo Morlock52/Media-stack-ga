@@ -22,7 +22,9 @@ interface SSHConfig {
     host: string;
     port: number;
     username: string;
-    privateKey: string;
+    authType: 'key' | 'password';
+    privateKey?: string;
+    password?: string;
 }
 
 interface ExecResult {
@@ -50,9 +52,9 @@ async function withTempKey<T>(privateKey: string, callback: (keyPath: string) =>
     }
 }
 
-function runCommand(command: string, args: string[]): Promise<ExecResult> {
+function runCommand(command: string, args: string[], env?: Record<string, string>): Promise<ExecResult> {
     return new Promise((resolve) => {
-        const proc = spawn(command, args);
+        const proc = spawn(command, args, env ? { env: { ...process.env, ...env } } : undefined);
         let stdout = '';
         let stderr = '';
 
@@ -70,6 +72,28 @@ function runCommand(command: string, args: string[]): Promise<ExecResult> {
 }
 
 async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> {
+    if (config.authType === 'password') {
+        if (!config.password) {
+            return { code: 1, stdout: '', stderr: 'Password is required for password authentication' };
+        }
+        const args = [
+            '-e',
+            'ssh',
+            '-p', config.port.toString(),
+            '-o', 'PreferredAuthentications=password',
+            '-o', 'PubkeyAuthentication=no',
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            `${config.username}@${config.host}`,
+            command
+        ];
+        return runCommand('sshpass', args, { SSHPASS: config.password });
+    }
+
+    if (!config.privateKey) {
+        return { code: 1, stdout: '', stderr: 'Private key is required for key authentication' };
+    }
+
     return withTempKey(config.privateKey, async (keyPath) => {
         const args = [
             '-i', keyPath,
@@ -84,6 +108,28 @@ async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> 
 }
 
 async function scpFile(config: SSHConfig, localPath: string, remotePath: string): Promise<ExecResult> {
+    if (config.authType === 'password') {
+        if (!config.password) {
+            return { code: 1, stdout: '', stderr: 'Password is required for password authentication' };
+        }
+        const args = [
+            '-e',
+            'scp',
+            '-P', config.port.toString(), // SCP uses -P for port
+            '-o', 'PreferredAuthentications=password',
+            '-o', 'PubkeyAuthentication=no',
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            localPath,
+            `${config.username}@${config.host}:${remotePath}`
+        ];
+        return runCommand('sshpass', args, { SSHPASS: config.password });
+    }
+
+    if (!config.privateKey) {
+        return { code: 1, stdout: '', stderr: 'Private key is required for key authentication' };
+    }
+
     return withTempKey(config.privateKey, async (keyPath) => {
         const args = [
             '-i', keyPath,
@@ -99,13 +145,17 @@ async function scpFile(config: SSHConfig, localPath: string, remotePath: string)
 
 export async function remoteRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy', async (request, reply) => {
-        const { host, port = 22, username, privateKey, deployPath = '~/media-stack' } = request.body;
+        const { host, port = 22, username, privateKey, password, deployPath = '~/media-stack' } = request.body;
+        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
 
         if (!host || !username) {
             return reply.status(400).send({ error: 'Host and username are required' });
         }
-        if (!privateKey) {
+        if (authType === 'key' && !privateKey) {
             return reply.status(400).send({ error: 'Private key is required' });
+        }
+        if (authType === 'password' && !password) {
+            return reply.status(400).send({ error: 'Password is required' });
         }
 
         let safeDeployPath;
@@ -119,7 +169,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             host,
             port: typeof port === 'string' ? parseInt(port) : port,
             username,
-            privateKey
+            authType,
+            privateKey,
+            password
         };
 
         const steps: { step: string, status: string }[] = [];
@@ -213,10 +265,14 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
     // Test SSH connection
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy/test', async (request, reply) => {
-        const { host, port = 22, username, privateKey } = request.body;
+        const { host, port = 22, username, privateKey, password } = request.body;
+        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
 
-        if (!privateKey) {
+        if (authType === 'key' && !privateKey) {
             return reply.status(400).send({ error: 'Private key is required' });
+        }
+        if (authType === 'password' && !password) {
+            return reply.status(400).send({ error: 'Password is required' });
         }
 
         const sshConfig: SSHConfig = {
