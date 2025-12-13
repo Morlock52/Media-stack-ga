@@ -25,7 +25,9 @@ export interface RemoteDeployRequest {
     host: string;
     port?: number;
     username: string;
-    privateKey: string;
+    authType?: 'key' | 'password';
+    privateKey?: string;
+    password?: string;
     deployPath?: string;
 }
 
