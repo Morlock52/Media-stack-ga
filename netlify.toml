@@ -1,9 +1,18 @@
 [build]
-  command = "cd docs-site && npm install && npm run build"
-  publish = "docs-site/dist"
+  base = "docs-site"
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
+
+[dev]
+  command = "npm run dev"
+  port = 5173
+
+[functions]
+  node_bundler = "esbuild"
 
 # Optional: handle SPA-style routing for the docs app
 [[redirects]]

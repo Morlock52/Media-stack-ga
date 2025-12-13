@@ -4,10 +4,9 @@ import { readEnvFile, setEnvValue, removeEnvKey, PROJECT_ROOT } from '../utils/e
 import { runCommand } from '../utils/docker.js';
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { AiChatRequest, AiChatResponse, Agent } from '../types/index.js';
+import { AiChatRequest } from '../types/index.js';
 
- const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 
 const getOpenAIKey = () => {
     if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
@@ -18,7 +17,7 @@ const getOpenAIKey = () => {
 
 export async function aiRoutes(fastify: FastifyInstance) {
     // Get list of available agents
-    fastify.get('/api/agents', async (request, reply) => {
+    fastify.get('/api/agents', async (_request, _reply) => {
         const agentList = Object.values(AGENTS).map((a: any) => ({
             id: a.id,
             name: a.name,
@@ -30,7 +29,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     });
 
     // Settings: OpenAI key management
-    fastify.get('/api/settings/openai-key', async (request, reply) => {
+    fastify.get('/api/settings/openai-key', async (_request, _reply) => {
         const key = getOpenAIKey();
         const hasKey = Boolean(key && key.length > 0);
         return { hasKey };
@@ -54,7 +53,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
     });
 
-    fastify.delete('/api/settings/openai-key', async (request, reply) => {
+    fastify.delete('/api/settings/openai-key', async (_request, reply) => {
         try {
             removeEnvKey('OPENAI_API_KEY');
             delete process.env.OPENAI_API_KEY;
@@ -415,13 +414,13 @@ Latest user utterance: ${transcript}`;
             };
         } catch (error: any) {
             fastify.log.error({ err: error }, 'Voice agent error');
-            reply.status(500).send({ error: 'Voice agent failed', details: error.message });
+            return reply.status(500).send({ error: 'Voice agent failed', details: error.message });
         }
     });
 
     // Get contextual suggestions
-    fastify.post<{ Body: { currentApp: string, userProgress: any } }>('/api/agent/suggestions', async (request, reply) => {
-        const { currentApp, userProgress } = request.body;
+    fastify.post<{ Body: { currentApp: string, userProgress: any } }>('/api/agent/suggestions', async (request, _reply) => {
+        const { currentApp, userProgress } = request.body || {};
         const suggestions: any[] = [];
 
         const appSuggestions: any = {

@@ -13,7 +13,7 @@ const loadRegistry = () => {
     if (!fs.existsSync(REGISTRY_PATH)) return [];
     try {
         return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8'));
-    } catch (e) {
+    } catch (_e) {
         return [];
     }
 };

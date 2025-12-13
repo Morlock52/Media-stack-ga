@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-    X, Server, Key, Lock, CheckCircle, AlertCircle, 
-    Loader2, Upload, Rocket, Eye, EyeOff
+    X, Server, CheckCircle, AlertCircle, 
+    Loader2, Upload, Rocket
 } from 'lucide-react'
 import { buildControlServerUrl } from '../utils/controlServer'
 
@@ -20,11 +20,8 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const [host, setHost] = useState('')
     const [port, setPort] = useState('22')
     const [username, setUsername] = useState('')
-    const [authType, setAuthType] = useState<'password' | 'key'>('password')
-    const [password, setPassword] = useState('')
     const [privateKey, setPrivateKey] = useState('')
     const [deployPath, setDeployPath] = useState('~/media-stack')
-    const [showPassword, setShowPassword] = useState(false)
     
     const [status, setStatus] = useState<'idle' | 'testing' | 'deploying' | 'success' | 'error'>('idle')
     const [steps, setSteps] = useState<DeployStep[]>([])
@@ -47,9 +44,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    host, port, username, authType,
-                    password: authType === 'password' ? password : undefined,
-                    privateKey: authType === 'key' ? privateKey : undefined
+                    host, port, username, privateKey
                 })
             })
             
@@ -79,9 +74,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    host, port, username, authType, deployPath,
-                    password: authType === 'password' ? password : undefined,
-                    privateKey: authType === 'key' ? privateKey : undefined
+                    host, port, username, privateKey, deployPath
                 })
             })
             
@@ -101,7 +94,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         }
     }
 
-    const isFormValid = host && username && (authType === 'password' ? password : privateKey)
+    const isFormValid = host && username && privateKey
 
     return (
         <AnimatePresence>
@@ -213,68 +206,18 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                         />
                                     </div>
 
-                                    {/* Auth Type Toggle */}
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setAuthType('password')}
-                                            className={`flex-1 py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors ${
-                                                authType === 'password' 
-                                                    ? 'bg-primary text-primary-foreground' 
-                                                    : 'bg-background border border-border hover:bg-white/5'
-                                            }`}
-                                            aria-label="Password authentication"
-                                        >
-                                            <Lock className="w-4 h-4" /> Password
-                                        </button>
-                                        <button
-                                            onClick={() => setAuthType('key')}
-                                            className={`flex-1 py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors ${
-                                                authType === 'key' 
-                                                    ? 'bg-primary text-primary-foreground' 
-                                                    : 'bg-background border border-border hover:bg-white/5'
-                                            }`}
-                                            aria-label="SSH key authentication"
-                                        >
-                                            <Key className="w-4 h-4" /> SSH Key
-                                        </button>
+                                    <div>
+                                        <label className="text-xs text-muted-foreground" htmlFor="privateKey">Private Key (paste contents)</label>
+                                        <textarea
+                                            value={privateKey}
+                                            onChange={e => setPrivateKey(e.target.value)}
+                                            placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                                            rows={3}
+                                            className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                                            id="privateKey"
+                                            aria-label="Private Key"
+                                        />
                                     </div>
-
-                                    {/* Auth Input */}
-                                    {authType === 'password' ? (
-                                        <div className="relative">
-                                            <label className="text-xs text-muted-foreground" htmlFor="password">Password</label>
-                                            <input
-                                                type={showPassword ? 'text' : 'password'}
-                                                value={password}
-                                                onChange={e => setPassword(e.target.value)}
-                                                placeholder="Enter password"
-                                                className="w-full mt-1 px-3 py-2 pr-10 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                                id="password"
-                                                aria-label="Password"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-2 top-7 text-muted-foreground hover:text-white"
-                                                aria-label="Toggle password visibility"
-                                            >
-                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <label className="text-xs text-muted-foreground" htmlFor="privateKey">Private Key (paste contents)</label>
-                                            <textarea
-                                                value={privateKey}
-                                                onChange={e => setPrivateKey(e.target.value)}
-                                                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-                                                rows={3}
-                                                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                                                id="privateKey"
-                                                aria-label="Private Key"
-                                            />
-                                        </div>
-                                    )}
 
                                     {/* Deploy Path */}
                                     <div>

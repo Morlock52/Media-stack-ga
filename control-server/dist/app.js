@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { dockerRoutes } from './routes/docker.js';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
+import { registryRoutes } from './routes/registry.js';
 export const buildApp = async () => {
     const app = Fastify({
         logger: {
@@ -39,5 +40,6 @@ export const buildApp = async () => {
     await app.register(dockerRoutes);
     await app.register(aiRoutes);
     await app.register(remoteRoutes);
+    await app.register(registryRoutes);
     return app;
 };

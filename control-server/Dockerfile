@@ -1,34 +1,38 @@
 ARG NODE_VERSION=lts
- ARG OPENAI_MODEL
 
-FROM node:${NODE_VERSION}-alpine
+# Stage 1: Builder
+FROM node:${NODE_VERSION}-alpine AS builder
 
 WORKDIR /app
 
- ENV OPENAI_MODEL=${OPENAI_MODEL}
-
-# Install dependencies including Docker CLI
-# We add them in the same layer as other system deps if any were needed
-RUN apk add --no-cache docker-cli docker-cli-compose
-
-# Copy package files first for better caching
+# Install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install only production dependencies if we were building for prod, 
-# but since this acts as a dev/control server we usually need full deps or at least tsx.
-# 'npm ci' respects package-lock.json strictly.
-RUN npm ci
-
-# Copy source
+# Copy source and build
 COPY . .
-
-# Build (compile TS to JS)
 RUN npm run build
 
-# Expose port
+# Stage 2: Runner
+FROM node:${NODE_VERSION}-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PROJECT_ROOT=/app
+
+# Install necessary system tools
+RUN apk add --no-cache docker-cli docker-cli-compose
+
+# Install production dependencies only
+COPY package*.json ./
+RUN npm install --omit=dev
+
+# Copy built artifacts from builder
+COPY --from=builder /app/dist ./dist
+# Copy template files (must be present in build context)
+COPY docker-compose.yml ./
+
 EXPOSE 3001
 
-# Start using the built JS files for better performance than ts-node/tsx in prod
-# Assuming command in package.json for start is "node dist/index.js" or similar
-# If "start" is "tsx src/index.ts", we should change CMD to run the compiled code.
 CMD ["node", "dist/index.js"]

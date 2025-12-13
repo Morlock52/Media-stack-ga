@@ -3,6 +3,7 @@ import { readEnvFile, setEnvValue, removeEnvKey, PROJECT_ROOT } from '../utils/e
 import { runCommand } from '../utils/docker.js';
 import fs from 'fs';
 import path from 'path';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 const getOpenAIKey = () => {
     if (process.env.OPENAI_API_KEY)
         return process.env.OPENAI_API_KEY;
@@ -12,7 +13,7 @@ const getOpenAIKey = () => {
 };
 export async function aiRoutes(fastify) {
     // Get list of available agents
-    fastify.get('/api/agents', async (request, reply) => {
+    fastify.get('/api/agents', async (_request, _reply) => {
         const agentList = Object.values(AGENTS).map((a) => ({
             id: a.id,
             name: a.name,
@@ -23,7 +24,7 @@ export async function aiRoutes(fastify) {
         return { agents: agentList };
     });
     // Settings: OpenAI key management
-    fastify.get('/api/settings/openai-key', async (request, reply) => {
+    fastify.get('/api/settings/openai-key', async (_request, _reply) => {
         const key = getOpenAIKey();
         const hasKey = Boolean(key && key.length > 0);
         return { hasKey };
@@ -44,7 +45,7 @@ export async function aiRoutes(fastify) {
             reply.status(500).send({ error: 'Failed to save OpenAI key' });
         }
     });
-    fastify.delete('/api/settings/openai-key', async (request, reply) => {
+    fastify.delete('/api/settings/openai-key', async (_request, reply) => {
         try {
             removeEnvKey('OPENAI_API_KEY');
             delete process.env.OPENAI_API_KEY;
@@ -139,7 +140,7 @@ export async function aiRoutes(fastify) {
                         'Authorization': `Bearer ${effectiveApiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'gpt-4o',
+                        model: OPENAI_MODEL,
                         messages,
                         tools,
                         tool_choice: "auto",
@@ -181,7 +182,7 @@ export async function aiRoutes(fastify) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -216,7 +217,7 @@ export async function aiRoutes(fastify) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -274,7 +275,7 @@ export async function aiRoutes(fastify) {
                                     'Authorization': `Bearer ${effectiveApiKey}`
                                 },
                                 body: JSON.stringify({
-                                    model: 'gpt-4o',
+                                    model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
                                     temperature: 0.7
@@ -342,7 +343,7 @@ Latest user utterance: ${transcript}`;
                     Authorization: `Bearer ${effectiveApiKey}`,
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o',
+                    model: OPENAI_MODEL,
                     messages: [
                         { role: 'system', content: prompt },
                     ],
@@ -374,12 +375,12 @@ Latest user utterance: ${transcript}`;
         }
         catch (error) {
             fastify.log.error({ err: error }, 'Voice agent error');
-            reply.status(500).send({ error: 'Voice agent failed', details: error.message });
+            return reply.status(500).send({ error: 'Voice agent failed', details: error.message });
         }
     });
     // Get contextual suggestions
-    fastify.post('/api/agent/suggestions', async (request, reply) => {
-        const { currentApp, userProgress } = request.body;
+    fastify.post('/api/agent/suggestions', async (request, _reply) => {
+        const { currentApp, userProgress } = request.body || {};
         const suggestions = [];
         const appSuggestions = {
             plex: ['How do I add libraries?', 'Enable remote access', 'Set up users'],
