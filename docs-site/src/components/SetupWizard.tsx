@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import {
     ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw,
     Sparkles, Mic, User, Settings, Layers, Server, Key, FileText
@@ -174,11 +175,11 @@ export function SetupWizard() {
                         if (data) {
                             importConfig(data)
                         } else {
-                            alert('Invalid configuration file')
+                            toast.error('Invalid configuration file')
                         }
                     } catch (err) {
                         console.error('SetupWizard: failed to import configuration', err)
-                        alert('Failed to import configuration')
+                        toast.error('Failed to import configuration')
                     }
                 }
                 reader.readAsText(file)
@@ -405,8 +406,15 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
         const data = { mode, selectedServices, config }
         const encoded = btoa(JSON.stringify(data))
         const url = `${window.location.origin}${window.location.pathname}?config=${encoded}`
-        navigator.clipboard.writeText(url)
-        alert('Share link copied to clipboard!')
+        navigator.clipboard
+            .writeText(url)
+            .then(() => {
+                toast.success('Share link copied to clipboard!')
+            })
+            .catch((err) => {
+                console.error('SetupWizard: failed to copy share link', err)
+                toast.error('Failed to copy share link')
+            })
     }
 
     const progress = ((currentStep + 1) / steps.length) * 100

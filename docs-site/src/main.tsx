@@ -1,9 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import App from './App'
 import { DocsPage } from './pages/DocsPage'
 import './index.css'
+
+const SonnerToaster = Toaster as unknown as React.ComponentType<Record<string, unknown>>
 
 class RootErrorBoundary extends React.Component<
 	{ children: React.ReactNode },
@@ -38,6 +41,7 @@ class RootErrorBoundary extends React.Component<
 ReactDOM.createRoot(document.getElementById('root')!).render(
 	<React.StrictMode>
 		<RootErrorBoundary>
+			<SonnerToaster richColors closeButton />
 			<BrowserRouter>
 				<Routes>
 					<Route path="/" element={<App />} />

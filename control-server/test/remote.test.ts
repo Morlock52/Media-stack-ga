@@ -51,7 +51,7 @@ describe('Remote Deploy API', () => {
         fastify.close();
     });
 
-    it('should reject requests without privateKey', async () => {
+    it('should reject requests without credentials', async () => {
         const response = await fastify.inject({
             method: 'POST',
             url: '/api/remote-deploy',
@@ -89,6 +89,27 @@ describe('Remote Deploy API', () => {
 
         expect(sshCalls.length).toBeGreaterThan(0);
         expect(scpCalls.length).toBeGreaterThan(0);
+    });
+
+    it('should support password authentication (sshpass)', async () => {
+        const response = await fastify.inject({
+            method: 'POST',
+            url: '/api/remote-deploy',
+            payload: {
+                host: '1.2.3.4',
+                username: 'root',
+                authType: 'password',
+                password: 'secret'
+            }
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.payload);
+        expect(body.success).toBe(true);
+
+        const calls = spawnMock.mock.calls;
+        const sshpassCalls = calls.filter((c: any) => c[0] === 'sshpass');
+        expect(sshpassCalls.length).toBeGreaterThan(0);
     });
 
     it('should handle SSH errors', async () => {

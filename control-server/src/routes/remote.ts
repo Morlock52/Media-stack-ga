@@ -279,7 +279,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             host,
             port: typeof port === 'string' ? parseInt(port) : port,
             username,
-            privateKey
+            authType,
+            privateKey,
+            password
         };
 
         try {

@@ -22,7 +22,7 @@ ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 
 # Install necessary system tools
-RUN apk add --no-cache docker-cli docker-cli-compose
+RUN apk add --no-cache docker-cli docker-cli-compose openssh-client sshpass
 
 # Install production dependencies only
 COPY package*.json ./
