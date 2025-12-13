@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { NodeSSH } from 'node-ssh';
 import fs from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
+import os from 'os';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { RemoteDeployRequest } from '../types/index.js';
 
@@ -17,12 +18,94 @@ const sanitizeRemotePath = (input: any) => {
     return candidate;
 };
 
+interface SSHConfig {
+    host: string;
+    port: number;
+    username: string;
+    privateKey: string;
+}
+
+interface ExecResult {
+    code: number;
+    stdout: string;
+    stderr: string;
+}
+
+async function withTempKey<T>(privateKey: string, callback: (keyPath: string) => Promise<T>): Promise<T> {
+    const tmpDir = os.tmpdir();
+    const keyPath = path.join(tmpDir, `ssh-key-${Date.now()}-${Math.random().toString(36).substring(7)}`);
+
+    // Ensure key ends with newline to be valid
+    const formattedKey = privateKey.endsWith('\n') ? privateKey : `${privateKey}\n`;
+
+    await fs.promises.writeFile(keyPath, formattedKey, { mode: 0o600 });
+    try {
+        return await callback(keyPath);
+    } finally {
+        try {
+            await fs.promises.unlink(keyPath);
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+    }
+}
+
+function runCommand(command: string, args: string[]): Promise<ExecResult> {
+    return new Promise((resolve) => {
+        const proc = spawn(command, args);
+        let stdout = '';
+        let stderr = '';
+
+        proc.stdout.on('data', (data) => { stdout += data.toString(); });
+        proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+        proc.on('close', (code) => {
+            resolve({ code: code ?? 1, stdout, stderr });
+        });
+
+        proc.on('error', (err) => {
+            resolve({ code: 1, stdout, stderr: err.message });
+        });
+    });
+}
+
+async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> {
+    return withTempKey(config.privateKey, async (keyPath) => {
+        const args = [
+            '-i', keyPath,
+            '-p', config.port.toString(),
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            `${config.username}@${config.host}`,
+            command
+        ];
+        return runCommand('ssh', args);
+    });
+}
+
+async function scpFile(config: SSHConfig, localPath: string, remotePath: string): Promise<ExecResult> {
+    return withTempKey(config.privateKey, async (keyPath) => {
+        const args = [
+            '-i', keyPath,
+            '-P', config.port.toString(), // SCP uses -P for port
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            localPath,
+            `${config.username}@${config.host}:${remotePath}`
+        ];
+        return runCommand('scp', args);
+    });
+}
+
 export async function remoteRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy', async (request, reply) => {
-        const { host, port = 22, username, authType, password, privateKey, deployPath = '~/media-stack' } = request.body;
+        const { host, port = 22, username, privateKey, deployPath = '~/media-stack' } = request.body;
 
         if (!host || !username) {
             return reply.status(400).send({ error: 'Host and username are required' });
+        }
+        if (!privateKey) {
+            return reply.status(400).send({ error: 'Private key is required' });
         }
 
         let safeDeployPath;
@@ -32,29 +115,25 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             return reply.status(400).send({ error: error.message });
         }
 
-        const ssh = new NodeSSH();
+        const sshConfig: SSHConfig = {
+            host,
+            port: typeof port === 'string' ? parseInt(port) : port,
+            username,
+            privateKey
+        };
+
         const steps: { step: string, status: string }[] = [];
 
         try {
-            // Step 1: Connect
+            // Step 1: Connect (Check Echo)
             steps.push({ step: 'Connecting to server...', status: 'running' });
 
-            const connectConfig: any = {
-                host,
-                port: typeof port === 'string' ? parseInt(port) : port,
-                username,
-            };
-
-            if (authType === 'password') {
-                connectConfig.password = password;
-            } else {
-                connectConfig.privateKey = privateKey;
+            const homeResult = await execSSH(sshConfig, 'echo $HOME');
+            if (homeResult.code !== 0) {
+                throw new Error(`Connection failed: ${homeResult.stderr}`);
             }
-
-            await ssh.connect(connectConfig);
             steps[steps.length - 1].status = 'done';
 
-            const homeResult = await ssh.execCommand('echo $HOME');
             const remoteHome = (homeResult.stdout || '').trim();
             const remoteDeployPath = safeDeployPath.startsWith('~/')
                 ? `${remoteHome}/${safeDeployPath.slice(2)}`
@@ -64,25 +143,28 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             // Step 2: Create deploy directory
             steps.push({ step: 'Creating deploy directory...', status: 'running' });
-            await ssh.execCommand(`mkdir -p ${remoteDeployPath}`);
+            const mkdirResult = await execSSH(sshConfig, `mkdir -p ${remoteDeployPath}`);
+            if (mkdirResult.code !== 0) throw new Error(`Mkdir failed: ${mkdirResult.stderr}`);
             steps[steps.length - 1].status = 'done';
 
             // Step 3: Upload docker-compose.yml
             steps.push({ step: 'Uploading docker-compose.yml...', status: 'running' });
-            await ssh.putFile(COMPOSE_FILE, `${remoteDeployPath}/docker-compose.yml`);
+            const uploadCompose = await scpFile(sshConfig, COMPOSE_FILE, `${remoteDeployPath}/docker-compose.yml`);
+            if (uploadCompose.code !== 0) throw new Error(`Upload failed: ${uploadCompose.stderr}`);
             steps[steps.length - 1].status = 'done';
 
             // Step 4: Upload .env if exists
             const envFile = path.join(PROJECT_ROOT, '.env');
             if (fs.existsSync(envFile)) {
                 steps.push({ step: 'Uploading .env...', status: 'running' });
-                await ssh.putFile(envFile, `${remoteDeployPath}/.env`);
+                const uploadEnv = await scpFile(sshConfig, envFile, `${remoteDeployPath}/.env`);
+                if (uploadEnv.code !== 0) throw new Error(`Env upload failed: ${uploadEnv.stderr}`);
                 steps[steps.length - 1].status = 'done';
             }
 
             // Step 5: Check Docker is installed
             steps.push({ step: 'Checking Docker installation...', status: 'running' });
-            const dockerCheck = await ssh.execCommand('docker --version');
+            const dockerCheck = await execSSH(sshConfig, 'docker --version');
             if (dockerCheck.code !== 0) {
                 throw new Error('Docker is not installed on the remote server');
             }
@@ -90,26 +172,24 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             // Step 5.5: Verify compose file exists on remote
             steps.push({ step: 'Verifying docker-compose.yml on remote...', status: 'running' });
-            const composeFileCheck = await ssh.execCommand(`cd ${remoteDeployPath} && test -f docker-compose.yml`);
+            const composeFileCheck = await execSSH(sshConfig, `cd ${remoteDeployPath} && test -f docker-compose.yml`);
             if (composeFileCheck.code !== 0) {
                 throw new Error('docker-compose.yml not found on remote server after upload');
             }
             steps[steps.length - 1].status = 'done';
 
             // Determine compose command (Docker Compose v2 vs legacy docker-compose)
-            const composeV2Check = await ssh.execCommand('docker compose version');
+            const composeV2Check = await execSSH(sshConfig, 'docker compose version');
             const useComposeV2 = composeV2Check.code === 0;
             const composeCommand = useComposeV2 ? 'docker compose' : 'docker-compose';
 
             // Step 6: Start the stack
             steps.push({ step: 'Starting media stack...', status: 'running' });
-            const startResult = await ssh.execCommand(`cd ${remoteDeployPath} && ${composeCommand} -f docker-compose.yml up -d`);
+            const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} -f docker-compose.yml up -d`);
             if (startResult.code !== 0 && startResult.stderr && !startResult.stderr.includes('Warning')) {
                 throw new Error(startResult.stderr);
             }
             steps[steps.length - 1].status = 'done';
-
-            ssh.dispose();
 
             return {
                 success: true,
@@ -119,7 +199,6 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             };
 
         } catch (error: any) {
-            ssh.dispose();
             if (steps.length > 0) {
                 steps[steps.length - 1].status = 'error';
             }
@@ -132,43 +211,35 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         }
     });
 
-    // Test SSH connection (doesn't deploy, just validates credentials)
+    // Test SSH connection
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy/test', async (request, reply) => {
-        const { host, port = 22, username, authType, password, privateKey } = request.body;
+        const { host, port = 22, username, privateKey } = request.body;
 
-        const ssh = new NodeSSH();
+        if (!privateKey) {
+            return reply.status(400).send({ error: 'Private key is required' });
+        }
+
+        const sshConfig: SSHConfig = {
+            host,
+            port: typeof port === 'string' ? parseInt(port) : port,
+            username,
+            privateKey
+        };
 
         try {
-            const connectConfig: any = {
-                host,
-                port: typeof port === 'string' ? parseInt(port) : port,
-                username,
-            };
-
-            if (authType === 'password') {
-                connectConfig.password = password;
-            } else {
-                connectConfig.privateKey = privateKey;
-            }
-
-            await ssh.connect(connectConfig);
-
             // Quick checks
-            const dockerCheck = await ssh.execCommand('docker --version');
-            const composeV2Check = await ssh.execCommand('docker compose version');
-            const composeV1Check = composeV2Check.code === 0 ? { code: 0 } : await ssh.execCommand('docker-compose --version');
-
-            ssh.dispose();
+            const dockerCheck = await execSSH(sshConfig, 'docker --version');
+            const composeV2Check = await execSSH(sshConfig, 'docker compose version');
+            const composeV1Check = composeV2Check.code === 0 ? { code: 0 } : await execSSH(sshConfig, 'docker-compose --version');
 
             return {
                 success: true,
                 docker: dockerCheck.code === 0,
-                dockerCompose: composeV2Check.code === 0 || (composeV1Check as any).code === 0,
+                dockerCompose: composeV2Check.code === 0 || composeV1Check.code === 0,
                 message: dockerCheck.code === 0 ? 'Ready to deploy!' : 'Docker not found on server'
             };
 
         } catch (error: any) {
-            ssh.dispose();
             fastify.log.error({ err: error, host, username }, '[remote-deploy/test] failed');
             return reply.status(500).send({
                 success: false,

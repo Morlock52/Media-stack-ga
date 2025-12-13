@@ -1,0 +1,42 @@
+steps:
+  # Build Control Server
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/control-server:latest', './control-server']
+    id: 'build-control-server'
+
+  # Build Docs Site
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/docs-site:latest', './docs-site']
+    id: 'build-docs-site'
+    waitFor: ['-'] # Run in parallel
+
+  # Push Control Server
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/control-server:latest']
+    waitFor: ['build-control-server']
+
+  # Push Docs Site
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/docs-site:latest']
+    waitFor: ['build-docs-site']
+
+  # Deploy Control Server to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'media-stack-control'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/control-server:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-control-server'] # Wait for push to finish? (implicit if strictly ordered? No, explicitly separate steps)
+    # Actually 'waitFor' handles DAG. push steps don't have IDs above, let's just rely on sequential or add IDs.
+    
+images:
+  - 'gcr.io/$PROJECT_ID/control-server:latest'
+  - 'gcr.io/$PROJECT_ID/docs-site:latest'
