@@ -195,24 +195,24 @@ flowchart TB
 ```mermaid
 flowchart LR
   subgraph Threats[Threats]
-    T1[Admin UIs exposed to internet]
-    T2[Credential stuffing / weak passwords]
-    T3[Session replay / theft]
-    T4[Torrent/IP leak if VPN drops]
+    T1["Admin UIs exposed to internet"]
+    T2["Credential stuffing / weak passwords"]
+    T3["Session replay / theft"]
+    T4["Torrent/IP leak if VPN drops"]
   end
 
   subgraph Controls[Controls]
-    C1[Cloudflare Tunnel\nOutbound-only connector]
-    C2[Cloudflare Access policies\n(optional)]
-    C3[Authelia SSO + MFA\n(TOTP/WebAuthn)]
-    C4[Redis-backed sessions\n+ shorter expiry]
-    C5[Gluetun firewall\nkill-switch boundary]
+    C1["Cloudflare Tunnel<br/>Outbound-only connector"]
+    C2["Cloudflare Access policies<br/>optional"]
+    C3["Authelia SSO + MFA<br/>TOTP/WebAuthn"]
+    C4["Redis-backed sessions<br/>shorter expiry"]
+    C5["Gluetun firewall<br/>kill-switch boundary"]
   end
 
   subgraph Where[Where it lives]
-    W1[Edge]
-    W2[Identity]
-    W3[Downloads]
+    W1["Edge"]
+    W2["Identity"]
+    W3["Downloads"]
   end
 
   T1 --> C1 --> W1
