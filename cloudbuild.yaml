@@ -44,6 +44,22 @@ steps:
       - '--allow-unauthenticated'
     waitFor: ['push-control-server']
     
+  # Deploy Docs Site to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'media-stack-docs'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/docs-site:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-docs-site']
+
 images:
   - 'gcr.io/$PROJECT_ID/control-server:latest'
   - 'gcr.io/$PROJECT_ID/docs-site:latest'
