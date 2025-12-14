@@ -104,29 +104,29 @@ docker compose up -d
 ```mermaid
 flowchart TB
   %% ========== Edge ==========
-  subgraph Edge[Edge / Zero-Trust]
-    U[User\nBrowser / TV / Mobile]
-    CF[Cloudflare\nDNS + WAF + Access]
-    T[cloudflared\nCloudflare Tunnel]
+  subgraph Edge["Edge / Zero-Trust"]
+    U["User<br/>Browser / TV / Mobile"]
+    CF["Cloudflare<br/>DNS + WAF + Access"]
+    T["cloudflared<br/>Cloudflare Tunnel"]
     U -->|HTTPS| CF --> T
   end
 
   %% ========== Identity ==========
-  subgraph Identity[Identity & Sessions]
-    A[Authelia\nSSO + MFA]
-    R[(Redis\nSessions / storage)]
+  subgraph Identity["Identity & Sessions"]
+    A["Authelia<br/>SSO + MFA"]
+    R[("Redis<br/>Sessions / storage")]
     A -->|sessions| R
   end
 
   %% ========== Routing ==========
-  subgraph Routing[Routing]
-    RP[Reverse Proxy\nTraefik / labels]
+  subgraph Routing["Routing"]
+    RP["Reverse Proxy<br/>Traefik / labels"]
   end
 
   %% ========== Apps ==========
-  subgraph Apps[Core Apps]
-    H[Homepage\nDashboard]
-    O[Overseerr\nRequests]
+  subgraph Apps["Core Apps"]
+    H["Homepage<br/>Dashboard"]
+    O["Overseerr<br/>Requests"]
     P[Plex]
     J[Jellyfin]
     S[Sonarr]
@@ -136,14 +136,14 @@ flowchart TB
   end
 
   %% ========== Downloads ==========
-  subgraph DL[Downloads (VPN-isolated)]
-    G[Gluetun\nVPN + kill-switch]
+  subgraph DL["Downloads (VPN-isolated)"]
+    G["Gluetun<br/>VPN + kill-switch"]
     Q[qBittorrent]
     F[FlareSolverr]
   end
 
   %% ========== Ops ==========
-  subgraph Ops[Ops / Observability]
+  subgraph Ops["Ops / Observability"]
     PT[Portainer]
     DZ[Dozzle]
     WT[Watchtower]
@@ -170,7 +170,7 @@ flowchart TB
   RA -->|send to DL| Q
 
   Q -->|routed| G
-  G --> Internet[(Internet\nVPN exit)]
+  G --> Internet[("Internet<br/>VPN exit")]
 
   WT -.->|updates| PT
   DZ -.->|logs| Q
