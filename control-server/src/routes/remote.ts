@@ -46,7 +46,7 @@ async function withTempKey<T>(privateKey: string, callback: (keyPath: string) =>
     } finally {
         try {
             await fs.promises.unlink(keyPath);
-        } catch (_e) {
+        } catch {
             // Ignore cleanup errors
         }
     }

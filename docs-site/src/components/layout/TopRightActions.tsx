@@ -29,40 +29,66 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [hasApiKey, setHasApiKey] = useState(false)
+  const [isControlServerAvailable, setIsControlServerAvailable] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const updateConfig = useSetupStore((state) => state.updateConfig)
+  const storedApiKey = useSetupStore((state) => state.config.openaiApiKey)
 
   // Check if API key is saved on mount (silently fail if server unavailable)
   useEffect(() => {
+    const localHasKey = Boolean(storedApiKey && String(storedApiKey).trim())
+    if (localHasKey) {
+      setHasApiKey(true)
+    }
+
     fetch(buildControlServerUrl('/api/settings/openai-key'))
-      .then(r => r.ok ? r.json() : null)
-      .then(data => data && setHasApiKey(data.hasKey))
-      .catch(() => { /* Control server not running */ })
-  }, [])
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!data) return
+        setIsControlServerAvailable(true)
+        if (typeof data.hasKey === 'boolean') {
+          setHasApiKey(data.hasKey || localHasKey)
+        }
+      })
+      .catch(() => {
+        setIsControlServerAvailable(false)
+      })
+  }, [storedApiKey])
 
   const saveApiKey = async () => {
     setIsSaving(true)
     setSaveMessage(null)
+    const trimmedKey = apiKey.trim()
+    if (trimmedKey) {
+      updateConfig({ openaiApiKey: trimmedKey })
+      setHasApiKey(true)
+    }
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey })
+        body: JSON.stringify({ key: trimmedKey })
       })
       const data = await res.json()
       if (data.success) {
-        const trimmedKey = apiKey.trim()
-        updateConfig({ openaiApiKey: trimmedKey })
-        setHasApiKey(true)
         setApiKey('')
+        setIsControlServerAvailable(true)
         setSaveMessage({ type: 'success', text: 'API key saved!' })
         setTimeout(() => setShowApiKeyModal(false), 1500)
       } else {
         setSaveMessage({ type: 'error', text: data.error || 'Failed to save' })
       }
     } catch {
-      setSaveMessage({ type: 'error', text: 'Could not connect to server' })
+      if (trimmedKey) {
+        setSaveMessage({
+          type: 'success',
+          text: 'Saved locally. Start the control server on http://localhost:3001 to persist it.'
+        })
+      } else {
+        setSaveMessage({ type: 'error', text: 'Could not connect to server' })
+      }
+      setIsControlServerAvailable(false)
     } finally {
       setIsSaving(false)
     }
@@ -70,16 +96,21 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
 
   const deleteApiKey = async () => {
     setIsSaving(true)
+    updateConfig({ openaiApiKey: '' })
+    setHasApiKey(false)
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
-        updateConfig({ openaiApiKey: '' })
-        setHasApiKey(false)
+        setIsControlServerAvailable(true)
         setSaveMessage({ type: 'success', text: 'API key removed' })
       }
     } catch {
-      setSaveMessage({ type: 'error', text: 'Could not connect to server' })
+      setSaveMessage({
+        type: 'success',
+        text: 'Removed locally. Start the control server on http://localhost:3001 to remove persisted key.'
+      })
+      setIsControlServerAvailable(false)
     } finally {
       setIsSaving(false)
     }
@@ -231,7 +262,13 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Your key is stored in the project's <code className="px-1 py-0.5 bg-white/5 rounded">.env</code> file.
+                  {isControlServerAvailable
+                    ? (
+                      <>Your key is stored in the project's <code className="px-1 py-0.5 bg-white/5 rounded">.env</code> file.</>
+                    )
+                    : (
+                      <>Your key is stored locally in this browser. Start the control server to persist it.</>
+                    )}
                 </p>
                 <div className="flex gap-2">
                   <button

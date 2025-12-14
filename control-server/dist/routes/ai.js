@@ -353,7 +353,7 @@ Latest user utterance: ${transcript}`;
             });
             if (!response.ok) {
                 const errText = await response.text();
-                throw new Error(`OpenAI voice agent error (${response.status})`);
+                throw new Error(`OpenAI voice agent error (${response.status}): ${errText}`);
             }
             const data = await response.json();
             const content = data.choices?.[0]?.message?.content || 'Let me know more about your setup goals!';

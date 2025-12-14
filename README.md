@@ -1,634 +1,312 @@
-<!-- markdownlint-disable MD033 -->
-<div align="center">
-
-# 🎬 Ultimate Media Stack
-### Enterprise-grade self-hosted media platform with SSO, VPN isolation, and AI copilots.
+# 🎬 Ultimate Media‑Stack GA
 
 <!-- markdownlint-disable MD013 -->
-<p align="center">
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready"/>
-  <img src="https://img.shields.io/badge/Security-Authelia-1F2D3D?style=for-the-badge&logo=authelia&logoColor=white" alt="Authelia"/>
-  <img src="https://img.shields.io/badge/VPN-Protected-00C853?style=for-the-badge&logo=wireguard&logoColor=white" alt="VPN"/>
-  <img src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare"/>
-  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Cross-Platform"/>
-  <img src="https://img.shields.io/badge/Verified-Dec%206%2C%202025-success?style=for-the-badge" alt="Last Verified"/>
-</p>
-<!-- markdownlint-enable MD013 -->
 
-<p align="center">
-  <strong>One repo to bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN-protected downloads, AI onboarding assistants, and a gorgeous dashboard.</strong>
+<div align="center">
+
+### Enterprise‑grade self‑hosted media platform with zero‑trust security and AI‑powered onboarding
+
+![Docker Ready](https://img.shields.io/badge/Docker‑Ready‑2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Authelia](https://img.shields.io/badge/SSO/2FA‑Authelia‑1F2D3D?style=for-the-badge&logo=authelia&logoColor=white)
+![VPN](https://img.shields.io/badge/VPN‑Protected‑00C853?style=for-the-badge&logo=wireguard&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Zero‑Trust‑Cloudflare‑F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Cross‑Platform](https://img.shields.io/badge/Platform‑Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/License‑MIT‑green?style=for-the-badge)
+![Last Verified](https://img.shields.io/badge/Verified‑Dec%206%2C%202025-success?style=for-the-badge)
+
+<p>
+<strong>One repository to bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN‑protected downloads, AI onboarding assistants, and a modern dashboard.</strong>
 </p>
 
-<p align="center">
-  <a href="#-table-of-contents">Explore the README</a> •
-  <a href="#-quick-start-paths">Quick Start</a> •
-  <a href="docs-site">Docs Site</a> •
-  <a href="https://github.com/yourusername/media-stack/issues">Issues</a> •
-  <a href="https://github.com/yourusername/media-stack/discussions">Discussions</a>
+<p>
+<a href="#-table-of-contents">Table of contents</a> ·
+<a href="#-setup">Setup</a> ·
+<a href="docs-site">Docs site</a> ·
+<a href="https://github.com/Morlock52/Media-stack-ga/issues">Issues</a> ·
+<a href="https://github.com/Morlock52/Media-stack-ga/discussions">Discussions</a> ·
+<a href="#star">★ Star</a>
 </p>
+
+</div>
 
 ---
 
-</div>
+## 🔎 Table of contents
 
-## 🔎 Table of Contents
+1. [Why Ultimate Media‑Stack GA?](#-why-ultimate-media-stack-ga)
+2. [Stack at a glance](#-stack-at-a-glance)
+3. [AI assistants](#-ai-assistants)
+4. [Architecture & flow](#-architecture--flow)
+5. [Storage planning](#-storage-planning)
+6. [Quick start paths](#-quick-start-paths)
+7. [Setup & requirements](#-setup--requirements)
+8. [Installation journey](#-installation-journey)
+9. [Operations & maintenance](#-operations--maintenance)
+10. [Security hardening](#-security-hardening)
+11. [Advanced configuration](#-advanced-configuration)
+12. [Service comparison](#-service-comparison)
+13. [Learn & support](#-learn--support)
+14. [Contributing & license](#-contributing--license)
+15. [FAQ](#-faq)
 
-- [Why Ultimate Media Stack](#-why-ultimate-media-stack)
-- [Stack at a Glance](#-stack-at-a-glance)
-- [AI Assistants](#-ai-assistants-new)
-- [Screens & Storyboard](#-screens--storyboard)
-- [Feature Highlights](#-feature-highlights)
-- [Architecture & Flow](#-architecture--flow)
-- [Quick Start Paths](#-quick-start-paths)
-- [Requirements & Prep](#-requirements--prep)
-- [Installation Journey](#-installation-journey)
-- [Cloudflare Tunnel Playbook](#-cloudflare-tunnel-playbook)
-- [First-Time Configuration](#-first-time-configuration)
-- [Directory Blueprint](#-directory-blueprint)
-- [Operations Playbook](#-operations-playbook)
-- [Security Hardening](#-security-hardening)
-- [Advanced Configuration](#-advanced-configuration)
-- [Service Comparison](#-service-comparison)
-- [Learn & Support](#-learn--support)
-- [Contributing](#-contributing)
-- [FAQ](#-faq)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
+<div id="top"></div>
 
-## 💡 Why Ultimate Media Stack?
+---
 
-- 🔐 **Production-grade perimeter** — Cloudflare Tunnel + Authelia + Redis deliver Zero Trust entry with SSO, 2FA, Argon2-hashed secrets, and zero open ports on your router.
-- 🧠 **Guided onboarding** — Interactive TUI installers, a docs site, and multiple AI copilots walk newcomers through every decision while staying scriptable for power users.
-- 🎬 **Dual streaming engines** — Plex and Jellyfin share the same libraries, with Tdarr pipelines, TRaSH-compatible profiles, and Overseerr requests feeding Sonarr/Radarr automatically.
-- ⬇️ **VPN-enforced downloads** — Gluetun encapsulates qBittorrent, FlareSolverr, and indexer traffic with firewall guardrails so nothing leaks onto the public internet.
-- 🛠 **DevOps ergonomics** — Docker Compose orchestrates everything with Watchtower updates, Dozzle logs, Portainer GUI, Notifiarr notifications, and health probes surfaced on the dashboard.
-- 🌍 **Cross-platform comfort** — Works on Windows, macOS, and Linux, whether you deploy to a NAS, mini PC, homelab cluster, or remote VPS.
+## 💡 Why Ultimate Media‑Stack GA
 
-## 🧱 Stack at a Glance
+Self‑hosting a media server used to mean juggling dozens of containers and hoping nothing leaked onto the public internet. **Ultimate Media‑Stack GA** packages everything you need into one cohesive bundle.
+
+- **Zero‑trust perimeter** – Cloudflare Tunnel and Authelia provide single‑sign‑on and two‑factor authentication so nothing is exposed to the open web. The tunnel itself is free to use【636714307818157†L104-L108】.
+- **Dual streaming engines** – Both Plex and Jellyfin run side‑by‑side. Jellyfin is completely free and open‑source【736920552348604†L69-L70】, while Plex offers a polished experience but locks hardware transcoding and other extras behind a Plex Pass【736920552348604†L101-L106】.
+- **Automated downloads** – Sonarr, Radarr and Prowlarr search for content, and qBittorrent is wrapped inside a VPN container to guarantee that all traffic stays private. Tdarr optimises your files for smooth playback.
+- **AI‑guided onboarding** – Interactive TUI scripts and optional voice control ask you a few plain‑English questions and build the right stack for your hardware.
+- **Cross‑platform** – Works on Windows, macOS and Linux. Minimal hardware is required: Plex Media Server typically needs only 4 GB of RAM【449177079065126†L214-L218】, though more memory helps for multitasking.
+
+> Great READMEs use images, screenshots, badges and clear navigation【143032840745968†L259-L267】. This document follows those best practices with diagrams, charts and well‑structured sections.
+
+---
+
+## 🧱 Stack at a glance
 
 | Layer | Components | Highlights |
 | --- | --- | --- |
+| **Access & Security** | ![Cloudflare](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white) ![Authelia](https://img.shields.io/badge/Authelia-1F2D3D?style=flat-square&logo=authelia&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | Zero‑trust ingress, single sign‑on, two‑factor authentication, Argon2 secrets |
+| **Media Core** | ![Plex](https://img.shields.io/badge/Plex-E5A00D?style=flat-square&logo=plex&logoColor=white) ![Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?style=flat-square&logo=jellyfin&logoColor=white) ![Tdarr](https://img.shields.io/badge/Tdarr-2A3C4D?style=flat-square) ![Audiobookshelf](https://img.shields.io/badge/Audiobookshelf-A88203?style=flat-square) | Plex + Jellyfin side‑by‑side; audiobook & podcast server; automated transcodes |
+| **Automation & Requests** | ![Sonarr](https://img.shields.io/badge/Sonarr-32C3E6?style=flat-square&logo=sonarr&logoColor=white) ![Radarr](https://img.shields.io/badge/Radarr-FFC230?style=flat-square&logo=radarr&logoColor=white) ![Prowlarr](https://img.shields.io/badge/Prowlarr-D52216?style=flat-square&logo=prowlarr&logoColor=white) ![Bazarr](https://img.shields.io/badge/Bazarr-000000?style=flat-square) ![Overseerr](https://img.shields.io/badge/Overseerr-DBA538?style=flat-square&logo=overseerr&logoColor=white) | Automated search & downloads, quality enforcement, subtitle fetching, user‑friendly request interface |
+| **Library Extensions** | ![Kavita](https://img.shields.io/badge/Kavita-444444?style=flat-square) ![Mealie](https://img.shields.io/badge/Mealie-E7A42B?style=flat-square) ![PhotoPrism](https://img.shields.io/badge/PhotoPrism-6A5ACD?style=flat-square&logo=photoprism&logoColor=white) | Comics & manga; recipe manager; AI photo organisation |
+| **Downloads** | ![Gluetun](https://img.shields.io/badge/Gluetun-252525?style=flat-square&logo=wireguard&logoColor=white) ![qBittorrent](https://img.shields.io/badge/qBittorrent-2F67BA?style=flat-square&logo=qbittorrent&logoColor=white) ![FlareSolverr](https://img.shields.io/badge/FlareSolverr-232F3E?style=flat-square) | All torrent traffic rides a VPN tunnel; captcha bypass; kill‑switch firewall |
+| **Ops & DX** | ![Homepage](https://img.shields.io/badge/Homepage-4A90E2?style=flat-square) ![Portainer](https://img.shields.io/badge/Portainer-13BEF9?style=flat-square&logo=portainer&logoColor=white) ![Dozzle](https://img.shields.io/badge/Dozzle-000000?style=flat-square) ![Watchtower](https://img.shields.io/badge/Watchtower-000000?style=flat-square) ![Notifiarr](https://img.shields.io/badge/Notifiarr-000000?style=flat-square) | Auto‑discovered dashboard, GUI container management, live logs, nightly updates, notifications |
 
-| Access & Security | ![](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white) ![](https://img.shields.io/badge/Authelia-1F2D3D?style=flat-square&logo=authelia&logoColor=white) ![](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | Zero Trust edge, SSO/2FA, centralized session store, Argon2 hashing |
-| Media Core | ![](https://img.shields.io/badge/Plex-E5A00D?style=flat-square&logo=plex&logoColor=white) ![](https://img.shields.io/badge/Jellyfin-00A4DC?style=flat-square&logo=jellyfin&logoColor=white) ![](https://img.shields.io/badge/Tdarr-2A3C4D?style=flat-square) ![](https://img.shields.io/badge/Audiobookshelf-A88203?style=flat-square) | Dual media servers, audiobooks/podcasts, hardware-friendly transcoding |
-| Automation & Requests | ![](https://img.shields.io/badge/Sonarr-32C3E6?style=flat-square&logo=sonarr&logoColor=white) ![](https://img.shields.io/badge/Radarr-FFC230?style=flat-square&logo=radarr&logoColor=white) ![](https://img.shields.io/badge/Prowlarr-D52216?style=flat-square&logo=prowlarr&logoColor=white) ![](https://img.shields.io/badge/Bazarr-000000?style=flat-square) ![](https://img.shields.io/badge/Overseerr-DBA538?style=flat-square&logo=overseerr&logoColor=white) | Auto-search, quality enforcement, subtitle syncing, user-friendly requests |
-| Library Extensions | ![](https://img.shields.io/badge/Kavita-444444?style=flat-square) ![](https://img.shields.io/badge/Mealie-E7A42B?style=flat-square) ![](https://img.shields.io/badge/PhotoPrism-6A5ACD?style=flat-square&logo=photoprism&logoColor=white) | Comics/Manga, Recipe Manager, AI Photo Organization |
-| Downloads | ![](https://img.shields.io/badge/Gluetun-252525?style=flat-square&logo=wireguard&logoColor=white) ![](https://img.shields.io/badge/qBittorrent-2F67BA?style=flat-square&logo=qbittorrent&logoColor=white) ![](https://img.shields.io/badge/FlareSolverr-232F3E?style=flat-square) | VPN-only download path, captcha bypass, kill-switch firewall |
-| Ops & DX | ![](https://img.shields.io/badge/Homepage-4A90E2?style=flat-square) ![](https://img.shields.io/badge/Portainer-13BEF9?style=flat-square&logo=portainer&logoColor=white) ![](https://img.shields.io/badge/Dozzle-000000?style=flat-square) ![](https://img.shields.io/badge/Watchtower-000000?style=flat-square) ![](https://img.shields.io/badge/Notifiarr-000000?style=flat-square) | Auto-discovered dashboard, GUI container management, live logs, proactive updates/alerts |
+---
 
-## 🤖 AI Assistants (NEW!)
+## 🤖 AI assistants
 
-- 🚀 **Setup Guide** — interactive coach that walks you through prerequisites, secrets, Cloudflare linkage, and media paths.
-- 🔍 **Dr. Debug** — diagnoses failing containers, highlights conflicting ports, and proposes command snippets to fix them.
-- 📱 **App Expert** — contextual encyclopedia covering every service, surfaced directly from the dashboard.
-- 🚢 **Deploy Captain** — helps mirror this stack onto remote servers or friends' homelabs with templated commands.
-- 🎤 **Voice Companion** — voice-guided instructions for screen-free setup sessions.
-- 🟢 **Status Chips & Health Monitor** — real-time chips show what the AI is doing; the health monitor auto-detects broken containers and suggests remediation.
+This stack comes with several AI‑powered helpers to streamline deployment and troubleshooting:
 
-## 📸 Screens & Storyboard
+- **Setup Guide** — interactive coach guiding you through prerequisites, environment variables and domain configuration.
+- **Dr Debug** — diagnostic agent that inspects failing containers and suggests fixes.
+- **App Expert** — contextual encyclopedia for each service, accessible from the dashboard.
+- **Deploy Captain** — templated commands to replicate your stack on another server or share with friends.
+- **Voice Companion** — voice‑controlled wizard for screen‑free setup. Users can speak natural requests (e.g. “I have a Synology NAS and want Plex”) and receive a personalised plan.
 
-<div align="center">
+The AI helpers live in the accompanying documentation site and rely on your own API keys. Status chips on the dashboard indicate which agent is active. A health monitor automatically surfaces failing services with remediation tips.
 
-<details open>
-<summary>🏠 Auto-Discovering Dashboard</summary>
+---
 
-<img src="docs-site/public/images/dashboard_mockup.png" alt="Homepage Dashboard" width="800"/>
+## 🏗️ Architecture & flow
 
-*Homepage instantly lists every running service, synced from `config/homepage/*.yaml`.*
+Below is a high‑level overview of how components interact. The colour legend at the bottom groups services by function. External access enters through Cloudflare Tunnel and Authelia, flows into the Homepage dashboard, and then fans out to media, automation and management services. Torrent traffic is enclosed within a VPN tunnel to protect your privacy.
 
-</details>
+![Ultimate Media Stack Architecture](architecture_diagram.png)
 
-<details>
-<summary>📺 Media Library</summary>
+### Lifecycle
 
-<img src="docs-site/public/images/media_library_mockup.png" alt="Media Library" width="800"/>
-
-*Track movies, shows, and metadata at a glance across Plex and Jellyfin.*
-
-</details>
-
-<details>
-<summary>🎯 Request Workflow</summary>
-
-<img src="docs-site/public/images/request_ui_mockup.png" alt="Request Interface" width="800"/>
-
-*Overseerr gives users a friendly way to request content that feeds Sonarr/Radarr automatically.*
-
-</details>
-
-<details>
-<summary>⬇️ Download Control</summary>
-
-<img src="docs-site/public/images/download_client_mockup.png" alt="Download Client" width="800"/>
-
-*qBittorrent stays fully wrapped by Gluetun so every transfer rides the VPN tunnel.*
-
-</details>
-
-
-
-<details>
-<summary>📚 Interactive Documentation</summary>
-
-<img src="docs-site/public/images/docs_site_hero.png" alt="Documentation Site" width="800"/>
-
-*A modern, interactive documentation site with AI-powered guides and search.*
-
-</details>
-
-</div>
-
-## ✨ Feature Highlights
-
-<table>
-<tr>
-<td width="50%">
-
-#### 🔐 Security First
-- Single Sign-On with Authelia
-- Time-based OTP 2FA for every user
-- Cloudflare Zero Trust tunnel (no port forwarding)
-- Automated SSL/TLS + HSTS-ready endpoints
-- Argon2 password hashing with salted secrets
-- Redis-backed sessions for resilience and scale
-
-</td>
-<td width="50%">
-
-#### 🚀 Automation Fabric
-- Auto-discovery dashboard powered by Homepage
-- Watchtower keeps containers patched nightly
-- Prowlarr orchestrates indexers for Sonarr/Radarr
-- Tdarr automates transcodes & normalization jobs
-- Bazarr fetches subtitles; Notifiarr pushes alerts
-- Real-time notifications and health status chips
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-#### 🎬 Media Intelligence
-- Plex + Jellyfin run side-by-side
-- Overseerr funnels user requests into Sonarr/Radarr
-- TRaSH-compatible quality and naming profiles
-- Optional Tautulli analytics for Plex insights
-- Flexible library roots for movies, shows, music, downloads
-
-</td>
-<td width="50%">
-
-#### 🛠️ DevOps Ready
-- One-click guided setup (gum-based TUI)
-- Docker Compose orchestration & scaling
-- Dozzle log viewer + Portainer UI
-- Cross-platform scripts (Windows/macOS/Linux)
-- Environment-based config for secret rotation
-
-</td>
-</tr>
-<tr>
-<td colspan="2">
-
-#### 🤖 AI-Enhanced Operations
-- Multi-agent experience orchestrated from the docs site
-- Real-time status chips show which agent is active
-- Health monitor surfaces failing containers with fixes
-- Voice + text experiences for every skill level
-
-</td>
-</tr>
-</table>
-
-## 🏗️ Architecture & Flow
-
-```mermaid
-graph TB
-    subgraph "External Access"
-        User[👤 User]
-        CF[☁️ Cloudflare]
-    end
-
-    subgraph "Security Layer"
-        Tunnel[🔒 Cloudflare Tunnel]
-        Authelia[🛡️ Authelia SSO/2FA]
-        Redis[(Redis Session Store)]
-    end
-
-    subgraph "Frontend"
-        Homepage[🏠 Homepage Dashboard]
-        Overseerr[🎯 Overseerr Requests]
-    end
-
-    subgraph "Media Servers"
-        Plex[📺 Plex]
-        Jellyfin[🎥 Jellyfin]
-    end
-
-    subgraph "Automation Stack"
-        Sonarr[📡 Sonarr TV]
-        Radarr[🎬 Radarr Movies]
-        Prowlarr[🔍 Prowlarr Indexers]
-        Bazarr[💬 Bazarr Subtitles]
-    end
-
-    subgraph "Download Stack"
-        Gluetun[🔐 VPN Gluetun]
-        qBit[⬇️ qBittorrent]
-        FlareSolverr[🌐 FlareSolverr]
-    end
-
-    subgraph "Processing"
-        Tdarr[⚙️ Tdarr Transcoding]
-    end
-
-    subgraph "Management"
-        Portainer[🐳 Portainer]
-        Dozzle[📋 Dozzle Logs]
-        Watchtower[🔄 Watchtower Updates]
-        Notifiarr[🔔 Notifiarr]
-    end
-
-    User -->|HTTPS| CF
-    CF -->|Secure| Tunnel
-    Tunnel --> Authelia
-    Authelia --> Redis
-    Authelia --> Homepage
-    Homepage --> Overseerr
-    Homepage --> Plex
-    Homepage --> Jellyfin
-    Homepage --> Sonarr
-    Homepage --> Radarr
-    Homepage --> Portainer
-    Overseerr --> Sonarr
-    Overseerr --> Radarr
-    Sonarr --> Prowlarr
-    Radarr --> Prowlarr
-    Prowlarr --> FlareSolverr
-    Sonarr --> qBit
-    Radarr --> qBit
-    qBit -.->|Routes Through| Gluetun
-    Gluetun -->|VPN Exit| Internet[🌍 Internet]
-    Plex --> Tdarr
-    Jellyfin --> Tdarr
-    Sonarr --> Bazarr
-    Radarr --> Bazarr
-    Watchtower -.->|Updates| Portainer
-    Dozzle -.->|Monitors| qBit
-    Notifiarr -.->|Alerts| Sonarr
-
-    style Authelia fill:#ff6c37,stroke:#333,stroke-width:3px,color:#fff
-    style Gluetun fill:#00c853,stroke:#333,stroke-width:3px,color:#fff
-    style Tunnel fill:#f38020,stroke:#333,stroke-width:3px,color:#fff
-    style Homepage fill:#4a90e2,stroke:#333,stroke-width:3px,color:#fff
 ```
-
-### 🔄 Lifecycle
-
-```text
-┌──────────────────────┐      ┌──────────────────────────────┐
-│ User hits *.domain → │────▶│ Cloudflare → Tunnel → Authelia│
-└──────────────────────┘      └──────────────────────────────┘
-                 ↓ SSO/2FA passes
+┌─────────────────────────┐      ┌──────────────────────────────┐
+│ User accesses *.domain  │───▶ │ Cloudflare → Tunnel → Authelia │
+└─────────────────────────┘      └──────────────────────────────┘
+                    ↓ SSO/2FA passes
 ┌───────────────────────────────────────────────┐
-│ Homepage auto-discovers every internal service│
+│ Homepage auto‑discovers internal services    │
 └───────────────────────────────────────────────┘
-                 ↓ Requests sync
+                    ↓ Requests sync
 ┌─────────────┬─────────────┬───────────────────────────────┐
-│ Overseerr   │ Sonarr/Radarr│ qBittorrent → Gluetun → Tdarr│
+│ Overseerr   │ Sonarr/Radarr │ qBittorrent → Gluetun → Tdarr │
 └─────────────┴─────────────┴───────────────────────────────┘
-                 ↓
+                    ↓
 ┌───────────────────────────────────────────────┐
-│ Plex/Jellyfin stream optimized media to users │
+│ Plex/Jellyfin stream optimised media to users │
 └───────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start Paths
+---
 
-| 🎓 Guided (Host Mode) | 🐳 Guided (Docker Mode) | 🧠 Power User |
+## 📦 Storage planning
+
+Use the chart below to estimate how much storage you need for your library. Movies and TV series occupy vastly different amounts of space; 4K content can easily consume tens of gigabytes per file. The bar chart compares starter, medium and large libraries for approximate storage, movie counts and TV shows.
+
+![Recommended Storage vs Library Size](storage_chart.png)
+
+- **Starter (~2 TB)** – suits ~500 movies and ~50 TV shows, using conservative bitrates.
+- **Medium (~8 TB)** – around 2,000 movies and 200 shows; enough for a small household.
+- **Large (16 TB+)** – serious collectors should budget 16 TB or more for thousands of films and series.
+
+Remember that converting files to more efficient codecs (e.g. H.265) can save 40–60% space, and adding more disks later is often cheaper than buying oversized storage upfront.
+
+---
+
+## 🚀 Quick start paths
+
+Pick the installation path that matches your experience level. Each route converges on the same Docker Compose stack.
+
+| 🎓 **Guided (Host Mode)** | 🐳 **Guided (Docker Mode)** | 🧠 **Power User** |
 | --- | --- | --- |
-| 1. Install Docker.<br>2. Run setup:<br>`./setup.sh`<br>3. Run dashboard locally:<br>`cd docs-site`<br>`npm install`<br>`npm run dev` | 1. Install Docker.<br>2. Configure `.env` with **absolute paths**.<br>3. Run dashboard in container:<br>`docker compose -f docker-compose.wizard.yml up -d`<br>4. Open `http://localhost:3000`. | 1. Manual config.<br>2. Generate `.env`:<br>`./setup_auto.sh`<br>3. Launch stack:<br>`docker-compose up -d`<br>4. Secrets management via Vault/GitOps. |
+| 1. Install Docker.<br>2. Run the interactive installer:<br>  `./setup.sh`<br>3. Launch docs site locally:<br>  `cd docs-site && npm install && npm run dev` | 1. Install Docker.<br>2. Copy `.env.example` to `.env` and set **absolute paths**.<br>3. Launch the wizard container:<br>  `docker compose -f docker-compose.wizard.yml up -d`<br>4. Open `http://localhost:3000` to configure. | 1. Skip the wizard.<br>2. Generate `.env` automatically:<br>  `./setup_auto.sh`<br>3. Run services:<br>  `docker-compose up -d`<br>4. Manage secrets via your own vault or GitOps. |
 
-> 💡 Both paths converge on the same Docker Compose stack—pick the experience that matches today’s confidence level.
+> 💡 Not sure which path to choose? Start with the guided wizard. You can always switch to manual configuration later.
 
-## 🎙️ AI Voice Companion (Newbie Optimized)
+---
 
-> **Status**: Beta | **Privacy**: Data processed via OpenAI (Your Key) | **Fallback**: Text Input Available
+## 🛠 Setup & requirements
 
-For users who don't know "Containers" from "Compose files," the **Voice Companion** acts as a human-friendly onboarding agent. It conducts a short interview to build your stack for you.
+Before running the stack you will need a few prerequisites:
 
-### How to Use
-1.  **Open the Wizard**: Go to `http://localhost:3000` (or `3002`).
-2.  **Click "Start Interview"**: Look for the microphone icon in the "Newbie" path.
-3.  **Speak Naturally**:
-    *   *"I want to build a Netflix for my family on my old gaming PC."*
-    *   *"I need to download anime and I have a Synology NAS."*
-4.  **Review & Apply**: The AI will generate a structured plan (Services, Hosting, Storage). Click **Apply Plan** to auto-fill the wizard.
+| Requirement | Description | Free option |
+| --- | --- | --- |
+| 🐳 **Docker** | Container runtime for all services | ✅ Yes |
+| 🐙 **Docker Compose** | Orchestration tool for multi‑container setups | ✅ Yes |
+| 🌐 **Domain name** | Used for Cloudflare Tunnel and SSL | ✅ Free subdomains available |
+| ☁️ **Cloudflare account** | Tunnel creation & DNS management | ✅ Free plan available |
+| 🔐 **VPN credentials** | Needed for Gluetun (Mullvad, ProtonVPN, etc.) | ❌ Paid (choose your provider) |
+| 🖥️ **Operating system** | Windows, macOS or Linux | ✅ All supported |
 
-### Example Interaction
-| 🗣️ You (Voice or Text) | 🤖 AI Response | ⚙️ Result |
-| :--- | :--- | :--- |
-| "I have a Synology 920+ and I want to use Plex." | "Excellent choice. Since you're on a Synology, I'll recommend the Docker method with hardware transcoding enabled. Do you need a way to request movies?" | - Sets Platform: `Synology`<br>- Adds: `Plex`, `Tautulli`<br>- Prompts for: `Overseerr` |
-| "Yes, and I use private torrent trackers." | "Understood. I'll add Prowlarr for indexer management and qBittorrent for downloads. Be sure to configure your VPN." | - Adds: `Prowlarr`, `qBittorrent`<br>- Adds: `Gluetun` (VPN container) |
-
-**Pro Tip**: If your environment is noisy, use the **manual text input** at the bottom of the voice panel.
-
-## 🥟 Deploy with Bun
-
-Prefer [Bun](https://bun.sh)? You can use it to speed up the setup and run the docs site.
-
-1.  **Install Bun**: `curl -fsSL https://bun.sh/install | bash`
-2.  **Run Setup**: The `setup.sh` script automatically detects Bun.
-3.  **Run Docs Site**:
-    ```bash
-    cd docs-site
-    bun install
-    bun run dev
-    ```
-
-
-## 📋 Requirements & Prep
-
-| Requirement | Description | Free Option |
-|------------|-------------|-------------|
-| 🐳 **Docker** | Container runtime | ✅ Yes |
-| 🐙 **Docker Compose** | Container orchestration | ✅ Yes |
-| 🌐 **Domain Name** | Needed for Cloudflare Tunnel & SSL | ✅ Free subdomains available |
-| ☁️ **Cloudflare Account** | Zero Trust tunnel & DNS | ✅ Free tier works |
-| 💻 **OS** | Windows, macOS, or Linux | ✅ All supported |
-
-Checklist before you begin:
-- [ ] Docker Engine installed and running.
-- [ ] Domain onboarded to Cloudflare (nameservers moved or partial CNAME setup).
-- [ ] VPN provider credentials compatible with Gluetun.
-- [ ] Ports 80/443 free locally (Cloudflare tunnel handles ingress).
+### Install Docker & Compose
 
 <details>
-<summary>📦 <strong>Install Docker & Compose by Platform</strong></summary>
+<summary>🐧 <strong>Linux</strong></summary>
 
-### 🐧 Linux
 ```bash
-# Ubuntu/Debian
 sudo apt update && sudo apt install docker.io docker-compose -y
 sudo systemctl enable --now docker
 sudo usermod -aG docker $USER
-
-# Arch Linux
-sudo pacman -S docker docker-compose
-sudo systemctl enable --now docker
 ```
 
-### 🍎 macOS
-```bash
-# Install Docker Desktop
-brew install --cask docker
+</details>
 
-# Or use Colima (lightweight alternative)
+<details>
+<summary>🍎 <strong>macOS</strong></summary>
+
+```bash
+brew install --cask docker
+# or use the lightweight alternative
 brew install colima docker docker-compose
 colima start
 ```
 
-### 🪟 Windows
-```powershell
-# Docker Desktop with WSL2 backend (recommended)
-winget install Docker.DockerDesktop
+</details>
 
-# Or Chocolately
+<details>
+<summary>🪟 <strong>Windows</strong></summary>
+
+```powershell
+winget install Docker.DockerDesktop
+# Or using Chocolatey
 choco install docker-desktop
 ```
 
 </details>
 
-## 🛠️ Installation Journey
+Ensure that ports 80/443 are free (Cloudflare will handle ingress) and that your domain is pointing at Cloudflare. Create a Cloudflare API token with Zone → DNS (edit) and Tunnel (edit) privileges. Cloudflare’s free tier covers tunnel usage【636714307818157†L104-L108】.
 
-### 1️⃣ Clone the Repository
+---
+
+## 🛠️ Installation journey
+
+### 1. Clone the repository
+
 ```bash
-git clone https://github.com/yourusername/media-stack.git
-cd media-stack
+git clone https://github.com/Morlock52/Media-stack-ga.git
+cd Media-stack-ga
 ```
 
-### 2️⃣ Prime Your Environment
-- Copy `.env.example` to `.env` if you want manual control.
-- Gather VPN credentials, domain, timezone, and master passwords.
-- Optional: stage media directories under `/srv/mediastack` (Linux) or `C:\mediastack` (Windows).
+### 2. Prepare your environment
 
-### 3️⃣ Run the Setup TUI
+- Copy `.env.example` to `.env` if you want to customise variables manually.
+- Gather VPN credentials, domain, timezone and strong master passwords.
+- Stage your media directories (e.g. `/srv/mediastack/media/movies`, `C:\\mediastack\\media\\tvshows`).
+
+### 3. Run the setup wizard
+
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
-What it does:
-- Installs `gum` for the UI.
-- Prompts for domain, Cloudflare mode, VPN creds, and secrets.
-- Generates Authelia user hashes, directory structure, and permissions.
-- Optionally pulls & boots Docker services.
 
-### 4️⃣ Launch (or Relaunch) the Stack
+This script installs [gum](https://github.com/charmbracelet/gum) for the TUI, asks for your domain, Cloudflare token, VPN details and passwords, generates hashed secrets, prepares the directory tree and optionally pulls Docker images.
+
+### 4. Launch the stack
+
 ```bash
 docker-compose up -d
 ```
-Monitor startup:
+
+Monitor startup logs with `docker-compose logs -f`. The first launch may take several minutes while services initialise and download metadata.
+
+---
+
+## 🧭 Operations & maintenance
+
+### Monitoring
+
+- **Homepage** – auto‑discovered dashboard at `https://home.yourdomain.com` lists all running services.
+- **Portainer** – full container management at `https://portainer.yourdomain.com`.
+- **Dozzle** – live logs at `https://dozzle.yourdomain.com`.
+- Command‑line basics:
+
 ```bash
-# Tail everything
-docker-compose logs -f
-# Or watch a specific service
-docker-compose logs -f plex
+docker-compose ps
+docker-compose logs --tail=100 sonarr
 ```
 
-## ☁️ Cloudflare Tunnel Playbook
+### Updates
 
-The setup script lets you pick **Automatic** or **Manual** tunnel creation. Here’s what each path expects:
+- **Automated** – Watchtower checks for image updates nightly and redeploys containers automatically.
+- **Manual** – pull new images and restart:
 
-### ✅ Option 1 — Automatic (recommended)
-1. Create a Cloudflare API Token with:
-   - Zone → Zone (Read)
-   - Zone → DNS (Edit)
-   - Account → Cloudflare Tunnel (Edit)
-2. Provide the token inside the TUI when prompted.
-3. Script creates the tunnel, wildcard DNS (`*.yourdomain.com`), and stores credentials in `config/cloudflared/`.
-4. Finish by defining Public Hostnames in the Zero Trust dashboard (map subdomains to internal services like `http://plex:32400`).
-
-### ✍️ Option 2 — Manual
-1. In [Cloudflare Zero Trust](https://one.dash.cloudflare.com/), create a tunnel manually and copy the token.
-2. When the TUI asks, choose **Manual** and paste the token.
-3. Create a wildcard CNAME pointing to `<tunnel-id>.cfargotunnel.com`.
-4. Configure Public Hostnames to route traffic (Homepage, Authelia, Plex, Jellyfin, etc.).
-
-## 🔐 First-Time Configuration
-
-### 👤 Authelia Bootstrap Credentials
-
-```text
-Username: morlock
-Password: Morlock52$ (or your master password)
-```
-> ⚠️ Change the password immediately.
-
-Generate a new hash:
 ```bash
-docker run --rm authelia/authelia:latest \
-  authelia crypto hash generate argon2 \
-  --password 'YourNewSecurePassword123!'
-```
-Update `config/authelia/users_database.yml` with the new hash.
-
-### 📋 Service Configuration Checklist
-
-<details>
-<summary>📺 <strong>Plex</strong></summary>
-
-1. Visit `https://plex.yourdomain.com`.
-2. Sign in with your Plex account.
-3. Add libraries (e.g., `/media/movies`, `/media/tvshows`, `/media/music`).
-4. Settings → Network:
-   - Custom server access URLs: `https://plex.yourdomain.com`
-   - Secure connections: Preferred.
-
-</details>
-
-<details>
-<summary>🎥 <strong>Jellyfin</strong></summary>
-
-1. Visit `https://jellyfin.yourdomain.com` and complete the wizard.
-2. Add libraries with the same mount paths as Plex.
-3. Leave base URL empty (tunnel handles HTTPS).
-
-</details>
-
-<details>
-<summary>🔍 <strong>Prowlarr</strong></summary>
-
-1. Visit `https://prowlarr.yourdomain.com`.
-2. Add indexers and FlareSolverr (`http://flaresolverr:8191`).
-3. Connect Sonarr/Radarr via Settings → Apps (host `http://prowlarr:9696`).
-
-</details>
-
-<details>
-<summary>📡 <strong>Sonarr & Radarr</strong></summary>
-
-- Root folders: `/media/tvshows` (Sonarr) & `/media/movies` (Radarr).
-- Download client: qBittorrent (`qbittorrent:8080`, user `admin`, change password!).
-- Import TRaSH quality profiles for best-possible automation.
-
-</details>
-
-<details>
-<summary>⬇️ <strong>qBittorrent</strong></summary>
-
-1. Default credentials: `admin` / `adminadmin` (change immediately).
-2. Verify VPN binding (Settings → Advanced → Network Interface should show the Gluetun adapter).
-3. Save path: `/media/downloads`, incomplete path `/media/downloads/incomplete`.
-
-</details>
-
-<details>
-<summary>🎯 <strong>Overseerr</strong></summary>
-
-1. Visit `https://request.yourdomain.com`.
-2. Sign in with Plex, add Plex server, Sonarr (`http://sonarr:8989`), and Radarr (`http://radarr:7878`).
-3. Configure default quality profiles and notification targets.
-
-</details>
-
-<details>
-<summary>⚙️ <strong>Tdarr</strong></summary>
-
-1. Visit `https://tdarr.yourdomain.com`.
-2. Add libraries pointing at `/media/movies` and `/media/tvshows`.
-3. Enable or scale Tdarr nodes for faster transcoding.
-
-</details>
-
-## 📂 Directory Blueprint
-
-```text
-/srv/mediastack/
-│
-├── config/                  # Application configurations
-│   ├── authelia/
-│   ├── homepage/
-│   ├── plex/
-│   ├── jellyfin/
-│   ├── sonarr/
-│   ├── radarr/
-│   ├── prowlarr/
-│   ├── qbittorrent/
-│   ├── overseerr/
-│   ├── tdarr/
-│   └── ...
-├── media/                   # Media libraries + downloads
-│   ├── movies/
-│   ├── tvshows/
-│   ├── music/
-│   └── downloads/
-├── scripts/
-├── docker-compose.yml
-├── .env
-└── setup.sh / setup.ps1 / setup_auto.sh
+docker-compose pull
+docker-compose up -d
+docker image prune -a
 ```
 
-## 🧭 Operations Playbook
+### Backups
 
-### 📊 Monitoring
-- **Dozzle**: `https://dozzle.yourdomain.com` for live logs.
-- **Portainer**: `https://portainer.yourdomain.com` for container lifecycle.
-- CLI essentials:
-  ```bash
-  docker-compose ps
-  docker-compose logs --tail=100 sonarr
-  ```
-
-### 🔄 Updates
-- **Automatic**: Watchtower pulls images nightly (default: 04:00).
-- **Manual refresh**:
-  ```bash
-  docker-compose pull
-  docker-compose up -d
-  docker image prune -a
-  ```
-
-### 💾 Backup Strategy
+Back up your configuration and environment file regularly. The table below lists what to prioritise.
 
 | Priority | Path | Why |
 | --- | --- | --- |
-| 🔴 Critical | `config/authelia/` | Users, secrets, policies |
-| 🔴 Critical | `.env` | Environment secrets + tokens |
-| 🟡 Important | `config/*/` | App states and metadata |
+| 🔴 Critical | `config/authelia/` | Users, secrets and policies |
+| 🔴 Critical | `.env` | Environment secrets and API tokens |
+| 🟡 Important | `config/*/` | Application states and metadata |
 | 🟢 Optional | `media/` | Replaceable if sourced elsewhere |
 
-Sample script:
+Sample backup script:
+
 ```bash
 #!/bin/bash
 DATE=$(date +%Y%m%d)
 BACKUP_DIR="/path/to/backups"
 
-tar -czf $BACKUP_DIR/config-$DATE.tar.gz /srv/mediastack/config
-cp /srv/mediastack/.env $BACKUP_DIR/env-$DATE.backup
-find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+tar -czf "$BACKUP_DIR/config-$DATE.tar.gz" /srv/mediastack/config
+cp /srv/mediastack/.env "$BACKUP_DIR/env-$DATE.backup"
+find "$BACKUP_DIR" -name "*.tar.gz" -mtime +7 -delete
 ```
 
-### 🧰 Troubleshooting Cards
+### Troubleshooting quick cards
 
 <details>
-<summary>❌ Containers won’t start</summary>
+<summary>❌ Containers won't start</summary>
+
+Check logs:
 
 ```bash
 docker-compose logs -f <service>
 ```
-- Look for port conflicts via `docker ps -a`.
+
+- Look for port conflicts (`docker ps -a`).
 - Fix permissions: `sudo chown -R $USER:$USER /srv/mediastack`.
-- Missing `.env`? Copy from template and re-run setup.
+- Ensure `.env` exists and is populated.
 
 </details>
 
 <details>
-<summary>🌐 Can’t access services through Cloudflare</summary>
+<summary>🌐 Unable to reach services through Cloudflare</summary>
 
-- Check tunnel logs: `docker-compose logs cloudflared`.
-- Validate tunnel token + credentials file.
-- Ensure Public Hostnames map to internal URLs (`http://plex:32400`).
-- DNS record should be orange-cloud proximal.
+- View tunnel logs: `docker-compose logs cloudflared`.
+- Verify the tunnel token and credentials file.
+- Map public hostnames correctly (`http://plex:32400` for Plex etc.).
+- Ensure your DNS record is proxied (orange cloud).
 
 </details>
 
@@ -636,34 +314,43 @@ docker-compose logs -f <service>
 <summary>🔒 Authelia login issues</summary>
 
 - Inspect logs: `docker-compose logs authelia`.
-- Verify `users_database.yml` indentation.
-- Regenerate password hash if in doubt.
-- Confirm Redis connectivity via `docker-compose logs redis`.
+- Check `users_database.yml` for correct indentation.
+- Regenerate password hashes if in doubt.
+- Confirm Redis connectivity (`docker-compose logs redis`).
 
 </details>
 
 <details>
 <summary>⬇️ Downloads not using VPN</summary>
 
-- View Gluetun logs for connection status.
-- From qBittorrent container: `docker exec qbittorrent curl ifconfig.me` (should not reveal your real IP).
-- Update VPN credentials or servers in `.env` and restart Gluetun.
+- Watch Gluetun logs for connection status.
+- Test your IP inside the torrent container:
+
+```bash
+docker exec qbittorrent curl ifconfig.me
+```
+
+The output should not reveal your real IP.
+
+- Update VPN credentials or endpoint and restart Gluetun.
 
 </details>
 
-## 🛡 Security Hardening
+---
 
-### ✅ Checklist
-- [ ] Change every default password (Authelia, qBittorrent, Overseerr, etc.).
-- [ ] Enable 2FA in Authelia for all users.
-- [ ] Verify qBittorrent only binds to Gluetun interface.
-- [ ] Enable Cloudflare WAF & Access policies per subdomain.
-- [ ] Backup Authelia secrets and `.env` securely.
-- [ ] Keep Docker host patched and limited to trusted users.
+## 🛡 Security hardening
 
-### 🧰 Advanced Controls
+| Checklist | Description |
+| --- | --- |
+| 🔑 Change default passwords | Update passwords for Authelia, qBittorrent, Overseerr and other services immediately after installation |
+| ✅ Enable 2FA | Use time‑based one‑time passwords with Authelia for every account |
+| 🔗 Bind torrent client to VPN | Ensure qBittorrent only uses the Gluetun interface |
+| 🌐 Harden Cloudflare Access | Apply WAF rules, country‑based restrictions or hardware‑key policies on critical subdomains |
+| 🔄 Rotate secrets | Periodically regenerate Authelia secrets and `.env` tokens |
+| 🛡 Keep host patched | Update your OS and limit SSH access to trusted users |
 
-**Authelia session policy** (`config/authelia/configuration.yml`):
+Advanced users can tune session lifetimes in `config/authelia/configuration.yml`:
+
 ```yaml
 session:
   expiration: 1h
@@ -671,229 +358,145 @@ session:
   remember_me: 1M
 ```
 
-**Cloudflare Access ideas:** restrict by country, hardware key, or IP list on critical apps (Authelia, Overseerr, Portainer).
+---
 
-**VPN kill switch (already wired):**
+## 🔧 Advanced configuration
+
+### Custom dashboard links
+
+The [Homepage](https://gethomepage.dev/) dashboard uses YAML files under `config/homepage/` to define cards. Add your own services like so:
+
 ```yaml
-gluetun:
-  cap_add:
-    - NET_ADMIN
-  environment:
-    - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24
-```
-
-## 🔧 Advanced Configuration
-
-### 🎨 Homepage Customization
-```yaml
-# config/homepage/services.yaml
 - Media:
-    - Custom Service:
-        icon: custom-icon.png
+    - My Private Service:
+        icon: my-icon.png
         href: https://custom.yourdomain.com
-        description: My custom service
+        description: Description of my service
         widget:
           type: customapi
           url: http://custom-service:1234
 ```
 
-### 🔔 Notifications
-1. Grab a Notifiarr API key.
-2. Add `NOTIFIARR_API_KEY=...` to `.env`.
-3. Configure each *arr app → Connect → Notifiarr (or Discord/Telegram) and select desired events.
+### Notifications
 
-### ⚙️ Performance Tuning
-- **Plex hardware transcoding** (Intel QuickSync / NVIDIA):
-  ```yaml
-  plex:
-    devices:
-      - /dev/dri:/dev/dri
-    # or
-    runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-  ```
-- **Tdarr scale-out**:
-  ```bash
-  docker-compose up -d --scale tdarr-node=3
-  ```
-- **Storage savings**: Use Tdarr + H.265 profiles to reclaim 40–60% space.
+Set up [Notifiarr](https://github.com/notifiarr/notifiarr) or another provider to push alerts to Discord, Telegram or your phone. Add your API key to `.env`, then configure each application’s notification settings accordingly.
 
-## 📊 Service Comparison
+### Performance tuning
 
-| Feature | Plex | Jellyfin |
-|---------|------|----------|
-| Cost | Free + Plex Pass | 100% Free & Open Source |
-| Mobile Apps | ✅ Excellent | ✅ Improving fast |
-| Hardware Transcoding | ✅ (Plex Pass) | ✅ Free |
-| Privacy | Cloud-connected | Fully offline |
-| Plugins | Limited | Extensive community |
-| Recommendation | Best UX & ecosystem | Best privacy/control |
+- **Hardware transcoding** – Map GPU devices into the Plex container:
 
-💡 This stack ships both—try each and decide.
+```yaml
+plex:
+  devices:
+    - /dev/dri:/dev/dri  # Intel QuickSync
+  # or
+  runtime: nvidia
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+```
 
-## 📚 Learn & Support
+- **Tdarr scaling** – To accelerate transcodes, run multiple Tdarr nodes:
 
-**Documentation**
-- [Homepage](https://gethomepage.dev/)
-- [Authelia](https://www.authelia.com/docs/)
+```bash
+docker-compose up -d --scale tdarr-node=3
+```
+
+- **Codec conversion** – Convert libraries to H.265 using Tdarr to save 40–60% space.
+
+---
+
+## 📊 Service comparison
+
+| Feature | Jellyfin | Plex |
+| --- | --- | --- |
+| **Cost** | Always free and open‑source【736920552348604†L69-L70】 | Free tier with optional Plex Pass (£4.99/mo to £119.99 lifetime) for extras【736920552348604†L101-L106】 |
+| **Mobile apps** | Native clients for Android, iOS and smart TVs | Excellent mobile apps but some features are paywalled |
+| **Hardware transcoding** | Included for free【736920552348604†L69-L70】 | Requires Plex Pass【736920552348604†L101-L106】 |
+| **Privacy** | Fully offline; no phone‑home services | Cloud‑connected with optional online features |
+| **Plugins** | Vibrant community of third‑party plugins and themes | Limited first‑party plugin ecosystem |
+
+The stack ships both servers by default. Try each and decide which matches your needs.
+
+---
+
+## 📚 Learn & support
+
+### Documentation
+
+- [Homepage Documentation](https://gethomepage.dev/)
+- [Authelia Docs](https://www.authelia.com/docs/)
 - [Sonarr Wiki](https://wiki.servarr.com/sonarr)
 - [Radarr Wiki](https://wiki.servarr.com/radarr)
 - [TRaSH Guides](https://trash-guides.info/)
 
-**Video Tutorials**
-- [TRaSH Guides YouTube](https://www.youtube.com/c/TRaSHGuides)
-- [DB Tech](https://www.youtube.com/c/DBTechYT)
-- [Techno Tim](https://www.youtube.com/c/TechnoTimLive)
+### Communities & tutorials
 
-**Communities**
-- [r/selfhosted](https://reddit.com/r/selfhosted)
-- [r/PleX](https://reddit.com/r/PleX)
-- [Jellyfin Forum](https://forum.jellyfin.org/)
-- [Servarr Discord](https://discord.gg/YQTQPZ6)
+- [r/selfhosted](https://reddit.com/r/selfhosted) – general self‑hosting discussion
+- [r/PleX](https://reddit.com/r/PleX) – Plex‑specific tips and news
+- [Jellyfin Forum](https://forum.jellyfin.org/) – help and plugin announcements
+- [Servarr Discord](https://discord.gg/YQTQPZ6) – support for Sonarr/Radarr/Prowlarr
 
-## 🤝 Contributing
+---
 
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/amazing-feature`.
-3. Commit changes: `git commit -m "Add amazing feature"`.
-4. Push and open a Pull Request.
+## 🤝 Contributing & license
 
-We love bug reports, feature ideas, documentation tweaks, and dashboards screenshots!
+Contributions are welcome! To propose a change:
+
+1. Fork this repository.
+2. Create a feature branch: `git checkout -b feature/awesome-feature`.
+3. Commit your changes: `git commit -m "Add awesome feature"`.
+4. Push to your fork: `git push origin feature/awesome-feature`.
+5. Open a Pull Request.
+
+By contributing you agree to license your work under the MIT license. See the [`LICENSE`](LICENSE) file for full details.
+
+---
 
 ## ❓ FAQ
 
 <details>
 <summary><strong>Do I need a VPN provider?</strong></summary>
 
-Yes—Gluetun expects credentials from providers like Mullvad, ProtonVPN, IVPN, etc. It supports 40+ vendors out of the box.
+Yes. Gluetun expects credentials from providers like Mullvad, ProtonVPN or IVPN. It supports over 40 vendors out of the box.
 
 </details>
 
 <details>
 <summary><strong>Can I run this without Cloudflare?</strong></summary>
 
-Absolutely. Alternatives include Tailscale, WireGuard, Twingate, or Nginx Proxy Manager. Remove the `cloudflared` service and expose via your preferred reverse proxy.
+Absolutely. You can replace Cloudflare Tunnel with alternatives such as Tailscale, WireGuard, Twingate or Nginx Proxy Manager. Remove the `cloudflared` service and expose ports via your preferred reverse proxy.
 
 </details>
 
 <details>
-<summary><strong>How much storage do I need?</strong></summary>
+<summary><strong>How much hardware do I need?</strong></summary>
 
-- Starter: 2 TB (~500 movies + 50 shows)
-- Medium: 8 TB (~2,000 movies + 200 shows)
-- Large: 16 TB+ for serious collectors
-
-Use Tdarr (H.265) to save 40–60% space.
+For a basic server, 4 cores and 8 GB of RAM with an SSD for configurations will suffice. Plex Media Server rarely needs more than 4 GB of RAM【449177079065126†L214-L218】. A dedicated GPU or CPU with QuickSync/NVENC is recommended for multiple transcodes. Raspberry Pi 4 can run the basics but will struggle with transcoding.
 
 </details>
 
 <details>
-<summary><strong>What hardware do you recommend?</strong></summary>
+<summary><strong>What about storage?</strong></summary>
 
-- Minimum: 4 cores / 8 GB RAM / SSD for configs.
-- Recommended: 6+ cores or GPU for transcoding, 16 GB RAM, SSD + HDD mix.
-- Raspberry Pi 4 can run basics but transcoding will be slow.
+See the [storage planning](#-storage-planning) section. In summary: ~2 TB is enough for ~500 movies; ~8 TB for ~2,000 movies and 200 shows; ~16 TB or more for large collections. Use H.265 compression to save space.
 
 </details>
 
 <details>
 <summary><strong>Is this legal?</strong></summary>
 
-The software is open-source and legal. Use it to manage content you own—piracy is your responsibility and not endorsed.
+All software used in this stack is open‑source and legal. Use it only to manage content you own. Piracy is your responsibility and not endorsed by this project.
 
 </details>
 
-## 📜 License
-
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
-
-## 🙏 Acknowledgments
-
-Powered by amazing open-source work:
-- [Homepage](https://github.com/gethomepage/homepage)
-- [Authelia](https://github.com/authelia/authelia)
-- [Sonarr](https://github.com/Sonarr/Sonarr) / [Radarr](https://github.com/Radarr/Radarr)
-- [Jellyfin](https://github.com/jellyfin/jellyfin)
-- [Gluetun](https://github.com/qdm12/gluetun)
-- [TRaSH Guides](https://trash-guides.info/)
-- Every other maintainer who makes this stack possible ❤️
-
-
-## 🏗️ System Architecture
-
-Understanding how the pieces fit together is key to managing this stack.
-
-```mermaid
-graph TD
-    User[User / Internet] -->|HTTPS| CF[Cloudflare Tunnel]
-    CF -->|Ingress Rules| Authelia[Authelia (SSO)]
-    Authelia -->|Authorized| Traefik[Traefik / Reverse Proxy]
-    
-    subgraph "Media Stack"
-        Traefik --> Plex
-        Traefik --> Jellyfin
-        Traefik --> Sonarr
-        Traefik --> Radarr
-        Traefik --> Prowlarr
-    end
-    
-    subgraph "Download & VPN"
-        Sonarr -->|Add Torrent| qBit[qBittorrent]
-        Radarr -->|Add Torrent| qBit
-        qBit -->|Traffic| Gluetun[Gluetun VPN]
-        Gluetun -->|Encrypted| Internet
-    end
-    
-    subgraph "Data"
-        Plex --> Media[/Media Library/]
-        Sonarr --> Media
-        qBit --> Downloads[/Downloads/]
-    end
-```
-
-### Key Flows
-1.  **Authentication**: All external access is routed through Cloudflare Tunnel, which enforces Authelia SSO. You must log in to access any service.
-2.  **Downloads**: Sonarr/Radarr send `.torrent` files to qBittorrent.
-3.  **Privacy**: qBittorrent is networked *through* Gluetun. If the VPN drops, qBittorrent loses connectivity (Kill Switch).
-
 ---
 
-## ❓ Troubleshooting
+<div align="center" id="star">
 
-| Symptom | Possible Cause | Fix |
-| :--- | :--- | :--- |
-| **"Bad Gateway" (502)** | Service is down or starting up. | Run `docker compose ps` to check status. Wait 30s if just started. |
-| **"Authelia - 401 Unauthorized"** | Session expired or invalid config. | Clear cookies. Check `docker compose logs authelia`. |
-| **qBittorrent UI unreachable** | VPN (Gluetun) failed to connect. | Check `docker compose logs gluetun`. Verify VPN credentials. |
-| **Sonarr can't see files** | Volume mapping mismatch. | Ensure `/data` paths match in `docker-compose.yml`. |
-| **AI Assistant Offline** | OpenAI Key missing. | Add `OPENAI_API_KEY` to `.env` or Settings. |
+### ⭐️ Enjoying the stack? Star this repo!
 
----
+If this project saved you time or taught you something, consider starring the repository. It helps others discover it and encourages ongoing improvements.
 
-## 📚 Further Reading
-
-### Official Documentation
-- [Servarr Wiki](https://wiki.servarr.com/) (Sonarr, Radarr, Prowlarr docs)
-- [Authelia Documentation](https://www.authelia.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-
-### Community Guides
-- **[TRaSH Guides](https://trash-guides.info/)**: The "Bible" for configuring Sonarr/Radarr quality profiles and path mapping. **Highly Recommended.**
-- [LinuxServer.io](https://www.linuxserver.io/): The team behind most of the Docker images used here.
-
-### Advanced Topics
-- [Recyclarr](https://recyclarr.dev/): Automate TRaSH guides.
-- [Plex Meta Manager](https://metamanager.wiki/): Automate Plex collections and overlays.
-
----
-
-<div align="center">
-
-### ⭐️ Star the repo if this saved you time!
-
-**Questions? Issues? Ideas?** → [Open an issue](https://github.com/yourusername/media-stack/issues) or [start a discussion](https://github.com/yourusername/media-stack/discussions)
-
-[⬆ Back to Top](#-ultimate-media-stack)
+[Back to top](#top)
 
 </div>
