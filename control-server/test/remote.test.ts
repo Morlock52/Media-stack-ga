@@ -61,7 +61,7 @@ describe('Remote Deploy API', () => {
             }
         });
         expect(response.statusCode).toBe(400);
-        expect(JSON.parse(response.payload).error).toContain('Private key is required');
+        expect(JSON.parse(response.payload).error).toContain('Private key is required for SSH key authentication');
     });
 
     it('should execute deployment steps successfully', async () => {

@@ -87,7 +87,16 @@ async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> 
             `${config.username}@${config.host}`,
             command
         ];
-        return runCommand('sshpass', args, { SSHPASS: config.password });
+        const result = await runCommand('sshpass', args, { SSHPASS: config.password });
+        // Provide helpful error if sshpass is not installed
+        if (result.code !== 0 && result.stderr.includes('not found')) {
+            return {
+                code: 1,
+                stdout: '',
+                stderr: 'sshpass is not installed. Install it with: apt-get install sshpass (Ubuntu/Debian) or brew install sshpass (macOS)'
+            };
+        }
+        return result;
     }
 
     if (!config.privateKey) {
@@ -123,7 +132,16 @@ async function scpFile(config: SSHConfig, localPath: string, remotePath: string)
             localPath,
             `${config.username}@${config.host}:${remotePath}`
         ];
-        return runCommand('sshpass', args, { SSHPASS: config.password });
+        const result = await runCommand('sshpass', args, { SSHPASS: config.password });
+        // Provide helpful error if sshpass is not installed
+        if (result.code !== 0 && result.stderr.includes('not found')) {
+            return {
+                code: 1,
+                stdout: '',
+                stderr: 'sshpass is not installed. Install it with: apt-get install sshpass (Ubuntu/Debian) or brew install sshpass (macOS)'
+            };
+        }
+        return result;
     }
 
     if (!config.privateKey) {
@@ -151,11 +169,18 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         if (!host || !username) {
             return reply.status(400).send({ error: 'Host and username are required' });
         }
-        if (authType === 'key' && !privateKey) {
-            return reply.status(400).send({ error: 'Private key is required' });
-        }
-        if (authType === 'password' && !password) {
-            return reply.status(400).send({ error: 'Password is required' });
+
+        // Validate authentication credentials
+        if (authType === 'key') {
+            if (!privateKey) {
+                return reply.status(400).send({ error: 'Private key is required for SSH key authentication' });
+            }
+        } else if (authType === 'password') {
+            if (!password) {
+                return reply.status(400).send({ error: 'Password is required for password authentication' });
+            }
+        } else {
+            return reply.status(400).send({ error: 'Invalid authentication type. Must be "key" or "password"' });
         }
 
         let safeDeployPath;
@@ -237,9 +262,10 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             // Step 6: Start the stack
             steps.push({ step: 'Starting media stack...', status: 'running' });
-            const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} -f docker-compose.yml up -d`);
-            if (startResult.code !== 0 && startResult.stderr && !startResult.stderr.includes('Warning')) {
-                throw new Error(startResult.stderr);
+            const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} up -d`);
+            if (startResult.code !== 0) {
+                const errorMsg = startResult.stderr || startResult.stdout || 'Docker compose command failed';
+                throw new Error(errorMsg);
             }
             steps[steps.length - 1].status = 'done';
 
@@ -268,11 +294,21 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         const { host, port = 22, username, privateKey, password } = request.body;
         const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
 
-        if (authType === 'key' && !privateKey) {
-            return reply.status(400).send({ error: 'Private key is required' });
+        if (!host || !username) {
+            return reply.status(400).send({ error: 'Host and username are required' });
         }
-        if (authType === 'password' && !password) {
-            return reply.status(400).send({ error: 'Password is required' });
+
+        // Validate authentication credentials
+        if (authType === 'key') {
+            if (!privateKey) {
+                return reply.status(400).send({ error: 'Private key is required for SSH key authentication' });
+            }
+        } else if (authType === 'password') {
+            if (!password) {
+                return reply.status(400).send({ error: 'Password is required for password authentication' });
+            }
+        } else {
+            return reply.status(400).send({ error: 'Invalid authentication type. Must be "key" or "password"' });
         }
 
         const sshConfig: SSHConfig = {
