@@ -87,8 +87,13 @@ if ! command -v docker &> /dev/null; then
     gum style --foreground 196 "❌ Docker is not installed. Please install Docker first."
     exit 1
 fi
-if ! command -v docker-compose &> /dev/null; then
-    gum style --foreground 196 "❌ Docker Compose is not installed. Please install Docker Compose first."
+# Docker Compose v2 ships as `docker compose`; fall back to legacy `docker-compose`
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    gum style --foreground 196 "❌ Docker Compose is not installed. Please install Docker Compose (plugin or legacy) first."
     exit 1
 fi
 gum style --foreground 46 "✅ Docker and Docker Compose are installed"
