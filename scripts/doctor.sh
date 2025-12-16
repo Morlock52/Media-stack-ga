@@ -12,11 +12,15 @@ else
     echo "✅ Docker is installed"
 fi
 
-# 2. Check Docker Compose
-if ! docker-compose version &> /dev/null; then
-    echo "❌ Docker Compose is not installed!"
+# 2. Check Docker Compose (plugin or legacy)
+if docker compose version &> /dev/null; then
+    echo "✅ Docker Compose v2 (docker compose) is installed"
+elif command -v docker-compose &> /dev/null; then
+    echo "✅ Docker Compose v1 (docker-compose) is installed"
+elif docker plugin ls 2>/dev/null | grep -qi compose; then
+    echo "ℹ️  Compose plugin detected but command unavailable; add CLI plugin to PATH"
 else
-    echo "✅ Docker Compose is installed"
+    echo "❌ Docker Compose is not installed!"
 fi
 
 # 3. Check Ports

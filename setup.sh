@@ -92,11 +92,14 @@ if docker compose version &> /dev/null; then
     COMPOSE_CMD="docker compose"
 elif command -v docker-compose &> /dev/null; then
     COMPOSE_CMD="docker-compose"
+elif docker plugin ls 2>/dev/null | grep -qi compose; then
+    COMPOSE_CMD="docker compose" # plugin present but command not on PATH
 else
     gum style --foreground 196 "❌ Docker Compose is not installed. Please install Docker Compose (plugin or legacy) first."
     exit 1
 fi
 gum style --foreground 46 "✅ Docker and Docker Compose are installed"
+gum style --foreground 99 "Detected Compose command: ${COMPOSE_CMD}"
 echo ""
 
 # --- Configuration ---
