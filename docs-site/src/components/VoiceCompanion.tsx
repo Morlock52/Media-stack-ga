@@ -16,9 +16,10 @@ interface VoiceCompanionProps {
   onClose: () => void
   onApplyPlan: (plan: VoicePlanSummary) => void
   templateMode: 'newbie' | 'expert' | null
+  openaiKey?: string
 }
 
-export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: VoiceCompanionProps) {
+export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, openaiKey }: VoiceCompanionProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [transcript, setTranscript] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle')
@@ -31,6 +32,27 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const isRecordingRef = useRef(false)
   const processTranscriptRef = useRef<(text: string) => void>(() => { })
   const [manualInput, setManualInput] = useState('')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioUrlRef = useRef<string | null>(null)
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'browser' | 'off'>(() => (openaiKey ? 'openai' : 'browser'))
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  const hasUserSetVoiceOutputRef = useRef(false)
+
+  useEffect(() => {
+    if (!openaiKey && voiceOutput === 'openai') setVoiceOutput('browser')
+  }, [openaiKey, voiceOutput])
+
+  useEffect(() => {
+    if (!openaiKey) return
+    if (hasUserSetVoiceOutputRef.current) return
+    setVoiceOutput('openai')
+  }, [openaiKey])
+
+  const handleVoiceOutputChange = useCallback((value: 'openai' | 'browser' | 'off') => {
+    hasUserSetVoiceOutputRef.current = true
+    setVoiceOutput(value)
+  }, [])
 
   const getSpeechSupportError = useCallback((): string | null => {
     if (typeof window === 'undefined') return 'Voice recognition is unavailable in this environment.'
@@ -58,50 +80,169 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     speaking: 'Responding with guidance',
   }
 
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.currentTime = 0
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+  }, [])
+
+  const pickBestBrowserVoice = useCallback((voices: SpeechSynthesisVoice[]) => {
+    const english = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'))
+    const candidates = english.length ? english : voices
+
+    const preferred = [
+      /google.*(us|en).*(english)/i,
+      /microsoft.*(natural|online)/i,
+      /\bsamantha\b/i,
+      /\balex\b/i,
+      /\bava\b/i,
+      /\bkaren\b/i,
+    ]
+
+    for (const pattern of preferred) {
+      const match = candidates.find(v => pattern.test(v.name))
+      if (match) return match
+    }
+
+    const defaultVoice = candidates.find(v => v.default)
+    return defaultVoice || candidates[0]
+  }, [])
+
   const speak = useCallback((text: string) => {
+    void (async () => {
+      stopSpeaking()
+
+      if (voiceOutput === 'off') {
+        setStatus('idle')
+        return
+      }
+
+      const trimmed = text.trim()
+      if (!trimmed) {
+        setStatus('idle')
+        return
+      }
+
+      if (voiceOutput === 'openai' && openaiKey && hasUserInteracted) {
+        try {
+          setStatus('speaking')
+          const response = await fetch(buildControlServerUrl('/api/tts'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: trimmed, openaiKey }),
+          })
+
+          if (!response.ok) {
+            let reason: string | null = null
+            try {
+              const body = await response.json()
+              reason = typeof body?.reason === 'string' ? body.reason : null
+            } catch {
+              reason = null
+            }
+
+            if (response.status === 401 || reason === 'invalid_api_key') {
+              setError('OpenAI key invalid; using browser voice.')
+              handleVoiceOutputChange('browser')
+              throw new Error('invalid_api_key')
+            }
+
+            if (response.status === 429 || reason === 'rate_limited') {
+              setError('OpenAI rate limited; using browser voice.')
+              handleVoiceOutputChange('browser')
+              throw new Error('rate_limited')
+            }
+
+            setError('Voice service unavailable; using browser voice.')
+            handleVoiceOutputChange('browser')
+            throw new Error('tts_failed')
+          }
+
+          const blob = await response.blob()
+          const url = URL.createObjectURL(blob)
+          audioUrlRef.current = url
+
+          const audio = audioRef.current || new Audio()
+          audioRef.current = audio
+          audio.src = url
+          audio.onended = () => {
+            if (isRecordingRef.current) setStatus('listening')
+            else setStatus('idle')
+          }
+          audio.onerror = () => setStatus('idle')
+
+          await audio.play()
+          return
+        } catch (e) {
+          if (e instanceof Error && (e.message === 'invalid_api_key' || e.message === 'rate_limited')) {
+            // handled via setError + voiceOutput switch
+          } else {
+            console.warn('OpenAI TTS failed; falling back to browser TTS:', e)
+          }
+        }
+      }
+
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
+        setStatus('idle')
+        return
+      }
+
+      const utterance = new SpeechSynthesisUtterance(trimmed)
+      utterance.lang = 'en-US'
+      utterance.rate = 1.0
+      utterance.pitch = 1.0
+
+      const voices = availableVoices.length ? availableVoices : window.speechSynthesis.getVoices()
+      const bestVoice = pickBestBrowserVoice(voices)
+      if (bestVoice) utterance.voice = bestVoice
+
+      utterance.onstart = () => setStatus('speaking')
+      utterance.onend = () => {
+        if (isRecordingRef.current) setStatus('listening')
+        else setStatus('idle')
+      }
+      utterance.onerror = () => setStatus('idle')
+
+      try {
+        window.speechSynthesis.speak(utterance)
+      } catch (e) {
+        console.warn('Speech synthesis failed:', e)
+        setStatus('idle')
+      }
+    })()
+  }, [availableVoices, hasUserInteracted, openaiKey, pickBestBrowserVoice, stopSpeaking, voiceOutput])
+
+  // Pre-load voices (some browsers load them async)
+  useEffect(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return
 
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'en-US'
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
-
-    // Try to find a good voice
-    const voices = window.speechSynthesis.getVoices()
-    const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'))
-    if (preferredVoice) utterance.voice = preferredVoice
-
-    utterance.onstart = () => setStatus('speaking')
-    utterance.onend = () => {
-      if (isRecordingRef.current) {
-        setStatus('listening')
-      } else {
-        setStatus('idle')
+    const update = () => {
+      try {
+        setAvailableVoices(window.speechSynthesis.getVoices())
+      } catch {
+        // ignore
       }
     }
 
-    // Handle speech synthesis errors/interruptions
-    utterance.onerror = () => {
-      setStatus('idle')
-    }
-
-    try {
-      window.speechSynthesis.speak(utterance)
-    } catch (e) {
-      console.warn('Speech synthesis failed:', e)
-      setStatus('idle')
-    }
+    update()
+    window.speechSynthesis.addEventListener('voiceschanged', update)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', update)
   }, [])
 
-  // Pre-load voices
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.getVoices()
+    return () => {
+      stopSpeaking()
     }
-  }, [])
+  }, [stopSpeaking])
 
   const addTranscriptLine = useCallback((line: string) => {
     setTranscript((prev) => [...prev, line])
@@ -198,25 +339,26 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     speechRecognitionRef.current = recognition
   }, [getSpeechSupportError, stopRecognition])
 
-  const startRecognition = useCallback(() => {
-    if (isRecordingRef.current) return
-    if (!speechRecognitionRef.current) {
-      initializeSpeechRecognition()
-    }
+	  const startRecognition = useCallback(() => {
+	    if (isRecordingRef.current) return
+	    if (!speechRecognitionRef.current) {
+	      initializeSpeechRecognition()
+	    }
 
     if (!speechRecognitionRef.current) {
       const supportError = getSpeechSupportError()
       setError(supportError || 'Voice recognition is not available right now. Please use text input.')
       return
-    }
-
-    try {
-      setError(null)
-      setStatus('listening')
-      setPartialTranscript('')
-      setIsRecording(true)
-      isRecordingRef.current = true
-      speechRecognitionRef.current.start()
+	    }
+	
+	    try {
+	      setHasUserInteracted(true)
+	      setError(null)
+	      setStatus('listening')
+	      setPartialTranscript('')
+	      setIsRecording(true)
+	      isRecordingRef.current = true
+	      speechRecognitionRef.current.start()
     } catch (err) {
       console.error('Failed to start speech recognition:', err)
       isRecordingRef.current = false
@@ -225,9 +367,9 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       setError('Microphone initialization failed. Please try again or use text input.')
 
       // Force re-init
-      initializeSpeechRecognition()
-    }
-  }, [initializeSpeechRecognition])
+	      initializeSpeechRecognition()
+	    }
+	  }, [getSpeechSupportError, initializeSpeechRecognition])
 
   useEffect(() => {
     initializeSpeechRecognition()
@@ -258,17 +400,18 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     stopRecognition()
   }
 
-  const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
-    try {
-      setStatus('thinking')
-      const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: content,
-          history: updatedHistory,
-        }),
-      })
+	  const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
+	    try {
+	      setStatus('thinking')
+	      const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
+	        method: 'POST',
+	        headers: { 'Content-Type': 'application/json' },
+	        body: JSON.stringify({
+	          transcript: content,
+	          history: updatedHistory,
+	          openaiKey: openaiKey || undefined,
+	        }),
+	      })
 
       if (!response.ok) {
         throw new Error('Voice agent failed to respond')
@@ -298,11 +441,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         // Or re-enable if manual input wasn't used?
         setStatus('idle')
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error')
-      setStatus('idle')
-    }
-  }, [addTranscriptLine, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
+	    } catch (err) {
+	      setError(err instanceof Error ? err.message : 'Unexpected error')
+	      setStatus('idle')
+	    }
+	  }, [addTranscriptLine, openaiKey, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
 
   useEffect(() => {
     processTranscriptRef.current = (userContent: string) => {
@@ -326,6 +469,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     if (!manualInput.trim()) return
     const text = manualInput.trim()
     setManualInput('')
+    setHasUserInteracted(true)
     setError(null)
     processTranscriptRef.current(text)
   }
@@ -337,42 +481,63 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
           >
             <div className="flex flex-col md:flex-row h-full">
               {/* Left Panel - Status & Controls */}
-              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/20 to-pink-600/10 border-b md:border-b-0 md:border-r border-white/10 flex flex-col">
+              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/10 to-pink-600/5 border-b md:border-b-0 md:border-r border-border flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                    <Mic className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center">
+                    <Mic className="w-6 h-6 text-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-white/60">Voice Companion</p>
-                    <h3 className="text-2xl font-bold text-white">Newbie Onboarding</h3>
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">Voice Companion</p>
+                    <h3 className="text-2xl font-bold text-foreground">Newbie Onboarding</h3>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-white/80 flex-1">
-                  <p>
-                    I\'ll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I\'ll provide a summary before applying changes.
-                  </p>
-                  <ul className="space-y-1 text-white/70 text-xs mt-4">
-                    <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
-                    <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
-                    <li>• You can speak or type your answers below.</li>
-                  </ul>
-                </div>
+	                <div className="space-y-2 text-sm text-muted-foreground flex-1">
+	                  <p>
+	                    I\'ll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I\'ll provide a summary before applying changes.
+	                  </p>
+	                  <ul className="space-y-1 text-muted-foreground text-xs mt-4">
+	                    <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
+	                    <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
+	                    <li>• You can speak or type your answers below.</li>
+	                  </ul>
+	                </div>
 
-                <div className="mt-6 p-4 rounded-2xl bg-black/30 border border-white/10">
-                  <p className="text-xs text-white/60 mb-1">Status</p>
-                  <p className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Loader2 className={`w-4 h-4 ${status === 'idle' ? 'text-white/40' : 'animate-spin text-white'}`} />
+	                <div className="mt-4 p-3 rounded-2xl bg-muted/30 border border-border">
+	                  <div className="flex items-center justify-between gap-3">
+	                    <p className="text-xs text-muted-foreground">Voice output</p>
+	                    <select
+	                      value={voiceOutput}
+	                      onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'browser' | 'off')}
+	                      className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-purple-500/50"
+	                      aria-label="Voice output mode"
+	                    >
+	                      <option value="off">Off</option>
+	                      <option value="browser">Browser</option>
+	                      <option value="openai" disabled={!openaiKey}>OpenAI (HQ)</option>
+	                    </select>
+	                  </div>
+	                  {!openaiKey && (
+	                    <p className="mt-2 text-[11px] text-muted-foreground">
+	                      Add an OpenAI key in Advanced settings to enable higher quality voice.
+	                    </p>
+	                  )}
+	                </div>
+
+	                <div className="mt-6 p-4 rounded-2xl bg-muted/40 border border-border">
+	                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+	                  <p className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Loader2 className={`w-4 h-4 ${status === 'idle' ? 'text-muted-foreground' : 'animate-spin text-foreground'}`} />
                     {statusMessages[status]}
                   </p>
                   {error && (
@@ -412,7 +577,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
                     <button
                       onClick={onClose}
-                      className="px-4 py-3 rounded-2xl border border-white/15 text-white/80 hover:text-white"
+                      className="px-4 py-3 rounded-2xl border border-border text-muted-foreground hover:text-foreground"
                     >
                       Cancel
                     </button>
@@ -421,24 +586,24 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
               </div>
 
               {/* Right Panel - Transcript & Input */}
-              <div className="md:w-1/2 flex flex-col bg-slate-900/50">
+              <div className="md:w-1/2 flex flex-col bg-card">
                 <div className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
-                  <p className="text-xs uppercase tracking-widest text-white/60">Transcript</p>
-                  <div className="space-y-3 text-sm text-white/80">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Transcript</p>
+                  <div className="space-y-3 text-sm text-muted-foreground">
                     {transcript.map((line, index) => (
-                      <div key={index} className={`p-3 rounded-2xl border ${line.startsWith('🤖') ? 'bg-purple-500/10 border-purple-500/20 mr-8' : 'bg-white/5 border-white/5 ml-8'}`}>
+                      <div key={index} className={`p-3 rounded-2xl border ${line.startsWith('🤖') ? 'bg-purple-500/10 border-purple-500/20 mr-8' : 'bg-muted/60 border-border ml-8'}`}> 
                         {line}
                       </div>
                     ))}
                     {partialTranscript && (
-                      <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-white/60 animate-pulse">
+                      <div className="p-3 rounded-2xl bg-muted/60 border border-dashed border-border text-muted-foreground animate-pulse">
                         {partialTranscript}...
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="p-4 border-t border-white/10 bg-black/20">
+                <div className="p-4 border-t border-border bg-muted/30">
                   <form onSubmit={handleManualSubmit} className="relative flex gap-2">
                     <input
                       type="text"
@@ -446,31 +611,31 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       onChange={(e) => setManualInput(e.target.value)}
                       placeholder={isRecording ? "Listening..." : "Type your answer here..."}
                       disabled={isRecording || status === 'thinking' || status === 'speaking'}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500/50 transition"
+                      className="w-full bg-background/60 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500/50 transition"
                     />
                     <button
                       type="submit"
                       disabled={!manualInput.trim() || status === 'thinking'}
                       aria-label="Send message"
                       title="Send message"
-                      className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-muted/60 hover:bg-muted/80 text-foreground p-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="w-5 h-5" />
                     </button>
                   </form>
                 </div>
 
-                <div className="border-t border-white/10">
+                <div className="border-t border-border">
                   {plan ? (
                     <div className="p-6 space-y-4 bg-green-500/5">
                       <div className="flex items-center gap-2 text-green-400">
                         <CheckCircle2 className="w-5 h-5" />
                         <p className="text-sm font-semibold">Plan ready!</p>
                       </div>
-                      <div className="space-y-3 text-sm text-white/80">
+                      <div className="space-y-3 text-sm text-muted-foreground">
                         {/* Plan details rendering */}
-                        <p className="text-xs text-white/60">Services: {plan.services.join(', ')}</p>
-                        <p className="text-xs text-white/60">Domain: {plan.domain}</p>
+                        <p className="text-xs text-muted-foreground">Services: {plan.services.join(', ')}</p>
+                        <p className="text-xs text-muted-foreground">Domain: {plan.domain}</p>
                       </div>
                       <div className="flex gap-3">
                         <button
@@ -481,14 +646,14 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                         </button>
                         <button
                           onClick={() => setPlan(null)}
-                          className="px-4 py-3 rounded-2xl border border-white/15 text-white/80"
+                          className="px-4 py-3 rounded-2xl border border-border text-muted-foreground"
                         >
                           Ask More
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 text-xs text-white/40 flex items-center justify-center gap-2">
+                    <div className="p-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" /> AI will verify requirements before finalizing.
                     </div>
                   )}

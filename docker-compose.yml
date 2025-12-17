@@ -22,7 +22,7 @@ services:
       - ${CONFIG_ROOT}/postgres:/var/lib/postgresql/data
     networks:
       - mediastack
-    profiles: ["arr", "db"]
+    profiles: ["arr", "db", "sonarr", "radarr", "prowlarr"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
@@ -160,7 +160,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TIMEZONE}
-      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET}
       - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
       - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY}
       - AUTHELIA_SESSION_REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -296,7 +296,7 @@ services:
       - ${DOWNLOADS_PATH}:/downloads
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "sonarr"]
     labels:
       - "homepage.group=Automation"
       - "homepage.name=Sonarr"
@@ -333,7 +333,7 @@ services:
       - ${DOWNLOADS_PATH}:/downloads
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "radarr"]
     labels:
       - "homepage.group=Automation"
       - "homepage.name=Radarr"
@@ -370,7 +370,7 @@ services:
       - ${CONFIG_ROOT}/prowlarr:/config
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "prowlarr"]
     labels:
       - "homepage.group=Automation"
       - "homepage.name=Prowlarr"
@@ -395,7 +395,7 @@ services:
       - TZ=${TIMEZONE}
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "prowlarr", "flaresolverr"]
     expose:
       - 8191
 
@@ -484,7 +484,7 @@ services:
       - ${CONFIG_ROOT}/overseerr:/config
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "overseerr"]
     labels:
       - "homepage.group=Automation"
       - "homepage.name=Overseerr"
@@ -514,7 +514,7 @@ services:
       - ${TV_SHOWS_PATH}:/tv
     networks:
       - mediastack
-    profiles: ["arr"]
+    profiles: ["arr", "bazarr"]
     labels:
       - "homepage.group=Automation"
       - "homepage.name=Bazarr"

@@ -111,6 +111,31 @@
     @apply bg-white/70 backdrop-blur-2xl border border-gray-200/60 shadow-2xl;
 }
 
+.chip-muted {
+    @apply text-[11px] px-2.5 py-1.5 rounded-lg border transition-all duration-200;
+    background-color: hsl(var(--muted) / 0.6);
+    border-color: hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+}
+
+.chip-muted:hover {
+    background-color: hsl(var(--muted) / 0.8);
+    border-color: rgb(168 85 247 / 0.3);
+    color: hsl(var(--foreground));
+}
+
+.light .chip-muted {
+    background-color: rgb(255 255 255);
+    border-color: rgb(229 231 235);
+    color: hsl(var(--foreground) / 0.8);
+}
+
+.light .chip-muted:hover {
+    background-color: rgb(250 245 255);
+    border-color: rgb(233 213 255);
+    color: hsl(var(--foreground));
+}
+
 /* Gradient Text */
 .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/50;
@@ -367,6 +392,10 @@
         color: hsl(var(--muted-foreground)) !important;
     }
 
+    .light .text-gray-200 {
+        color: hsl(var(--foreground) / 0.9) !important;
+    }
+
     .light .text-gray-700,
     .light .text-gray-800,
     .light .text-gray-900 {
@@ -387,6 +416,7 @@
 
     .light .border-white\/5,
     .light .border-white\/10,
+    .light .border-white\/15,
     .light .border-white\/20 {
         border-color: hsl(var(--border)) !important;
     }
@@ -402,5 +432,21 @@
     .light .bg-black\/50,
     .light .bg-black\/60 {
         background-color: hsl(var(--muted) / 0.9) !important;
+    }
+
+    .light .bg-black\/70 {
+        background-color: hsl(var(--background) / 0.8) !important;
+    }
+
+    .light .bg-slate-900,
+    .light .bg-slate-800,
+    .light .bg-slate-700 {
+        background-color: hsl(var(--card)) !important;
+    }
+
+    .light .bg-slate-900\/95,
+    .light .bg-slate-900\/50,
+    .light .bg-slate-800\/50 {
+        background-color: hsl(var(--card) / 0.95) !important;
     }
 }

@@ -212,39 +212,39 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 flex flex-col max-h-[calc(100vh-3rem)]">
+        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)]">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/40 flex items-center justify-center">
                         <Bot className="w-5 h-5 text-purple-300" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-white text-sm">Docs Assistant</h3>
-                        <p className="text-[10px] text-gray-500">Media Stack help only</p>
+                        <h3 className="font-semibold text-foreground text-sm">Docs Assistant</h3>
+                        <p className="text-[10px] text-muted-foreground">Media Stack help only</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
                     <button
                         onClick={() => setMessages([])}
-                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors"
                         title="Clear chat"
                     >
-                        <RefreshCw className="w-4 h-4 text-gray-400" />
+                        <RefreshCw className="w-4 h-4 text-muted-foreground" />
                     </button>
                     <button
                         onClick={() => setIsOpen(false)}
                         aria-label="Minimize assistant"
-                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors"
                     >
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </button>
                 </div>
             </div>
 
             {/* Current context badge */}
-            <div className="px-4 py-2 bg-purple-500/5 border-b border-white/5 flex items-center justify-between">
-                <p className="text-[10px] text-gray-400">
+            <div className="px-4 py-2 bg-muted/40 border-b border-border flex items-center justify-between">
+                <p className="text-[10px] text-muted-foreground">
                     <span className="text-purple-400 font-medium">Viewing:</span> {APP_NAMES[currentAppId] || currentAppId} guide
                 </p>
                 <span className="text-[10px] px-2 py-0.5 bg-green-500/20 text-green-300 rounded-full flex items-center gap-1">
@@ -258,12 +258,12 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                     <div className="space-y-4">
                         <div className="text-center py-4">
                             <Bot className="w-8 h-8 text-purple-400/50 mx-auto mb-2" />
-                            <p className="text-sm text-gray-400">How can I help with {APP_NAMES[currentAppId] || 'your media stack'}?</p>
+                            <p className="text-sm text-muted-foreground">How can I help with {APP_NAMES[currentAppId] || 'your media stack'}?</p>
                         </div>
                         
                         {/* Quick Actions */}
                         <div className="space-y-2">
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                                 <Zap className="w-3 h-3" /> Quick Actions
                             </p>
                             <div className="flex flex-wrap gap-1.5">
@@ -274,7 +274,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                                             setInput(action.query)
                                             setTimeout(() => sendMessage(), 100)
                                         }}
-                                        className="text-[11px] px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 hover:border-purple-500/30 rounded-lg text-gray-300 hover:text-white transition-all"
+                                        className="chip-muted"
                                     >
                                         {action.label}
                                     </button>
@@ -298,7 +298,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                             className={`max-w-[80%] rounded-xl text-sm ${
                                 msg.role === 'user'
                                     ? 'bg-purple-600 text-white px-3 py-2'
-                                    : 'bg-slate-800 text-gray-200 border border-white/5'
+                                    : 'bg-muted/60 text-foreground border border-border'
                             }`}
                         >
                             {msg.role === 'assistant' ? (
@@ -313,7 +313,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                                             </p>
                                             <ul className="space-y-1">
                                                 {msg.checklist.map((item, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2 text-xs text-gray-300">
+                                                    <li key={idx} className="flex items-start gap-2 text-xs text-muted-foreground">
                                                         <span className="text-green-400 mt-0.5">•</span>
                                                         <span>{item}</span>
                                                     </li>
@@ -325,7 +325,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                                     <div className="flex items-center gap-1 px-2 pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => copyToClipboard(msg.content, i)}
-                                            className="p-1 hover:bg-white/10 rounded text-gray-500 hover:text-gray-300 transition-colors"
+                                            className="p-1 hover:bg-muted/60 rounded text-muted-foreground hover:text-foreground transition-colors"
                                             aria-label="Copy response"
                                         >
                                             {copiedId === i ? (
@@ -341,8 +341,8 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                             )}
                         </div>
                         {msg.role === 'user' && (
-                            <div className="w-7 h-7 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-                                <User className="w-4 h-4 text-gray-300" />
+                            <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                                <User className="w-4 h-4 text-muted-foreground" />
                             </div>
                         )}
                     </div>
@@ -353,7 +353,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                         <div className="w-7 h-7 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                             <Bot className="w-4 h-4 text-purple-300" />
                         </div>
-                        <div className="px-3 py-2 rounded-xl bg-slate-800 border border-white/5">
+                        <div className="px-3 py-2 rounded-xl bg-muted/60 border border-border">
                             <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
                         </div>
                     </div>
@@ -372,10 +372,10 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
 
             {/* Suggested follow-ups after conversation */}
             {messages.length > 0 && !isLoading && (
-                <div className="px-4 py-2 border-t border-white/5">
+                <div className="px-4 py-2 border-t border-border">
                     <div className="flex items-center gap-2 mb-2">
-                        <RefreshCw className="w-3 h-3 text-gray-500" />
-                        <span className="text-[10px] text-gray-500">Continue with:</span>
+                        <RefreshCw className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">Continue with:</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                         {quickActions.slice(0, 3).map((action, i) => (
@@ -385,7 +385,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                                     setInput(action.query)
                                     setTimeout(sendMessage, 50)
                                 }}
-                                className="text-[10px] px-2 py-1 bg-slate-800/50 hover:bg-slate-700 border border-white/5 hover:border-purple-500/30 rounded text-gray-400 hover:text-white transition-all"
+                                className="chip-muted"
                             >
                                 {action.label}
                             </button>
@@ -395,7 +395,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
             )}
 
             {/* Input */}
-            <div className="p-4 border-t border-white/10">
+            <div className="p-4 border-t border-border">
                 <div className="flex gap-2">
                     <textarea
                         value={input}
@@ -403,7 +403,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                         onKeyDown={handleKeyDown}
                         placeholder={`Ask about ${APP_NAMES[currentAppId] || 'your media stack'}...`}
                         rows={1}
-                        className="flex-1 px-3 py-2 bg-slate-800 border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25"
+                        className="flex-1 px-3 py-2 bg-background/60 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25"
                     />
                     <button
                         onClick={sendMessage}
@@ -414,7 +414,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                         <Send className="w-4 h-4" />
                     </button>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-2 text-center">
+                <p className="text-[10px] text-muted-foreground mt-2 text-center">
                     I can switch guides, explain setup steps, and more
                 </p>
             </div>

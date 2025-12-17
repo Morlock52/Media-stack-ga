@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Sun, Moon, Search, Key, Check, X, Loader2 } from 'lucide-react'
 import { useSetupStore } from '../../store/setupStore'
 import { buildControlServerUrl } from '../../utils/controlServer'
@@ -318,6 +319,12 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
                 </p>
               </div>
             )}
+            <p className="text-[11px] text-center text-muted-foreground mt-4">
+              Need advanced controls?{' '}
+              <Link to="/settings" className="text-purple-400 hover:underline" onClick={() => setShowApiKeyModal(false)}>
+                Open settings page
+              </Link>
+            </p>
           </div>
         </div>
       )}

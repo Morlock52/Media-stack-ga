@@ -128,7 +128,7 @@ export function CommandPalette() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           >
             <div
@@ -137,25 +137,25 @@ export function CommandPalette() {
             >
               {/* Search input */}
               <div className="glass-panel rounded-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
-                <div className="p-4 border-b border-white/10">
+                <div className="p-4 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <Search className="w-5 h-5 text-gray-400" />
+                    <Search className="w-5 h-5 text-muted-foreground" />
                     <input
                       type="text"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Type a command or search..."
-                      className="flex-1 bg-transparent outline-none text-white placeholder-gray-400"
+                      className="flex-1 bg-transparent outline-none text-foreground placeholder-muted-foreground"
                       autoFocus
                     />
-                    <kbd className="px-2 py-1 text-xs bg-white/10 rounded text-gray-400">ESC</kbd>
+                    <kbd className="px-2 py-1 text-xs bg-muted/60 rounded text-muted-foreground">ESC</kbd>
                   </div>
                 </div>
 
                 {/* Command list */}
                 <div className="min-h-0 overflow-y-auto">
                   {filteredCommands.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400">
+                    <div className="p-8 text-center text-muted-foreground">
                       <Command className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No commands found</p>
                     </div>
@@ -174,35 +174,35 @@ export function CommandPalette() {
                             onClick={() => executeCommand(command)}
                             className={`w-full p-3 rounded-xl transition-all duration-200 ${isSelected
                                 ? `bg-gradient-to-r ${categoryColors[command.category]}`
-                                : 'hover:bg-white/5'
+                                : 'hover:bg-muted/40'
                               }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSelected ? 'bg-white/20' : 'bg-white/10'
                                 }`}>
-                                <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+                                <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-muted-foreground'}`} />
                               </div>
 
                               <div className="flex-1 text-left">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h4 className={`font-medium ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                  <h4 className={`font-medium ${isSelected ? 'text-white' : 'text-foreground'}`}>
                                     {command.title}
                                   </h4>
-                                  <span className={`px-2 py-0.5 rounded text-xs ${isSelected ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'
+                                  <span className={`px-2 py-0.5 rounded text-xs ${isSelected ? 'bg-white/20 text-white' : 'bg-muted/60 text-muted-foreground'
                                     }`}>
                                     {command.category}
                                   </span>
                                 </div>
-                                <p className={`text-sm ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
                                   {command.description}
                                 </p>
-                                <code className={`text-xs font-mono mt-1 block ${isSelected ? 'text-gray-400' : 'text-gray-600'
+                                <code className={`text-xs font-mono mt-1 block ${isSelected ? 'text-white/70' : 'text-muted-foreground'
                                   }`}>
                                   {command.command}
                                 </code>
                               </div>
 
-                              <ArrowRight className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
+                              <ArrowRight className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-muted-foreground'}`} />
                             </div>
                           </motion.button>
                         )
@@ -212,7 +212,7 @@ export function CommandPalette() {
                 </div>
 
                 {/* Footer */}
-                <div className="p-3 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+                <div className="p-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-4">
                     <span>↑↓ Navigate</span>
                     <span>↵ Execute</span>

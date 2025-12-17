@@ -18,7 +18,7 @@ import {
 import { TemplateSelector } from './TemplateSelector'
 import { Template } from '../data/templates'
 import { importConfiguration, downloadAsFile } from '../utils/configManager'
-import { generateDockerCompose } from '../utils/dockerComposeGenerator'
+import dockerComposeTemplate from '../../../docker-compose.yml?raw'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
@@ -116,7 +116,13 @@ export function SetupWizard() {
     // Step 4 form (Advanced Settings)
     const step4Form = useForm<AdvancedSettingsFormData>({
         resolver: zodResolver(advancedSettingsSchema),
-        defaultValues: config,
+        defaultValues: {
+            openaiApiKey: config.openaiApiKey,
+            cloudflareToken: config.cloudflareToken,
+            plexClaim: config.plexClaim,
+            wireguardPrivateKey: config.wireguardPrivateKey,
+            wireguardAddresses: config.wireguardAddresses,
+        },
         mode: 'onChange'
     })
 
@@ -145,7 +151,14 @@ export function SetupWizard() {
         } else if (currentStep === 4) {
             const isValid = await step4Form.trigger()
             if (isValid) {
-                updateConfig(step4Form.getValues())
+                const values = step4Form.getValues()
+                updateConfig({
+                    openaiApiKey: values.openaiApiKey,
+                    cloudflareToken: values.cloudflareToken,
+                    plexClaim: values.plexClaim,
+                    wireguardPrivateKey: values.wireguardPrivateKey,
+                    wireguardAddresses: values.wireguardAddresses,
+                })
             }
             nextStep()
         }
@@ -210,7 +223,7 @@ export function SetupWizard() {
     }
 
     const generateEnvFile = () => {
-        const profiles = selectedServices.join(',')
+        const profiles = Array.from(new Set(selectedServices)).join(',')
         const storagePlan = config.storagePlan || createDefaultStoragePlan(DEFAULT_DATA_ROOT)
         const planRoot = storagePlan.dataRoot?.path || DEFAULT_DATA_ROOT
         const storageDefaults = createDefaultStoragePlan(planRoot)
@@ -271,7 +284,7 @@ DOWNLOADS_PATH=${downloadsPath}
 CLOUDFLARE_TUNNEL_TOKEN=${config.cloudflareToken || 'CHANGE_ME_TOKEN'}
 
 # Authelia Secrets (Generate these with: openssl rand -hex 32)
-AUTHELIA_JWT_SECRET=GENERATE_WITH_OPENSSL
+AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=GENERATE_WITH_OPENSSL
 AUTHELIA_SESSION_SECRET=GENERATE_WITH_OPENSSL
 AUTHELIA_STORAGE_ENCRYPTION_KEY=GENERATE_WITH_OPENSSL
 
@@ -354,6 +367,8 @@ notifier:
     }
 
     const generateCloudflareYaml = () => {
+        const has = (profile: string) => selectedServices.includes(profile)
+        const hasArr = has('arr')
         return `tunnel: YOUR_TUNNEL_ID
 credentials-file: /etc/cloudflared/cert.json
 
@@ -366,13 +381,23 @@ ${selectedServices.includes('plex') ? `  - hostname: plex.${config.domain}
     service: http://plex:32400` : ''}
 ${selectedServices.includes('jellyfin') ? `  - hostname: jellyfin.${config.domain}
     service: http://jellyfin:8096` : ''}
-${selectedServices.includes('arr') ? `  - hostname: sonarr.${config.domain}
-    service: http://sonarr:8989
-  - hostname: radarr.${config.domain}
-    service: http://radarr:7878
-  - hostname: prowlarr.${config.domain}
+${hasArr || has('overseerr') ? `  - hostname: request.${config.domain}
+    service: http://overseerr:5055` : ''}
+${hasArr || has('sonarr') ? `  - hostname: sonarr.${config.domain}
+    service: http://sonarr:8989` : ''}
+${hasArr || has('radarr') ? `  - hostname: radarr.${config.domain}
+    service: http://radarr:7878` : ''}
+${hasArr || has('prowlarr') ? `  - hostname: prowlarr.${config.domain}
     service: http://prowlarr:9696` : ''}
-${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
+${hasArr || has('bazarr') ? `  - hostname: bazarr.${config.domain}
+    service: http://bazarr:6767` : ''}
+${selectedServices.includes('stats') ? `  - hostname: tautulli.${config.domain}
+    service: http://tautulli:8181` : ''}
+${selectedServices.includes('transcode') ? `  - hostname: tdarr.${config.domain}
+    service: http://tdarr:8265` : ''}
+${selectedServices.includes('notify') ? `  - hostname: notifiarr.${config.domain}
+    service: http://notifiarr:5454` : ''}
+${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
     service: http://gluetun:8080` : ''}
   - service: http_status:404
 `
@@ -400,7 +425,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
         downloadFile(generateEnvFile(), '.env')
         downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')
         downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')
-        downloadFile(generateDockerCompose(selectedServices), 'docker-compose.yml')
+        downloadFile(dockerComposeTemplate, 'docker-compose.yml')
     }
 
     const handleShare = () => {
@@ -427,6 +452,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                 onClose={() => setShowVoiceCompanion(false)}
                 onApplyPlan={handleApplyVoicePlan}
                 templateMode={mode}
+                openaiKey={config.openaiApiKey}
             />
 
             {/* Floating Voice Companion Trigger */}
@@ -492,18 +518,18 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                             </Button>
                             <Button
                                 onClick={() => setShowProfiles(!showProfiles)}
-                                variant="outline"
-                                className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:text-blue-200"
-                                title="Manage profiles"
+                                variant="glass"
+                                className="text-foreground hover:text-foreground"
+                                title="Manage saved profiles"
                             >
                                 <User className="w-4 h-4" />
                                 Profiles
                             </Button>
-                            <div className="w-px h-6 bg-white/10 mx-2" />
+                            <div className="w-px h-6 bg-border mx-2" />
                             <Button
                                 onClick={handleExport}
                                 variant="glass"
-                                className="text-muted-foreground hover:text-foreground"
+                                className="text-foreground hover:text-foreground"
                                 title="Export current configuration"
                             >
                                 <FileDown className="w-4 h-4" />
@@ -527,7 +553,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                 <Sparkles className="w-4 h-4" />
                                 Templates
                             </Button>
-                            <div className="w-px h-6 bg-white/10 mx-2" />
+                            <div className="w-px h-6 bg-border mx-2" />
                             <TopRightActions />
                         </motion.div>
                     </div>
@@ -542,7 +568,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                 className="mb-8 overflow-hidden"
                             >
                                 <div className="glass-ultra rounded-xl p-6 border border-blue-500/20 max-w-2xl mx-auto">
-                                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                                         <User className="w-5 h-5 text-blue-400" />
                                         Saved Profiles
                                     </h3>
@@ -553,7 +579,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                             value={newProfileName}
                                             onChange={(e) => setNewProfileName(e.target.value)}
                                             placeholder="Profile Name (e.g., 'Home Server')"
-                                            className="flex-1 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500/50 outline-none"
+                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-sm text-foreground focus:border-blue-500/50 outline-none"
                                             onKeyDown={(e) => e.key === 'Enter' && handleSaveProfile()}
                                         />
                                         <button
@@ -567,13 +593,13 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
 
                                     <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                                         {Object.keys(savedProfiles).length === 0 ? (
-                                            <p className="text-center text-gray-500 py-4">No saved profiles yet.</p>
+                                            <p className="text-center text-muted-foreground py-4">No saved profiles yet.</p>
                                         ) : (
                                             Object.entries(savedProfiles).map(([name, profile]) => (
-                                                <div key={name} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 hover:border-white/10 transition-all">
+                                                <div key={name} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-border hover:border-purple-500/30 transition-all">
                                                     <div>
-                                                        <div className="font-medium text-white">{name}</div>
-                                                        <div className="text-xs text-gray-500">
+                                                        <div className="font-medium text-foreground">{name}</div>
+                                                        <div className="text-xs text-muted-foreground">
                                                             {profile.selectedServices.length} services • {profile.mode || 'Custom'}
                                                         </div>
                                                     </div>
@@ -583,14 +609,14 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                                                 loadProfile(name)
                                                                 setShowProfiles(false)
                                                             }}
-                                                            className="p-2 hover:bg-green-500/20 text-gray-400 hover:text-green-400 rounded-lg transition-colors"
+                                                            className="p-2 hover:bg-green-500/20 text-muted-foreground hover:text-green-600 rounded-lg transition-colors"
                                                             title="Load Profile"
                                                         >
                                                             <FileUp className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => deleteProfile(name)}
-                                                            className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                                                            className="p-2 hover:bg-red-500/20 text-muted-foreground hover:text-red-600 rounded-lg transition-colors"
                                                             title="Delete Profile"
                                                         >
                                                             <RotateCcw className="w-4 h-4 rotate-45" />
@@ -607,7 +633,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
 
                     {/* Progress Bar */}
                     <div className="mb-8">
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
                             <motion.div
                                 className="progress-bar h-full"
                                 initial={{ width: 0 }}
@@ -636,7 +662,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                                     ? 'bg-purple-500/20 border-purple-500 text-purple-300 animate-pulse-glow'
                                                     : isComplete
                                                         ? 'bg-green-500/20 border-green-500 text-green-300'
-                                                        : 'bg-white/5 border-white/10 text-gray-500'
+                                                        : 'bg-muted/40 border-border text-muted-foreground'
                                                     }`}
                                                 animate={isComplete ? { scale: [1, 1.1, 1] } : {}}
                                                 transition={{ duration: 0.3 }}
@@ -650,7 +676,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                         </div>
                                         {index < steps.length - 1 && (
                                             <motion.div
-                                                className={`h-0.5 flex-1 mx-2 ${isComplete ? 'bg-green-500/50' : 'bg-white/10'}`}
+                                                className={`h-0.5 flex-1 mx-2 ${isComplete ? 'bg-green-500/50' : 'bg-border'}`}
                                                 initial={{ scaleX: 0 }}
                                                 animate={{ scaleX: isComplete ? 1 : 0 }}
                                                 transition={{ duration: 0.5 }}
@@ -665,7 +691,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                     {/* Main Content */}
                     {showTemplates ? (
                         <motion.div
-                            className="glass-ultra rounded-2xl p-8 border border-white/10 min-h-[500px]"
+                            className="glass-ultra rounded-2xl p-8 border border-border min-h-[500px]"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                         >
@@ -676,7 +702,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                         </motion.div>
                     ) : (
                         <motion.div
-                            className="glass-ultra rounded-2xl p-8 border border-white/10 min-h-[500px]"
+                            className="glass-ultra rounded-2xl p-8 border border-border min-h-[500px]"
                             layout
                         >
                             <AnimatePresence mode="wait">

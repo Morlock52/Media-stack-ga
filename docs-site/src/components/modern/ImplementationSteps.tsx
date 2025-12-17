@@ -31,7 +31,7 @@ nano .env
 # REQUIRED CHANGES:
 # - DOMAIN=yourdomain.com
 # - TIMEZONE=America/New_York
-# - AUTHELIA_JWT_SECRET=<generated_key>
+# - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=<generated_key>
 # - AUTHELIA_SESSION_SECRET=<generated_key>
 # - AUTHELIA_STORAGE_ENCRYPTION_KEY=<generated_key>
 # - REDIS_PASSWORD=<generated_key>
@@ -235,7 +235,7 @@ export function ImplementationSteps() {
     : steps[activeStep].content
 
   return (
-    <section className="py-24 bg-slate-900 relative overflow-hidden">
+    <section className="py-24 bg-background relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-64 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
@@ -253,18 +253,18 @@ export function ImplementationSteps() {
               Implementation Guide
             </span>
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Follow these steps to build your ultimate media server.
           </p>
 
           {/* Mode Toggle */}
           <div className="flex justify-center">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-1 rounded-xl inline-flex items-center gap-2">
+            <div className="bg-muted/40 backdrop-blur-sm border border-border p-1 rounded-xl inline-flex items-center gap-2">
               <button
                 onClick={() => setIsNewbieMode(true)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isNewbieMode
                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Newbie Mode
@@ -273,7 +273,7 @@ export function ImplementationSteps() {
                 onClick={() => setIsNewbieMode(false)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${!isNewbieMode
                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Expert Mode
@@ -309,22 +309,22 @@ export function ImplementationSteps() {
                   onClick={() => setActiveStep(index)}
                   className={`w-full text-left p-4 rounded-xl border transition-all duration-300 group ${isActive
                     ? `bg-gradient-to-r ${getTypeColor(step.type)} shadow-lg`
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                    : 'bg-muted/40 border-border hover:bg-muted/60 hover:border-border'
                     }`}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-white/20' : 'bg-muted/40 group-hover:bg-muted/60'
                       }`}>
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className={`font-semibold truncate ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                      <h3 className={`font-semibold truncate ${isActive ? 'text-white' : 'text-foreground'}`}>
                         {step.title}
                       </h3>
-                      <p className={`text-xs truncate ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
+                      <p className={`text-xs truncate ${isActive ? 'text-white/80' : 'text-muted-foreground'}`}>
                         {step.description}
                       </p>
                     </div>
@@ -348,7 +348,7 @@ export function ImplementationSteps() {
           >
             <div className="glass-panel rounded-2xl overflow-hidden">
               {/* Header */}
-              <div className="p-8 border-b border-white/10 bg-white/5">
+              <div className="p-8 border-b border-border bg-muted/40">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -358,20 +358,20 @@ export function ImplementationSteps() {
                         }`}>
                         {steps[activeStep].type.toUpperCase()}
                       </span>
-                      <h3 className="text-2xl font-bold text-white">{steps[activeStep].title}</h3>
+                      <h3 className="text-2xl font-bold text-foreground">{steps[activeStep].title}</h3>
                     </div>
-                    <p className="text-gray-400 text-lg">{steps[activeStep].description}</p>
+                    <p className="text-muted-foreground text-lg">{steps[activeStep].description}</p>
                   </div>
 
                   <button
                     onClick={() => copyCode(currentContent, steps[activeStep].id)}
-                    className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200 hover:scale-105 active:scale-95"
+                    className="p-3 rounded-xl bg-muted/60 hover:bg-muted/80 transition-all duration-200 hover:scale-105 active:scale-95"
                     title="Copy content"
                   >
                     {copiedCode === steps[activeStep].id ? (
                       <Check className="w-5 h-5 text-emerald-400" />
                     ) : (
-                      <Copy className="w-5 h-5 text-gray-400" />
+                      <Copy className="w-5 h-5 text-muted-foreground" />
                     )}
                   </button>
                 </div>
@@ -390,8 +390,8 @@ export function ImplementationSteps() {
 
                 <div className="relative group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-20 group-hover:opacity-30 transition duration-1000 blur-lg" />
-                  <pre className="relative bg-black/80 rounded-xl p-6 overflow-x-auto border border-white/10 shadow-2xl">
-                    <code className="text-sm md:text-base text-gray-300 font-mono leading-relaxed whitespace-pre-wrap">
+                  <pre className="relative bg-card rounded-xl p-6 overflow-x-auto border border-border shadow-2xl">
+                    <code className="text-sm md:text-base text-foreground/80 font-mono leading-relaxed whitespace-pre-wrap">
                       {currentContent}
                     </code>
                   </pre>
@@ -399,11 +399,11 @@ export function ImplementationSteps() {
               </div>
 
               {/* Footer Actions */}
-              <div className="p-8 border-t border-white/10 bg-white/5 flex justify-between items-center">
+              <div className="p-8 border-t border-border bg-muted/40 flex justify-between items-center">
                 <button
                   onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
                   disabled={activeStep === 0}
-                  className="px-6 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="px-6 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Previous
                 </button>

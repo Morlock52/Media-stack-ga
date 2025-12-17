@@ -1,14 +1,11 @@
 import { SetupConfig } from '../store/setupStore'
+import { buildControlServerUrl } from './controlServer'
 
 interface AIResponse {
     suggestion: string
     reasoning: string
     config?: Record<string, string>
 }
-
- const OPENAI_MODEL = import.meta.env?.VITE_OPENAI_MODEL
-     ? String(import.meta.env.VITE_OPENAI_MODEL)
-     : 'gpt-4o-mini'
 
 export async function generateServiceConfig(
     serviceId: string,
@@ -25,53 +22,43 @@ export async function generateServiceConfig(
     }
 
     try {
-        const prompt = `
-        You are an expert DevOps engineer configuring a media stack.
-        The user is setting up ${serviceId}.
-        
-        Current Global Config:
-        - Domain: ${currentConfig.domain}
-        - Timezone: ${currentConfig.timezone}
-        - PUID/PGID: ${currentConfig.puid}/${currentConfig.pgid}
-        
-        User Context: ${userContext || 'None provided'}
-        
-        Please suggest optimal environment variables and configuration settings for ${serviceId}.
-        Return ONLY a JSON object with the following structure:
-        {
-            "suggestion": "Brief explanation of the suggestion",
-            "reasoning": "Why this is recommended",
-            "config": {
-                "KEY": "VALUE"
-            }
-        }
-        `
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(buildControlServerUrl('/api/ai/service-config'), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: OPENAI_MODEL, // Use a fast, capable model
-                messages: [
-                    { role: 'system', content: 'You are a helpful DevOps assistant.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                response_format: { type: "json_object" }
+                serviceId,
+                userContext,
+                config: {
+                    domain: currentConfig.domain,
+                    timezone: currentConfig.timezone,
+                    puid: currentConfig.puid,
+                    pgid: currentConfig.pgid,
+                },
+                openaiKey: apiKey,
             })
         })
 
         if (!response.ok) {
-            throw new Error(`OpenAI API Error: ${response.statusText}`)
+            if (response.status === 401) {
+                return {
+                    suggestion: 'Your OpenAI key looks invalid. Update it in Advanced settings to enable AI suggestions.',
+                    reasoning: 'invalid_api_key',
+                }
+            }
+            if (response.status === 429) {
+                return {
+                    suggestion: 'OpenAI is rate limiting requests right now. Try again in a minute.',
+                    reasoning: 'rate_limited',
+                }
+            }
+
+            return {
+                suggestion: 'AI request failed. Please try again.',
+                reasoning: `http_${response.status}`,
+            }
         }
 
-        const data = await response.json()
-        const result = JSON.parse(data.choices[0].message.content)
-        return result
-
+        return response.json()
     } catch (error) {
         console.error('AI Generation Failed:', error)
         return {

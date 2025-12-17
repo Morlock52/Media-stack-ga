@@ -94,4 +94,98 @@ test.describe('Docs Site Smoke Tests', () => {
     
     console.log('✅ No critical JavaScript errors')
   })
+
+  test('wizard can generate and download configs', async ({ page }) => {
+    test.setTimeout(120000)
+    await page.goto('/')
+
+    // Start wizard
+    await page.getByRole('button', { name: /start configuration/i }).click()
+
+    // Step 2: Basic config (domain + password required)
+    const domain = 'mydomain.net'
+    await expect(page.getByRole('heading', { name: /basic configuration/i })).toBeVisible({ timeout: 15000 })
+
+    const domainInput = page.locator('input[name="domain"]:visible')
+    await domainInput.click()
+    await domainInput.fill(domain)
+    await expect(domainInput).toHaveValue(domain)
+
+    const passwordInput = page.locator('input[name="password"]:visible')
+    await passwordInput.click()
+    await passwordInput.fill('TestPassword123!')
+    await expect(passwordInput).toHaveValue('TestPassword123!')
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    // Step 3: Stack selection -> Expert Mode
+    await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: /expert mode/i }).click()
+
+    // Select a representative stack (includes *Arr + VPN + torrent)
+    await page.getByText('*Arr Stack', { exact: true }).click()
+    await page.getByText('Plex', { exact: true }).click()
+    await page.getByText('Torrent Client', { exact: true }).click()
+    await page.getByText('Gluetun VPN', { exact: true }).click()
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    // Step 4: Service config (no required fields currently)
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    // Step 5: Advanced (optional fields)
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    // Step 6: Review & Generate
+    await expect(page.getByText('Review & Generate', { exact: true })).toBeVisible()
+
+    // Verify env preview contains the current authelia secret key name
+    const envPreview = page.locator('pre').first()
+    await expect(envPreview).toContainText('AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=')
+    await expect(envPreview).toContainText('COMPOSE_PROFILES=')
+
+    // Download all files and validate key outputs
+    const downloads: Array<{ suggested: string; path: string; content: string }> = []
+    const onDownload = async (dl: any) => {
+      const suggested = dl.suggestedFilename()
+      const path = await dl.path()
+      if (!path) return
+      const fs = await import('node:fs/promises')
+      const content = await fs.readFile(path, 'utf-8')
+      downloads.push({ suggested, path, content })
+    }
+    page.on('download', onDownload)
+
+    await page.getByRole('button', { name: /download all files/i }).click()
+
+    await expect
+      .poll(() => downloads.length, { timeout: 15000 })
+      .toBe(4)
+
+    // Validate contents (filenames can vary in headless browsers, e.g. ".env" => "env.txt")
+    const envText = downloads.find(d => d.content.includes('COMPOSE_PROFILES=') && d.content.includes('TIMEZONE='))?.content
+    expect(envText, 'missing .env-like download').toBeTruthy()
+    expect(envText!).toContain('AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=')
+
+    const cloudflareText = downloads.find(d => d.content.includes('tunnel:') && d.content.includes('ingress:'))?.content
+    expect(cloudflareText, 'missing cloudflare-config-like download').toBeTruthy()
+    expect(cloudflareText!).toContain(`hostname: sonarr.${domain}`)
+    expect(cloudflareText!).toContain(`hostname: qbt.${domain}`)
+
+    const composeText = downloads.find(d => d.content.includes('services:') && d.content.includes('networks:'))?.content
+    expect(composeText, 'missing docker-compose-like download').toBeTruthy()
+
+    const autheliaText = downloads.find(d => d.content.includes('authentication_backend:') && d.content.includes('session:'))?.content
+    expect(autheliaText, 'missing authelia-config-like download').toBeTruthy()
+  })
+
+  test('AI assistant can chat with control-server', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTitle('Ask AI Assistant').click()
+    await page.getByPlaceholder('Ask anything...').fill('hello')
+    await page.keyboard.press('Enter')
+
+    // Wait for an assistant response bubble
+    const bubbles = page.locator('.whitespace-pre-wrap')
+    await expect(bubbles).toHaveCount(2, { timeout: 15000 })
+    await expect(bubbles.nth(1)).not.toHaveText('', { timeout: 15000 })
+  })
 })

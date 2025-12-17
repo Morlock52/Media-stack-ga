@@ -36,9 +36,10 @@ logs/
 
 # App data and cache
 /data/
-**/data/
 .cache/
 .coverage/
+test-results/
+**/test-results/
 
 # Misc
 *.pid

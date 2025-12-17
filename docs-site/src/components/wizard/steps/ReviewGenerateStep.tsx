@@ -46,35 +46,35 @@ export function ReviewGenerateStep({
             className="space-y-6"
         >
             <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Review & Generate</h2>
-                <p className="text-gray-400">Verify your settings and generate configuration files</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Review & Generate</h2>
+                <p className="text-muted-foreground">Verify your settings and generate configuration files</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <h3 className="text-sm font-semibold text-gray-300 mb-4">Configuration Summary</h3>
+                <div className="p-4 rounded-xl bg-muted/40 border border-border">
+                    <h3 className="text-sm font-semibold text-foreground/80 mb-4">Configuration Summary</h3>
                     <dl className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <dt className="text-gray-500">Domain</dt>
-                            <dd className="text-white font-mono">{config.domain}</dd>
+                            <dt className="text-muted-foreground">Domain</dt>
+                            <dd className="text-foreground font-mono">{config.domain}</dd>
                         </div>
                         <div className="flex justify-between">
-                            <dt className="text-gray-500">Timezone</dt>
-                            <dd className="text-white font-mono">{config.timezone}</dd>
+                            <dt className="text-muted-foreground">Timezone</dt>
+                            <dd className="text-foreground font-mono">{config.timezone}</dd>
                         </div>
                         <div className="flex justify-between">
-                            <dt className="text-gray-500">Mode</dt>
+                            <dt className="text-muted-foreground">Mode</dt>
                             <dd className="text-purple-300 capitalize">{mode}</dd>
                         </div>
                         <div className="flex justify-between">
-                            <dt className="text-gray-500">Services</dt>
-                            <dd className="text-white">{selectedServices.length} selected</dd>
+                            <dt className="text-muted-foreground">Services</dt>
+                            <dd className="text-foreground">{selectedServices.length} selected</dd>
                         </div>
                     </dl>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <h3 className="text-sm font-semibold text-gray-300 mb-4">Selected Services</h3>
+                <div className="p-4 rounded-xl bg-muted/40 border border-border">
+                    <h3 className="text-sm font-semibold text-foreground/80 mb-4">Selected Services</h3>
                     <div className="flex flex-wrap gap-2">
                         {selectedServices.map((s: string) => (
                             <span key={s} className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-300 text-xs border border-purple-500/30">
@@ -99,16 +99,16 @@ export function ReviewGenerateStep({
                 </div>
             )}
 
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <h3 className="text-sm font-semibold text-gray-300 mb-4">Storage Layout</h3>
+            <div className="p-4 rounded-xl bg-muted/40 border border-border">
+                <h3 className="text-sm font-semibold text-foreground/80 mb-4">Storage Layout</h3>
                 <div className="space-y-2 text-xs">
                     {storageEntries.map((entry) => (
                         <div key={entry.id} className="flex items-start justify-between gap-3">
-                            <span className="text-gray-500">{entry.label}</span>
+                            <span className="text-muted-foreground">{entry.label}</span>
                             <div className="text-right">
-                                <p className="font-mono text-white break-all">{entry.path}</p>
+                                <p className="font-mono text-foreground break-all">{entry.path}</p>
                                 {entry.type === 'network' && (
-                                    <span className="text-[10px] text-blue-300 uppercase tracking-wide">Network share</span>
+                                    <span className="text-[10px] text-primary uppercase tracking-wide">Network share</span>
                                 )}
                             </div>
                         </div>
@@ -118,27 +118,27 @@ export function ReviewGenerateStep({
 
             {/* File Previews */}
             <div className="space-y-4">
-                <div className="rounded-xl bg-black/50 border border-white/10 overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
-                        <span className="text-sm font-mono text-gray-300">.env</span>
+                <div className="rounded-xl bg-card border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b border-border">
+                        <span className="text-sm font-mono text-muted-foreground">.env</span>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => copyToClipboard(generateEnvFile())}
-                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                                 title="Copy to clipboard"
                             >
                                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                             </button>
                             <button
                                 onClick={() => downloadFile(generateEnvFile(), '.env')}
-                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                                 title="Download file"
                             >
                                 <Download className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
-                    <pre className="p-4 text-xs font-mono text-gray-300 overflow-x-auto max-h-60 custom-scrollbar">
+                    <pre className="p-4 text-xs font-mono text-muted-foreground overflow-x-auto max-h-60 custom-scrollbar">
                         {generateEnvFile()}
                     </pre>
                 </div>
@@ -155,7 +155,7 @@ export function ReviewGenerateStep({
                 </button>
                 <button
                     onClick={handleShare}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-xl font-semibold transition-all btn-lift"
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-muted/60 hover:bg-muted/80 border border-border hover:border-purple-500/30 text-foreground rounded-xl font-semibold transition-all btn-lift"
                 >
                     <Globe className="w-5 h-5" />
                     Share Configuration
@@ -163,7 +163,7 @@ export function ReviewGenerateStep({
             </div>
 
             {/* Post-Install Checklist */}
-            <div className="mt-12 pt-8 border-t border-white/10">
+            <div className="mt-12 pt-8 border-t border-border">
                 <PostInstallChecklist />
             </div>
         </motion.div>

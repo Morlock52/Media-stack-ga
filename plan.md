@@ -31,7 +31,7 @@ This section details the configuration required for each functional component (s
 - Update `DOMAIN`.
 - Set `TIMEZONE`.
 - Generate and set secure passwords/secrets for:
-    - `AUTHELIA_JWT_SECRET`, `AUTHELIA_SESSION_SECRET`, `AUTHELIA_STORAGE_ENCRYPTION_KEY`
+    - `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET`, `AUTHELIA_SESSION_SECRET`, `AUTHELIA_STORAGE_ENCRYPTION_KEY`
     - `REDIS_PASSWORD`
     - `CLOUDFLARE_TUNNEL_TOKEN`
 - Verify storage paths (`DATA_ROOT`, etc.).

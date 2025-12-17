@@ -46,6 +46,12 @@ interface DockerComposeService {
 
     // Optional: extra capabilities (e.g. NET_ADMIN for VPN)
     cap_add?: string[]
+
+    // Optional: route through another container's network stack (e.g. service:gluetun)
+    network_mode?: string
+
+    // Optional: device passthrough (e.g. /dev/net/tun for VPN)
+    devices?: string[]
 }
 
 /**
@@ -72,7 +78,6 @@ const serviceDefinitions: Record<string, DockerComposeService> = {
             // One-time token to claim this server to your Plex account.
             // You can leave it empty after first run.
             'PLEX_CLAIM=${PLEX_CLAIM}',
-            '${TRANSCODE_PATH}:/transcode',
         ],
         volumes: [
             // Plex config DB + metadata cache lives here.
@@ -80,6 +85,8 @@ const serviceDefinitions: Record<string, DockerComposeService> = {
             // Movies and TV folders; keep paths consistent with *Arr apps.
             '${MOVIES_PATH}:/movies',
             '${TV_SHOWS_PATH}:/tv',
+            // Transcode scratch space (optional but recommended for performance)
+            '${TRANSCODE_PATH}:/transcode',
         ],
         // 32400 is Plex's main web UI + streaming port.
         ports: ['32400:32400'],
@@ -198,8 +205,6 @@ const serviceDefinitions: Record<string, DockerComposeService> = {
         ],
         profiles: ['torrent'],
         networks: ['mediastack'],
-        // Start only after VPN in a VPN-protected setup.
-        depends_on: ['gluetun'],
     },
 
     // GLUETUN - VPN container for all download traffic
@@ -209,6 +214,7 @@ const serviceDefinitions: Record<string, DockerComposeService> = {
         restart: 'unless-stopped',
         // Needs NET_ADMIN to manage network stack.
         cap_add: ['NET_ADMIN'],
+        devices: ['/dev/net/tun:/dev/net/tun'],
         environment: [
             'VPN_SERVICE_PROVIDER=custom',
             'VPN_TYPE=wireguard',
@@ -217,6 +223,15 @@ const serviceDefinitions: Record<string, DockerComposeService> = {
             'TZ=${TIMEZONE}',
         ],
         volumes: ['${CONFIG_ROOT}/gluetun:/gluetun'],
+        ports: [
+            '8888:8888/tcp', // HTTP proxy
+            '8388:8388/tcp', // Shadowsocks
+            '8388:8388/udp', // Shadowsocks
+            // qBittorrent ports (when qbittorrent uses network_mode: service:gluetun)
+            '8080:8080',
+            '6881:6881',
+            '6881:6881/udp',
+        ],
         profiles: ['vpn'],
         networks: ['mediastack'],
     },
@@ -387,10 +402,11 @@ export function generateDockerCompose(selectedProfiles: string[]): string {
 
     // 2) Build services: block for docker-compose
     const services: Record<string, any> = {}
+    const hasGluetun = serviceNames.has('gluetun')
     serviceNames.forEach((serviceName) => {
         const def = serviceDefinitions[serviceName]
         if (def) {
-            services[serviceName] = {
+            const service: Record<string, any> = {
                 image: def.image,
                 container_name: def.container_name,
                 restart: def.restart,
@@ -399,8 +415,20 @@ export function generateDockerCompose(selectedProfiles: string[]): string {
                 ...(def.ports && { ports: def.ports }),
                 ...(def.cap_add && { cap_add: (def as any).cap_add }),
                 ...(def.depends_on && { depends_on: def.depends_on }),
-                networks: def.networks,
+                ...(def.devices && { devices: def.devices }),
             }
+
+            // If VPN is selected, route qBittorrent through Gluetun (prevents IP leaks).
+            if (serviceName === 'qbittorrent' && hasGluetun) {
+                delete service.ports
+                delete service.networks
+                service.network_mode = 'service:gluetun'
+                service.depends_on = ['gluetun']
+            } else {
+                service.networks = def.networks
+            }
+
+            services[serviceName] = service
         }
     })
 

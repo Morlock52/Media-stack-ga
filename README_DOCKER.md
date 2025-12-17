@@ -25,10 +25,10 @@ docker compose -f docker-compose.wizard.yml up --build -d
 
 ## Accessing the Wizard
 
-- **Web UI**: Open [http://localhost:3000](http://localhost:3000)
+- **Web UI**: Open [http://localhost:3002](http://localhost:3002)
 - **API**: Running internally on port 3001 (mapped to host port 3001 for compatibility).
 
 ## Troubleshooting
 
-- **Port Conflicts**: Ensure ports 3000 and 3001 are free on your host.
+- **Port Conflicts**: Ensure ports 3002 and 3001 are free on your host.
 - **Docker Socket permissions**: If you see "permission denied" errors regarding the Docker socket, you may need to adjust the user in `docker-compose.wizard.yml` or run with proper privileges.

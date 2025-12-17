@@ -2,7 +2,7 @@
 
 ## Configuration Updates
 - [x] Generated secure secrets for `.env`
-    - `AUTHELIA_JWT_SECRET`
+    - `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET`
     - `AUTHELIA_SESSION_SECRET`
     - `AUTHELIA_STORAGE_ENCRYPTION_KEY`
 - [x] Updated Credentials

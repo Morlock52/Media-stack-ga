@@ -12,7 +12,7 @@ interface AppGuideLayoutProps {
 
 export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime, children }: AppGuideLayoutProps) {
     return (
-        <section id="apps" className="py-20 border-t border-white/10 bg-background">
+        <section id="apps" className="py-20 border-t border-border bg-background">
             <div className="container mx-auto px-4 max-w-5xl">
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
@@ -40,16 +40,16 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
                     </div>
 
                     <div className="space-y-4">
-                        <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-                            <h3 className="text-sm font-semibold text-white mb-2">How to read this guide</h3>
-                            <ol className="list-decimal list-inside text-xs text-gray-400 space-y-1">
+                        <div className="rounded-2xl border border-border bg-card/60 p-4">
+                            <h3 className="text-sm font-semibold text-foreground mb-2">How to read this guide</h3>
+                            <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-1">
                                 <li>Follow the steps in order after you have run <code>docker compose up -d</code>.</li>
                                 <li>Keep this page open while you click through the app UI.</li>
                                 <li>If you get stuck, use the AI assistant inside the wizard for extra help.</li>
                             </ol>
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-xs text-emerald-100">
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-xs text-emerald-700 dark:text-emerald-100">
                             <p className="font-semibold mb-1">Non‑technical friendly</p>
                             <p>No jargon, just clear click‑by‑click instructions. If anything feels confusing, you can safely skip it now and come back later.</p>
                         </div>

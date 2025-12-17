@@ -308,7 +308,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                 {messages.length > 0 && (
                                     <button
                                         onClick={clearChat}
-                                        className="p-1.5 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white text-xs"
+                                        className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground text-xs"
                                         title="Clear chat"
                                     >
                                         Clear
@@ -316,7 +316,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                 )}
                                 <button
                                     onClick={() => setIsOpen(false)}
-                                    className="p-1.5 hover:bg-white/10 rounded-lg"
+                                    className="p-1.5 hover:bg-muted/60 rounded-lg"
                                     title="Close"
                                 >
                                     <X className="w-4 h-4" />
@@ -331,8 +331,8 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     <button
                                         onClick={() => setSelectedAgent(null)}
                                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${!selectedAgent
-                                                ? 'bg-white/10 text-white'
-                                                : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                                                ? 'bg-muted/60 text-foreground'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                                             }`}
                                     >
                                         <HelpCircle className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                             onClick={() => setSelectedAgent(agent.id)}
                                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${selectedAgent === agent.id
                                                     ? `bg-gradient-to-r ${AGENT_COLORS[agent.id] || AGENT_COLORS.general} text-white`
-                                                    : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                                                 }`}
                                             title={agent.description}
                                         >
@@ -366,7 +366,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     </p>
 
                                     {wizardStepInfo?.proactiveTips && (
-                                        <div className="mx-2 p-3 bg-white/5 border border-white/10 rounded-xl text-left">
+                                        <div className="mx-2 p-3 bg-muted/60 border border-border rounded-xl text-left">
                                             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Tips for this step</p>
                                             <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
                                                 {wizardStepInfo.proactiveTips.map((tip, idx) => (
@@ -396,7 +396,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                             <button
                                                 key={i}
                                                 onClick={() => sendMessage(s.text)}
-                                                className="block w-full text-left px-3 py-2 text-xs bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                                                className="block w-full text-left px-3 py-2 text-xs bg-muted/60 hover:bg-muted/80 rounded-lg transition-colors"
                                             >
                                                 <span className="text-muted-foreground mr-2">
                                                     {agents.find(a => a.id === s.agent)?.icon || '💬'}
@@ -429,12 +429,12 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                             )}
                                             <div className={`px-3 py-2 rounded-2xl text-sm ${msg.role === 'user'
                                                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
-                                                    : 'bg-white/5 text-foreground rounded-bl-md'
+                                                    : 'bg-muted/60 text-foreground rounded-bl-md'
                                                 }`}>
                                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                                             </div>
                                             {msg.toolUsed && (
-                                                <div className="mt-1 mx-1 p-1.5 rounded bg-black/20 border border-white/10 text-[10px] font-mono text-blue-300 flex items-center gap-1.5 opacity-80">
+                                                <div className="mt-1 mx-1 p-1.5 rounded bg-muted/60 border border-border text-[10px] font-mono text-primary flex items-center gap-1.5 opacity-80">
                                                     <span className="shrink-0">💻</span>
                                                     <span className="truncate">Executed: {msg.toolUsed.command}</span>
                                                 </div>
@@ -442,7 +442,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                             {msg.role === 'assistant' && (
                                                 <button
                                                     onClick={() => copyToClipboard(msg.content, idx)}
-                                                    className="mt-1 text-[10px] text-muted-foreground hover:text-white flex items-center gap-1"
+                                                    className="mt-1 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                 >
                                                     {copiedIdx === idx ? (
                                                         <><Check className="w-3 h-3" /> Copied</>
@@ -466,7 +466,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
                                         <Loader2 className="w-4 h-4 animate-spin text-white" />
                                     </div>
-                                    <div className="px-3 py-2 bg-white/5 rounded-2xl rounded-bl-md">
+                                    <div className="px-3 py-2 bg-muted/60 rounded-2xl rounded-bl-md">
                                         <span className="text-sm text-muted-foreground">Thinking...</span>
                                     </div>
                                 </div>
@@ -516,7 +516,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                                     placeholder={selectedAgent ? `Ask ${agents.find(a => a.id === selectedAgent)?.name}...` : "Ask anything..."}
-                                    className="flex-1 bg-white/5 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                    className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
                                     disabled={isLoading}
                                 />
                                 <button

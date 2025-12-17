@@ -153,7 +153,7 @@ DOWNLOADS_PATH=\${DATA_ROOT}/downloads
 CLOUDFLARE_TUNNEL_TOKEN=CHANGE_ME_TOKEN
 
 # Authelia Secrets (Generated)
-AUTHELIA_JWT_SECRET=$(openssl rand -hex 32)
+AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=$(openssl rand -hex 32)
 AUTHELIA_SESSION_SECRET=$(openssl rand -hex 32)
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(openssl rand -hex 32)
 
@@ -203,7 +203,7 @@ WIREGUARD_ADDRESSES=`
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-xl text-gray-400 max-w-2xl mx-auto"
+                        className="text-xl text-muted-foreground max-w-2xl mx-auto"
                     >
                         Customize your installation. Configure your environment, select services, and generate your setup command.
                     </motion.p>
@@ -217,36 +217,36 @@ WIREGUARD_ADDRESSES=`
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-1 space-y-6"
                     >
-                        <div className="glass-panel p-6 rounded-2xl border border-white/10">
+                        <div className="glass-panel p-6 rounded-2xl border border-border">
                             <div className="flex items-center gap-3 mb-6">
                                 <Settings className="w-5 h-5 text-purple-400" />
-                                <h2 className="text-xl font-semibold text-white">Configuration</h2>
+                                <h2 className="text-xl font-semibold text-foreground">Configuration</h2>
                             </div>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Domain</label>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Domain</label>
                                     <div className="relative">
-                                        <Globe className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <Globe className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                         <input
                                             type="text"
                                             value={config.domain}
                                             onChange={(e) => handleConfigChange('domain', e.target.value)}
-                                            className="w-full bg-black/30 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-background/60 border border-border rounded-lg py-2 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500 transition-colors"
                                             placeholder="example.com"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Timezone</label>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Timezone</label>
                                     <div className="relative">
-                                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                         <input
                                             type="text"
                                             value={config.timezone}
                                             onChange={(e) => handleConfigChange('timezone', e.target.value)}
-                                            className="w-full bg-black/30 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-background/60 border border-border rounded-lg py-2 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500 transition-colors"
                                             placeholder="Etc/UTC"
                                         />
                                     </div>
@@ -254,27 +254,27 @@ WIREGUARD_ADDRESSES=`
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">PUID</label>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">PUID</label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                            <User className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                             <input
                                                 type="text"
                                                 value={config.puid}
                                                 onChange={(e) => handleConfigChange('puid', e.target.value)}
-                                                className="w-full bg-black/30 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                                className="w-full bg-background/60 border border-border rounded-lg py-2 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500 transition-colors"
                                                 placeholder="1000"
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">PGID</label>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">PGID</label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                            <User className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                             <input
                                                 type="text"
                                                 value={config.pgid}
                                                 onChange={(e) => handleConfigChange('pgid', e.target.value)}
-                                                className="w-full bg-black/30 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                                className="w-full bg-background/60 border border-border rounded-lg py-2 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500 transition-colors"
                                                 placeholder="1000"
                                             />
                                         </div>
@@ -282,14 +282,14 @@ WIREGUARD_ADDRESSES=`
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Master Password</label>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Master Password</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                         <input
                                             type="password"
                                             value={config.password}
                                             onChange={(e) => handleConfigChange('password', e.target.value)}
-                                            className="w-full bg-black/30 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-background/60 border border-border rounded-lg py-2 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500 transition-colors"
                                             placeholder="Use a strong passphrase"
                                         />
                                     </div>
@@ -314,11 +314,11 @@ WIREGUARD_ADDRESSES=`
                                         onClick={() => toggleService(service.profile)}
                                         className={`relative p-4 rounded-xl cursor-pointer border transition-all duration-300 ${isSelected
                                             ? 'bg-purple-500/10 border-purple-500/50 shadow-lg shadow-purple-500/10'
-                                            : 'glass-card border-white/5 hover:border-white/10'
+                                            : 'glass-card border-border hover:border-border'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between mb-2">
-                                            <div className={`p-2 rounded-lg ${isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'
+                                            <div className={`p-2 rounded-lg ${isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-muted/60 text-muted-foreground'
                                                 }`}>
                                                 <Icon className="w-5 h-5" />
                                             </div>
@@ -328,10 +328,10 @@ WIREGUARD_ADDRESSES=`
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className={`text-base font-semibold mb-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                        <h3 className={`text-base font-semibold mb-1 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
                                             {service.name}
                                         </h3>
-                                        <p className="text-xs text-gray-400">
+                                        <p className="text-xs text-muted-foreground">
                                             {service.description}
                                         </p>
                                     </motion.div>
@@ -346,16 +346,16 @@ WIREGUARD_ADDRESSES=`
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="glass-panel p-6 rounded-2xl max-w-4xl mx-auto border border-white/10"
+                    className="glass-panel p-6 rounded-2xl max-w-4xl mx-auto border border-border"
                 >
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <Terminal className="w-5 h-5 text-purple-400" />
-                            <h2 className="text-lg font-semibold text-white">Installation Command</h2>
+                            <h2 className="text-lg font-semibold text-foreground">Installation Command</h2>
                         </div>
                         <button
                             onClick={() => setShowEnv(!showEnv)}
-                            className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <FileText className="w-4 h-4" />
                             {showEnv ? 'Hide .env Preview' : 'Show .env Preview'}
@@ -364,12 +364,12 @@ WIREGUARD_ADDRESSES=`
                     </div>
 
                     <div className="relative group mb-4">
-                        <div className="bg-black/50 rounded-xl p-4 font-mono text-sm text-gray-300 break-all border border-white/10 overflow-x-auto">
+                        <div className="bg-muted/60 rounded-xl p-4 font-mono text-sm text-foreground/80 break-all border border-border overflow-x-auto">
                             <pre className="whitespace-pre-wrap">{generateCommand()}</pre>
                         </div>
                         <button
                             onClick={() => copyToClipboard(generateCommand())}
-                            className="absolute top-2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white"
+                            className="absolute top-2 right-2 p-2 bg-muted/60 hover:bg-muted/80 rounded-lg transition-colors text-foreground"
                             title="Copy command"
                         >
                             {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
@@ -380,10 +380,10 @@ WIREGUARD_ADDRESSES=`
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-4 pt-4 border-t border-white/10"
+                            className="mt-4 pt-4 border-t border-border"
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-gray-400">Generated .env content:</span>
+                                <span className="text-sm text-muted-foreground">Generated .env content:</span>
                                 <button
                                     onClick={() => copyToClipboard(generateEnvPreview())}
                                     className="text-xs flex items-center gap-1 text-purple-400 hover:text-purple-300"
@@ -391,13 +391,13 @@ WIREGUARD_ADDRESSES=`
                                     <Copy className="w-3 h-3" /> Copy .env
                                 </button>
                             </div>
-                            <div className="bg-black/50 rounded-xl p-4 font-mono text-xs text-gray-400 border border-white/10 overflow-x-auto max-h-96 overflow-y-auto">
+                            <div className="bg-muted/60 rounded-xl p-4 font-mono text-xs text-muted-foreground border border-border overflow-x-auto max-h-96 overflow-y-auto">
                                 <pre>{generateEnvPreview()}</pre>
                             </div>
                         </motion.div>
                     )}
 
-                    <p className="mt-4 text-sm text-gray-500 text-center">
+                    <p className="mt-4 text-sm text-muted-foreground text-center">
                         Run the command above to configure and start your stack automatically.
                     </p>
                 </motion.div>

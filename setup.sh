@@ -330,7 +330,7 @@ EOF
 # --- Pull Images ---
 
 gum style --foreground 99 "📥 Pulling Docker images..."
-docker-compose pull | gum format
+${COMPOSE_CMD} pull | gum format
 
 # --- Container Checks ---
 
@@ -378,8 +378,8 @@ fi
 echo ""
 
 if gum confirm "🚀 Do you want to start the media stack now?"; then
-    gum spin --spinner dot --title "🚀 Starting stack..." -- docker-compose up -d
-    gum style --foreground 46 "✅ Stack started! Check status with: docker-compose ps"
+    gum spin --spinner dot --title "🚀 Starting stack..." -- ${COMPOSE_CMD} up -d
+    gum style --foreground 46 "✅ Stack started! Check status with: ${COMPOSE_CMD} ps"
 else
-    echo "OK. Start later with: docker-compose up -d"
+    echo "OK. Start later with: ${COMPOSE_CMD} up -d"
 fi

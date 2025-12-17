@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Command, Search, Moon, Sun } from 'lucide-react'
+import { Menu, X, Command, Search, Moon, Sun, Settings } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
 
 export function ModernNavigation() {
@@ -98,6 +99,14 @@ export function ModernNavigation() {
                 <Search className="w-4 h-4 text-muted-foreground" />
               </button>
 
+              <Link
+                to="/settings"
+                className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                title="Open settings"
+              >
+                <Settings className="w-4 h-4 text-muted-foreground" />
+              </Link>
+
               {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
@@ -147,6 +156,15 @@ export function ModernNavigation() {
                     </kbd>
                   </button>
                 ))}
+                <Link
+                  to="/settings"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  title="Go to Settings"
+                >
+                  <span className="text-muted-foreground">Settings</span>
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                </Link>
               </div>
             </div>
           </motion.div>

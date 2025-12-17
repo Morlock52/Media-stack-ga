@@ -21,8 +21,37 @@ export const buildApp = async (): Promise<FastifyInstance> => {
         }
     });
 
+    const rawCorsOrigins = (process.env.CONTROL_SERVER_CORS_ORIGINS || '').trim();
+    const allowedOrigins = rawCorsOrigins
+        ? rawCorsOrigins.split(',').map((o) => o.trim()).filter(Boolean)
+        : [
+            'http://localhost:5173', // Vite dev server (docs-site)
+            'http://localhost:3000', // common local UI port
+            'http://localhost:3002', // dockerized wizard-web default
+        ];
+
     await app.register(cors, {
-        origin: '*' // Configure appropriately for production
+        origin: (origin, cb) => {
+            // Non-browser requests often have no Origin (curl, server-to-server).
+            if (!origin) return cb(null, true);
+            if (allowedOrigins.includes(origin)) return cb(null, true);
+            return cb(new Error('Not allowed by CORS'), false);
+        }
+    });
+
+    // Optional API auth (recommended when control-server is reachable beyond localhost)
+    app.addHook('onRequest', async (request, reply) => {
+        const token = (process.env.CONTROL_SERVER_TOKEN || '').trim();
+        if (!token) return;
+
+        const url = request.raw.url || '';
+        if (url === '/api/health') return;
+
+        const authHeader = request.headers.authorization || '';
+        const expected = `Bearer ${token}`;
+        if (authHeader !== expected) {
+            return reply.status(401).send({ error: 'Unauthorized' });
+        }
     });
 
     // Health Check

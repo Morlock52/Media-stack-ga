@@ -423,7 +423,10 @@ export const useSetupStore = create<SetupStore>()(
                 mode: state.mode,
                 storageMode: state.storageMode,
                 selectedServices: state.selectedServices,
-                config: state.config,
+                config: {
+                    ...state.config,
+                    openaiApiKey: '',
+                },
                 savedProfiles: state.savedProfiles,
                 advancedPlanCache: state.advancedPlanCache,
             })

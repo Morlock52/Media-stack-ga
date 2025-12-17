@@ -1,19 +1,45 @@
 import { runCommand } from '../utils/docker.js';
 export async function dockerRoutes(fastify) {
+    const cacheMs = Math.max(0, parseInt(process.env.DOCKER_STATUS_CACHE_MS || '1500', 10) || 0);
+    let containersCache = null;
+    let containersCacheAt = 0;
+    let containersInFlight = null;
     // Get Container Status
     fastify.get('/api/containers', async (request, reply) => {
         try {
-            const output = await runCommand('docker', [
-                'ps',
-                '-a',
-                '--format',
-                '"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}"'
-            ]);
-            const containers = output.split('\n').filter(line => line).map(line => {
-                const [id, name, status, state, ports] = line.replace(/"/g, '').split('|');
-                return { id, name, status, state, ports };
-            });
-            return containers;
+            const now = Date.now();
+            if (cacheMs > 0 && containersCache && now - containersCacheAt < cacheMs) {
+                return containersCache;
+            }
+            if (containersInFlight) {
+                return await containersInFlight;
+            }
+            containersInFlight = (async () => {
+                const output = await runCommand('docker', [
+                    'ps',
+                    '-a',
+                    '--format',
+                    '"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}"'
+                ]);
+                const containers = output
+                    .split('\n')
+                    .filter(line => line)
+                    .map(line => {
+                    const [id, name, status, state, ports] = line.replace(/"/g, '').split('|');
+                    return { id, name, status, state, ports };
+                });
+                if (cacheMs > 0) {
+                    containersCache = containers;
+                    containersCacheAt = Date.now();
+                }
+                return containers;
+            })();
+            try {
+                return await containersInFlight;
+            }
+            finally {
+                containersInFlight = null;
+            }
         }
         catch (error) {
             fastify.log.error('Error fetching containers:', error);
@@ -64,13 +90,19 @@ export async function dockerRoutes(fastify) {
     // Health Snapshot
     fastify.get('/api/health-snapshot', async (request, reply) => {
         try {
-            const output = await runCommand('docker', [
-                'ps', '-a', '--format', '"{{.Names}}|{{.Status}}|{{.State}}"'
-            ]);
-            const containers = output.split('\n').filter(l => l).map(line => {
-                const [name, status, state] = line.replace(/"/g, '').split('|');
-                return { name, status, state };
-            });
+            // Re-use the containers cache when possible since this endpoint is derived data.
+            const containers = await (async () => {
+                if (cacheMs > 0 && containersCache && Date.now() - containersCacheAt < cacheMs) {
+                    return containersCache.map((c) => ({ name: c.name, status: c.status, state: c.state }));
+                }
+                const output = await runCommand('docker', [
+                    'ps', '-a', '--format', '"{{.Names}}|{{.Status}}|{{.State}}"'
+                ]);
+                return output.split('\n').filter(l => l).map(line => {
+                    const [name, status, state] = line.replace(/"/g, '').split('|');
+                    return { name, status, state };
+                });
+            })();
             const stopped = containers.filter(c => c.state !== 'running');
             const unhealthy = containers.filter(c => c.status?.includes('unhealthy'));
             const restarting = containers.filter(c => c.state === 'restarting');

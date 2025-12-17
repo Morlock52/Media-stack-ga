@@ -16,7 +16,7 @@ docker-compose down
 ### Start Wizard (Docker Mode)
 ```bash
 docker compose -f docker-compose.wizard.yml up -d
-# Access at http://localhost:3000
+# Access at http://localhost:3002
 ```
 
 ### View Logs

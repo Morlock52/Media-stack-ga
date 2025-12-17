@@ -63,15 +63,15 @@ export function SearchBar() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
       onClick={() => setIsOpen(false)}
     >
       <div
         className="w-full max-w-2xl max-h-[calc(100dvh-2rem)]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="glass border border-white/20 rounded-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
-          <div className="p-4 border-b border-white/10">
+        <div className="glass border border-border rounded-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
+          <div className="p-4 border-b border-border">
             <div className="flex items-center gap-3">
               <Search className="w-5 h-5 text-muted-foreground" />
               <input
@@ -79,14 +79,14 @@ export function SearchBar() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search documentation, services, configuration..."
-                className="flex-1 bg-transparent outline-none text-white placeholder-muted-foreground"
+                className="flex-1 bg-transparent outline-none text-foreground placeholder-muted-foreground"
                 autoFocus
               />
               <button
                 onClick={() => setIsOpen(false)}
                 aria-label="Close search"
                 title="Close search"
-                className="p-1 rounded hover:bg-white/10 transition-colors"
+                className="p-1 rounded hover:bg-muted/60 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -102,12 +102,12 @@ export function SearchBar() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="block p-4 border-b border-white/5 hover:bg-white/5 transition-colors"
+                  className="block p-4 border-b border-border hover:bg-muted/40 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-white mb-1">{result.title}</h4>
+                      <h4 className="font-semibold text-foreground mb-1">{result.title}</h4>
                       <p className="text-sm text-muted-foreground mb-2">{result.description}</p>
                       <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded">
                         {result.section}

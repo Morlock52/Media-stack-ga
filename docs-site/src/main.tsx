@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import App from './App'
 import { DocsPage } from './pages/DocsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import './index.css'
 
 const SonnerToaster = Toaster as unknown as React.ComponentType<Record<string, unknown>>
@@ -46,6 +47,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 				<Routes>
 					<Route path="/" element={<App />} />
 					<Route path="/docs" element={<DocsPage />} />
+					<Route path="/settings" element={<SettingsPage />} />
 				</Routes>
 			</BrowserRouter>
 		</RootErrorBoundary>

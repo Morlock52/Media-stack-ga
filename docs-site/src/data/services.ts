@@ -20,6 +20,7 @@ export const services: ServiceOption[] = [
     { id: 'emby', name: 'Emby', description: 'Media server with live TV support', icon: MonitorPlay, profile: 'emby', category: 'media' },
 
     // MEDIA MANAGEMENT
+    { id: 'arr', name: '*Arr Stack', description: 'Sonarr + Radarr + Prowlarr + Overseerr + Bazarr', icon: Layers, profile: 'arr', category: 'automation' },
     { id: 'sonarr', name: 'Sonarr', description: 'Automated TV series management', icon: Layers, profile: 'sonarr', category: 'automation' },
     { id: 'radarr', name: 'Radarr', description: 'Automated movie management', icon: Layers, profile: 'radarr', category: 'automation' },
     { id: 'prowlarr', name: 'Prowlarr', description: 'Indexer management for *Arr apps', icon: Layers, profile: 'prowlarr', category: 'automation' },

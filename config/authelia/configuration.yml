@@ -40,7 +40,7 @@ session:
   redis:
     host: redis
     port: 6379
-    password: Morlock52$
+    password: CHANGE_ME
     database_index: 0
 
 regulation:

@@ -18,7 +18,7 @@ def check_env_security():
         issues.append("⚠️  CRITICAL: Default password 'Morlock52$' detected!")
     
     # Rule 2: Weak Secrets
-    secret_patterns = [r'AUTHELIA_JWT_SECRET=(\w{0,10})$', r'POSTGRES_PASSWORD=(\w{0,5})$']
+    secret_patterns = [r'AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=(\w{0,10})$', r'POSTGRES_PASSWORD=(\w{0,5})$']
     for line in content.splitlines():
         for pattern in secret_patterns:
             if re.search(pattern, line):

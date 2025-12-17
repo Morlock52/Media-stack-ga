@@ -95,7 +95,7 @@ export function NotificationCenter() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg glass border border-white/10 hover:border-primary/30 transition-all"
+        className="relative p-2 rounded-lg glass border border-border hover:border-primary/30 transition-all"
         aria-label="Notifications"
         title="View notifications"
       >
@@ -111,11 +111,11 @@ export function NotificationCenter() {
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="absolute top-full mt-2 right-0 w-96 max-w-[calc(100vw-2rem)] glass border border-white/20 rounded-xl z-50 max-h-[calc(100dvh-6rem)] overflow-hidden flex flex-col"
+          className="absolute top-full mt-2 right-0 w-96 max-w-[calc(100vw-2rem)] glass border border-border rounded-xl z-50 max-h-[calc(100dvh-6rem)] overflow-hidden flex flex-col"
         >
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-white">Notifications</h3>
+              <h3 className="font-semibold text-foreground">Notifications</h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
@@ -129,7 +129,7 @@ export function NotificationCenter() {
                   onClick={() => setIsOpen(false)}
                   aria-label="Close notifications"
                   title="Close notifications"
-                  className="p-1 rounded hover:bg-white/10 transition-colors"
+                  className="p-1 rounded hover:bg-muted/60 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -151,7 +151,7 @@ export function NotificationCenter() {
                     key={notification.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
+                    className={`p-4 border-b border-border hover:bg-muted/40 transition-colors cursor-pointer ${
                       !notification.read ? 'bg-primary/5' : ''
                     }`}
                     onClick={() => markAsRead(notification.id)}
@@ -159,7 +159,7 @@ export function NotificationCenter() {
                     <div className="flex gap-3">
                       <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${getIconColor(notification.type)}`} />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-white text-sm">{notification.title}</h4>
+                        <h4 className="font-medium text-foreground text-sm">{notification.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {notification.message}
                         </p>
@@ -177,8 +177,8 @@ export function NotificationCenter() {
             )}
           </div>
 
-          <div className="p-3 border-t border-white/10">
-            <button className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-white transition-colors">
+          <div className="p-3 border-t border-border">
+            <button className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <Settings className="w-3 h-3" />
               <span>Notification Settings</span>
             </button>

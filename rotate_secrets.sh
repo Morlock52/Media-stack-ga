@@ -5,6 +5,16 @@
 
 set -e
 
+# Docker Compose v2 ships as `docker compose`; fall back to legacy `docker-compose`
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    echo -e "${RED}Error: Docker Compose is not installed (need docker compose or docker-compose).${NC}"
+    exit 1
+fi
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -57,7 +67,7 @@ echo -e "${GREEN}✅ Secrets updated in .env${NC}"
 
 echo ""
 echo -e "${GREEN}🔄 Restarting affected containers...${NC}"
-docker-compose up -d --force-recreate authelia postgres
+${COMPOSE_CMD} up -d --force-recreate authelia postgres
 
 echo ""
 echo -e "${GREEN}✅ Secret rotation complete!${NC}"

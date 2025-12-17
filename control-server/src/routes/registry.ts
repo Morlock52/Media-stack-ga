@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
 
-// Paths relative to control-server root
-const DOCS_SITE_ROOT = path.join(PROJECT_ROOT, '../Media-stack-anti/docs-site');
+// Paths relative to repository root
+const DOCS_SITE_ROOT = path.join(PROJECT_ROOT, 'docs-site');
 const REGISTRY_PATH = path.join(DOCS_SITE_ROOT, 'src/data/apps-registry.json');
 const BACKUP_DIR = path.join(DOCS_SITE_ROOT, 'src/data/backups');
 const DOCS_DIR = path.join(DOCS_SITE_ROOT, 'src/components/docs');

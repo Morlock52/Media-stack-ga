@@ -6,6 +6,16 @@ echo "This will PERMANENTLY DELETE configuration data for selected services."
 echo "Use with caution!"
 echo ""
 
+# Docker Compose v2 ships as `docker compose`; fall back to legacy `docker-compose`
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    echo "❌ Docker Compose is not installed (need docker compose or docker-compose)."
+    exit 1
+fi
+
 # List services with config
 CONFIG_DIR="./config"
 SERVICES=$(ls $CONFIG_DIR)
@@ -20,7 +30,7 @@ select SERVICE in $SERVICES "Quit"; do
         read -p "🔴 Are you sure you want to DELETE ALL DATA for $SERVICE? (y/N): " confirm
         if [[ $confirm == "y" || $confirm == "Y" ]]; then
             echo "Stopping container..."
-            docker-compose stop $SERVICE
+            $COMPOSE_CMD stop $SERVICE
             echo "Deleting data..."
             rm -rf "$CONFIG_DIR/$SERVICE"/*
             echo "✅ Reset complete for $SERVICE"

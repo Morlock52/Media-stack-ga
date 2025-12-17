@@ -9,7 +9,7 @@ export const InstallGuide: React.FC = () => {
         <div className="container mx-auto px-4 py-12">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                    <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
                         Install <span className="text-gradient-primary">MediaStack</span>
                     </h1>
                     <p className="text-xl text-muted-foreground">
@@ -43,25 +43,25 @@ export const InstallGuide: React.FC = () => {
 
                 {/* Prerequisites */}
                 <div className="grid md:grid-cols-3 gap-6 mb-12">
-                    <div className="glass p-6 rounded-xl border border-white/5">
+                    <div className="glass p-6 rounded-xl border border-border">
                         <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
                             <Server size={20} />
                         </div>
-                        <h3 className="font-bold text-white mb-2">Docker Desktop</h3>
+                        <h3 className="font-bold text-foreground mb-2">Docker Desktop</h3>
                         <p className="text-sm text-muted-foreground">Ensure Docker and Docker Compose are installed and running.</p>
                     </div>
-                    <div className="glass p-6 rounded-xl border border-white/5">
+                    <div className="glass p-6 rounded-xl border border-border">
                         <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 mb-4">
                             <Monitor size={20} />
                         </div>
-                        <h3 className="font-bold text-white mb-2">Domain Name</h3>
+                        <h3 className="font-bold text-foreground mb-2">Domain Name</h3>
                         <p className="text-sm text-muted-foreground">You need a domain (e.g., mymedia.com) for secure remote access.</p>
                     </div>
-                    <div className="glass p-6 rounded-xl border border-white/5">
+                    <div className="glass p-6 rounded-xl border border-border">
                         <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 mb-4">
                             <CheckCircle size={20} />
                         </div>
-                        <h3 className="font-bold text-white mb-2">Cloudflare</h3>
+                        <h3 className="font-bold text-foreground mb-2">Cloudflare</h3>
                         <p className="text-sm text-muted-foreground">A free Cloudflare account to manage your DNS and Tunnel.</p>
                     </div>
                 </div>
@@ -69,11 +69,11 @@ export const InstallGuide: React.FC = () => {
                 {/* Animated Terminal */}
                 <div className="mb-12">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                             <Terminal className="text-primary" />
                             Interactive Setup
                         </h2>
-                        <span className="text-xs font-mono bg-white/10 px-2 py-1 rounded text-muted-foreground">
+                        <span className="text-xs font-mono bg-muted/40 px-2 py-1 rounded text-muted-foreground">
                             v2.0.0
                         </span>
                     </div>
@@ -81,20 +81,20 @@ export const InstallGuide: React.FC = () => {
                 </div>
 
                 {/* Command Copy */}
-                <div className="glass p-8 rounded-2xl border border-white/10 mb-12">
-                    <h3 className="text-xl font-bold text-white mb-4">Run the Script</h3>
+                <div className="glass p-8 rounded-2xl border border-border mb-12">
+                    <h3 className="text-xl font-bold text-foreground mb-4">Run the Script</h3>
                     <p className="text-muted-foreground mb-6">
                         Open your terminal and run the following command to start the interactive setup wizard.
                     </p>
 
-                    <div className="bg-black/50 rounded-xl p-4 font-mono text-sm flex items-center justify-between group relative overflow-hidden">
+                    <div className="bg-muted/60 border border-border rounded-xl p-4 font-mono text-sm flex items-center justify-between group relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <code className="relative z-10 text-green-400">
+                        <code className="relative z-10 text-green-600">
                             {os === 'unix' ? './setup.sh' : '.\\setup.ps1'}
                         </code>
                         <button
                             onClick={() => navigator.clipboard.writeText(os === 'unix' ? './setup.sh' : '.\\setup.ps1')}
-                            className="relative z-10 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            className="relative z-10 bg-muted/60 hover:bg-muted/80 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                         >
                             Copy
                         </button>

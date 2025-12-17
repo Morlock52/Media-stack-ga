@@ -17,20 +17,21 @@ export function useSystemStatus() {
     const [isConnected, setIsConnected] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const fetchStatus = async () => {
+    const fetchStatus = async (): Promise<boolean> => {
         try {
             const res = await fetch(`${API_URL}/containers`);
             if (res.ok) {
                 const data = await res.json();
                 setContainers(data);
                 setIsConnected(true);
+                return true;
             } else {
                 setIsConnected(false);
+                return false;
             }
-        } catch (err) {
-            console.error('useSystemStatus: failed to fetch container status', err);
+        } catch {
             setIsConnected(false);
-            // console.error('Control server offline');
+            return false;
         } finally {
             setLoading(false);
         }
@@ -56,9 +57,29 @@ export function useSystemStatus() {
     };
 
     useEffect(() => {
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 3000); // Poll every 3s
-        return () => clearInterval(interval);
+        const shouldPoll = Boolean(import.meta.env.DEV || import.meta.env.VITE_CONTROL_SERVER_URL);
+        if (!shouldPoll) {
+            setLoading(false);
+            return;
+        }
+
+        let canceled = false;
+        let delayMs = 3000;
+
+        const loop = async () => {
+            if (canceled) return;
+            const connected = await fetchStatus();
+            if (canceled) return;
+
+            // Backoff: poll faster when connected, slower when offline.
+            delayMs = connected ? 5000 : Math.min(delayMs * 2, 60000);
+            setTimeout(loop, delayMs);
+        };
+
+        loop();
+        return () => {
+            canceled = true;
+        };
     }, []);
 
     return {

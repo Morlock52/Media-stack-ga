@@ -7,6 +7,9 @@ import path from 'path';
 import { AiChatRequest } from '../types/index.js';
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
+const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
+const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 
 type VoiceAgentHistoryItem = { role: 'user' | 'assistant'; content: string };
 
@@ -23,6 +26,98 @@ const getOpenAIKey = () => {
     const envContent = readEnvFile();
     const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
     return match ? match[1].trim() : null;
+};
+
+const assertValidTtsFormat = (format: unknown): 'mp3' | 'wav' | 'opus' => {
+    if (format === 'wav' || format === 'opus' || format === 'mp3') return format;
+    return 'mp3';
+};
+
+const contentTypeForTtsFormat = (format: 'mp3' | 'wav' | 'opus') => {
+    switch (format) {
+        case 'wav':
+            return 'audio/wav';
+        case 'opus':
+            return 'audio/ogg';
+        case 'mp3':
+        default:
+            return 'audio/mpeg';
+    }
+};
+
+const requestOpenAiTts = async (options: {
+    apiKey: string;
+    text: string;
+    model: string;
+    voice: string;
+    format: 'mp3' | 'wav' | 'opus';
+}) => {
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${options.apiKey}`,
+        },
+        body: JSON.stringify({
+            model: options.model,
+            voice: options.voice,
+            input: options.text,
+            response_format: options.format,
+        }),
+    });
+
+    return response;
+};
+
+const sendTtsUpstreamError = async (reply: any, response: Response, fallbackMessage: string) => {
+    let upstreamBody = '';
+    try {
+        upstreamBody = await response.text();
+    } catch {
+        upstreamBody = '';
+    }
+
+    const upstreamStatus = response.status;
+    const isAuthError = upstreamStatus === 401 || upstreamStatus === 403;
+    const isRateLimited = upstreamStatus === 429;
+
+    if (isAuthError) {
+        return reply.status(401).send({
+            error: 'OpenAI authentication failed',
+            reason: 'invalid_api_key',
+            upstreamStatus,
+        });
+    }
+
+    if (isRateLimited) {
+        return reply.status(429).send({
+            error: 'OpenAI rate limited',
+            reason: 'rate_limited',
+            upstreamStatus,
+        });
+    }
+
+    return reply.status(502).send({
+        error: fallbackMessage,
+        reason: 'upstream_error',
+        upstreamStatus,
+        upstreamBody: upstreamBody ? upstreamBody.slice(0, 500) : undefined,
+    });
+};
+
+const openAiErrorPayload = (status: number, fallbackMessage: string) => {
+    const isAuthError = status === 401 || status === 403;
+    const isRateLimited = status === 429;
+
+    if (isAuthError) {
+        return { httpStatus: 401, payload: { error: 'OpenAI authentication failed', reason: 'invalid_api_key' } };
+    }
+
+    if (isRateLimited) {
+        return { httpStatus: 429, payload: { error: 'OpenAI rate limited', reason: 'rate_limited' } };
+    }
+
+    return { httpStatus: 502, payload: { error: fallbackMessage, reason: 'upstream_error', upstreamStatus: status } };
 };
 
 export async function aiRoutes(fastify: FastifyInstance) {
@@ -113,8 +208,10 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 });
 
                 if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+                    const status = response.status;
+                    const { httpStatus, payload } = openAiErrorPayload(status, 'Voice agent failed');
+                    fastify.log.warn({ status }, 'Voice agent OpenAI error');
+                    return reply.status(httpStatus).send(payload);
                 }
 
                 const data: any = await response.json();
@@ -133,6 +230,77 @@ export async function aiRoutes(fastify: FastifyInstance) {
             }
         }
     );
+
+    // High-quality TTS endpoint (used by docs-site VoiceCompanion when an OpenAI key is available)
+    fastify.post<{
+        Body: {
+            text?: string;
+            openaiKey?: string;
+            voice?: string;
+            format?: 'mp3' | 'wav' | 'opus';
+        };
+    }>('/api/tts', async (request, reply) => {
+        const { text, openaiKey, voice, format } = request.body || {};
+        const effectiveApiKey = openaiKey || getOpenAIKey();
+
+        if (!text || typeof text !== 'string') {
+            return reply.status(400).send({ error: 'text is required' });
+        }
+
+        const normalizedText = text.trim();
+        if (!normalizedText) {
+            return reply.status(400).send({ error: 'text is required' });
+        }
+
+        // Keep this endpoint safe/cheap by default (assistant responses should be short).
+        if (normalizedText.length > 4000) {
+            return reply.status(413).send({ error: 'text is too long' });
+        }
+
+        if (!effectiveApiKey) {
+            return reply.status(400).send({ error: 'OpenAI API key is required for TTS' });
+        }
+
+        const requestedVoice =
+            typeof voice === 'string' && voice.trim().length > 0 ? voice.trim() : OPENAI_TTS_VOICE;
+        const requestedFormat = assertValidTtsFormat(format);
+
+        try {
+            const primary = await requestOpenAiTts({
+                apiKey: effectiveApiKey,
+                text: normalizedText,
+                model: OPENAI_TTS_MODEL,
+                voice: requestedVoice,
+                format: requestedFormat,
+            });
+
+            let response = primary;
+            if (!primary.ok && OPENAI_TTS_FALLBACK_MODEL && OPENAI_TTS_FALLBACK_MODEL !== OPENAI_TTS_MODEL) {
+                // Some deployments may not have the newest model enabled; fall back gracefully.
+                response = await requestOpenAiTts({
+                    apiKey: effectiveApiKey,
+                    text: normalizedText,
+                    model: OPENAI_TTS_FALLBACK_MODEL,
+                    voice: requestedVoice,
+                    format: requestedFormat,
+                });
+            }
+
+            if (!response.ok) {
+                fastify.log.warn({ status: response.status }, 'OpenAI TTS error');
+                return sendTtsUpstreamError(reply, response, 'TTS failed');
+            }
+
+            const audioBuffer = Buffer.from(await response.arrayBuffer());
+            reply.header('Cache-Control', 'no-store');
+            reply.header('Content-Type', contentTypeForTtsFormat(requestedFormat));
+            reply.header('X-TTS-Model', response === primary ? OPENAI_TTS_MODEL : OPENAI_TTS_FALLBACK_MODEL);
+            return reply.send(audioBuffer);
+        } catch (error: any) {
+            fastify.log.warn({ err: error }, 'TTS failed');
+            return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
+        }
+    });
 
     // Settings: OpenAI key management
     fastify.get('/api/settings/openai-key', async (_request, _reply) => {
@@ -170,6 +338,92 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // Wizard AI helper: generate service config suggestions
+    fastify.post<{
+        Body: {
+            serviceId?: string;
+            userContext?: string;
+            config?: { domain?: string; timezone?: string; puid?: string; pgid?: string };
+            openaiKey?: string;
+        }
+    }>('/api/ai/service-config', async (request, reply) => {
+        const { serviceId, userContext, config, openaiKey } = request.body || {};
+        const effectiveApiKey = openaiKey || getOpenAIKey();
+
+        if (!serviceId || typeof serviceId !== 'string') {
+            return reply.status(400).send({ error: 'serviceId is required' });
+        }
+
+        if (!effectiveApiKey) {
+            return {
+                suggestion: 'AI features are disabled. Please add an OpenAI API key to enable smart suggestions.',
+                reasoning: 'No API key provided.',
+            };
+        }
+
+        const prompt = `You are an expert DevOps engineer configuring a media stack.
+The user is setting up ${serviceId}.
+
+Current Global Config:
+- Domain: ${config?.domain || ''}
+- Timezone: ${config?.timezone || ''}
+- PUID/PGID: ${config?.puid || ''}/${config?.pgid || ''}
+
+User Context: ${userContext || 'None provided'}
+
+Please suggest optimal environment variables and configuration settings for ${serviceId}.
+
+Return ONLY a JSON object with the following structure:
+{
+  "suggestion": "Brief explanation of the suggestion",
+  "reasoning": "Why this is recommended",
+  "config": {
+    "KEY": "VALUE"
+  }
+}`;
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${effectiveApiKey}`
+                },
+                body: JSON.stringify({
+                    model: OPENAI_MODEL,
+                    messages: [
+                        { role: 'system', content: 'You are a helpful DevOps assistant.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    response_format: { type: 'json_object' }
+                })
+            });
+
+            if (!response.ok) {
+                const status = response.status;
+                const { httpStatus, payload } = openAiErrorPayload(status, 'AI request failed');
+                fastify.log.warn({ status, serviceId }, 'Service config OpenAI error');
+                return reply.status(httpStatus).send(payload);
+            }
+
+            const data: any = await response.json();
+            const content = data?.choices?.[0]?.message?.content;
+            if (!content || typeof content !== 'string') {
+                throw new Error('OpenAI response missing content');
+            }
+
+            const parsed = JSON.parse(content);
+            return parsed;
+        } catch (error: any) {
+            fastify.log.warn({ err: error, serviceId }, 'Service config AI generation failed');
+            return reply.status(502).send({
+                error: 'AI request failed',
+                reason: 'server_error',
+            });
+        }
+    });
+
     // Main agent chat endpoint
     fastify.post<{ Body: AiChatRequest }>('/api/agent/chat', async (request, reply) => {
         const { message, agentId, history = [], context = {}, openaiKey } = request.body;
@@ -190,23 +444,6 @@ export async function aiRoutes(fastify: FastifyInstance) {
             try {
                 const messages: any[] = buildAgentMessages(agent, message, history, context);
                 const tools = [
-                    {
-                        type: "function",
-                        function: {
-                            name: "run_command",
-                            description: "Run a shell command on the user's machine. Use this to check logs, list files, or check docker status. Do NOT run dangerous commands like rm -rf.",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    command: {
-                                        type: "string",
-                                        description: "The command to run (e.g. 'docker ps', 'ls -la', 'cat .env')"
-                                    }
-                                },
-                                required: ["command"]
-                            }
-                        }
-                    },
                     {
                         type: "function",
                         function: {
@@ -269,8 +506,10 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 });
 
                 if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+                    const status = response.status;
+                    const { httpStatus, payload } = openAiErrorPayload(status, 'Chat request failed');
+                    fastify.log.warn({ status }, 'Chat OpenAI error');
+                    return reply.status(httpStatus).send(payload);
                 }
 
                 const data: any = await response.json();
@@ -282,48 +521,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
                 if (messageData?.tool_calls?.length > 0) {
                     const toolCall = messageData.tool_calls[0];
-                    if (toolCall.function.name === 'run_command') {
-                        const args = JSON.parse(toolCall.function.arguments);
-                        const command = args.command;
-
-                        fastify.log.info({ command }, 'AI executing tool command');
-                        toolUsed = { command };
-
-                        try {
-                            if (command.includes('rm ') || command.includes('mv ') || command.includes('>')) {
-                                throw new Error('Command blocked for security');
-                            }
-
-                            const output = await runCommand(command.split(' ')[0], command.split(' ').slice(1));
-
-                            messages.push(messageData);
-                            messages.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: output || "(No output)"
-                            });
-
-                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${effectiveApiKey}`
-                                },
-                                body: JSON.stringify({
-                                    model: OPENAI_MODEL,
-                                    messages,
-                                    max_tokens: 1000,
-                                    temperature: 0.7
-                                })
-                            });
-
-                            const secondData: any = await secondResponse.json();
-                            answer = secondData.choices?.[0]?.message?.content;
-
-                        } catch (err: any) {
-                            answer = `I tried to run \`${command}\` but it failed: ${err.message}`;
-                        }
-                    } else if (toolCall.function.name === 'analyze_logs') {
+                    if (toolCall.function.name === 'analyze_logs') {
                         const args = JSON.parse(toolCall.function.arguments);
                         const service = args.serviceName;
                         const lines = args.lines || 50;
@@ -448,7 +646,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     });
 
     // Suggestions endpoint for docs site
-    fastify.post<{ Body: { currentApp: string } }>('/api/agent/suggestions', async (request, reply) => {
+    fastify.post<{ Body: { currentApp: string } }>('/api/agent/suggestions', async (request, _reply) => {
         const { currentApp } = request.body;
         const suggestions: any[] = [];
 

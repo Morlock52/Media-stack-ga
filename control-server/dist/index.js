@@ -1,11 +1,12 @@
 import { buildApp } from './app.js';
 import { PROJECT_ROOT } from './utils/env.js';
 const PORT = parseInt(process.env.PORT || '3001');
+const HOST = process.env.CONTROL_SERVER_HOST || '127.0.0.1';
 const start = async () => {
     try {
         const app = await buildApp();
         try {
-            await app.listen({ port: PORT, host: '0.0.0.0' });
+            await app.listen({ port: PORT, host: HOST });
             app.log.info({ projectRoot: PROJECT_ROOT }, 'Control Server started');
         }
         catch (err) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Send, Loader2, X, Bot, ChevronDown, ChevronUp, Lightbulb, AlertTriangle, CheckCircle } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
+import { buildControlServerUrl } from '../utils/controlServer'
 
 interface Message {
     role: 'assistant' | 'user'
@@ -91,12 +92,6 @@ export function AIGuide({ currentStep, context: _context }: AIGuideProps) {
     const [showChat, setShowChat] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
-    const hasApiKey = !!config.openaiApiKey
-
-    const openAiModel = import.meta.env?.VITE_OPENAI_MODEL
-        ? String(import.meta.env.VITE_OPENAI_MODEL)
-        : 'gpt-4o-mini'
-
     // Update guidance when step changes
     useEffect(() => {
         const guidance = stepGuidance[currentStep]
@@ -118,7 +113,7 @@ export function AIGuide({ currentStep, context: _context }: AIGuideProps) {
     }, [messages])
 
     const sendMessage = async () => {
-        if (!input.trim() || !hasApiKey) return
+        if (!input.trim()) return
 
         const userMessage: Message = { role: 'user', content: input }
         setMessages(prev => [...prev, userMessage])
@@ -126,51 +121,50 @@ export function AIGuide({ currentStep, context: _context }: AIGuideProps) {
         setIsLoading(true)
 
         try {
-            const currentGuidance = stepGuidance[currentStep]
-            const systemPrompt = `You are a friendly AI assistant helping a non-technical user set up a media server stack.
-            
-Current Step: ${currentStep + 1} - ${currentGuidance?.title}
-User's Domain: ${config.domain}
-Selected Services: ${Object.keys(config.serviceConfigs).join(', ') || 'Not yet selected'}
-
-Guidelines:
-- Use simple, non-technical language
-- Give short, actionable answers
-- If they ask about API keys, explain they're generated AFTER services are running
-- Be encouraging and patient
-- Format responses with markdown for clarity`
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch(buildControlServerUrl('/api/agent/chat'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${config.openaiApiKey}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: openAiModel,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        ...messages.map(m => ({ role: m.role, content: m.content })),
-                        { role: 'user', content: input }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 500
+                    message: input,
+                    history: messages.map(m => ({ role: m.role, content: m.content })),
+                    context: {
+                        wizardStep: currentStep,
+                        wizardStepName: guidance?.title,
+                        config: {
+                            domain: config.domain,
+                            timezone: config.timezone,
+                        },
+                    },
+                    agentId: 'setup',
+                    openaiKey: config.openaiApiKey || undefined,
                 })
             })
 
-            if (!response.ok) throw new Error('API request failed')
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('invalid_api_key')
+                }
+                if (response.status === 429) {
+                    throw new Error('rate_limited')
+                }
+                throw new Error('request_failed')
+            }
 
             const data = await response.json()
             const assistantMessage: Message = {
                 role: 'assistant',
-                content: data.choices[0].message.content
+                content: data.answer || "Sorry, I couldn't process that. Please try again.",
             }
             setMessages(prev => [...prev, assistantMessage])
         } catch (err) {
-            console.error('AIGuide OpenAI call failed:', err)
+            const msg = err instanceof Error ? err.message : ''
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "Sorry, I couldn't process that. Please check your API key or try again.",
+                content: msg === 'invalid_api_key'
+                    ? 'Your OpenAI key looks invalid. Remove it or add a new one in Advanced settings.'
+                    : msg === 'rate_limited'
+                        ? 'OpenAI is rate limiting requests right now. Try again in a minute.'
+                        : "Sorry, I couldn't process that right now. Please try again.",
                 type: 'warning'
             }])
         } finally {
@@ -207,26 +201,26 @@ Guidelines:
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]"
+                        className="bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-white/10">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-border">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
                                     <Bot className="w-4 h-4 text-purple-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-semibold text-white">AI Setup Guide</h3>
-                                    <p className="text-xs text-gray-400">Step {currentStep + 1} of 6</p>
+                                    <h3 className="text-sm font-semibold text-foreground">AI Setup Guide</h3>
+                                    <p className="text-xs text-muted-foreground">Step {currentStep + 1} of 6</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setIsExpanded(false)}
-                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                                className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors"
                                 title="Close guide"
                                 aria-label="Close AI guide"
                             >
-                                <X className="w-4 h-4 text-gray-400" />
+                                <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                         </div>
 
@@ -239,10 +233,10 @@ Guidelines:
                                 </div>
                                 <ul className="space-y-2">
                                     {guidance.tips.map((tip, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                                             <CheckCircle className="w-3 h-3 text-green-400 mt-1 flex-shrink-0" />
                                             <span dangerouslySetInnerHTML={{ 
-                                                __html: tip.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>') 
+                                                __html: tip.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>') 
                                             }} />
                                         </li>
                                     ))}
@@ -268,9 +262,9 @@ Guidelines:
                                         <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
                                             msg.role === 'user'
                                                 ? 'bg-purple-500/20 text-white'
-                                                : msg.type === 'warning'
+                                            : msg.type === 'warning'
                                                     ? 'bg-yellow-500/10 text-yellow-200 border border-yellow-500/20'
-                                                    : 'bg-white/5 text-gray-300'
+                                                    : 'bg-background text-foreground'
                                         }`}>
                                             {msg.content}
                                         </div>
@@ -278,7 +272,7 @@ Guidelines:
                                 ))}
                                 {isLoading && (
                                     <div className="flex justify-start">
-                                        <div className="bg-white/5 px-3 py-2 rounded-xl">
+                                        <div className="bg-muted/40 px-3 py-2 rounded-xl">
                                             <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
                                         </div>
                                     </div>
@@ -288,10 +282,10 @@ Guidelines:
                         )}
 
                         {/* Toggle & Input */}
-                        <div className="border-t border-white/10">
+                        <div className="border-t border-border">
                             <button
                                 onClick={() => setShowChat(!showChat)}
-                                className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center gap-1"
+                                className="w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors flex items-center justify-center gap-1"
                             >
                                 {showChat ? (
                                     <>Show Tips <ChevronUp className="w-3 h-3" /></>
@@ -301,30 +295,29 @@ Guidelines:
                             </button>
 
                             {showChat && (
-                                <div className="p-3 border-t border-white/10">
-                                    {hasApiKey ? (
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={input}
-                                                onChange={(e) => setInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                                                placeholder="Ask anything..."
-                                                className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500/50 outline-none"
-                                            />
-                                            <button
-                                                onClick={sendMessage}
-                                                disabled={!input.trim() || isLoading}
-                                                className="p-2 bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors disabled:opacity-50"
-                                                title="Send message"
-                                                aria-label="Send message"
-                                            >
-                                                <Send className="w-4 h-4 text-white" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-gray-500 text-center">
-                                            Add an OpenAI API key on the Welcome step to enable chat.
+                                <div className="p-3 border-t border-border">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                                            placeholder="Ask anything..."
+                                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-purple-500/50 outline-none"
+                                        />
+                                        <button
+                                            onClick={sendMessage}
+                                            disabled={!input.trim() || isLoading}
+                                            className="p-2 bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors disabled:opacity-50"
+                                            title="Send message"
+                                            aria-label="Send message"
+                                        >
+                                            <Send className="w-4 h-4 text-white" />
+                                        </button>
+                                    </div>
+                                    {!config.openaiApiKey && (
+                                        <p className="mt-2 text-xs text-muted-foreground text-center">
+                                            Add an OpenAI key in Advanced settings for AI-powered answers.
                                         </p>
                                     )}
                                 </div>

@@ -189,22 +189,22 @@ export function PostInstallChecklist() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-purple-400" />
                         Post-Installation Checklist
                     </h3>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                         Complete these steps after downloading your config files
                     </p>
                 </div>
                 <div className="text-right">
-                    <div className="text-2xl font-bold text-white">{completed.size}/{filteredItems.length}</div>
-                    <div className="text-xs text-gray-500">steps completed</div>
+                    <div className="text-2xl font-bold text-foreground">{completed.size}/{filteredItems.length}</div>
+                    <div className="text-xs text-muted-foreground">steps completed</div>
                 </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
                 <motion.div
                     className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
                     initial={{ width: 0 }}
@@ -229,7 +229,7 @@ export function PostInstallChecklist() {
                             className={`rounded-xl border transition-all ${
                                 isCompleted
                                     ? 'bg-green-500/5 border-green-500/20'
-                                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                                    : 'bg-muted/40 border-border hover:border-purple-500/30'
                             }`}
                         >
                             {/* Item Header */}
@@ -242,7 +242,7 @@ export function PostInstallChecklist() {
                                     className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
                                         isCompleted
                                             ? 'bg-green-500 text-white'
-                                            : 'border-2 border-gray-600 hover:border-purple-500'
+                                            : 'border-2 border-border hover:border-purple-500/60'
                                     }`}
                                     title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
                                     aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
@@ -251,20 +251,20 @@ export function PostInstallChecklist() {
                                 </button>
 
                                 <div className={`p-2 rounded-lg ${
-                                    isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400'
+                                    isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-muted/40 text-muted-foreground'
                                 }`}>
                                     <Icon className="w-4 h-4" />
                                 </div>
 
                                 <div className="flex-1">
-                                    <div className={`font-medium ${isCompleted ? 'text-green-300 line-through' : 'text-white'}`}>
+                                    <div className={`font-medium ${isCompleted ? 'text-green-300 line-through' : 'text-foreground'}`}>
                                         {item.title}
                                     </div>
-                                    <div className="text-xs text-gray-500">{item.description}</div>
+                                    <div className="text-xs text-muted-foreground">{item.description}</div>
                                 </div>
 
                                 {item.estimatedTime && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <Clock className="w-3 h-3" />
                                         {item.estimatedTime}
                                     </div>
@@ -272,14 +272,14 @@ export function PostInstallChecklist() {
 
                                 <button
                                     onClick={() => setExpanded(isExpanded ? null : item.id)}
-                                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                                    className="p-1 hover:bg-muted/60 rounded transition-colors"
                                     title={isExpanded ? 'Collapse details' : 'Expand details'}
                                     aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                                 >
                                     {isExpanded ? (
-                                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                     ) : (
-                                        <ChevronRight className="w-4 h-4 text-gray-500" />
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                     )}
                                 </button>
                             </div>
@@ -293,11 +293,11 @@ export function PostInstallChecklist() {
                                         exit={{ height: 0, opacity: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="px-4 pb-4 pt-2 border-t border-white/5 ml-9">
+                                        <div className="px-4 pb-4 pt-2 border-t border-border ml-9">
                                             {/* Steps */}
                                             <ol className="space-y-2 mb-4">
                                                 {item.steps.map((step, i) => (
-                                                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                                                         <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs font-medium">
                                                             {i + 1}
                                                         </span>
@@ -310,21 +310,21 @@ export function PostInstallChecklist() {
                                             {item.command && (
                                                 <div className="mb-4">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <Terminal className="w-3 h-3 text-gray-500" />
-                                                        <span className="text-xs text-gray-500">Command</span>
+                                                        <Terminal className="w-3 h-3 text-muted-foreground" />
+                                                        <span className="text-xs text-muted-foreground">Command</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 bg-black/40 rounded-lg p-2 font-mono text-xs text-green-400">
+                                                    <div className="flex items-center gap-2 bg-muted/60 rounded-lg p-2 font-mono text-xs text-green-600">
                                                         <code className="flex-1 overflow-x-auto">{item.command}</code>
                                                         <button
                                                             onClick={() => copyToClipboard(item.command!, item.id)}
-                                                            className="p-1.5 hover:bg-white/10 rounded transition-colors"
+                                                            className="p-1.5 hover:bg-muted/80 rounded transition-colors"
                                                             title="Copy command"
                                                             aria-label="Copy command to clipboard"
                                                         >
                                                             {copied === item.id ? (
                                                                 <Check className="w-3 h-3 text-green-400" />
                                                             ) : (
-                                                                <Copy className="w-3 h-3 text-gray-500" />
+                                                                <Copy className="w-3 h-3 text-muted-foreground" />
                                                             )}
                                                         </button>
                                                     </div>
@@ -365,8 +365,8 @@ export function PostInstallChecklist() {
                     className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl text-center"
                 >
                     <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                    <h4 className="text-lg font-semibold text-white mb-1">All Done!</h4>
-                    <p className="text-sm text-gray-400">
+                    <h4 className="text-lg font-semibold text-foreground mb-1">All Done!</h4>
+                    <p className="text-sm text-muted-foreground">
                         Your media stack is fully configured. Enjoy!
                     </p>
                 </motion.div>
