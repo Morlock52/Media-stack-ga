@@ -184,7 +184,7 @@ Guidelines:
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-4 right-4 z-50 w-80 md:w-96"
+            className="fixed bottom-4 right-4 z-50 w-80 md:w-96 max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)]"
         >
             {/* Collapsed State */}
             {!isExpanded && (
@@ -207,7 +207,7 @@ Guidelines:
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                        className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-white/10">
@@ -232,7 +232,7 @@ Guidelines:
 
                         {/* Tips Section */}
                         {guidance && !showChat && (
-                            <div className="p-4 max-h-80 overflow-y-auto custom-scrollbar">
+                            <div className="p-4 min-h-0 overflow-y-auto custom-scrollbar">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Lightbulb className="w-4 h-4 text-yellow-400" />
                                     <span className="text-sm font-medium text-yellow-300">Tips for this step</span>

@@ -92,7 +92,7 @@ export function ModernNavigation() {
               {/* Search */}
               <button
                 onClick={openSearch}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                className="p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
                 title="Search documentation"
               >
                 <Search className="w-4 h-4 text-muted-foreground" />
@@ -101,7 +101,7 @@ export function ModernNavigation() {
               {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                className="p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
                 title={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {resolvedTheme === 'dark' ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
@@ -110,7 +110,7 @@ export function ModernNavigation() {
               {/* Mobile menu toggle */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                className="md:hidden p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
                 title="Toggle mobile menu"
               >
                 {isOpen ? <X className="w-4 h-4 text-muted-foreground" /> : <Menu className="w-4 h-4 text-muted-foreground" />}
@@ -142,7 +142,7 @@ export function ModernNavigation() {
                     title={`Navigate to ${item.label}`}
                   >
                     <span className="text-muted-foreground">{item.label}</span>
-                    <kbd className="px-2 py-1 text-xs bg-white/10 rounded text-gray-400">
+                    <kbd className="px-2 py-1 text-xs bg-muted rounded text-muted-foreground">
                       {item.shortcut}
                     </kbd>
                   </button>

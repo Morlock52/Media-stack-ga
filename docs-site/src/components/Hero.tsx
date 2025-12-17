@@ -33,12 +33,12 @@ export function Hero() {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="space-y-8"
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/60 border border-border backdrop-blur-sm">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                         </span>
-                        <span className="text-xs font-medium text-gray-300">#1 on r/selfhosted · Featured on Product Hunt</span>
+                        <span className="text-xs font-medium text-muted-foreground">#1 on r/selfhosted · Featured on Product Hunt</span>
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
@@ -65,15 +65,15 @@ export function Hero() {
 
                         <button
                             onClick={scrollToTerminal}
-                            className="px-8 py-4 bg-secondary/50 border border-white/10 text-white rounded-xl font-medium hover:bg-secondary transition-colors flex items-center gap-2"
+                            className="px-8 py-4 bg-background/60 border border-border text-foreground rounded-xl font-medium hover:bg-muted/80 transition-colors flex items-center gap-2"
                         >
                             <Play className="w-4 h-4 fill-current" /> Watch Demo
                         </button>
                         <a
                             href="https://discord.gg/mediastack"
                             target="_blank"
-                            rel="noreferrer"
-                            className="px-8 py-4 border border-white/10 text-white rounded-xl font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
+                            rel="noreferrer noopener"
+                            className="px-8 py-4 border border-border text-foreground rounded-xl font-medium hover:bg-muted/80 transition-colors flex items-center gap-2"
                         >
                             Join Discord
                         </a>
@@ -82,7 +82,7 @@ export function Hero() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <div className="flex -space-x-2">
                             {['PH', 'R/', 'GH'].map((label) => (
-                                <div key={label} className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-semibold text-white">
+                                <div key={label} className="w-8 h-8 rounded-full bg-background/60 border border-border flex items-center justify-center text-[10px] font-semibold text-foreground">
                                     {label}
                                 </div>
                             ))}
@@ -100,15 +100,15 @@ export function Hero() {
                     className="relative"
                 >
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur-2xl opacity-30 animate-pulse-glow" />
-                    <div className="relative bg-[#0c0c0c] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                    <div className="relative bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
                         {/* Terminal Header */}
-                        <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/5">
+                        <div className="flex items-center gap-2 px-4 py-3 bg-muted/60 border-b border-border">
                             <div className="flex gap-2">
                                 <div className="w-3 h-3 rounded-full bg-red-500/80" />
                                 <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                                 <div className="w-3 h-3 rounded-full bg-green-500/80" />
                             </div>
-                            <div className="flex-1 text-center text-xs text-gray-500 font-mono">setup.sh — bash — 80x24</div>
+                            <div className="flex-1 text-center text-xs text-muted-foreground font-mono">setup.sh — bash — 80x24</div>
                         </div>
 
                         {/* Terminal Body */}
@@ -117,11 +117,11 @@ export function Hero() {
                                 <div className="flex gap-2">
                                     <span className="text-green-500">➜</span>
                                     <span className="text-blue-400">~</span>
-                                    <span className="text-gray-300">./setup.sh</span>
+                                    <span className="text-foreground/80">./setup.sh</span>
                                 </div>
                                 <button
                                     onClick={copyCommand}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                                     title="Copy command"
                                 >
                                     {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
@@ -132,9 +132,9 @@ export function Hero() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 1 }}
-                                className="text-gray-400"
+                                className="text-muted-foreground"
                             >
-                                📦 Installing 'gum' for a beautiful setup experience...
+                                Installing 'gum' for a beautiful setup experience...
                             </motion.div>
 
                             <motion.div
@@ -153,10 +153,10 @@ export function Hero() {
                                 transition={{ delay: 3 }}
                                 className="mt-4"
                             >
-                                <div className="text-purple-400">📝 Configuration</div>
+                                <div className="text-purple-400">Configuration</div>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-gray-500">Domain Name:</span>
-                                    <span className="text-white bg-white/10 px-2 py-0.5 rounded animate-pulse">example.com|</span>
+                                    <span className="text-muted-foreground">Domain Name:</span>
+                                    <span className="text-foreground bg-muted/60 border border-border px-2 py-0.5 rounded animate-pulse">example.com|</span>
                                 </div>
                             </motion.div>
                         </div>

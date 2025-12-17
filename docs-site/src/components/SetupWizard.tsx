@@ -23,6 +23,7 @@ import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
 import { TopRightActions } from './layout/TopRightActions'
+import { Button } from './ui/button'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT } from '../data/storagePlan'
 import { services } from '../data/services'
 
@@ -442,7 +443,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                 </motion.button>
             )}
 
-            <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen pt-24 pb-28 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-12">
@@ -478,47 +479,54 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                             transition={{ delay: 0.3 }}
                             className="flex flex-wrap items-center justify-center gap-3 mt-6"
                         >
-                            <button
+                            <Button
                                 onClick={handleReset}
-                                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all text-sm ${showResetConfirm ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-300 hover:text-red-200'}`}
+                                variant={showResetConfirm ? 'destructive' : 'outline'}
+                                className={showResetConfirm
+                                    ? 'animate-pulse'
+                                    : 'border-red-500/30 text-red-300 hover:bg-red-500/20 hover:text-red-200'}
                                 title="Reset wizard to defaults"
                             >
                                 <RotateCcw className={`w-4 h-4 ${showResetConfirm ? 'animate-spin' : ''}`} />
                                 {showResetConfirm ? 'Confirm Reset?' : 'Reset'}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => setShowProfiles(!showProfiles)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg transition-all text-sm text-blue-300 hover:text-blue-200"
+                                variant="outline"
+                                className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:text-blue-200"
                                 title="Manage profiles"
                             >
                                 <User className="w-4 h-4" />
                                 Profiles
-                            </button>
+                            </Button>
                             <div className="w-px h-6 bg-white/10 mx-2" />
-                            <button
+                            <Button
                                 onClick={handleExport}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/30 rounded-lg transition-all text-sm text-gray-300 hover:text-white"
+                                variant="glass"
+                                className="text-muted-foreground hover:text-foreground"
                                 title="Export current configuration"
                             >
                                 <FileDown className="w-4 h-4" />
                                 Export
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={handleImport}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/30 rounded-lg transition-all text-sm text-gray-300 hover:text-white"
+                                variant="glass"
+                                className="text-muted-foreground hover:text-foreground"
                                 title="Import saved configuration"
                             >
                                 <FileUp className="w-4 h-4" />
                                 Import
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => setShowTemplates(!showTemplates)}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg transition-all text-sm text-purple-300 hover:text-purple-200"
+                                variant="outline"
+                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-purple-200"
                                 title="Load a template"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 Templates
-                            </button>
+                            </Button>
                             <div className="w-px h-6 bg-white/10 mx-2" />
                             <TopRightActions />
                         </motion.div>
@@ -607,7 +615,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
                                 transition={{ duration: 0.5, ease: 'easeOut' }}
                             />
                         </div>
-                        <p className="text-center mt-2 text-sm text-gray-400">
+                        <p className="text-center mt-2 text-sm text-muted-foreground">
                             Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
                         </p>
                     </div>
@@ -727,32 +735,40 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbit.${config.domain}
 
                     {/* Navigation Buttons */}
                     {currentStep > 0 && (
-                        <div className="flex justify-between items-center mt-8">
-                            <button
+                        <div className="sticky bottom-4 z-30 mt-8">
+                            <div className="flex justify-between items-center glass-ultra rounded-2xl border border-white/10 px-4 py-3 backdrop-blur">
+                            <Button
+                                type="button"
                                 onClick={prevStep}
-                                className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all btn-lift bg-white/10 text-white hover:bg-white/20"
+                                variant="glass"
+                                className="btn-lift px-6 py-3"
                             >
                                 <ArrowLeft className="w-4 h-4" />
                                 Back
-                            </button>
+                            </Button>
 
                             {currentStep < 5 ? (
-                                <button
+                                <Button
+                                    type="button"
                                     onClick={handleNextStep}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all btn-lift bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                                    variant="gradient"
+                                    className="btn-lift px-6 py-3"
                                 >
                                     Next
                                     <ArrowRight className="w-4 h-4" />
-                                </button>
+                                </Button>
                             ) : (
-                                <button
+                                <Button
+                                    type="button"
                                     onClick={handleReset}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all btn-lift ${showResetConfirm ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                                    variant={showResetConfirm ? 'destructive' : 'glass'}
+                                    className={showResetConfirm ? 'btn-lift px-6 py-3 animate-pulse' : 'btn-lift px-6 py-3'}
                                 >
                                     <RotateCcw className={`w-4 h-4 ${showResetConfirm ? 'animate-spin' : ''}`} />
                                     {showResetConfirm ? 'Confirm Reset?' : 'Start Over'}
-                                </button>
+                                </Button>
                             )}
+                            </div>
                         </div>
                     )}
                 </div>

@@ -63,14 +63,14 @@ export function SearchBar() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={() => setIsOpen(false)}
     >
       <div
-        className="w-full max-w-2xl mx-4"
+        className="w-full max-w-2xl max-h-[calc(100dvh-2rem)]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="glass border border-white/20 rounded-2xl overflow-hidden">
+        <div className="glass border border-white/20 rounded-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <Search className="w-5 h-5 text-muted-foreground" />
@@ -84,6 +84,8 @@ export function SearchBar() {
               />
               <button
                 onClick={() => setIsOpen(false)}
+                aria-label="Close search"
+                title="Close search"
                 className="p-1 rounded hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -92,7 +94,7 @@ export function SearchBar() {
           </div>
 
           {results.length > 0 && (
-            <div className="max-h-96 overflow-y-auto">
+            <div className="min-h-0 overflow-y-auto">
               {results.map((result, index) => (
                 <motion.a
                   key={result.title}

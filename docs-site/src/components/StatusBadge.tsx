@@ -60,24 +60,24 @@ export function StatusBadge() {
                         </span>
                     </div>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-900 text-white border-gray-700">
+                <TooltipContent className="bg-popover text-popover-foreground border-border">
                     <div className="space-y-2">
                         <p className="font-semibold text-sm">System Status</p>
                         <div className="text-xs space-y-1">
                             <div className="flex justify-between gap-4">
-                                <span className="text-gray-400">Running:</span>
+                                <span className="text-muted-foreground">Running:</span>
                                 <span className="font-mono">{stats.running} services</span>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <span className="text-gray-400">Total:</span>
+                                <span className="text-muted-foreground">Total:</span>
                                 <span className="font-mono">{stats.total} services</span>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <span className="text-gray-400">Uptime:</span>
+                                <span className="text-muted-foreground">Uptime:</span>
                                 <span className="font-mono">{uptime}%</span>
                             </div>
                             {lastChecked && (
-                                <div className="flex items-center gap-2 text-gray-500 pt-1 mt-1 border-t border-gray-700">
+                                <div className="flex items-center gap-2 text-muted-foreground pt-1 mt-1 border-t border-border">
                                     <Clock className="w-3 h-3" />
                                     <span>Checked {new Date(lastChecked).toLocaleTimeString()}</span>
                                 </div>

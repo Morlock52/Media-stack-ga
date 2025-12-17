@@ -7,7 +7,7 @@ export function SocialShare() {
   const [copied, setCopied] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
-  const shareText = 'Check out this Media Stack implementation plan! 🚀'
+  const shareText = 'Check out this Media Stack implementation plan!'
 
   const shareLinks = [
     {

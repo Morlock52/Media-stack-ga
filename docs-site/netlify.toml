@@ -9,9 +9,3 @@
 
 [functions]
   node_bundler = "esbuild"
-
-# Redirect API calls to functions
-[[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
-  status = 200

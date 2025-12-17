@@ -1,17 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import viteCompression from 'vite-plugin-compression'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(() => ({
   base: './',
-  plugins: [react(), viteCompression()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@project": path.resolve(__dirname, ".."),
     },
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     chunkSizeWarningLimit: 800,
@@ -28,8 +31,14 @@ export default defineConfig({
     },
   },
   server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+      },
+    },
     fs: {
       allow: [path.resolve(__dirname, "..")],
     },
   },
-})
+}))

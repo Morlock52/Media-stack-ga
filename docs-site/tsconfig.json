@@ -21,6 +21,7 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true,
         "baseUrl": ".",
         "paths": {
             "@/*": [
@@ -28,8 +29,7 @@
             ]
         },
         "typeRoots": [
-            "./node_modules/@types",
-            "../node_modules/@types"
+            "./node_modules/@types"
         ]
     },
     "include": [

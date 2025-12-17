@@ -25,43 +25,43 @@ interface DocsAssistantPanelProps {
 // Quick actions based on current app
 const getQuickActions = (appId: string): { label: string; query: string }[] => {
     const common = [
-        { label: '🔧 Setup steps', query: `What are the setup steps for ${appId}?` },
-        { label: '🔌 Default port', query: `What port does ${appId} use?` },
-        { label: '❓ Common issues', query: `What are common issues with ${appId}?` },
+        { label: 'Setup steps', query: `What are the setup steps for ${appId}?` },
+        { label: 'Default port', query: `What port does ${appId} use?` },
+        { label: 'Common issues', query: `What are common issues with ${appId}?` },
     ]
     
     const appSpecific: Record<string, { label: string; query: string }[]> = {
         plex: [
-            { label: '📺 Add library', query: 'How do I add a media library in Plex?' },
-            { label: '🔗 Remote access', query: 'How do I enable remote access in Plex?' },
+            { label: 'Add library', query: 'How do I add a media library in Plex?' },
+            { label: 'Remote access', query: 'How do I enable remote access in Plex?' },
         ],
         jellyfin: [
-            { label: '👤 Create user', query: 'How do I create users in Jellyfin?' },
-            { label: '🎨 Customize', query: 'How do I customize the Jellyfin interface?' },
+            { label: 'Create user', query: 'How do I create users in Jellyfin?' },
+            { label: 'Customize UI', query: 'How do I customize the Jellyfin interface?' },
         ],
         arr: [
-            { label: '🔍 Add indexer', query: 'How do I add indexers to Prowlarr?' },
-            { label: '📥 Download client', query: 'How do I connect a download client to Sonarr/Radarr?' },
+            { label: 'Add indexer', query: 'How do I add indexers to Prowlarr?' },
+            { label: 'Download client', query: 'How do I connect a download client to Sonarr/Radarr?' },
         ],
         overseerr: [
-            { label: '🔗 Connect Plex', query: 'How do I connect Overseerr to Plex?' },
-            { label: '👥 User requests', query: 'How do users request media in Overseerr?' },
+            { label: 'Connect Plex', query: 'How do I connect Overseerr to Plex?' },
+            { label: 'User requests', query: 'How do users request media in Overseerr?' },
         ],
         mealie: [
-            { label: '📝 Import recipe', query: 'How do I import a recipe from a URL in Mealie?' },
-            { label: '📅 Meal plan', query: 'How do I create a meal plan in Mealie?' },
+            { label: 'Import recipe', query: 'How do I import a recipe from a URL in Mealie?' },
+            { label: 'Meal plan', query: 'How do I create a meal plan in Mealie?' },
         ],
         tautulli: [
-            { label: '📊 View stats', query: 'How do I view watching statistics in Tautulli?' },
-            { label: '🔔 Notifications', query: 'How do I set up notifications in Tautulli?' },
+            { label: 'View stats', query: 'How do I view watching statistics in Tautulli?' },
+            { label: 'Notifications', query: 'How do I set up notifications in Tautulli?' },
         ],
         audiobookshelf: [
-            { label: '📚 Add books', query: 'How do I add audiobooks to Audiobookshelf?' },
-            { label: '📱 Mobile app', query: 'Is there a mobile app for Audiobookshelf?' },
+            { label: 'Add books', query: 'How do I add audiobooks to Audiobookshelf?' },
+            { label: 'Mobile app', query: 'Is there a mobile app for Audiobookshelf?' },
         ],
         photoprism: [
-            { label: '📷 Import photos', query: 'How do I import photos into PhotoPrism?' },
-            { label: '🏷️ Auto tagging', query: 'How does AI tagging work in PhotoPrism?' },
+            { label: 'Import photos', query: 'How do I import photos into PhotoPrism?' },
+            { label: 'Auto tagging', query: 'How does AI tagging work in PhotoPrism?' },
         ],
     }
     
@@ -203,7 +203,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-[340px] z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all"
+                className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all"
             >
                 <MessageCircle className="w-5 h-5" />
                 <span className="font-medium">Ask AI</span>
@@ -212,7 +212,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
     }
 
     return (
-        <div className="fixed bottom-6 right-[340px] z-50 w-96 max-w-[calc(100vw-3rem)] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 flex flex-col max-h-[600px]">
+        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 flex flex-col max-h-[calc(100vh-3rem)]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[200px] max-h-[300px]">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 && (
                     <div className="space-y-4">
                         <div className="text-center py-4">

@@ -23,6 +23,91 @@ export async function aiRoutes(fastify) {
         }));
         return { agents: agentList };
     });
+    // Voice companion endpoint (used by docs-site VoiceCompanion)
+    fastify.post('/api/voice-agent', async (request, reply) => {
+        const { transcript, history = [], openaiKey } = request.body || {};
+        const effectiveApiKey = openaiKey || getOpenAIKey();
+        if (!transcript || typeof transcript !== 'string') {
+            return reply.status(400).send({ error: 'transcript is required' });
+        }
+        const normalized = transcript.toLowerCase();
+        const serviceKeywords = [
+            { key: 'plex', match: /\bplex\b/ },
+            { key: 'jellyfin', match: /\bjellyfin\b/ },
+            { key: 'emby', match: /\bemby\b/ },
+            { key: 'sonarr', match: /\bsonarr\b/ },
+            { key: 'radarr', match: /\bradarr\b/ },
+            { key: 'prowlarr', match: /\bprowlarr\b/ },
+            { key: 'bazarr', match: /\bbazarr\b/ },
+            { key: 'overseerr', match: /\boverseerr\b/ },
+            { key: 'tautulli', match: /\btautulli\b/ },
+            { key: 'qbittorrent', match: /\b(qbittorrent|qbit|qbitorrent)\b/ },
+            { key: 'portainer', match: /\bportainer\b/ },
+            { key: 'authelia', match: /\bauthelia\b/ },
+            { key: 'traefik', match: /\btraefik\b/ },
+            { key: 'cloudflared', match: /\bcloudflared\b/ },
+        ];
+        const services = serviceKeywords.filter(s => s.match.test(normalized)).map(s => s.key);
+        let hosting;
+        if (/\b(vps|linode|digitalocean|hetzner|aws|gcp|azure)\b/.test(normalized))
+            hosting = 'vps';
+        else if (/\b(nas|synology|qnap|unraid|truenas)\b/.test(normalized))
+            hosting = 'nas';
+        else if (/\b(raspberry\s*pi|raspi|pi\s*4|pi\s*5)\b/.test(normalized))
+            hosting = 'raspberry-pi';
+        else if (/\bmini\s*pc|nuc\b/.test(normalized))
+            hosting = 'mini-pc';
+        const domainMatch = transcript.match(/\b([a-z0-9-]+\.)+[a-z]{2,}\b/i);
+        const plan = services.length || hosting || domainMatch
+            ? {
+                services,
+                hosting,
+                domain: domainMatch ? domainMatch[0] : undefined,
+            }
+            : null;
+        // Provide a helpful response even without OpenAI
+        if (!effectiveApiKey) {
+            const response = getFallbackResponse('setup', transcript);
+            return {
+                agentResponse: response,
+                plan,
+            };
+        }
+        try {
+            const agent = detectAgent(transcript);
+            const messages = buildAgentMessages(agent, transcript, history, { voice: true });
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${effectiveApiKey}`
+                },
+                body: JSON.stringify({
+                    model: OPENAI_MODEL,
+                    messages,
+                    max_tokens: 600,
+                    temperature: 0.7
+                })
+            });
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+            }
+            const data = await response.json();
+            const agentResponse = data.choices?.[0]?.message?.content || getFallbackResponse('setup', transcript);
+            return {
+                agentResponse,
+                plan,
+            };
+        }
+        catch (error) {
+            fastify.log.warn({ err: error }, 'Voice agent failed; returning fallback response');
+            return {
+                agentResponse: getFallbackResponse('setup', transcript),
+                plan,
+            };
+        }
+    });
     // Settings: OpenAI key management
     fastify.get('/api/settings/openai-key', async (_request, _reply) => {
         const key = getOpenAIKey();
@@ -309,78 +394,9 @@ export async function aiRoutes(fastify) {
             aiPowered: false
         };
     });
-    // Voice companion endpoint
-    fastify.post('/api/voice-agent', async (request, reply) => {
-        const { transcript, history = [] } = request.body || {};
-        const effectiveApiKey = getOpenAIKey();
-        if (!transcript || typeof transcript !== 'string') {
-            return reply.status(400).send({ error: 'Transcript text is required' });
-        }
-        if (!effectiveApiKey) {
-            return reply.status(400).send({ error: 'OpenAI key not configured. Add one in settings.' });
-        }
-        try {
-            const prompt = `You are a voice onboarding companion for the Media Stack Maker wizard.
-Gather requirements from beginners and respond in short, friendly sentences.
-After each reply, emit a JSON object with the current structured plan.
-Plan schema:
-{
-  "services": ["plex", "arr", "torrent", "vpn", "notify", "stats", "overseerr", "tautulli", "mealie", "audiobookshelf", "photoprism"],
-  "hosting": "nas | vps | raspberry pi | desktop | cloud",
-  "storagePaths": { "media": "/path", "downloads": "/path" },
-  "domain": "example.com",
-  "notes": "string"
-}
-Always include the JSON block as the last paragraph.
-Current conversation history:
-${history.map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`).join('\n')}
-
-Latest user utterance: ${transcript}`;
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${effectiveApiKey}`,
-                },
-                body: JSON.stringify({
-                    model: OPENAI_MODEL,
-                    messages: [
-                        { role: 'system', content: prompt },
-                    ],
-                    max_tokens: 800,
-                    temperature: 0.4,
-                }),
-            });
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`OpenAI voice agent error (${response.status}): ${errText}`);
-            }
-            const data = await response.json();
-            const content = data.choices?.[0]?.message?.content || 'Let me know more about your setup goals!';
-            const planMatch = content.match(/\{[\s\S]*\}$/);
-            let plan = null;
-            if (planMatch) {
-                try {
-                    plan = JSON.parse(planMatch[0]);
-                }
-                catch (err) {
-                    fastify.log.warn({ err }, 'Failed to parse plan JSON from voice agent');
-                }
-            }
-            const cleanedResponse = planMatch ? content.replace(planMatch[0], '').trim() : content;
-            return {
-                agentResponse: cleanedResponse,
-                plan,
-            };
-        }
-        catch (error) {
-            fastify.log.error({ err: error }, 'Voice agent error');
-            return reply.status(500).send({ error: 'Voice agent failed', details: error.message });
-        }
-    });
-    // Get contextual suggestions
-    fastify.post('/api/agent/suggestions', async (request, _reply) => {
-        const { currentApp, userProgress } = request.body || {};
+    // Suggestions endpoint for docs site
+    fastify.post('/api/agent/suggestions', async (request, reply) => {
+        const { currentApp } = request.body;
         const suggestions = [];
         const appSuggestions = {
             plex: ['How do I add libraries?', 'Enable remote access', 'Set up users'],
@@ -396,9 +412,6 @@ Latest user utterance: ${transcript}`;
                 text: s,
                 agent: 'apps'
             })));
-        }
-        if (!userProgress?.dockerInstalled) {
-            suggestions.unshift({ text: 'How do I install Docker?', agent: 'setup' });
         }
         return { suggestions: suggestions.slice(0, 5) };
     });

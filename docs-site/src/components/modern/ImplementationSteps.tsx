@@ -196,7 +196,7 @@ docker-compose -f docker-compose.fixed.yml up -d`,
     newbieContent: `# Go to your dashboard:
 # https://hub.yourdomain.com
 
-# If it loads, you're done! 🎉`,
+# If it loads, you're done!`,
     completed: false
   }
 ]

@@ -32,6 +32,25 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const processTranscriptRef = useRef<(text: string) => void>(() => { })
   const [manualInput, setManualInput] = useState('')
 
+  const getSpeechSupportError = useCallback((): string | null => {
+    if (typeof window === 'undefined') return 'Voice recognition is unavailable in this environment.'
+
+    const recognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!recognitionConstructor) {
+      return 'Voice recognition is not supported in this browser. Please use Chrome desktop or type below.'
+    }
+
+    // SpeechRecognition is generally restricted to secure contexts (https) with localhost exceptions.
+    // Preview proxies and some browsers may still report "network" failures; we treat that as unavailable.
+    const hostname = window.location.hostname
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1'
+    if (!window.isSecureContext && !isLocal) {
+      return 'Voice recognition requires a secure context (HTTPS). Please use the deployed site over HTTPS or use text input.'
+    }
+
+    return null
+  }, [])
+
   const statusMessages: Record<typeof status, string> = {
     idle: 'Waiting to start',
     listening: 'Listening... (speak clearly)',
@@ -105,12 +124,15 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
   const initializeSpeechRecognition = useCallback(() => {
     if (typeof window === 'undefined') return
-    const recognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!recognitionConstructor) {
+    const supportError = getSpeechSupportError()
+    if (supportError) {
       setIsSpeechSupported(false)
       speechRecognitionRef.current = null
+      setError((prev) => prev ?? supportError)
       return
     }
+
+    const recognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
     setIsSpeechSupported(true)
     const recognition = new recognitionConstructor()
@@ -151,6 +173,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       // Don't override a previous network error if we are just re-initializing
       setError(prev => prev === errorMessages['network'] ? prev : msg)
 
+      // If the browser reports a "network" error, SpeechRecognition is effectively unavailable in this context.
+      // Disable the voice button so the user isn't stuck retrying a broken flow.
+      if (event.error === 'network') {
+        setIsSpeechSupported(false)
+        speechRecognitionRef.current = null
+      }
+
       stopRecognition()
 
       // Auto-recovery for transient network connectivity issues shouldn't loop infinitely
@@ -167,7 +196,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     }
 
     speechRecognitionRef.current = recognition
-  }, [stopRecognition])
+  }, [getSpeechSupportError, stopRecognition])
 
   const startRecognition = useCallback(() => {
     if (isRecordingRef.current) return
@@ -176,7 +205,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     }
 
     if (!speechRecognitionRef.current) {
-      setError('Voice recognition is not supported in this browser.')
+      const supportError = getSpeechSupportError()
+      setError(supportError || 'Voice recognition is not available right now. Please use text input.')
       return
     }
 
@@ -307,13 +337,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-4xl bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col"
           >
             <div className="flex flex-col md:flex-row h-full">
               {/* Left Panel - Status & Controls */}
@@ -392,7 +422,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
               {/* Right Panel - Transcript & Input */}
               <div className="md:w-1/2 flex flex-col bg-slate-900/50">
-                <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+                <div className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
                   <p className="text-xs uppercase tracking-widest text-white/60">Transcript</p>
                   <div className="space-y-3 text-sm text-white/80">
                     {transcript.map((line, index) => (
@@ -421,6 +451,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                     <button
                       type="submit"
                       disabled={!manualInput.trim() || status === 'thinking'}
+                      aria-label="Send message"
+                      title="Send message"
                       className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="w-5 h-5" />

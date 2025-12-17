@@ -367,7 +367,7 @@ export function PostInstallChecklist() {
                     <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
                     <h4 className="text-lg font-semibold text-white mb-1">All Done!</h4>
                     <p className="text-sm text-gray-400">
-                        Your media stack is fully configured. Enjoy! 🎉
+                        Your media stack is fully configured. Enjoy!
                     </p>
                 </motion.div>
             )}

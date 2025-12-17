@@ -32,6 +32,8 @@ import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
 import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
+import { Button } from '../components/ui/button'
+import { Link } from 'react-router-dom'
 
 export function DocsPage() {
     const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
@@ -46,26 +48,25 @@ export function DocsPage() {
     const selectedApp = appCards.find(app => app.id === selectedAppId)
 
     return (
-        <main className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
+        <main className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative">
             {/* Navigation Header */}
-            <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+            <header className="fixed top-0 left-0 right-0 z-40 glass border-b border-border/50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
                             <BookOpen className="w-5 h-5 text-purple-400" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-white text-lg">Media Stack Docs</h1>
-                            <p className="text-xs text-gray-500">App guides & tutorials</p>
+                            <h1 className="font-bold text-foreground text-lg">Media Stack Docs</h1>
+                            <p className="text-xs text-muted-foreground">App guides & tutorials</p>
                         </div>
                     </div>
-                    <a
-                        href="/"
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Wizard
-                    </a>
+                    <Button variant="glass" asChild className="gap-2">
+                        <Link to="/">
+                            <ArrowLeft className="w-4 h-4" />
+                            Back to Wizard
+                        </Link>
+                    </Button>
                 </div>
             </header>
 
@@ -80,7 +81,7 @@ export function DocsPage() {
                     <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-4">
                         App Guides & Documentation
                     </h1>
-                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                         Click-by-click instructions to set up each app in your media stack.
                         No jargon, just clear steps anyone can follow.
                     </p>
@@ -89,18 +90,17 @@ export function DocsPage() {
 
             <AppsOverview onSelectApp={handleSelectApp} />
 
-            <footer className="py-12 border-t border-white/10 mt-10">
+            <footer className="py-12 border-t border-border/50 mt-10">
                 <div className="container mx-auto px-4 text-center">
-                    <p className="text-gray-400">
+                    <p className="text-muted-foreground">
                         Media Stack Docs • Powered by your setup wizard
                     </p>
-                    <a
-                        href="/"
-                        className="inline-flex items-center gap-2 mt-4 text-sm text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Return to Setup Wizard
-                    </a>
+                    <Button variant="link" asChild className="mt-4 text-purple-400 hover:text-purple-300">
+                        <Link to="/" className="gap-2">
+                            <ArrowLeft className="w-4 h-4" />
+                            Return to Setup Wizard
+                        </Link>
+                    </Button>
                 </div>
             </footer>
 

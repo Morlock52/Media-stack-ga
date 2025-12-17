@@ -10,27 +10,27 @@ interface TerminalLine {
 
 const SCRIPT_SEQUENCE: TerminalLine[] = [
     { text: "chmod +x setup.sh && ./setup.sh", type: 'command', delay: 500 },
-    { text: "📦 Installing 'gum' for a beautiful setup experience...", color: "text-cyan-400", delay: 800 },
+    { text: "Installing 'gum' for a beautiful setup experience...", color: "text-cyan-400", delay: 800 },
     { text: "Media Stack Setup", color: "text-pink-500 font-bold border-2 border-pink-500 p-2 inline-block mb-2", delay: 1200 },
     { text: "Initial Configuration", color: "text-pink-500 font-bold mb-4", delay: 0 },
-    { text: "🔍 Checking prerequisites...", color: "text-purple-400", delay: 500 },
-    { text: "✅ Docker and Docker Compose are installed", color: "text-green-400", delay: 600 },
-    { text: "📝 Configuration", color: "text-pink-500 font-bold mt-4", delay: 500 },
+    { text: "Checking prerequisites...", color: "text-purple-400", delay: 500 },
+    { text: "Docker and Docker Compose are installed", color: "text-green-400", delay: 600 },
+    { text: "Configuration", color: "text-pink-500 font-bold mt-4", delay: 500 },
     { text: "? Domain Name", color: "text-cyan-400", delay: 400 },
     { text: "example.com", type: 'input', color: "text-white", delay: 1000 },
     { text: "? Timezone", color: "text-cyan-400", delay: 400 },
     { text: "Etc/UTC", type: 'input', color: "text-white", delay: 800 },
     { text: "? Master Password", color: "text-cyan-400", delay: 400 },
     { text: "************", type: 'input', color: "text-white", delay: 1200 },
-    { text: "⚙️  Updating .env file...", type: 'spinner', color: "text-yellow-400", delay: 1500 },
-    { text: "📂 Creating directory structure...", type: 'spinner', color: "text-yellow-400", delay: 1200 },
-    { text: "📥 Pulling Docker images...", color: "text-purple-400", delay: 800 },
+    { text: "Updating .env file...", type: 'spinner', color: "text-yellow-400", delay: 1500 },
+    { text: "Creating directory structure...", type: 'spinner', color: "text-yellow-400", delay: 1200 },
+    { text: "Pulling Docker images...", color: "text-purple-400", delay: 800 },
     { text: "Pulling authelia... done", color: "text-gray-400", delay: 200 },
     { text: "Pulling plex... done", color: "text-gray-400", delay: 200 },
     { text: "Pulling sonarr... done", color: "text-gray-400", delay: 200 },
     { text: "Setup Complete!", color: "text-pink-500 font-bold border-2 border-pink-500 p-2 inline-block mt-4", delay: 500 },
-    { text: "🚀 Starting stack...", color: "text-green-400", delay: 500 },
-    { text: "✅ Stack started! Check status with: docker-compose ps", color: "text-green-400", delay: 0 },
+    { text: "Starting stack...", color: "text-green-400", delay: 500 },
+    { text: "Stack started! Check status with: docker-compose ps", color: "text-green-400", delay: 0 },
 ];
 
 export const AnimatedTerminal: React.FC = () => {
@@ -79,7 +79,7 @@ export const AnimatedTerminal: React.FC = () => {
 
     return (
         <div className="w-full max-w-3xl mx-auto">
-            <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/10 shadow-2xl font-mono text-sm md:text-base relative group">
+            <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-border shadow-2xl font-mono text-sm md:text-base relative group">
                 {/* Terminal Header */}
                 <div className="bg-[#2d2d2d] px-4 py-2 flex items-center gap-2 border-b border-white/5">
                     <div className="flex gap-2">

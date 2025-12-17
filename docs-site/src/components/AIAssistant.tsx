@@ -208,6 +208,10 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
             })
 
             setStatus('responding')
+            if (!res.ok) {
+                throw new Error(`Chat request failed (${res.status})`)
+            }
+
             const data = await res.json()
 
             const assistantMsg: Message = {
@@ -225,7 +229,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
             }
 
         } catch (err) {
-            console.error('AIAssistant chat request failed:', err)
+            console.warn('AIAssistant chat request failed:', err)
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: "I'm having trouble connecting. Make sure the control server is running (`npm start` in control-server/).",
@@ -278,7 +282,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[600px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                        className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-purple-600/10 to-pink-600/10">
@@ -353,7 +357,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                         )}
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px] max-h-[350px]">
+                        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
                             {messages.length === 0 ? (
                                 <div className="text-center py-6 space-y-4">
                                     <div className="text-3xl">👋</div>

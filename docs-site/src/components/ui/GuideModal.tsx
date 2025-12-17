@@ -52,7 +52,7 @@ export function GuideModal({ isOpen, onClose, title, children }: GuideModalProps
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-                            className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden pointer-events-auto"
+                            className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden pointer-events-auto"
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby="modal-title"

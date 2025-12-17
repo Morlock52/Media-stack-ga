@@ -45,11 +45,11 @@ export function KeyboardShortcutsHelp() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="w-full max-w-2xl max-h-[80vh] overflow-hidden glass border border-white/20 rounded-2xl"
+            className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-hidden glass border border-white/20 rounded-2xl flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-6 border-b border-white/10">
@@ -60,6 +60,8 @@ export function KeyboardShortcutsHelp() {
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
+                  aria-label="Close keyboard shortcuts"
+                  title="Close keyboard shortcuts"
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -67,7 +69,7 @@ export function KeyboardShortcutsHelp() {
               </div>
             </div>
 
-            <div className="p-6 max-h-96 overflow-y-auto">
+            <div className="p-6 min-h-0 overflow-y-auto">
               {categories.map(category => (
                 <div key={category} className="mb-8">
                   <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">

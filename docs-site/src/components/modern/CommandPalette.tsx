@@ -128,15 +128,15 @@ export function CommandPalette() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           >
             <div
-              className="w-full max-w-2xl mx-4"
+              className="w-full max-w-2xl max-h-[calc(100dvh-2rem)]"
               onClick={e => e.stopPropagation()}
             >
               {/* Search input */}
-              <div className="glass-panel rounded-2xl overflow-hidden">
+              <div className="glass-panel rounded-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
                 <div className="p-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
                     <Search className="w-5 h-5 text-gray-400" />
@@ -153,7 +153,7 @@ export function CommandPalette() {
                 </div>
 
                 {/* Command list */}
-                <div className="max-h-96 overflow-y-auto">
+                <div className="min-h-0 overflow-y-auto">
                   {filteredCommands.length === 0 ? (
                     <div className="p-8 text-center text-gray-400">
                       <Command className="w-12 h-12 mx-auto mb-4 opacity-50" />

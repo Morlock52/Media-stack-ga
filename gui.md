@@ -48,6 +48,7 @@ Based on comprehensive research of the latest UI/UX trends as of December 14, 20
 ## Current Technology Stack
 
 The docs-site is built with:
+
 - **React 19.2.0** (latest stable with Server Components support)
 - **TypeScript 5.2.2**
 - **Vite 5.1.4** (build tool)
@@ -63,17 +64,20 @@ The docs-site is built with:
 ## 🎯 5 State-of-the-Art GUI Improvements
 
 ### 1. **Motion.dev High-Performance Animations**
-*Replace Framer Motion with Motion for 60fps+ smooth animations*
 
-#### Why This Improvement?
+Replace Framer Motion with Motion for 60fps+ smooth animations
+
+#### Why This Improvement? (Motion.dev)
+
 - **Motion** is the fastest-growing animation library with 12M+ monthly downloads
 - Hardware-accelerated scroll animations using WAAPI (Web Animations API)
 - Zero layout shift animations that don't trigger costly renders
 - Significantly better performance than Framer Motion for complex scroll-driven effects
 
-#### Technical Implementation
+#### Technical Implementation (Motion.dev)
 
 **Dependencies to add:**
+
 ```json
 {
   "motion": "^11.15.0"
@@ -81,6 +85,7 @@ The docs-site is built with:
 ```
 
 **Dependencies to remove:**
+
 ```json
 {
   "framer-motion": "^11.0.3"  // Remove
@@ -94,15 +99,17 @@ The docs-site is built with:
 3. **Setup wizard transitions** (`src/components/SetupWizard.tsx`)
 4. **Dashboard bento grid** (`src/components/modern/DashboardBentoGrid.tsx`)
 
-#### Implementation Steps
+#### Implementation Steps (Motion.dev)
 
-**Step 1: Install Motion**
+##### Step 1: Install Motion
+
 ```bash
 npm install motion@latest
 npm uninstall framer-motion
 ```
 
-**Step 2: Update Hero Section with GPU-accelerated animations**
+##### Step 2: Update Hero Section with GPU-accelerated animations
+
 ```tsx
 // Before (Framer Motion):
 import { motion } from 'framer-motion';
@@ -123,7 +130,8 @@ import { Motion } from 'motion/react';
 >
 ```
 
-**Step 3: Implement Scroll-Linked Animations**
+##### Step 3: Implement Scroll-Linked Animations
+
 ```tsx
 // New scroll-driven animations for service cards
 import { scroll } from 'motion';
@@ -159,9 +167,10 @@ export function ServiceCards() {
 }
 ```
 
-#### Testing Plan
+#### Testing Plan (Motion.dev)
 
 **Performance Tests:**
+
 ```bash
 # Install performance testing tools
 npm install --save-dev lighthouse @axe-core/playwright
@@ -170,6 +179,7 @@ npm install --save-dev lighthouse @axe-core/playwright
 ```
 
 **Test Suite:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -225,9 +235,10 @@ test.describe('Motion.dev Animations Performance', () => {
 });
 ```
 
-#### Integration Testing
+#### Integration Testing (Motion.dev)
 
 **Test Checklist:**
+
 - [ ] Hero section animations load smoothly on page load
 - [ ] Service cards animate on scroll with no jank
 - [ ] Wizard step transitions are smooth (no flash)
@@ -238,23 +249,27 @@ test.describe('Motion.dev Animations Performance', () => {
 ---
 
 ### 2. **Shadcn UI Component System**
-*Implement a comprehensive design system with accessible, unstyled primitives*
 
-#### Why This Improvement?
+Implement a comprehensive design system with accessible, unstyled primitives
+
+#### Why This Improvement? (Shadcn UI)
+
 - **Shadcn UI** is the default for React projects in 2025
 - Built on Radix UI primitives (WCAG 2.2 compliant)
 - Copy-paste components that you own (no npm bloat)
 - Integrates perfectly with Tailwind CSS
 - Full TypeScript support with proper type inference
 
-#### Technical Implementation
+#### Technical Implementation (Shadcn UI)
 
 **New Dependencies:**
+
 ```bash
 npx shadcn@latest init
 ```
 
 **Configuration:**
+
 ```typescript
 // components.json
 {
@@ -286,19 +301,22 @@ npx shadcn@latest init
 5. **Accordion** (FAQ sections)
 6. **Tabs** (documentation navigation)
 
-#### Implementation Steps
+#### Implementation Steps (Shadcn UI)
 
-**Step 1: Initialize Shadcn**
+##### Step 1: Initialize Shadcn
+
 ```bash
 npx shadcn@latest init
 ```
 
-**Step 2: Add Core Components**
+##### Step 2: Add Core Components
+
 ```bash
 npx shadcn@latest add command dialog toast form accordion tabs card button input label separator
 ```
 
-**Step 3: Create Command Palette (Cmd+K)**
+##### Step 3: Create Command Palette (Cmd+K)
+
 ```tsx
 // src/components/ui/command-palette.tsx
 import { Command } from '@/components/ui/command';
@@ -372,7 +390,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 }
 ```
 
-**Step 4: Add keyboard shortcut indicator**
+##### Step 4: Add keyboard shortcut indicator
+
 ```tsx
 // Add to ModernNavigation.tsx
 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -383,9 +402,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 </div>
 ```
 
-#### Testing Plan
+#### Testing Plan (Shadcn UI)
 
 **Accessibility Tests:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -438,9 +458,10 @@ test.describe('Shadcn UI Accessibility', () => {
 });
 ```
 
-#### Integration Testing
+#### Integration Testing (Shadcn UI)
 
 **Test Checklist:**
+
 - [ ] Cmd/Ctrl+K opens command palette on all pages
 - [ ] ESC key closes command palette
 - [ ] Search filtering works correctly
@@ -454,18 +475,21 @@ test.describe('Shadcn UI Accessibility', () => {
 ---
 
 ### 3. **CSS Anchor Positioning for Tooltips & Popovers**
-*Use native CSS Anchor Positioning API for performant, declarative UI positioning*
 
-#### Why This Improvement?
+Use native CSS Anchor Positioning API for performant, declarative UI positioning
+
+#### Why This Improvement? (CSS Anchor Positioning)
+
 - **Native CSS solution** (Chrome 125+, coming to all browsers by end of 2025)
 - Eliminates JavaScript positioning libraries (Popper.js, Floating UI)
 - Automatic collision detection and repositioning
 - Hardware-accelerated by browser
 - Part of Interop 2025 cross-browser initiative
 
-#### Technical Implementation
+#### Technical Implementation (CSS Anchor Positioning)
 
 **Browser Support Check:**
+
 ```typescript
 // src/lib/feature-detection.ts
 export function supportsAnchorPositioning(): boolean {
@@ -481,9 +505,10 @@ export function getPositioningStrategy() {
 }
 ```
 
-#### Implementation Steps
+#### Implementation Steps (CSS Anchor Positioning)
 
-**Step 1: Create Tooltip Component with CSS Anchors**
+##### Step 1: Create Tooltip Component with CSS Anchors
+
 ```tsx
 // src/components/ui/tooltip.tsx
 import { useId } from 'react';
@@ -529,7 +554,8 @@ export function Tooltip({ children, content, side = 'top' }: TooltipProps) {
 }
 ```
 
-**Step 2: Add CSS for Tooltips**
+##### Step 2: Add CSS for Tooltips
+
 ```css
 /* src/index.css */
 .tooltip {
@@ -555,7 +581,8 @@ button:focus-visible + .tooltip {
 }
 ```
 
-**Step 3: Implement Status Badge with Anchored Popover**
+##### Step 3: Implement Status Badge with Anchored Popover
+
 ```tsx
 // Update src/components/StatusBadge.tsx
 import { Tooltip } from '@/components/ui/tooltip';
@@ -580,9 +607,10 @@ export function StatusBadge({ status, service }) {
 }
 ```
 
-#### Testing Plan
+#### Testing Plan (CSS Anchor Positioning)
 
 **Cross-browser Tests:**
+
 ```typescript
 import { test, expect, devices } from '@playwright/test';
 
@@ -634,9 +662,10 @@ for (const browser of browsers) {
 }
 ```
 
-#### Integration Testing
+#### Integration Testing (CSS Anchor Positioning)
 
 **Test Checklist:**
+
 - [ ] Tooltips appear on hover and focus
 - [ ] Tooltips auto-position to avoid viewport edges
 - [ ] Multiple tooltips don't overlap
@@ -649,25 +678,29 @@ for (const browser of browsers) {
 ---
 
 ### 4. **AI-Powered Smart Forms with Real-time Validation**
-*Implement intelligent form helpers with AI-suggested values and instant feedback*
 
-#### Why This Improvement?
+Implement intelligent form helpers with AI-suggested values and instant feedback
+
+#### Why This Improvement? (Smart Forms)
+
 - **AI-driven personalization** is standard in 2025 UX
 - Real-time validation reduces form errors by 40%
 - Smart defaults based on common configurations
 - Contextual help without leaving the page
 - Improves setup completion rate
 
-#### Technical Implementation
+#### Technical Implementation (Smart Forms)
 
 **New Dependencies:**
+
 ```bash
 npm install @tanstack/react-query zod-error-map
 ```
 
-#### Implementation Steps
+#### Implementation Steps (Smart Forms)
 
-**Step 1: Enhanced Form Validation with Better Error Messages**
+##### Step 1: Enhanced Form Validation with Better Error Messages
+
 ```typescript
 // src/lib/form-utils.ts
 import { z } from 'zod';
@@ -705,7 +738,8 @@ export const networkConfigSchema = z.object({
 });
 ```
 
-**Step 2: AI-Powered Smart Suggestions**
+##### Step 2: AI-Powered Smart Suggestions
+
 ```tsx
 // src/components/wizard/SmartInput.tsx
 import { useState, useEffect } from 'react';
@@ -799,7 +833,8 @@ export function SmartInput({ name, label, suggestions, error }: SmartInputProps)
 }
 ```
 
-**Step 3: Real-time Async Validation**
+##### Step 3: Real-time Async Validation
+
 ```tsx
 // src/components/wizard/steps/BasicConfigurationStep.tsx
 import { useForm } from 'react-hook-form';
@@ -856,9 +891,10 @@ export function BasicConfigurationStep() {
 }
 ```
 
-#### Testing Plan
+#### Testing Plan (Smart Forms)
 
 **Form Validation Tests:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -918,9 +954,10 @@ test.describe('Smart Forms with AI Suggestions', () => {
 });
 ```
 
-#### Integration Testing
+#### Integration Testing (Smart Forms)
 
 **Test Checklist:**
+
 - [ ] Auto-detection features work correctly
 - [ ] Suggestions appear and filter properly
 - [ ] Validation runs on blur, not on every keystroke
@@ -935,25 +972,29 @@ test.describe('Smart Forms with AI Suggestions', () => {
 ---
 
 ### 5. **Advanced Micro-interactions & Haptic Feedback**
-*Implement delightful micro-interactions with smart motion design*
 
-#### Why This Improvement?
+Implement delightful micro-interactions with smart motion design
+
+#### Why This Improvement? (Micro-interactions)
+
 - **Motion design is fundamental** to modern UX in 2025
 - Provides real-time feedback to user actions
 - Creates spatial relationships between elements
 - Reduces perceived loading time by 30%
 - Makes the interface feel responsive and alive
 
-#### Technical Implementation
+#### Technical Implementation (Micro-interactions)
 
 **New Dependencies:**
+
 ```bash
 npm install @use-gesture/react spring
 ```
 
-#### Implementation Steps
+#### Implementation Steps (Micro-interactions)
 
-**Step 1: Button Press Micro-interaction**
+##### Step 1: Button Press Micro-interaction
+
 ```tsx
 // src/components/ui/button.tsx
 import { useGesture } from '@use-gesture/react';
@@ -1000,7 +1041,8 @@ export function Button({ children, haptic = true, ...props }: ButtonProps) {
 }
 ```
 
-**Step 2: Card Hover Lift Effect**
+##### Step 2: Card Hover Lift Effect
+
 ```tsx
 // src/components/modern/ServiceCard.tsx
 import { useRef } from 'react';
@@ -1061,7 +1103,8 @@ export function ServiceCard({ service }) {
 }
 ```
 
-**Step 3: Loading State Skeleton with Pulse**
+##### Step 3: Loading State Skeleton with Pulse
+
 ```tsx
 // src/components/ui/skeleton.tsx
 import { Motion } from 'motion/react';
@@ -1099,7 +1142,8 @@ export function ServiceCardSkeleton() {
 }
 ```
 
-**Step 4: Success/Error State Animations**
+##### Step 4: Success/Error State Animations
+
 ```tsx
 // src/components/ui/state-indicator.tsx
 import { Motion } from 'motion/react';
@@ -1143,9 +1187,10 @@ export function StateIndicator({ state, message }: { state: State; message?: str
 }
 ```
 
-#### Testing Plan
+#### Testing Plan (Micro-interactions)
 
 **Interaction Tests:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -1233,9 +1278,10 @@ test.describe('Micro-interactions', () => {
 });
 ```
 
-#### Integration Testing
+#### Integration Testing (Micro-interactions)
 
 **Test Checklist:**
+
 - [ ] Button press animations feel responsive
 - [ ] Card hovers don't cause layout shift
 - [ ] Haptic feedback works on mobile devices
@@ -1252,6 +1298,7 @@ test.describe('Micro-interactions', () => {
 ## 🚀 Deployment Plan
 
 ### Phase 1: Foundation (Week 1)
+
 1. **Shadcn UI Setup** (Priority: High)
    - Initialize Shadcn components
    - Add command palette
@@ -1265,20 +1312,22 @@ test.describe('Micro-interactions', () => {
    - Cross-browser validation
 
 ### Phase 2: Enhancements (Week 2)
-3. **CSS Anchor Positioning** (Priority: Medium)
+
+1. **CSS Anchor Positioning** (Priority: Medium)
    - Implement tooltip system
    - Update popover components
    - Browser fallback testing
    - Mobile device testing
 
-4. **Smart Forms** (Priority: High)
+2. **Smart Forms** (Priority: High)
    - Enhanced validation
    - Auto-detection features
    - Real-time feedback
    - Form accessibility audit
 
 ### Phase 3: Polish (Week 3)
-5. **Micro-interactions** (Priority: Low)
+
+1. **Micro-interactions** (Priority: Low)
    - Button press effects
    - Card hover animations
    - Loading states
@@ -1289,19 +1338,22 @@ test.describe('Micro-interactions', () => {
 
 ## 📊 Success Metrics
 
-**Performance:**
+### Performance
+
 - [ ] Lighthouse Performance Score: 95+
 - [ ] First Contentful Paint: <1.5s
 - [ ] Time to Interactive: <3s
 - [ ] Cumulative Layout Shift: <0.1
 
-**Accessibility:**
+### Accessibility
+
 - [ ] WCAG 2.2 AA Compliance: 100%
 - [ ] Keyboard Navigation: Full coverage
 - [ ] Screen Reader: No critical issues
 - [ ] Color Contrast: All pass
 
-**User Experience:**
+### User Experience
+
 - [ ] Setup completion rate: +20%
 - [ ] Form validation errors: -40%
 - [ ] User satisfaction: 4.5+/5
@@ -1345,18 +1397,22 @@ test.describe('Micro-interactions', () => {
 
 #### ✅ Successfully Deployed Components
 
-**1. Shadcn UI System**
+##### 1. Shadcn UI System
+
 - Initialized Shadcn with New York style
 - Added components:
+
   - `src/components/ui/button.tsx` - Enhanced with micro-interactions
   - `src/components/ui/tooltip.tsx` - Radix UI based tooltips
   - `src/components/ui/dialog.tsx` - Modal dialog system
 - Created utility function: `src/lib/utils.ts` (cn helper)
 - Dependencies: `class-variance-authority`, `@radix-ui/react-tooltip`, `@radix-ui/react-dialog`
 
-**2. Enhanced StatusBadge with Tooltips**
+##### 2. Enhanced StatusBadge with Tooltips
+
 - File: `src/components/StatusBadge.tsx`
 - Features:
+
   - Detailed tooltip showing system stats
   - Running/Total service counts
   - Uptime percentage calculation
@@ -1364,9 +1420,11 @@ test.describe('Micro-interactions', () => {
   - Accessible WCAG 2.2 compliant tooltip
 - Uses Shadcn Tooltip component with custom styling
 
-**3. AI-Powered Smart Forms**
+##### 3. AI-Powered Smart Forms
+
 - Created: `src/components/ui/smart-input.tsx`
 - Features:
+
   - Auto-detection for timezone using `Intl.DateTimeFormat().resolvedOptions().timeZone`
   - Suggestion dropdown with filtering
   - Visual indicator for auto-detected values (Sparkles icon)
@@ -1374,9 +1432,11 @@ test.describe('Micro-interactions', () => {
   - Keyboard navigation support
 - Ready to integrate into setup wizard forms
 
-**4. Micro-interactions on Buttons**
+##### 4. Micro-interactions on Buttons
+
 - Enhanced: `src/components/ui/button.tsx`
 - Interactions:
+
   - `hover:scale-[1.02]` - Subtle lift on hover
   - `active:scale-[0.98]` - Press down effect
   - `hover:shadow-lg` - Enhanced shadows
@@ -1385,7 +1445,8 @@ test.describe('Micro-interactions', () => {
 
 #### 🔴 Deferred: Motion.dev Migration
 
-**Reason for Deferral:**
+##### Reason for Deferral
+
 - Framer Motion uses element-specific components (`motion.div`, `motion.span`, etc.)
 - Motion.dev uses a single `<Motion>` component
 - Migration would require manual rewriting of 43 component files
@@ -1393,7 +1454,8 @@ test.describe('Micro-interactions', () => {
 - Risk of breaking existing animations too high
 - **Recommendation:** Keep framer-motion for now, consider Motion.dev for new components only
 
-**Migration Attempt Summary:**
+##### Migration Attempt Summary
+
 1. Installed `motion` package successfully
 2. Created migration script to automate conversion
 3. Script replaced imports but failed to handle:
@@ -1408,6 +1470,7 @@ test.describe('Micro-interactions', () => {
 ## 🧪 Manual Testing Guide
 
 ### Test 1: Enhanced StatusBadge Tooltip
+
 1. Navigate to homepage
 2. Hover over "X/Y Services Online" badge
 3. **Expected:** Tooltip appears showing:
@@ -1419,12 +1482,14 @@ test.describe('Micro-interactions', () => {
 4. **Verify:** Tooltip positioning works near screen edges
 
 ### Test 2: SmartInput Auto-Detection
+
 1. Create a test form using SmartInput
 2. Set `autoDetect={true}` and `detectType="timezone"`
 3. **Expected:** Input auto-fills with detected timezone
 4. **Verify:** Blue sparkles badge shows "Auto-detected: [timezone]"
 
 ### Test 3: SmartInput Suggestions
+
 1. Add suggestions prop: `suggestions={['America/New_York', 'Europe/London', ...]}`
 2. Click input field
 3. Type partial text (e.g., "America")
@@ -1433,6 +1498,7 @@ test.describe('Micro-interactions', () => {
 6. **Expected:** Input fills with selected value, dropdown closes
 
 ### Test 4: Button Micro-interactions
+
 1. Find any button using Shadcn Button component
 2. Hover over button
 3. **Expected:** Button scales up slightly (102%), shadow increases
@@ -1445,7 +1511,8 @@ test.describe('Micro-interactions', () => {
 
 ## 📦 Files Created/Modified
 
-### New Files Created (4):
+### New Files Created (4)
+
 1. `/docs-site/src/lib/utils.ts` - Shadcn utility functions
 2. `/docs-site/src/components/ui/button.tsx` - Enhanced button component
 3. `/docs-site/src/components/ui/tooltip.tsx` - Tooltip component
@@ -1453,10 +1520,12 @@ test.describe('Micro-interactions', () => {
 5. `/docs-site/src/components/ui/smart-input.tsx` - Smart form input
 6. `/docs-site/components.json` - Shadcn configuration
 
-### Files Modified (1):
+### Files Modified (1)
+
 1. `/docs-site/src/components/StatusBadge.tsx` - Enhanced with tooltip
 
-### Dependencies Added:
+### Dependencies Added
+
 ```json
 {
   "@radix-ui/react-tooltip": "latest",
@@ -1473,19 +1542,22 @@ test.describe('Micro-interactions', () => {
 
 ## 🚀 Next Steps & Recommendations
 
-### Immediate Actions:
+### Immediate Actions
+
 1. **Manual Testing**: Test all 4 implemented improvements
 2. **Integration**: Update wizard forms to use SmartInput component
 3. **Documentation**: Add usage examples for new components
 4. **Accessibility Audit**: Run axe DevTools on enhanced components
 
-### Short-term (Next Sprint):
+### Short-term (Next Sprint)
+
 1. Add more Shadcn components (Form, Label, Select, Tabs)
 2. Create Command Palette (Cmd+K) for power users
 3. Implement loading skeletons for async content
 4. Add toast notifications using Sonner + Shadcn styling
 
-### Long-term Considerations:
+### Long-term Considerations
+
 1. **Motion.dev**: Consider for new components only, not migration
 2. **CSS Anchor Positioning**: Monitor browser support, add progressive enhancement
 3. **Design System**: Expand Shadcn component library
@@ -1506,19 +1578,22 @@ test.describe('Micro-interactions', () => {
 
 ## 📊 Impact Assessment
 
-### Positive Impacts:
+### Positive Impacts
+
 - **Better UX**: Tooltips provide more information without cluttering UI
 - **Faster Development**: Shadcn components speed up future UI development
 - **Accessibility**: WCAG 2.2 compliant from the start
 - **Smart Defaults**: Auto-detection reduces user input errors
 - **Visual Polish**: Micro-interactions make interface feel premium
 
-### Technical Debt Added:
+### Technical Debt Added
+
 - **Deferred Migration**: Motion.dev migration creates future technical debt if decided to pursue
 - **Mixed Libraries**: Now using both Framer Motion and Radix UI animations
 - **Testing Gap**: No automated tests yet for new components
 
-### Performance Impact:
+### Performance Impact
+
 - **Bundle Size**: +120KB (Radix UI primitives)
 - **Runtime**: Minimal - Radix UI is highly optimized
 - **Build Time**: No significant change
@@ -1528,14 +1603,9 @@ test.describe('Micro-interactions', () => {
 ## ✅ Deployment Complete
 
 **Final Status:** 4 out of 5 improvements successfully deployed (80% success rate)
-
 The GUI enhancements are now live and ready for testing. The SmartInput component is particularly valuable for improving the setup wizard experience with auto-detection and smart suggestions.
-
 **Total Development Time:** ~2 hours
 **Components Created:** 5 new components
 **Lines of Code Added:** ~450 lines
 **Dependencies Added:** 7 packages
 **Files Modified:** 1 existing component enhanced
-
----
-

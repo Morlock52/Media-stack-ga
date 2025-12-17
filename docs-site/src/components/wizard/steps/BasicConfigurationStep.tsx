@@ -45,30 +45,30 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
             className="space-y-6"
         >
             <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Basic Configuration</h2>
-                <p className="text-gray-400">Set up your core environment settings</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Basic Configuration</h2>
+                <p className="text-muted-foreground">Set up your core environment settings</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Domain */}
                 <div className={`md:col-span-2 ${shakeField === 'domain' ? 'animate-shake' : ''}`}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Domain <span className="text-red-400">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                        Domain <span className="text-destructive">*</span>
                     </label>
                     <div className="relative">
-                        <Globe className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                        <Globe className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                         <input
                             {...register('domain')}
-                            className={`w-full bg-black/30 border ${errors.domain ? 'border-red-500' : 'border-white/10'} rounded-lg py-2.5 pl-11 pr-4 text-white input-focus-glow transition-all`}
+                            className={`w-full bg-background/60 border ${errors.domain ? 'border-destructive' : 'border-border'} rounded-lg py-2.5 pl-11 pr-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
                             placeholder="yourdomain.com"
                         />
                     </div>
                     {errors.domain && (
-                        <p className="mt-1 text-sm text-red-400 flex items-center gap-1">
+                        <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" /> {errors.domain.message as string}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">Your domain for Cloudflare Tunnel access</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Your domain for Cloudflare Tunnel access</p>
                 </div>
 
                 {/* Timezone */}
@@ -112,24 +112,24 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
 
                 {/* Master Password */}
                 <div className={`md:col-span-2 ${shakeField === 'password' ? 'animate-shake' : ''}`}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Master Password <span className="text-red-400">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                        Master Password <span className="text-destructive">*</span>
                     </label>
                     <div className="relative">
-                        <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                        <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                         <input
                             {...register('password')}
                             type="password"
-                            className={`w-full bg-black/30 border ${errors.password ? 'border-red-500' : 'border-white/10'} rounded-lg py-2.5 pl-11 pr-4 text-white input-focus-glow transition-all`}
+                            className={`w-full bg-background/60 border ${errors.password ? 'border-destructive' : 'border-border'} rounded-lg py-2.5 pl-11 pr-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
                             placeholder="••••••••"
                         />
                     </div>
                     {errors.password && (
-                        <p className="mt-1 text-sm text-red-400 flex items-center gap-1">
+                        <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" /> {errors.password.message as string}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">Used for Redis and default service passwords</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Used for Redis and default service passwords</p>
                 </div>
             </div>
         </motion.div>

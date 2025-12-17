@@ -111,7 +111,7 @@ export function NotificationCenter() {
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="absolute top-full mt-2 right-0 w-96 glass border border-white/20 rounded-xl z-50 max-h-[500px] overflow-hidden"
+          className="absolute top-full mt-2 right-0 w-96 max-w-[calc(100vw-2rem)] glass border border-white/20 rounded-xl z-50 max-h-[calc(100dvh-6rem)] overflow-hidden flex flex-col"
         >
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
@@ -127,6 +127,8 @@ export function NotificationCenter() {
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
+                  aria-label="Close notifications"
+                  title="Close notifications"
                   className="p-1 rounded hover:bg-white/10 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -135,7 +137,7 @@ export function NotificationCenter() {
             </div>
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
+          <div className="min-h-0 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Bell className="w-8 h-8 mx-auto mb-4 opacity-50" />

@@ -169,7 +169,7 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
             setShowSearch(true)
           }
         }}
-        className="p-2 rounded-lg border border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+        className="p-2 rounded-lg border border-border bg-background/60 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
         aria-label="Open search"
       >
         <Search className="w-4 h-4" />
@@ -179,8 +179,8 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
       <button
         type="button"
         onClick={() => setShowApiKeyModal(true)}
-        className={`p-2 rounded-lg border bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors ${
-          hasApiKey ? 'border-green-500/50 text-green-400' : 'border-white/10'
+        className={`p-2 rounded-lg border bg-background/60 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors ${
+          hasApiKey ? 'border-green-500/50 text-green-600' : 'border-border'
         }`}
         aria-label="OpenAI API Key Settings"
         title={hasApiKey ? 'OpenAI key configured' : 'Set OpenAI API key'}
@@ -195,7 +195,7 @@ export function TopRightActions({ onOpenAssistant }: TopRightActionsProps) {
       <button
         type="button"
         onClick={handleToggleTheme}
-        className="p-2 rounded-lg border border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+        className="p-2 rounded-lg border border-border bg-background/60 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
         aria-label="Toggle light/dark mode"
       >
         {theme === 'dark' ? (

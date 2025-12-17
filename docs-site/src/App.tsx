@@ -7,10 +7,14 @@ import { AIAssistant } from './components/AIAssistant'
 import { useSetupStore } from './store/setupStore'
 import { TopologyMap } from './components/TopologyMap'
 import { Sparkles, Rocket, Shield, BookOpen, Server, Mic } from 'lucide-react'
+import { Button } from './components/ui/button'
+import { Link } from 'react-router-dom'
 
 function App() {
   const [showDeployModal, setShowDeployModal] = useState(false)
   const { currentStep, config } = useSetupStore()
+
+  const showAssistant = Boolean(import.meta.env.DEV || import.meta.env.VITE_CONTROL_SERVER_URL)
 
   // Only show deploy button when at final step (Review & Generate)
   const showDeployButton = currentStep >= 4
@@ -48,14 +52,15 @@ function App() {
 
       {/* Deploy to Server Button - Only show when at Review & Generate step */}
       {showDeployButton && (
-        <button
+        <Button
           onClick={() => setShowDeployModal(true)}
-          className="fixed bottom-4 left-4 z-40 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-lg hover:shadow-purple-500/30 hover:scale-105 transition-all duration-200 text-sm font-medium animate-in fade-in slide-in-from-bottom-2"
+          variant="gradient"
+          className="fixed bottom-4 left-4 z-40 animate-in fade-in slide-in-from-bottom-2"
           title="Deploy to remote server via SSH"
         >
           <Server className="w-4 h-4" />
           <span className="hidden sm:inline">Deploy to Server</span>
-        </button>
+        </Button>
       )}
 
       {/* Hero Section */}
@@ -142,13 +147,13 @@ function App() {
               Step-by-step guides for Plex, Mealie, Sonarr, Radarr and more.
               Written for non-technical users with clear, click-by-click instructions.
             </p>
-            <a
-              href="/docs"
+            <Link
+              to="/docs"
               className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300"
             >
               <BookOpen className="w-5 h-5" />
               View App Guides
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -163,7 +168,7 @@ function App() {
       </footer>
 
       {/* AI Assistant - Floating Chat */}
-      <AIAssistant openaiKey={config.openaiApiKey} />
+      {showAssistant && <AIAssistant openaiKey={config.openaiApiKey} />}
     </main>
   )
 }

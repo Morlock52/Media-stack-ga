@@ -97,7 +97,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-slate-900 border border-white/10 rounded-2xl shadow-2xl"
+                            className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Header */}
                             <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 p-6 flex items-start justify-between">
@@ -124,7 +124,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 space-y-6">
+                            <div className="p-6 space-y-6 min-h-0 overflow-y-auto">
                                 {/* Detailed Description */}
                                 <div>
                                     <p className="text-gray-300 leading-relaxed">
