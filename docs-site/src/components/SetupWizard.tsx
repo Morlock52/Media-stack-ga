@@ -106,6 +106,11 @@ export function SetupWizard() {
         }
     }, [])
 
+    // Scroll to top when step changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [currentStep])
+
     // Step 1 form (Basic Config)
     const step1Form = useForm<BasicConfigFormData>({
         resolver: zodResolver(basicConfigSchema),
@@ -763,37 +768,37 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                     {currentStep > 0 && (
                         <div className="sticky bottom-4 z-30 mt-8">
                             <div className="flex justify-between items-center glass-ultra rounded-2xl border border-white/10 px-4 py-3 backdrop-blur">
-                            <Button
-                                type="button"
-                                onClick={prevStep}
-                                variant="glass"
-                                className="btn-lift px-6 py-3"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
-                            </Button>
-
-                            {currentStep < 5 ? (
                                 <Button
                                     type="button"
-                                    onClick={handleNextStep}
-                                    variant="gradient"
+                                    onClick={prevStep}
+                                    variant="glass"
                                     className="btn-lift px-6 py-3"
                                 >
-                                    Next
-                                    <ArrowRight className="w-4 h-4" />
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Back
                                 </Button>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    onClick={handleReset}
-                                    variant={showResetConfirm ? 'destructive' : 'glass'}
-                                    className={showResetConfirm ? 'btn-lift px-6 py-3 animate-pulse' : 'btn-lift px-6 py-3'}
-                                >
-                                    <RotateCcw className={`w-4 h-4 ${showResetConfirm ? 'animate-spin' : ''}`} />
-                                    {showResetConfirm ? 'Confirm Reset?' : 'Start Over'}
-                                </Button>
-                            )}
+
+                                {currentStep < 5 ? (
+                                    <Button
+                                        type="button"
+                                        onClick={handleNextStep}
+                                        variant="gradient"
+                                        className="btn-lift px-6 py-3"
+                                    >
+                                        Next
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        onClick={handleReset}
+                                        variant={showResetConfirm ? 'destructive' : 'glass'}
+                                        className={showResetConfirm ? 'btn-lift px-6 py-3 animate-pulse' : 'btn-lift px-6 py-3'}
+                                    >
+                                        <RotateCcw className={`w-4 h-4 ${showResetConfirm ? 'animate-spin' : ''}`} />
+                                        {showResetConfirm ? 'Confirm Reset?' : 'Start Over'}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     )}

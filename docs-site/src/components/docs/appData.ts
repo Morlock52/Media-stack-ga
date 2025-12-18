@@ -1,5 +1,6 @@
+import * as Icons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import {
+const {
     Film,
     Tv,
     Activity,
@@ -21,7 +22,13 @@ import {
     Bug,
     Database,
     RefreshCw,
-} from 'lucide-react'
+} = Icons
+
+export const ICON_MAP: Record<string, LucideIcon> = {
+    Film, Tv, Activity, Search, Download, Shield, Home, Container,
+    FileVideo, Bell, Languages, ShieldCheck, Layers, Utensils,
+    BookOpen, Camera, Cloud, Terminal, Bug, Database, RefreshCw
+}
 
 export type AppId =
     | 'plex'

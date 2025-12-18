@@ -41,6 +41,23 @@
 
 ![Setup Wizard](docs/images/wizard.png)
 
+## 🤖 Agentic System
+Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
+
+- **AI-Powered Management**: Add, remove, or update apps in your registry via the AI Assistant.
+- **Automated Documentation**: AI can generate and update documentation components for your custom services.
+- **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
+- **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
+
+### Using the AI Assistant
+You can interact with the AI Assistant to perform complex tasks:
+- *"Add Paperless-ngx to my registry"*
+- *"Create a guide for my custom file server"*
+- *"Check the logs for my download client"*
+- *"Validate my updated .env file"*
+
+---
+
 ## 📖 Interactive Documentation
 
 Media Stack includes a comprehensive documentation system that goes beyond static files. The documentation is interactive and adapts to your needs.

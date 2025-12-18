@@ -11,6 +11,7 @@ interface GuideModalProps {
 
 export function GuideModal({ isOpen, onClose, title, children }: GuideModalProps) {
     const modalRef = useRef<HTMLDivElement>(null)
+    const contentRef = useRef<HTMLDivElement>(null)
 
     // Close on escape key
     useEffect(() => {
@@ -22,6 +23,10 @@ export function GuideModal({ isOpen, onClose, title, children }: GuideModalProps
             document.addEventListener('keydown', handleEscape)
             // Prevent body scroll when modal is open
             document.body.style.overflow = 'hidden'
+            // Reset scroll position to top
+            if (contentRef.current) {
+                contentRef.current.scrollTop = 0
+            }
         }
 
         return () => {

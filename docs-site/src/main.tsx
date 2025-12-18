@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import App from './App'
 import { DocsPage } from './pages/DocsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import ScrollToTop from './components/ScrollToTop'
 import './index.css'
 
 const SonnerToaster = Toaster as unknown as React.ComponentType<Record<string, unknown>>
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 		<RootErrorBoundary>
 			<SonnerToaster richColors closeButton />
 			<BrowserRouter>
+				<ScrollToTop />
 				<Routes>
 					<Route path="/" element={<App />} />
 					<Route path="/docs" element={<DocsPage />} />

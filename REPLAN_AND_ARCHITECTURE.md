@@ -7,38 +7,90 @@ Enable a "Newbie-Proof" Agentic System for managing Apps, Tiles, and Documentati
 - **Agentic**: AI-assisted management (Voice/Chat) is the primary interface for complex tasks.
 - **Robustness**: Error handling, logging, testing.
 
-## Current State Analysis
-- **Backend**: 
-  - `registry.ts` supports CRUD for custom apps (`custom-apps.json`).
-  - `ai.ts` supports `run_command`, `analyze_logs`, `validate_config`.
-  - **Gap**: AI cannot currently "Add App" or "Delete App" directly via tool calls. It has to suggest commands or be manually guided.
-- **Frontend**:
-  - `DashboardBentoGrid` displays *running containers* via `docker ps` (implied).
-  - No explicit "App Store" or "Registry Manager" UI found for adding custom apps easily.
-  - `AIAssistant` is available but limited by backend tools.
+## Implementation Status: ✅ COMPLETE
 
-## Architecture Plan
+### Backend Services Created
 
-### 1. Enhanced AI capabilities (Backend)
-We will add new tools to the AI Agent in `control-server/src/routes/ai.ts`:
-- `manage_app`:
-  - Actions: `list`, `add`, `remove`, `update`.
-  - Arguments: `appName`, `repoUrl`, `description`, etc.
-  - Implementation: reuse logic from `registry.ts`.
-- `manage_doc`:
-  - Actions: `create`, `update`, `read`.
-  - Arguments: `path`, `content`.
+1. **`registryService.ts`** - Centralized app registry management
+   - `loadRegistry()`, `saveRegistry()`, `backup()`
+   - `addApp()`, `removeApp()`, `updateApp()`
 
-### 2. Frontend Integration
-- The Dashboard tracks *running containers*. To "Add a Tile", the user effectively needs to "Add an App and Start it".
-- The AI Agent will be the primary interface for this. "Add Paperless-ngx" -> AI adds to registry -> AI generates config -> AI starts container.
+2. **`docService.ts`** - Documentation file management
+   - `createDoc()`, `updateDoc()`, `readDoc()`, `listDocs()`
 
-### 3. Documentation & Testing
-- We will document this "Agentic Workflow" in `README.md`.
-- We will add a test script `scripts/test-agent-tools.ts` to verify the new AI tools.
+3. **`appGeneratorService.ts`** - AI-powered app generation
+   - `generateAppFromGitHub()` - Uses OpenAI to create app metadata and React documentation
+   - `registerAndExportApp()` - Saves guide and updates exports
 
-## Implementation Steps
-1.  **Refactor Registry**: Ensure `registry.ts` logic is reusable (extract to `services/registryService.ts` or similar if needed, or just import).
-2.  **Update AI Routes**: Add `manage_app` and `manage_doc` tools definition and implementation in `ai.ts`.
-3.  **Test**: Write a script to verify the AI can add a dummy app and create a doc.
-4.  **Docs**: Update `README.md` with instructions on how to use the new features.
+4. **`github.ts`** - GitHub repository scraping
+   - `scrapeGitHubRepo()` - Fetches repo metadata and README
+
+### AI Tools Added to `/api/agent/chat`
+
+| Tool | Description |
+|------|-------------|
+| `manage_app` | List, add, remove, update apps in registry |
+| `manage_doc` | List, read, create, update documentation components |
+
+### API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/registry/apps` | GET | List all custom apps |
+| `/api/registry/apps` | POST | Add an app manually |
+| `/api/registry/apps/:id` | PUT | Update an app |
+| `/api/registry/apps/:id` | DELETE | Remove an app and its guide |
+| `/api/registry/scrape` | POST | Scrape GitHub repo, generate docs, register app |
+
+### Frontend Updates
+
+1. **`AppsOverview.tsx`** - Enhanced with:
+   - "Add Custom App" button with GitHub URL input
+   - AI-powered scraping and documentation generation
+   - Custom apps displayed with "Custom" badge
+   - One-click removal with confirmation
+
+2. **`appData.ts`** - Added `ICON_MAP` for dynamic icon resolution
+
+3. **`controlServer.ts`** - Added registry API client methods:
+   - `getRegistry()`, `scrapeRepo()`, `removeRegistryApp()`
+
+### Tests
+
+- `control-server/test/agent-tools.test.ts` - Unit tests for registry and doc services (5 passing tests)
+
+### Documentation
+
+- Updated `README.md` with new "Agentic System" section explaining AI-powered app management
+
+## How It Works
+
+1. **Via AI Chat**: "Add Paperless-ngx from GitHub" → AI calls `manage_app` tool → generates docs → registers app
+2. **Via UI**: Click "Add Custom App" → Enter GitHub URL → AI generates guide → App appears in grid
+3. **Via Voice**: "Create a guide for Uptime Kuma" → Voice agent processes → AI tool executes
+
+## Files Modified/Created
+
+```
+control-server/src/
+├── services/
+│   ├── registryService.ts   ✨ NEW
+│   ├── docService.ts        ✨ NEW
+│   └── appGeneratorService.ts ✨ NEW
+├── utils/
+│   └── github.ts            ✨ NEW
+├── routes/
+│   ├── ai.ts                📝 MODIFIED (added manage_app, manage_doc tools)
+│   └── registry.ts          📝 MODIFIED (refactored + added scrape endpoint)
+└── test/
+    └── agent-tools.test.ts  ✨ NEW
+
+docs-site/src/
+├── components/docs/
+│   ├── AppsOverview.tsx     📝 MODIFIED (full CRUD UI)
+│   └── appData.ts           📝 MODIFIED (ICON_MAP export)
+└── utils/
+    └── controlServer.ts     📝 MODIFIED (registry API methods)
+
+README.md                    📝 MODIFIED (Agentic System section)
+```

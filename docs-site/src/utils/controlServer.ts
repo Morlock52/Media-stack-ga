@@ -1,5 +1,17 @@
 import { Container, Agent, AiChatRequest, AiChatResponse } from '../types/api';
 
+export interface AppRegistryItem {
+    id: string;
+    name: string;
+    description: string;
+    repoUrl?: string;
+    guideComponent?: string;
+    category?: string;
+    icon?: string;
+    difficulty?: string;
+    time?: string;
+}
+
 const getWindowOrigin = () =>
     typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : ''
 
@@ -52,6 +64,33 @@ export const controlServer = {
             body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('Chat request failed');
+        return res.json();
+    },
+
+    getRegistry: async (): Promise<AppRegistryItem[]> => {
+        const res = await fetch(buildControlServerUrl('/api/registry/apps'));
+        if (!res.ok) throw new Error('Failed to fetch registry');
+        return res.json();
+    },
+
+    scrapeRepo: async (url: string): Promise<{ success: boolean; app: AppRegistryItem }> => {
+        const res = await fetch(buildControlServerUrl('/api/registry/scrape'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Failed to scrape repository');
+        }
+        return res.json();
+    },
+
+    removeRegistryApp: async (id: string): Promise<{ success: boolean }> => {
+        const res = await fetch(buildControlServerUrl(`/api/registry/apps/${id}`), {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove app from registry');
         return res.json();
     }
 };
