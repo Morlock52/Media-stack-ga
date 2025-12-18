@@ -113,7 +113,7 @@ docker compose up -d
 
 ### PNG diagram (for wikis/PDFs)
 
-![Architecture overview](docs/images/architecture_overview.png)
+![Architecture overview](docs/images/architecture_overview.jpg)
 
 ### Mermaid diagram (renders natively on GitHub)
 
