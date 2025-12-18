@@ -271,7 +271,7 @@ flowchart LR
 
 ## 💾 Storage planning
 
-![Storage planning chart](docs/images/storage_planning.png)
+![Storage planning chart](docs/images/storage_planning.jpg)
 
 ### How to use the chart
 
