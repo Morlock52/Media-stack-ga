@@ -373,6 +373,27 @@ Based on the recommended adoption order:
 
 ---
 
+---
+
+## 💎 Premium GA Enhancements
+
+### 1. **Arr-Stack Automation**
+Located in the **Settings** page, this new service allows users to capture API keys from their stack with a single click.
+
+- 🔍 **Auto-Detection**: Scans running Docker containers for Sonarr, Radarr, Prowlarr, etc.
+- 📂 **Direct Extraction**: Reads `config.xml` files directly from within containers.
+- 🔄 **Env Sync**: Automatically updates the `.env` file with the captured keys.
+- ⚡ **AI Integration**: Can be triggered via the AI Assistant with "Bootstrap my keys".
+
+### 2. **SVG Data Export**
+Found in the **Storage Planner**, every storage mapping now features a premium export option.
+
+- 📤 **High-Fidelity Export**: Downloads a beautifully styled SVG of your path mapping.
+- 🎨 **Rich Styling**: Includes glassmorphism effects, icons, and clear typography.
+- 📝 **Documentation Ready**: Perfect for sharing setups or keeping for personal reference.
+
+---
+
 **Enjoy the updated UI! 🚀**
 
 Preview: http://localhost:4173/

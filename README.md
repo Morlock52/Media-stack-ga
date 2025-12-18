@@ -37,6 +37,9 @@
 -   **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
 -   **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
 -   **Premium UI & Animations**: Rich visuals with glassmorphism, responsive pulsing glows, and SVG data export.
+
+![SVG Export Demo](docs/images/svg_export_demo.png)
+
 -   **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
 
 ![Setup Wizard](docs/images/wizard.png)
@@ -50,6 +53,11 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 - **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
 - **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
 
+![Voice Companion Demo](docs/images/voice_companion_demo.png)
+
+![Arr-Stack Automation](docs/images/settings_automation.png)
+
+
 ### Using the AI Assistant
 You can interact with the AI Assistant to perform complex tasks:
 - *"Add Paperless-ngx to my registry"*
@@ -57,6 +65,9 @@ You can interact with the AI Assistant to perform complex tasks:
 - *"Check the logs for my download client"*
 - *"Validate my updated .env file"*
 - *"Bootstrap my arr stack API keys"*
+
+![AI Assistant Demo](docs/images/ai_assistant_demo.png)
+
 
 ---
 
