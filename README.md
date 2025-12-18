@@ -204,7 +204,7 @@ flowchart TB
 
 ### Security controls map (PNG)
 
-![Security controls map](docs/images/security_controls.png)
+![Security controls map](docs/images/security_controls.jpg)
 
 ### Security diagram (Mermaid)
 
