@@ -30,6 +30,23 @@
 
 </div>
 
+![Hero Section](docs/images/hero.png)
+
+## 🚀 Key Features
+
+-   **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
+-   **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
+-   **Dark Mode Support**: A premium dark-themed UI designed for low-light environments.
+-   **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
+
+![Setup Wizard](docs/images/wizard.png)
+
+## 📖 Interactive Documentation
+
+Media Stack includes a comprehensive documentation system that goes beyond static files. The documentation is interactive and adapts to your needs.
+
+![Documentation](docs/images/docs.png)
+
 ---
 
 ## 🔎 Table of contents

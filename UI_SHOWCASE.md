@@ -4,6 +4,21 @@
 # 🎨 UI Showcase - Media Stack Updates
 </div>
 
+## 🖼 Visual Showcase (Dark Mode)
+
+The new interface features a premium dark theme with glassmorphism, smooth gradients, and interactive components.
+
+### 🎨 Hero Experience
+![Hero Dark Mode](docs/images/hero.png)
+
+### 🪄 Interactive Wizard
+![Wizard Dark Mode](docs/images/wizard.png)
+
+### 📖 Adaptive Documentation
+![Docs Dark Mode](docs/images/docs.png)
+
+---
+
 ## 🚀 Live Preview
 **Preview Server Running**: http://localhost:4173/
 
