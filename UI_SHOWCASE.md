@@ -1,4 +1,8 @@
+<div align="center">
+<img src="docs/images/logo.png" alt="Media Stack Logo" width="120"/>
+
 # 🎨 UI Showcase - Media Stack Updates
+</div>
 
 ## 🚀 Live Preview
 **Preview Server Running**: http://localhost:4173/

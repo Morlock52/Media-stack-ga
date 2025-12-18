@@ -1,6 +1,8 @@
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
+<img src="docs/images/logo.png" alt="Media Stack Logo" width="200"/>
+
 # 🎬 Ultimate Media Stack — GA
 ### Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a docs + wizard experience.
 

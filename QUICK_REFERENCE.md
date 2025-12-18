@@ -1,4 +1,9 @@
+<div align="center">
+<img src="docs/images/logo.png" alt="Media Stack Logo" width="100"/>
+
 # Quick Reference Guide
+</div>
+
 > **Last Updated:** December 6, 2025
 
 ## 🚀 Quick Commands

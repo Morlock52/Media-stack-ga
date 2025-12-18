@@ -1,4 +1,8 @@
+<div align="center">
+<img src="docs/images/logo.png" alt="Media Stack Logo" width="100"/>
+
 # Dockerized Media Stack Wizard
+</div>
 
 This document explains how to run the Media Stack Wizard (Control Server + Web UI) using Docker.
 
