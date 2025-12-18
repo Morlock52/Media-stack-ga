@@ -92,5 +92,13 @@ export const controlServer = {
         });
         if (!res.ok) throw new Error('Failed to remove app from registry');
         return res.json();
+    },
+
+    bootstrapArr: async (): Promise<{ success: boolean; keys: Record<string, string> }> => {
+        const res = await fetch(buildControlServerUrl('/api/registry/bootstrap-arr'), {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error('Failed to bootstrap Arr keys');
+        return res.json();
     }
 };

@@ -36,7 +36,7 @@
 
 -   **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
 -   **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
--   **Dark Mode Support**: A premium dark-themed UI designed for low-light environments.
+-   **Premium UI & Animations**: Rich visuals with glassmorphism, responsive pulsing glows, and SVG data export.
 -   **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
 
 ![Setup Wizard](docs/images/wizard.png)
@@ -48,6 +48,7 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 - **Automated Documentation**: AI can generate and update documentation components for your custom services.
 - **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
 - **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
+- **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
 
 ### Using the AI Assistant
 You can interact with the AI Assistant to perform complex tasks:
@@ -55,6 +56,7 @@ You can interact with the AI Assistant to perform complex tasks:
 - *"Create a guide for my custom file server"*
 - *"Check the logs for my download client"*
 - *"Validate my updated .env file"*
+- *"Bootstrap my arr stack API keys"*
 
 ---
 

@@ -71,4 +71,16 @@ export async function registryRoutes(fastify: FastifyInstance) {
             reply.status(404).send({ error: error.message });
         }
     });
+
+    // Bootstrap *Arr Keys
+    fastify.post('/api/registry/bootstrap-arr', async (request, reply) => {
+        try {
+            const { bootstrapArrKeys } = await import('../services/arrService.js');
+            const results = await bootstrapArrKeys();
+            return { success: true, keys: results };
+        } catch (error: any) {
+            fastify.log.error(error);
+            reply.status(500).send({ error: error.message });
+        }
+    });
 }

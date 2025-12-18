@@ -29,7 +29,7 @@ const getQuickActions = (appId: string): { label: string; query: string }[] => {
         { label: 'Default port', query: `What port does ${appId} use?` },
         { label: 'Common issues', query: `What are common issues with ${appId}?` },
     ]
-    
+
     const appSpecific: Record<string, { label: string; query: string }[]> = {
         plex: [
             { label: 'Add library', query: 'How do I add a media library in Plex?' },
@@ -64,14 +64,14 @@ const getQuickActions = (appId: string): { label: string; query: string }[] => {
             { label: 'Auto tagging', query: 'How does AI tagging work in PhotoPrism?' },
         ],
     }
-    
+
     return [...common, ...(appSpecific[appId] || [])]
 }
 
 // App display names
 const APP_NAMES: Record<string, string> = {
     plex: 'Plex',
-    jellyfin: 'Jellyfin', 
+    jellyfin: 'Jellyfin',
     emby: 'Emby',
     arr: '*Arr Stack',
     overseerr: 'Overseerr',
@@ -89,9 +89,9 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
     const [error, setError] = useState<string | null>(null)
     const [copiedId, setCopiedId] = useState<number | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    
+
     const quickActions = getQuickActions(currentAppId)
-    
+
     // Open panel when forceOpen is toggled on from parent
     useEffect(() => {
         if (forceOpen) {
@@ -109,7 +109,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
             console.error('Failed to copy:', err)
         }
     }
-    
+
     // Scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -133,10 +133,10 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                 buildControlServerUrl('/api/assistant'),
                 '/.netlify/functions/assistant'
             ]
-            
+
             let response: Response | null = null
             let lastError: Error | null = null
-            
+
             for (const endpoint of endpoints) {
                 try {
                     response = await fetch(endpoint, {
@@ -148,7 +148,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                             history: messages.slice(-10),
                         }),
                     })
-                    
+
                     if (response.ok) break
                 } catch (e) {
                     lastError = e as Error
@@ -164,7 +164,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
             if (!text) {
                 throw new Error('Empty response from assistant')
             }
-            
+
             const data: AssistantResponse = JSON.parse(text)
 
             if (data.error) {
@@ -212,7 +212,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)]">
+        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-6rem)]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -260,7 +260,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                             <Bot className="w-8 h-8 text-purple-400/50 mx-auto mb-2" />
                             <p className="text-sm text-muted-foreground">How can I help with {APP_NAMES[currentAppId] || 'your media stack'}?</p>
                         </div>
-                        
+
                         {/* Quick Actions */}
                         <div className="space-y-2">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
@@ -295,16 +295,15 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                             </div>
                         )}
                         <div
-                            className={`max-w-[80%] rounded-xl text-sm ${
-                                msg.role === 'user'
+                            className={`max-w-[80%] rounded-xl text-sm ${msg.role === 'user'
                                     ? 'bg-purple-600 text-white px-3 py-2'
                                     : 'bg-muted/60 text-foreground border border-border'
-                            }`}
+                                }`}
                         >
                             {msg.role === 'assistant' ? (
                                 <div className="group">
                                     <p className="whitespace-pre-wrap px-3 py-2">{msg.content}</p>
-                                    
+
                                     {/* Render checklist if present */}
                                     {msg.checklist && msg.checklist.length > 0 && (
                                         <div className="mx-3 mb-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -321,7 +320,7 @@ export function DocsAssistantPanel({ currentAppId, onSwitchApp, forceOpen }: Doc
                                             </ul>
                                         </div>
                                     )}
-                                    
+
                                     <div className="flex items-center gap-1 px-2 pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => copyToClipboard(msg.content, i)}

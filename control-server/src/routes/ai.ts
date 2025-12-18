@@ -7,6 +7,7 @@ import path from 'path';
 import { AiChatRequest } from '../types/index.js';
 import * as registryService from '../services/registryService.js';
 import * as docService from '../services/docService.js';
+import * as arrService from '../services/arrService.js';
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
@@ -210,14 +211,15 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 });
 
                 if (!response.ok) {
-                    const status = response.status;
-                    const { httpStatus, payload } = openAiErrorPayload(status, 'Voice agent failed');
-                    fastify.log.warn({ status }, 'Voice agent OpenAI error');
-                    return reply.status(httpStatus).send(payload);
+                    fastify.log.warn({ status: response.status }, 'Voice agent OpenAI error; returning fallback');
+                    return {
+                        agentResponse: getFallbackResponse(agent.id, transcript),
+                        plan,
+                    };
                 }
 
                 const data: any = await response.json();
-                const agentResponse = data.choices?.[0]?.message?.content || getFallbackResponse('setup', transcript);
+                const agentResponse = data.choices?.[0]?.message?.content || getFallbackResponse(agent.id, transcript);
 
                 return {
                     agentResponse,
@@ -549,6 +551,17 @@ Return ONLY a JSON object with the following structure:
                                 required: ["action"]
                             }
                         }
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "bootstrap_arr",
+                            description: "Automatically extract API keys from running *arr containers (Sonarr, Radarr, Prowlarr, Readarr, Lidarr) and save them to .env",
+                            parameters: {
+                                type: "object",
+                                properties: {}
+                            }
+                        }
                     }
                 ];
 
@@ -776,6 +789,43 @@ Return ONLY a JSON object with the following structure:
                             answer = secondData.choices?.[0]?.message?.content;
                         } catch (err: any) {
                             answer = `Doc management failed: ${err.message}`;
+                        }
+                    } else if (toolCall.function.name === 'bootstrap_arr') {
+                        fastify.log.info('AI bootstrapping *arr keys');
+                        toolUsed = { command: 'bootstrap-arr-keys', type: 'setup' };
+
+                        try {
+                            const results = await arrService.bootstrapArrKeys();
+                            const count = Object.keys(results).length;
+                            const resultContent = count > 0
+                                ? `Successfully extracted ${count} keys: ${Object.keys(results).join(', ')}`
+                                : "No API keys could be extracted. Make sure the containers are running and initialized (config.xml must exist).";
+
+                            messages.push(messageData);
+                            messages.push({
+                                role: "tool",
+                                tool_call_id: toolCall.id,
+                                content: resultContent
+                            });
+
+                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${effectiveApiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: OPENAI_MODEL,
+                                    messages,
+                                    max_tokens: 1000,
+                                    temperature: 0.7
+                                })
+                            });
+
+                            const secondData: any = await secondResponse.json();
+                            answer = secondData.choices?.[0]?.message?.content;
+                        } catch (err: any) {
+                            answer = `Bootstrap failed: ${err.message}`;
                         }
                     }
                 }

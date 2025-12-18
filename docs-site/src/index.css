@@ -288,7 +288,28 @@
 }
 
 .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+    /* Only pulse if user doesn't prefer reduced motion */
+    @media (prefers-reduced-motion: no-preference) {
+        animation: pulse-glow 3s ease-in-out infinite;
+    }
+}
+
+/* Toggle pulse intensity or presence via color scheme if desired */
+@media (prefers-color-scheme: light) {
+    .animate-pulse-glow {
+        animation-duration: 4s; /* Slower, subtler pulse in light mode */
+        opacity: 0.8;
+    }
+}
+
+/* Premium Drop Shadow Animation */
+.hover-drop-glow {
+    @apply transition-all duration-300;
+}
+
+.hover-drop-glow:hover {
+    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+    transform: translateY(-2px);
 }
 
 .animate-slide-in-right {

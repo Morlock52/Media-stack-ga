@@ -282,7 +282,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                        className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-4rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-purple-600/10 to-pink-600/10">
@@ -331,8 +331,8 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     <button
                                         onClick={() => setSelectedAgent(null)}
                                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${!selectedAgent
-                                                ? 'bg-muted/60 text-foreground'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                                            ? 'bg-muted/60 text-foreground'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                                             }`}
                                     >
                                         <HelpCircle className="w-3.5 h-3.5" />
@@ -343,8 +343,8 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                             key={agent.id}
                                             onClick={() => setSelectedAgent(agent.id)}
                                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${selectedAgent === agent.id
-                                                    ? `bg-gradient-to-r ${AGENT_COLORS[agent.id] || AGENT_COLORS.general} text-white`
-                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                                                ? `bg-gradient-to-r ${AGENT_COLORS[agent.id] || AGENT_COLORS.general} text-white`
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                                                 }`}
                                             title={agent.description}
                                         >
@@ -414,8 +414,8 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     >
                                         {msg.role === 'assistant' && (
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0 ${msg.agent?.id
-                                                    ? `bg-gradient-to-r ${AGENT_COLORS[msg.agent.id] || AGENT_COLORS.general}`
-                                                    : 'bg-gray-600'
+                                                ? `bg-gradient-to-r ${AGENT_COLORS[msg.agent.id] || AGENT_COLORS.general}`
+                                                : 'bg-gray-600'
                                                 }`}>
                                                 {msg.agent?.icon || '🤖'}
                                             </div>
@@ -428,8 +428,8 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                                 </p>
                                             )}
                                             <div className={`px-3 py-2 rounded-2xl text-sm ${msg.role === 'user'
-                                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
-                                                    : 'bg-muted/60 text-foreground rounded-bl-md'
+                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
+                                                : 'bg-muted/60 text-foreground rounded-bl-md'
                                                 }`}>
                                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                                             </div>

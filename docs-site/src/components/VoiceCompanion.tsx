@@ -339,26 +339,26 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
     speechRecognitionRef.current = recognition
   }, [getSpeechSupportError, stopRecognition])
 
-	  const startRecognition = useCallback(() => {
-	    if (isRecordingRef.current) return
-	    if (!speechRecognitionRef.current) {
-	      initializeSpeechRecognition()
-	    }
+  const startRecognition = useCallback(() => {
+    if (isRecordingRef.current) return
+    if (!speechRecognitionRef.current) {
+      initializeSpeechRecognition()
+    }
 
     if (!speechRecognitionRef.current) {
       const supportError = getSpeechSupportError()
       setError(supportError || 'Voice recognition is not available right now. Please use text input.')
       return
-	    }
-	
-	    try {
-	      setHasUserInteracted(true)
-	      setError(null)
-	      setStatus('listening')
-	      setPartialTranscript('')
-	      setIsRecording(true)
-	      isRecordingRef.current = true
-	      speechRecognitionRef.current.start()
+    }
+
+    try {
+      setHasUserInteracted(true)
+      setError(null)
+      setStatus('listening')
+      setPartialTranscript('')
+      setIsRecording(true)
+      isRecordingRef.current = true
+      speechRecognitionRef.current.start()
     } catch (err) {
       console.error('Failed to start speech recognition:', err)
       isRecordingRef.current = false
@@ -367,9 +367,9 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
       setError('Microphone initialization failed. Please try again or use text input.')
 
       // Force re-init
-	      initializeSpeechRecognition()
-	    }
-	  }, [getSpeechSupportError, initializeSpeechRecognition])
+      initializeSpeechRecognition()
+    }
+  }, [getSpeechSupportError, initializeSpeechRecognition])
 
   useEffect(() => {
     initializeSpeechRecognition()
@@ -400,18 +400,18 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
     stopRecognition()
   }
 
-	  const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
-	    try {
-	      setStatus('thinking')
-	      const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
-	        method: 'POST',
-	        headers: { 'Content-Type': 'application/json' },
-	        body: JSON.stringify({
-	          transcript: content,
-	          history: updatedHistory,
-	          openaiKey: openaiKey || undefined,
-	        }),
-	      })
+  const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
+    try {
+      setStatus('thinking')
+      const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: content,
+          history: updatedHistory,
+          openaiKey: openaiKey || undefined,
+        }),
+      })
 
       if (!response.ok) {
         throw new Error('Voice agent failed to respond')
@@ -441,11 +441,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
         // Or re-enable if manual input wasn't used?
         setStatus('idle')
       }
-	    } catch (err) {
-	      setError(err instanceof Error ? err.message : 'Unexpected error')
-	      setStatus('idle')
-	    }
-	  }, [addTranscriptLine, openaiKey, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected error')
+      setStatus('idle')
+    }
+  }, [addTranscriptLine, openaiKey, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
 
   useEffect(() => {
     processTranscriptRef.current = (userContent: string) => {
@@ -487,11 +487,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-4xl max-h-[calc(100dvh-4rem)] bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
           >
             <div className="flex flex-col md:flex-row h-full">
               {/* Left Panel - Status & Controls */}
-              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/10 to-pink-600/5 border-b md:border-b-0 md:border-r border-border flex flex-col">
+              <div className="md:w-1/2 p-8 bg-gradient-to-br from-purple-600/10 to-pink-600/5 border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 overflow-y-auto">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center">
                     <Mic className="w-6 h-6 text-foreground" />
@@ -502,41 +502,41 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
                   </div>
                 </div>
 
-	                <div className="space-y-2 text-sm text-muted-foreground flex-1">
-	                  <p>
-	                    I\'ll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I\'ll provide a summary before applying changes.
-	                  </p>
-	                  <ul className="space-y-1 text-muted-foreground text-xs mt-4">
-	                    <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
-	                    <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
-	                    <li>• You can speak or type your answers below.</li>
-	                  </ul>
-	                </div>
+                <div className="space-y-2 text-sm text-muted-foreground flex-1">
+                  <p>
+                    I\'ll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I\'ll provide a summary before applying changes.
+                  </p>
+                  <ul className="space-y-1 text-muted-foreground text-xs mt-4">
+                    <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
+                    <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
+                    <li>• You can speak or type your answers below.</li>
+                  </ul>
+                </div>
 
-	                <div className="mt-4 p-3 rounded-2xl bg-muted/30 border border-border">
-	                  <div className="flex items-center justify-between gap-3">
-	                    <p className="text-xs text-muted-foreground">Voice output</p>
-	                    <select
-	                      value={voiceOutput}
-	                      onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'browser' | 'off')}
-	                      className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-purple-500/50"
-	                      aria-label="Voice output mode"
-	                    >
-	                      <option value="off">Off</option>
-	                      <option value="browser">Browser</option>
-	                      <option value="openai" disabled={!openaiKey}>OpenAI (HQ)</option>
-	                    </select>
-	                  </div>
-	                  {!openaiKey && (
-	                    <p className="mt-2 text-[11px] text-muted-foreground">
-	                      Add an OpenAI key in Advanced settings to enable higher quality voice.
-	                    </p>
-	                  )}
-	                </div>
+                <div className="mt-4 p-3 rounded-2xl bg-muted/30 border border-border">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">Voice output</p>
+                    <select
+                      value={voiceOutput}
+                      onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'browser' | 'off')}
+                      className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-purple-500/50"
+                      aria-label="Voice output mode"
+                    >
+                      <option value="off">Off</option>
+                      <option value="browser">Browser</option>
+                      <option value="openai" disabled={!openaiKey}>OpenAI (HQ)</option>
+                    </select>
+                  </div>
+                  {!openaiKey && (
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Add an OpenAI key in Advanced settings to enable higher quality voice.
+                    </p>
+                  )}
+                </div>
 
-	                <div className="mt-6 p-4 rounded-2xl bg-muted/40 border border-border">
-	                  <p className="text-xs text-muted-foreground mb-1">Status</p>
-	                  <p className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <div className="mt-6 p-4 rounded-2xl bg-muted/40 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <p className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <Loader2 className={`w-4 h-4 ${status === 'idle' ? 'text-muted-foreground' : 'animate-spin text-foreground'}`} />
                     {statusMessages[status]}
                   </p>
@@ -586,12 +586,12 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
               </div>
 
               {/* Right Panel - Transcript & Input */}
-              <div className="md:w-1/2 flex flex-col bg-card">
+              <div className="md:w-1/2 flex flex-col bg-card min-h-0">
                 <div className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">Transcript</p>
                   <div className="space-y-3 text-sm text-muted-foreground">
                     {transcript.map((line, index) => (
-                      <div key={index} className={`p-3 rounded-2xl border ${line.startsWith('🤖') ? 'bg-purple-500/10 border-purple-500/20 mr-8' : 'bg-muted/60 border-border ml-8'}`}> 
+                      <div key={index} className={`p-3 rounded-2xl border ${line.startsWith('🤖') ? 'bg-purple-500/10 border-purple-500/20 mr-8' : 'bg-muted/60 border-border ml-8'}`}>
                         {line}
                       </div>
                     ))}

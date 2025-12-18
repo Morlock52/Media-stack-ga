@@ -2,6 +2,8 @@
 
 | Application | Docker Image | Version Tag | Description |
 | :--- | :--- | :--- | :--- |
+| **Control Server** | `local/control-server` | `latest` | Orchestration & AI Backend |
+| **Docs Site** | `local/docs-site` | `latest` | Interactive Setup & Guides |
 | **Authelia** | `authelia/authelia` | `latest` | Authentication & Authorization |
 | **Bazarr** | `lscr.io/linuxserver/bazarr` | `latest` | Subtitle Management |
 | **Cloudflared** | `cloudflare/cloudflared` | `latest` | Cloudflare Tunnel Client |

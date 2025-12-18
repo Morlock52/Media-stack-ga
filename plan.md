@@ -91,6 +91,7 @@ Enhance automation, monitoring, and usability:
 1. **Interactive Setup Script**: `setup.sh` prompts for domain/passwords with sensible defaults.
 2. **Watchtower**: automated container updates.
 3. **FlareSolverr**: bypass Cloudflare challenges for Prowlarr.
+4. **Arr Key Bootstrap**: One-click API key extraction via `bootstrap_arr` tool.
 
 ### 📊  Monitoring & Dashboards
 4. **Dozzle**: real‑time logs in the browser.
@@ -117,7 +118,9 @@ The following features have been successfully integrated into the stack:
 5.  **Voice Companion**: AI-driven voice setup assistant.
 6.  **Dr. Debug**: Context-aware error analysis and suggestions.
 7.  **Web Wizard**: Interactive, React-based setup with Bento grid dashboard.
-8.  **Dockerized Control Plane**: Run the Wizard and Control Server entirely in Docker (`docker-compose.wizard.yml`).
+8.  **Arr-Stack Bootstrap**: Automated extraction and sync of API keys from running containers.
+9.  **Premium UI**: Glassmorphism, intelligent pulsing animations, and SVG data export.
+10. **Dockerized Control Plane**: Run the Wizard and Control Server entirely in Docker (`docker-compose.wizard.yml`).
 
 ## 🚀 Future Roadmap: 20 Functional Updates
 

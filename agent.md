@@ -38,12 +38,14 @@ The frontend builds control-server URLs using:
 - `VITE_CONTROL_SERVER_URL` (if set)
 - else (when running on localhost) defaults to `http://localhost:3001`
 
-## OpenAI API key behavior
+### AI & Automation Tools
+- `bootstrap_arr`: Automatically extract API keys from running containers via `docker exec`.
+- `manage_app`: Add/remove apps from the registry.
+- `analyze_logs`: Real-time log analysis.
 
-- The UI stores `openaiApiKey` in Zustand (persisted in browser localStorage).
-- When `control-server` is running, the UI can also persist/remove the key via:
-  - `POST /api/settings/openai-key`
-  - `DELETE /api/settings/openai-key`
+## UI Features
+- **Premium UI**: Glassmorphism and intelligent animations (respects reduced motion).
+- **SVG Export**: Each configuration row can be exported as an SVG visual asset.
 
 ## Security
 

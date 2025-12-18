@@ -11,7 +11,7 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react'
-import { buildControlServerUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServer } from '../utils/controlServer'
 import { useSetupStore } from '../store/setupStore'
 import { Button } from '../components/ui/button'
 
@@ -39,6 +39,7 @@ export function SettingsPage() {
   const [serverOnline, setServerOnline] = useState<boolean | null>(null)
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<'idle' | 'checking' | 'saving' | 'removing'>('idle')
+  const [isBootstrapping, setIsBootstrapping] = useState(false)
   const [toast, setToast] = useState<ToastState>(null)
 
   useEffect(() => {
@@ -143,6 +144,31 @@ export function SettingsPage() {
     } finally {
       setPendingAction('idle')
       recordSync()
+    }
+  }
+
+  const handleBootstrapArr = async () => {
+    if (!serverOnline) {
+      setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
+      return
+    }
+
+    setIsBootstrapping(true)
+    try {
+      const data = await controlServer.bootstrapArr()
+      if (data.success) {
+        const count = Object.keys(data.keys).length
+        setToastMessage({
+          type: 'success',
+          text: count > 0
+            ? `Successfully captured ${count} API keys (${Object.keys(data.keys).join(', ')}).`
+            : 'No keys were found. Make sure your containers are running and initialized.'
+        })
+      }
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: `Bootstrap failed: ${error.message}` })
+    } finally {
+      setIsBootstrapping(false)
     }
   }
 
@@ -316,10 +342,10 @@ export function SettingsPage() {
             {toast && (
               <div
                 className={`rounded-2xl border px-4 py-3 text-sm flex items-center gap-2 ${toast.type === 'success'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200'
-                    : toast.type === 'error'
-                      ? 'bg-red-500/10 border-red-500/20 text-red-200'
-                      : 'bg-amber-500/10 border-amber-500/20 text-amber-100'
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200'
+                  : toast.type === 'error'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-200'
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-100'
                   }`}
               >
                 {toast.type === 'success' ? (
@@ -332,6 +358,37 @@ export function SettingsPage() {
                 {toast.text}
               </div>
             )}
+          </div>
+          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <RefreshCw className="w-6 h-6 text-indigo-400" />
+                Arr-Stack Automation
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Automatically wire your stack. We can scan your running containers (Sonarr, Radarr, Prowlarr, etc.)
+                to extract their API keys directly from their configuration files and sync them to your environment.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-border bg-card/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Capture API Keys</p>
+                <p className="text-xs text-muted-foreground">Extracts keys from config.xml inside running containers</p>
+              </div>
+              <Button
+                onClick={handleBootstrapArr}
+                className="gap-2 bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 px-6"
+                disabled={isBootstrapping || !serverOnline}
+              >
+                {isBootstrapping ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                {isBootstrapping ? 'Scanning...' : 'Bootstrap All Keys'}
+              </Button>
+            </div>
           </div>
 
           <div className="text-xs text-muted-foreground text-center">
