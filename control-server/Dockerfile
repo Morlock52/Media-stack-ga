@@ -30,8 +30,6 @@ RUN npm install --omit=dev
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
-# Copy template files (must be present in build context)
-COPY docker-compose.yml ./
 
 EXPOSE 3001
 

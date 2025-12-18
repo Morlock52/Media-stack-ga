@@ -137,8 +137,8 @@ function App() {
       <section className="py-16 border-t border-border">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-2xl mx-auto">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
-              <BookOpen className="w-8 h-8 text-purple-400" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/50 border border-purple-500/20 mb-6 p-1 shadow-lg shadow-purple-500/10 overflow-hidden">
+              <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
               Need help setting up your apps?

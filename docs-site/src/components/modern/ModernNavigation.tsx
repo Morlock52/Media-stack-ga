@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Command, Search, Moon, Sun, Settings } from 'lucide-react'
+import { Menu, X, Search, Moon, Sun, Settings } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
 
@@ -67,10 +67,10 @@ export function ModernNavigation() {
               className="flex items-center gap-2 cursor-pointer"
               title="Scroll to top"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
-                <Command className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-background/50 border border-border flex items-center justify-center p-0.5 shadow-lg shadow-purple-500/10">
+                <img src="/media-stack-logo.png" alt="Media Stack" className="w-full h-full object-contain" />
               </div>
-              <span className="font-bold text-xl text-foreground">MediaStack</span>
+              <span className="font-bold text-xl text-foreground tracking-tight">MediaStack</span>
             </motion.div>
 
             {/* Desktop navigation */}

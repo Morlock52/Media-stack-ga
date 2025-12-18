@@ -159,12 +159,12 @@ export function SettingsPage() {
       <div className="fixed top-0 left-0 right-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 rounded-2xl bg-background/50 border border-purple-500/30 flex items-center justify-center p-0.5 overflow-hidden">
+              <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Settings</p>
-              <h1 className="text-lg font-semibold">API & Integrations</h1>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Settings</p>
+              <h1 className="text-lg font-bold leading-tight">API & Integrations</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -315,13 +315,12 @@ export function SettingsPage() {
 
             {toast && (
               <div
-                className={`rounded-2xl border px-4 py-3 text-sm flex items-center gap-2 ${
-                  toast.type === 'success'
+                className={`rounded-2xl border px-4 py-3 text-sm flex items-center gap-2 ${toast.type === 'success'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200'
                     : toast.type === 'error'
-                    ? 'bg-red-500/10 border-red-500/20 text-red-200'
-                    : 'bg-amber-500/10 border-amber-500/20 text-amber-100'
-                }`}
+                      ? 'bg-red-500/10 border-red-500/20 text-red-200'
+                      : 'bg-amber-500/10 border-amber-500/20 text-amber-100'
+                  }`}
               >
                 {toast.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4" />

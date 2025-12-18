@@ -27,8 +27,17 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Badges */}
-          <div className="flex flex-col items-center gap-3 mb-8">
+          {/* Badges and Logo */}
+          <div className="flex flex-col items-center gap-6 mb-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, type: 'spring' }}
+              className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-background/50 border border-border p-2 shadow-2xl shadow-purple-500/20 backdrop-blur-sm overflow-hidden"
+            >
+              <img src="/media-stack-logo.png" alt="Media Stack Logo" className="w-full h-full object-contain" />
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}

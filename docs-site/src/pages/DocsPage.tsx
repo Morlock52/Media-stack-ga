@@ -30,7 +30,7 @@ import {
 import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
-import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
+import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
@@ -53,12 +53,12 @@ export function DocsPage() {
             <header className="fixed top-0 left-0 right-0 z-40 glass border-b border-border/50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-purple-400" />
+                        <div className="w-10 h-10 rounded-xl bg-background/50 border border-purple-500/30 flex items-center justify-center p-0.5 overflow-hidden">
+                            <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-foreground text-lg">Media Stack Docs</h1>
-                            <p className="text-xs text-muted-foreground">App guides & tutorials</p>
+                            <h1 className="font-bold text-foreground text-lg leading-tight">Media Stack Docs</h1>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">App Guides & Tutorials</p>
                         </div>
                     </div>
                     <Button variant="glass" asChild className="gap-2">

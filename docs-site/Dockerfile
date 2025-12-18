@@ -8,10 +8,12 @@ WORKDIR /app
  ENV VITE_OPENAI_MODEL=${VITE_OPENAI_MODEL}
 
 # Copy package info first to leverage cache
-COPY package*.json ./
-RUN npm ci
+COPY docs-site/package*.json ./
+RUN npm install
 
-COPY . .
+COPY docs-site/ .
+COPY docker-compose.yml ./docker-compose.yml
+COPY docker-compose.yml /docker-compose.yml
 RUN npm run build
 
 FROM nginx:alpine
@@ -20,7 +22,7 @@ FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docs-site/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Add a healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
