@@ -30,7 +30,50 @@
 
 </div>
 
-![Hero Section](docs/images/hero.png)
+<p align="center">
+  <img src="docs/images/hero.png" alt="Media Stack Wizard — Home" width="1100" />
+</p>
+
+<p align="center">
+  <em>Current UI screenshots are generated via Playwright. Rebuild them with:</em>
+  <br />
+  <code>cd docs-site &amp;&amp; UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1</code>
+</p>
+
+## ✨ Screenshots (current)
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="docs/images/app/03-wizard-tools-desktop.png" alt="Wizard tools dialog" width="520" />
+      <br /><sub><b>Tools</b> — templates, import/export</sub>
+    </td>
+    <td align="center">
+      <img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration + storage planner" width="520" />
+      <br /><sub><b>Service Config</b> — storage planner + per-app settings</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/app/07-wizard-review-desktop.png" alt="Review and generate outputs" width="520" />
+      <br /><sub><b>Review</b> — download configs, share, deploy</sub>
+    </td>
+    <td align="center">
+      <img src="docs/images/app/12-settings-desktop.png" alt="Settings page (API and integrations)" width="520" />
+      <br /><sub><b>Settings</b> — API key + Arr automation</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/app/10-docs-desktop.png" alt="Docs app guides" width="520" />
+      <br /><sub><b>Docs</b> — click-by-click guides</sub>
+    </td>
+    <td align="center">
+      <img src="docs/images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="520" />
+      <br /><sub><b>Remote Deploy</b> — SSH-based deploy flow</sub>
+    </td>
+  </tr>
+</table>
 
 ## 🚀 Key Features
 
@@ -38,11 +81,16 @@
 -   **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
 -   **Premium UI & Animations**: Rich visuals with glassmorphism, responsive pulsing glows, and SVG data export.
 
-![SVG Export Demo](docs/images/svg_export_demo.png)
+<p align="center">
+  <img src="docs/images/app/06-service-config-desktop.png" alt="Storage planner and SVG export controls" width="1100" />
+  <br /><sub>Storage planner with SVG export controls</sub>
+</p>
 
 -   **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
 
-![Setup Wizard](docs/images/wizard.png)
+<p align="center">
+  <img src="docs/images/wizard.png" alt="Setup wizard review and generate" width="1100" />
+</p>
 
 ## 🤖 Agentic System
 Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
@@ -53,9 +101,13 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 - **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
 - **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
 
-![Voice Companion Demo](docs/images/voice_companion_demo.png)
+<p align="center">
+  <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
+</p>
 
-![Arr-Stack Automation](docs/images/settings_automation.png)
+<p align="center">
+  <img src="docs/images/settings_automation.png" alt="Arr-stack automation in settings" width="1100" />
+</p>
 
 
 ### Using the AI Assistant
@@ -66,7 +118,9 @@ You can interact with the AI Assistant to perform complex tasks:
 - *"Validate my updated .env file"*
 - *"Bootstrap my arr stack API keys"*
 
-![AI Assistant Demo](docs/images/ai_assistant_demo.png)
+<p align="center">
+  <img src="docs/images/ai_assistant_demo.png" alt="AI assistant chat" width="1100" />
+</p>
 
 
 ---
@@ -75,7 +129,9 @@ You can interact with the AI Assistant to perform complex tasks:
 
 Media Stack includes a comprehensive documentation system that goes beyond static files. The documentation is interactive and adapts to your needs.
 
-![Documentation](docs/images/docs.png)
+<p align="center">
+  <img src="docs/images/docs.png" alt="Docs page" width="1100" />
+</p>
 
 ---
 
@@ -354,4 +410,3 @@ These links back up the assumptions used in the diagrams & planning chart:
 - Plex hardware-accelerated streaming requires Plex Pass: https://support.plex.tv/articles/115002178853-using-hardware-accelerated-streaming/
 - Plex server sizing note (RAM): https://support.plex.tv/articles/200375666-plex-media-server-requirements/
 - ITU press release (HEVC ~half the bitrate vs AVC claim): https://www.itu.int/net/pressoffice/press_releases/2013/01.aspx
-
