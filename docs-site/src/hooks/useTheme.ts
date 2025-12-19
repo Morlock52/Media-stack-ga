@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 
-type Theme = 'dark' | 'light' | 'system'
+type Theme = 'dark' | 'light'
 
 export function useTheme() {
-    const [theme, setTheme] = useState<Theme>('system')
+    const [theme, setTheme] = useState<Theme>('dark')
     const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark')
 
     useEffect(() => {
@@ -15,20 +15,12 @@ export function useTheme() {
     }, [])
 
     useEffect(() => {
-        // 2. Resolve theme (handle 'system')
+        // 2. Apply theme to document
         const root = window.document.documentElement
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
         const applyTheme = () => {
-            let targetTheme = theme
-
-            if (theme === 'system') {
-                targetTheme = mediaQuery.matches ? 'dark' : 'light'
-            }
-
-            setResolvedTheme(targetTheme as 'dark' | 'light')
-
-            if (targetTheme === 'dark') {
+            setResolvedTheme(theme)
+            if (theme === 'dark') {
                 root.classList.add('dark')
                 root.classList.remove('light')
             } else {
@@ -38,14 +30,6 @@ export function useTheme() {
         }
 
         applyTheme()
-
-        // Listen for system changes if mode is system
-        const listener = () => {
-            if (theme === 'system') applyTheme()
-        }
-
-        mediaQuery.addEventListener('change', listener)
-        return () => mediaQuery.removeEventListener('change', listener)
     }, [theme])
 
     const toggleTheme = () => {

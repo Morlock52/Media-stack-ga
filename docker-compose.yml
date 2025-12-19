@@ -427,8 +427,8 @@ services:
       - "homepage.description=Torrents"
       - "homepage.widget.type=qbittorrent"
       - "homepage.widget.url=http://qbittorrent:8080"
-      - "homepage.widget.username=admin"
-      - "homepage.widget.password=adminadmin"
+      - "homepage.widget.username=${QBITTORRENT_WIDGET_USERNAME}"
+      - "homepage.widget.password=${QBITTORRENT_WIDGET_PASSWORD}"
 
   # ===========================================
   # GLUETUN - VPN Client

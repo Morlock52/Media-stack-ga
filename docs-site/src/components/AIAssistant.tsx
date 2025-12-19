@@ -282,7 +282,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-4rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                        className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-purple-600/10 to-pink-600/10">

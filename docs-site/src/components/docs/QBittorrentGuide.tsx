@@ -27,9 +27,11 @@ export function QBittorrentGuide() {
                             Open WebUI at <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:8080</a>
                         </li>
                         <li>
-                            <strong>Login:</strong> Default user is <code>admin</code>, password <code>adminadmin</code>.
+                            <strong>Login:</strong> Default user is <code>admin</code>. On first run, LinuxServer qBittorrent prints a temporary/random password in the container logs.
                             <br/>
-                            <span className="text-red-400 text-xs">⚠️ Change this immediately in Tools → Options → Web UI.</span>
+                            <span className="text-gray-400 text-xs">
+                                Find it with <code>docker logs qbittorrent 2&gt;&amp;1 | grep -i password</code>, then change it in Tools → Options → Web UI.
+                            </span>
                         </li>
                         <li>
                             <strong>Verify VPN:</strong> 

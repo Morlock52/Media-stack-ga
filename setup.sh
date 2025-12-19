@@ -119,7 +119,13 @@ PUID=$(gum input --placeholder "PUID" --value "$CURRENT_UID" --header "User ID (
 PGID=$(gum input --placeholder "PGID" --value "$CURRENT_GID" --header "Group ID (PGID)")
 
 # Password
-MASTER_PASSWORD=$(gum input --password --placeholder "Master Password" --value "Morlock52$" --header "Master Password for all services")
+while true; do
+    MASTER_PASSWORD=$(gum input --password --placeholder "Enter a strong master password" --value "" --header "Master Password for all services")
+    if [[ -n "$MASTER_PASSWORD" ]]; then
+        break
+    fi
+    gum style --foreground 196 "❌ Master Password cannot be empty."
+done
 
 # Confirm
 gum style --foreground 99 "Review Configuration:"

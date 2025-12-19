@@ -14,6 +14,7 @@ import {
 import { buildControlServerUrl, controlServer } from '../utils/controlServer'
 import { useSetupStore } from '../store/setupStore'
 import { Button } from '../components/ui/button'
+import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 
 type ToastState = { type: 'success' | 'error' | 'info'; text: string } | null
 
@@ -200,6 +201,10 @@ export function SettingsPage() {
                 Back to wizard
               </Link>
             </Button>
+            <Button variant="glass" asChild className="gap-2 hidden sm:inline-flex">
+              <Link to="/docs">Docs</Link>
+            </Button>
+            <ThemeToggleButton />
           </div>
         </div>
       </div>

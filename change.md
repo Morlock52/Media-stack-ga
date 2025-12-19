@@ -10,7 +10,7 @@
     - Removed unused Nextcloud/Postgres credential placeholders from `.env`
     - Updated `config/authelia/users_database.yml`:
         - Replaced `admin` user with `morlock`
-        - Updated password hash for `Morlock52$`
+        - Updated password hash for the default master password (do not ship real defaults)
 - [x] Updated Authelia configuration
     - Replaced placeholder secrets with generated values
     - Configured `AUTHELIA_SESSION_REDIS_PASSWORD` via environment variable

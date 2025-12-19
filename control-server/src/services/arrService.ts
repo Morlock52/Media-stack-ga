@@ -32,7 +32,7 @@ export const extractArrApiKey = async (containerName: string): Promise<string | 
 
         const key = result.trim();
         return key || null;
-    } catch (error) {
+    } catch {
         // Container might not be running or config.xml not yet initialized
         return null;
     }

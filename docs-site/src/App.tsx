@@ -6,7 +6,7 @@ import { RemoteDeployModal } from './components/RemoteDeployModal'
 import { AIAssistant } from './components/AIAssistant'
 import { useSetupStore } from './store/setupStore'
 import { TopologyMap } from './components/TopologyMap'
-import { Sparkles, Rocket, Shield, BookOpen, Server, Mic } from 'lucide-react'
+import { BookOpen, Server } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Link } from 'react-router-dom'
 
@@ -84,53 +84,6 @@ function App() {
       {/* Setup Wizard - Main Focus */}
       <section id="builder" className="relative">
         <SetupWizard />
-      </section>
-
-      {/* Quick Features */}
-      <section className="py-20 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 mb-4">
-                <Sparkles className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Config</h3>
-              <p className="text-muted-foreground text-sm">
-                Step-by-step wizard guides you through every setting
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 mb-4">
-                <Rocket className="w-8 h-8 text-green-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Production Ready</h3>
-              <p className="text-muted-foreground text-sm">
-                Download complete configs: .env, Authelia, Cloudflare
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4">
-                <Shield className="w-8 h-8 text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Save Progress</h3>
-              <p className="text-muted-foreground text-sm">
-                Auto-saves to localStorage - pick up where you left off
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-500/10 border border-pink-500/20 mb-4">
-                <Mic className="w-8 h-8 text-pink-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Voice Companion</h3>
-              <p className="text-muted-foreground text-sm">
-                Hands-free setup for newbies. Just say "I want a media server."
-              </p>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Docs Call-to-Action */}

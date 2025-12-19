@@ -39,9 +39,15 @@ if [ ! -f .env ]; then
     echo "❌ .env file is missing!"
 else
     echo "✅ .env file exists"
-    # Check for default password
-    if grep -q "Morlock52$" .env; then
-        echo "⚠️  SECURITY WARNING: Default password found in .env!"
+    # Check for common unsafe placeholders
+    if grep -Eq '^DOMAIN=example\.com(\s*)$' .env; then
+        echo "⚠️  SECURITY WARNING: DOMAIN is still set to example.com"
+    fi
+    if grep -Eq '^(CLOUDFLARE_TUNNEL_TOKEN|REDIS_PASSWORD|PHOTOPRISM_ADMIN_PASSWORD)=changeme(\s*)$' .env; then
+        echo "⚠️  SECURITY WARNING: One or more secrets still set to 'changeme'"
+    fi
+    if grep -q "CHANGE_ME_TOKEN" .env; then
+        echo "⚠️  SECURITY WARNING: Placeholder token 'CHANGE_ME_TOKEN' detected"
     fi
 fi
 

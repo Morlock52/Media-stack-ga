@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import {
     ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw,
-    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText
+    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal
 } from 'lucide-react'
 import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
 import { VoiceCompanion, type VoicePlanSummary } from './VoiceCompanion'
@@ -22,7 +22,6 @@ import dockerComposeTemplate from '../../../docker-compose.yml?raw'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
-import { TopRightActions } from './layout/TopRightActions'
 import { Button } from './ui/button'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT } from '../data/storagePlan'
 import { services } from '../data/services'
@@ -32,6 +31,7 @@ import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'
 import { StackSelectionStep } from './wizard/steps/StackSelectionStep'
 import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'
 import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -58,6 +58,7 @@ export function SetupWizard() {
     const [newProfileName, setNewProfileName] = useState('')
     const [showVoiceCompanion, setShowVoiceCompanion] = useState(false)
     const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)
+    const [toolsOpen, setToolsOpen] = useState(false)
 
     // Auto-open voice companion for newbie mode
     useEffect(() => {
@@ -492,7 +493,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                             transition={{ delay: 0.1 }}
                             className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-4"
                         >
-                            Configure Your Media Stack
+                            Setup Wizard
                         </motion.h1>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
@@ -500,7 +501,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                             transition={{ delay: 0.2 }}
                             className="text-lg text-muted-foreground max-w-2xl mx-auto"
                         >
-                            Step-by-step guidance to generate your <code className="px-2 py-1 bg-white/5 rounded text-purple-300">.env</code> and configuration files
+                            Step-by-step guidance to generate your <code className="px-2 py-1 bg-muted/40 rounded text-purple-300">.env</code> and configuration files
                         </motion.p>
 
                         {/* Action Buttons */}
@@ -530,38 +531,73 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                 <User className="w-4 h-4" />
                                 Profiles
                             </Button>
-                            <div className="w-px h-6 bg-border mx-2" />
                             <Button
-                                onClick={handleExport}
+                                onClick={() => setToolsOpen(true)}
                                 variant="glass"
                                 className="text-foreground hover:text-foreground"
-                                title="Export current configuration"
+                                title="Import/export and templates"
                             >
-                                <FileDown className="w-4 h-4" />
-                                Export
+                                <MoreHorizontal className="w-4 h-4" />
+                                Tools
                             </Button>
-                            <Button
-                                onClick={handleImport}
-                                variant="glass"
-                                className="text-muted-foreground hover:text-foreground"
-                                title="Import saved configuration"
-                            >
-                                <FileUp className="w-4 h-4" />
-                                Import
-                            </Button>
-                            <Button
-                                onClick={() => setShowTemplates(!showTemplates)}
-                                variant="outline"
-                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-purple-200"
-                                title="Load a template"
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                Templates
-                            </Button>
-                            <div className="w-px h-6 bg-border mx-2" />
-                            <TopRightActions />
                         </motion.div>
                     </div>
+
+                    {/* Tools Dialog */}
+                    <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
+                        <DialogContent className="max-w-xl">
+                            <DialogHeader>
+                                <DialogTitle>Wizard Tools</DialogTitle>
+                                <DialogDescription>
+                                    Import/export your configuration or start from a curated template.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="grid gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setToolsOpen(false)
+                                        setShowTemplates(true)
+                                    }}
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Browse Templates
+                                </Button>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="justify-start"
+                                        onClick={() => {
+                                            setToolsOpen(false)
+                                            handleExport()
+                                        }}
+                                        title="Export current configuration"
+                                    >
+                                        <FileDown className="w-4 h-4" />
+                                        Export Config
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="justify-start"
+                                        onClick={() => {
+                                            setToolsOpen(false)
+                                            handleImport()
+                                        }}
+                                        title="Import a saved configuration"
+                                    >
+                                        <FileUp className="w-4 h-4" />
+                                        Import Config
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
 
                     {/* Profiles Modal */}
                     <AnimatePresence>
@@ -674,7 +710,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                             >
                                                 {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                             </motion.div>
-                                            <span className={`mt-2 text-xs font-medium hidden md:block ${isActive ? 'text-purple-300' : isComplete ? 'text-green-300' : 'text-gray-500'
+                                            <span className={`mt-2 text-xs font-medium hidden md:block ${isActive ? 'text-purple-300' : isComplete ? 'text-green-300' : 'text-muted-foreground'
                                                 }`}>
                                                 {step.title}
                                             </span>
@@ -767,7 +803,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                     {/* Navigation Buttons */}
                     {currentStep > 0 && (
                         <div className="sticky bottom-4 z-30 mt-8">
-                            <div className="flex justify-between items-center glass-ultra rounded-2xl border border-white/10 px-4 py-3 backdrop-blur">
+                            <div className="flex justify-between items-center glass-ultra rounded-2xl border border-border/60 px-4 py-3 backdrop-blur">
                                 <Button
                                     type="button"
                                     onClick={prevStep}

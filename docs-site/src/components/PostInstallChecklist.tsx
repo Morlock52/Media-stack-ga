@@ -23,7 +23,7 @@ const checklistItems: ChecklistItem[] = [
     {
         id: 'deploy',
         title: 'Deploy Your Stack',
-        description: 'Run the docker-compose command to start all services',
+        description: 'Run the docker compose command to start all services',
         icon: Server,
         estimatedTime: '5-10 min',
         steps: [
@@ -32,7 +32,7 @@ const checklistItems: ChecklistItem[] = [
             'Run the command below to start all services',
             'Wait for all containers to download and start'
         ],
-        command: 'docker compose --profile all up -d'
+        command: 'docker compose up -d'
     },
     {
         id: 'plex-claim',

@@ -2,10 +2,19 @@
 import subprocess
 import sys
 
+def get_compose_cmd():
+    try:
+        probe = subprocess.run(["docker", "compose", "version"], capture_output=True, text=True)
+        if probe.returncode == 0:
+            return ["docker", "compose"]
+    except Exception:
+        pass
+    return ["docker-compose"]
+
 def analyze_logs(container_name="all"):
     print(f"🧠 Analyzing logs for: {container_name}...")
     
-    cmd = ["docker-compose", "logs", "--tail=100"]
+    cmd = get_compose_cmd() + ["logs", "--tail=100"]
     if container_name != "all":
         cmd.append(container_name)
         
@@ -31,7 +40,8 @@ def analyze_logs(container_name="all"):
         for f in unique_findings:
             print(f" - {f.strip()}")
             
-        print("\n💡 Recommendation: Check the lines above. Use 'docker-compose logs <service>' for more details.")
+        compose_cmd = "docker compose" if cmd[:2] == ["docker", "compose"] else "docker-compose"
+        print(f"\n💡 Recommendation: Check the lines above. Use '{compose_cmd} logs <service>' for more details.")
     else:
         print("✅ No obvious errors found in recent logs.")
 

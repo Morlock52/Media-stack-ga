@@ -112,4 +112,4 @@ EOF
 echo "🎉 Setup complete!"
 echo "Next steps:"
 echo "1. Edit .env and set CLOUDFLARE_TUNNEL_TOKEN"
-echo "2. Run 'docker-compose up -d' to start the services."
+echo "2. Run 'docker compose up -d' to start the services."

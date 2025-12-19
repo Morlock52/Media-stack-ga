@@ -1,28 +1,27 @@
-import * as Icons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-const {
-    Film,
-    Tv,
+import {
     Activity,
-    Search,
-    Download,
-    Shield,
-    Home,
-    Container,
-    FileVideo,
     Bell,
-    Languages,
-    ShieldCheck,
-    Layers,
-    Utensils,
     BookOpen,
+    Bug,
     Camera,
     Cloud,
-    Terminal,
-    Bug,
+    Container,
     Database,
+    Download,
+    FileVideo,
+    Film,
+    Home,
+    Languages,
+    Layers,
     RefreshCw,
-} = Icons
+    Search,
+    Shield,
+    ShieldCheck,
+    Terminal,
+    Tv,
+    Utensils,
+} from 'lucide-react'
 
 export const ICON_MAP: Record<string, LucideIcon> = {
     Film, Tv, Activity, Search, Download, Shield, Home, Container,

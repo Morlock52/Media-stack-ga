@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-  base: './',
+  base: '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -19,11 +19,10 @@ export default defineConfig(() => ({
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: {
-      output: {
+          output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           ui: ['framer-motion', 'lucide-react', 'clsx'],
-          markdown: ['react-markdown', 'react-syntax-highlighter'],
           forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
           state: ['zustand'],
         },

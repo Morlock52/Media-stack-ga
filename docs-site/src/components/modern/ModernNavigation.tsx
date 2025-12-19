@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Search, Moon, Sun, Settings } from 'lucide-react'
+import { Menu, X, Moon, Sun, Settings, BookOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
+
+const NAV_ITEMS = [
+  { label: 'Home', href: '#hero', shortcut: '1' },
+  { label: 'Setup Wizard', href: '#builder', shortcut: '2' },
+] as const
 
 export function ModernNavigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -17,35 +22,47 @@ export function ModernNavigation() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const navItems = [
-    { label: 'Setup Wizard', href: '#builder', shortcut: '1' },
-    { label: 'Home', href: '#hero', shortcut: '2' },
-  ]
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-
-
-  const openSearch = () => {
-    // In a real app, open search modal or focus search input
-    console.log('Opening search')
-    // Could trigger command palette
-  }
-
-  const handleNavClick = (href: string) => {
+  const handleNavClick = useCallback((href: string) => {
     if (href.startsWith('#')) {
       // Internal link - smooth scroll
       const element = document.querySelector(href)
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' })
       }
-    } else {
-      // External link - open in new tab
-      window.open(href, '_blank')
+      return
     }
-  }
+
+    // External link - open in new tab
+    window.open(href, '_blank')
+  }, [])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      const isTypingContext =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        Boolean(target?.isContentEditable)
+
+      if (isTypingContext) return
+
+      const item = NAV_ITEMS.find((i) => i.shortcut === e.key)
+      if (!item) return
+
+      e.preventDefault()
+      handleNavClick(item.href)
+      setIsOpen(false)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleNavClick])
 
   return (
     <>
@@ -75,7 +92,7 @@ export function ModernNavigation() {
 
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <button
                   key={item.label}
                   onClick={() => handleNavClick(item.href)}
@@ -89,15 +106,14 @@ export function ModernNavigation() {
             </div>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-3">
-              {/* Search */}
-              <button
-                onClick={openSearch}
-                className="p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
-                title="Search documentation"
+          <div className="flex items-center gap-3">
+              <Link
+                to="/docs"
+                className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                title="Open docs"
               >
-                <Search className="w-4 h-4 text-muted-foreground" />
-              </button>
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+              </Link>
 
               <Link
                 to="/settings"
@@ -140,7 +156,7 @@ export function ModernNavigation() {
           >
             <div className="container mx-auto px-4 py-4">
               <div className="space-y-2">
-                {navItems.map((item) => (
+                {NAV_ITEMS.map((item) => (
                   <button
                     key={item.label}
                     onClick={() => {
@@ -156,6 +172,15 @@ export function ModernNavigation() {
                     </kbd>
                   </button>
                 ))}
+                <Link
+                  to="/docs"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  title="Go to Docs"
+                >
+                  <span className="text-muted-foreground">Docs</span>
+                  <BookOpen className="w-4 h-4 text-muted-foreground" />
+                </Link>
                 <Link
                   to="/settings"
                   onClick={() => setIsOpen(false)}
@@ -180,7 +205,7 @@ export function ModernNavigation() {
       >
         <div className="bg-background/80 backdrop-blur-sm rounded-lg border border-border px-3 py-2">
           <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">1-5</kbd> to navigate
+            Press <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">1-2</kbd> to navigate
           </p>
         </div>
       </motion.div>

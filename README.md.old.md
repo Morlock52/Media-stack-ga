@@ -460,7 +460,7 @@ The setup script lets you pick **Automatic** or **Manual** tunnel creation. Here
 
 ```text
 Username: morlock
-Password: Morlock52$ (or your master password)
+Password: <your master password>
 ```
 > ⚠️ Change the password immediately.
 
@@ -516,7 +516,7 @@ Update `config/authelia/users_database.yml` with the new hash.
 <details>
 <summary>⬇️ <strong>qBittorrent</strong></summary>
 
-1. Default credentials: `admin` / `adminadmin` (change immediately).
+1. Default credentials: LinuxServer qBittorrent uses user `admin` and prints a first-run password in container logs (change it immediately).
 2. Verify VPN binding (Settings → Advanced → Network Interface should show the Gluetun adapter).
 3. Save path: `/media/downloads`, incomplete path `/media/downloads/incomplete`.
 

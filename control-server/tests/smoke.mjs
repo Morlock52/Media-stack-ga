@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import http from 'node:http'
 
 const BASE = process.env.CONTROL_SERVER_URL || 'http://localhost:3001'
+const TOKEN = (process.env.CONTROL_SERVER_TOKEN || '').trim()
+
+const authHeaders = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}
 
 const post = (path, body) => new Promise((resolve, reject) => {
   const data = JSON.stringify(body)
@@ -11,7 +14,8 @@ const post = (path, body) => new Promise((resolve, reject) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(data)
+        'Content-Length': Buffer.byteLength(data),
+        ...authHeaders,
       }
     },
     res => {
@@ -33,18 +37,30 @@ const post = (path, body) => new Promise((resolve, reject) => {
 })
 
 const get = path => new Promise((resolve, reject) => {
-  http.get(new URL(path, BASE), res => {
-    let chunks = ''
-    res.on('data', d => { chunks += d })
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(chunks || '{}')
-        resolve({ status: res.statusCode, body: json })
-      } catch (err) {
-        reject(err)
-      }
-    })
-  }).on('error', reject)
+  const url = new URL(path, BASE)
+  const req = http.request(
+    url,
+    {
+      method: 'GET',
+      headers: {
+        ...authHeaders,
+      },
+    },
+    res => {
+      let chunks = ''
+      res.on('data', d => { chunks += d })
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(chunks || '{}')
+          resolve({ status: res.statusCode, body: json })
+        } catch (err) {
+          reject(err)
+        }
+      })
+    }
+  )
+  req.on('error', reject)
+  req.end()
 })
 
 async function run() {
@@ -56,9 +72,13 @@ async function run() {
   console.log('✅ /api/health')
 
   const chat = await post('/api/agent/chat', { message: 'hello there' })
-  assert.equal(chat.status, 200)
-  assert.ok(chat.body.answer)
-  console.log('✅ /api/agent/chat fallback response works')
+  if (chat.status === 401) {
+    console.warn('⚠️  /api/agent/chat requires CONTROL_SERVER_TOKEN; skipping check')
+  } else {
+    assert.equal(chat.status, 200)
+    assert.ok(chat.body.answer)
+    console.log('✅ /api/agent/chat fallback response works')
+  }
 
   const voice = await post('/api/voice-agent', { transcript: 'help me pick apps' }).catch(err => ({ error: err }))
   if (voice.error) {
@@ -71,8 +91,12 @@ async function run() {
   }
 
   const snapshot = await get('/api/health-snapshot')
-  assert.ok(snapshot.status === 200 || snapshot.status === 500)
-  console.log('✅ /api/health-snapshot reachable (status %d)', snapshot.status)
+  if (snapshot.status === 401) {
+    console.warn('⚠️  /api/health-snapshot requires CONTROL_SERVER_TOKEN; skipping check')
+  } else {
+    assert.ok(snapshot.status === 200 || snapshot.status === 500)
+    console.log('✅ /api/health-snapshot reachable (status %d)', snapshot.status)
+  }
 }
 
 run().catch(err => {

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Code, Shield, Zap } from 'lucide-react'
+import { ArrowRight, BookOpen, Code, Shield, Zap } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { StatusBadge } from '../StatusBadge'
 
@@ -64,11 +65,11 @@ export function HeroSection() {
             transition={{ delay: 0.3 }}
             className="text-6xl md:text-7xl font-heading font-bold mb-6 tracking-tight"
           >
-            <span className="bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
+            <span className="text-gradient">
               Configure Your
             </span>
             <br />
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="text-gradient-primary">
               Media Stack
             </span>
           </motion.h1>
@@ -104,16 +105,16 @@ export function HeroSection() {
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
             </button>
 
-            <button
-              onClick={scrollToWizard}
+            <Link
+              to="/docs"
               className="px-8 py-4 rounded-xl border border-border text-muted-foreground hover:border-purple-500 hover:text-purple-300 transition-all duration-300 hover:bg-purple-500/10 backdrop-blur-sm"
-              title="Jump to wizard"
+              title="View app guides and documentation"
             >
               <span className="flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                Quick Start
+                <BookOpen className="w-4 h-4" />
+                View Docs
               </span>
-            </button>
+            </Link>
           </motion.div>
 
           {/* Feature cards */}

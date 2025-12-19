@@ -34,6 +34,7 @@ import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
+import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 
 export function DocsPage() {
     const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
@@ -67,6 +68,7 @@ export function DocsPage() {
                             Back to Wizard
                         </Link>
                     </Button>
+                    <ThemeToggleButton />
                 </div>
             </header>
 

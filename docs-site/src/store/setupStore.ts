@@ -120,6 +120,16 @@ export interface SetupStore {
     loadProfile: (name: string) => void
 }
 
+const scrubSecrets = (config: SetupConfig): SetupConfig => ({
+    ...config,
+    openaiApiKey: '',
+    password: '',
+    cloudflareToken: '',
+    plexClaim: '',
+    wireguardPrivateKey: '',
+    wireguardAddresses: '',
+})
+
 const mergeStoragePlan = (plan?: StoragePlan, rootOverride?: string): StoragePlan => {
     const root = rootOverride || plan?.dataRoot?.path || DEFAULT_DATA_ROOT
     const defaults = createDefaultStoragePlan(root)
@@ -423,11 +433,16 @@ export const useSetupStore = create<SetupStore>()(
                 mode: state.mode,
                 storageMode: state.storageMode,
                 selectedServices: state.selectedServices,
-                config: {
-                    ...state.config,
-                    openaiApiKey: '',
-                },
-                savedProfiles: state.savedProfiles,
+                config: scrubSecrets(state.config),
+                savedProfiles: Object.fromEntries(
+                    Object.entries(state.savedProfiles).map(([name, profile]) => [
+                        name,
+                        {
+                            ...profile,
+                            config: scrubSecrets(profile.config),
+                        },
+                    ])
+                ),
                 advancedPlanCache: state.advancedPlanCache,
             })
         }

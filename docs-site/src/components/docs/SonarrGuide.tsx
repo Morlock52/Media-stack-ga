@@ -10,9 +10,9 @@ export function SonarrGuide() {
             category="Automation"
             estimatedTime="15–30 minutes"
         >
-            <section className="space-y-6 text-sm text-gray-300">
+            <section className="space-y-6 text-sm text-muted-foreground">
                 <div>
-                    <h3 className="text-base font-semibold text-white mb-2">What is Sonarr?</h3>
+                    <h3 className="text-base font-semibold text-foreground mb-2">What is Sonarr?</h3>
                     <p>
                         Sonarr monitors multiple RSS feeds for new episodes of your favorite shows and will grab, sort, and rename them.
                         It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.
@@ -20,8 +20,8 @@ export function SonarrGuide() {
                 </div>
 
                 <div>
-                    <h3 className="text-base font-semibold text-white mb-2">Initial Setup</h3>
-                    <ol className="list-decimal list-inside space-y-2 text-gray-300">
+                    <h3 className="text-base font-semibold text-foreground mb-2">Initial Setup</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                         <li>
                             Open Sonarr at <a href="http://localhost:8989" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:8989</a>
                         </li>
@@ -38,11 +38,11 @@ export function SonarrGuide() {
                         </li>
                         <li>
                             <strong>Download Client:</strong> Go to Settings → Download Clients.
-                            <ul className="list-disc list-inside ml-5 mt-1 text-xs text-gray-400">
+                            <ul className="list-disc list-inside ml-5 mt-1 text-xs text-muted-foreground/80">
                                 <li>Click <strong>+</strong> and select <strong>qBittorrent</strong>.</li>
                                 <li>Host: <code>qbittorrent</code></li>
                                 <li>Port: <code>8080</code></li>
-                                <li>Username/Password: <code>admin</code> / <code>adminadmin</code> (Change these if you updated them!)</li>
+                                <li>Username/Password: the qBittorrent credentials you set (default user is <code>admin</code>; first-run password is shown in qBittorrent logs).</li>
                                 <li>Category: <code>sonarr</code></li>
                             </ul>
                         </li>
@@ -50,8 +50,8 @@ export function SonarrGuide() {
                 </div>
 
                 <div>
-                    <h3 className="text-base font-semibold text-white mb-2">Adding a Series</h3>
-                    <ol className="list-decimal list-inside space-y-2 text-gray-300">
+                    <h3 className="text-base font-semibold text-foreground mb-2">Adding a Series</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                         <li>Click <strong>Series</strong> in the sidebar, then <strong>Add New</strong>.</li>
                         <li>Search for a show (e.g., "Breaking Bad").</li>
                         <li>Select your <strong>Root Folder</strong> and <strong>Quality Profile</strong> (e.g., HD - 1080p).</li>

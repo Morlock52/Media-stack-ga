@@ -1,6 +1,9 @@
 import { useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
+import { Settings, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Button } from './button'
+import { ThemeToggleButton } from '../layout/ThemeToggleButton'
 
 interface GuideModalProps {
     isOpen: boolean
@@ -64,16 +67,35 @@ export function GuideModal({ isOpen, onClose, title, children }: GuideModalProps
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border bg-muted/40">
-                                <h2 id="modal-title" className="text-xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                                <h2
+                                    id="modal-title"
+                                    className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400"
+                                >
                                     {title || 'Guide'}
                                 </h2>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-muted/60 rounded-lg transition-colors group"
-                                    aria-label="Close modal"
-                                >
-                                    <X className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <ThemeToggleButton />
+                                    <Button
+                                        variant="glass"
+                                        size="icon"
+                                        asChild
+                                        title="Open settings"
+                                        aria-label="Open settings"
+                                    >
+                                        <Link to="/settings">
+                                            <Settings className="w-4 h-4 text-muted-foreground" />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="glass"
+                                        size="icon"
+                                        onClick={onClose}
+                                        title="Close"
+                                        aria-label="Close modal"
+                                    >
+                                        <X className="w-4 h-4 text-muted-foreground" />
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* Scrollable Content */}

@@ -93,8 +93,8 @@ After setup, access services using the subdomains defined in `.env`:
 
 ⚠️ **CHANGE THESE IMMEDIATELY!**
 
-- **Authelia:** `morlock` / `Morlock52$` (or your custom Master Password)
-- **qBittorrent:** `admin` / `adminadmin`
+- **Authelia:** `morlock` / *(the master password you set during setup)*
+- **qBittorrent:** Default user is `admin`; the first-run password is printed in qBittorrent container logs
 - **Portainer:** Set during first login
 
 ## 📋 Configuration Checklist
@@ -105,7 +105,7 @@ After setup, access services using the subdomains defined in `.env`:
 - [ ] Set `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET` in `.env`
 - [ ] Update `config/cloudflared/config.yml` with your Tunnel ID and hostnames
 - [ ] Configure Gluetun VPN credentials in `.env` (WIREGUARD_PRIVATE_KEY, etc.)
-- [ ] Start services: `docker-compose up -d`
+- [ ] Start services: `docker compose up -d`
 - [ ] Configure Prowlarr indexers + FlareSolverr
 - [ ] Connect Sonarr/Radarr to Prowlarr and qBittorrent
 

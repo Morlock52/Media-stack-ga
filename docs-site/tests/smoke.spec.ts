@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Docs Site Smoke Tests', () => {
+  test('deep link routes load (no blank screen)', async ({ page }) => {
+    // Direct navigation to a nested route must still load assets correctly.
+    await page.goto('/docs')
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 })
+
+    await page.goto('/settings')
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 })
+  })
+
   test('homepage loads and displays hero section', async ({ page }) => {
     await page.goto('/')
     

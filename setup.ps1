@@ -47,11 +47,36 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     gum style --foreground 196 "❌ Docker is not installed. Please install Docker Desktop first."
     exit 1
 }
-if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
-    gum style --foreground 196 "❌ Docker Compose is not installed. Please install Docker Desktop first."
+
+$HasComposeV2 = $false
+try {
+    docker compose version 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $HasComposeV2 = $true }
+}
+catch {
+    $HasComposeV2 = $false
+}
+
+$HasComposeV1 = [bool](Get-Command docker-compose -ErrorAction SilentlyContinue)
+
+if (-not $HasComposeV2 -and -not $HasComposeV1) {
+    gum style --foreground 196 "❌ Docker Compose is not installed. Install Docker Desktop (Compose v2) or docker-compose."
     exit 1
 }
+
+function Invoke-Compose {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+    if ($HasComposeV2) {
+        & docker compose @Args
+    }
+    else {
+        & docker-compose @Args
+    }
+}
+
+$ComposeDisplay = if ($HasComposeV2) { "docker compose" } else { "docker-compose" }
 gum style --foreground 46 "✅ Docker and Docker Compose are installed"
+gum style --foreground 99 "Detected Compose command: $ComposeDisplay"
 Write-Host ""
 
 # --- Configuration ---
@@ -69,7 +94,12 @@ $PUID = gum input --placeholder "PUID" --value "1000" --header "User ID (PUID) -
 $PGID = gum input --placeholder "PGID" --value "1000" --header "Group ID (PGID) - Default 1000 for Windows"
 
 # Password
-$MASTER_PASSWORD = gum input --password --placeholder "Master Password" --value "Morlock52$" --header "Master Password for all services"
+do {
+    $MASTER_PASSWORD = gum input --password --placeholder "Enter a strong master password" --value "" --header "Master Password for all services"
+    if ([string]::IsNullOrWhiteSpace($MASTER_PASSWORD)) {
+        Write-Host "❌ Master Password cannot be empty." -ForegroundColor Red
+    }
+} while ([string]::IsNullOrWhiteSpace($MASTER_PASSWORD))
 
 # Confirm
 gum style --foreground 99 "Review Configuration:"
@@ -185,7 +215,7 @@ if (Test-Path "config\authelia\configuration.yml") {
 # --- Pull Images ---
 
 gum style --foreground 99 "📥 Pulling Docker images..."
-docker-compose pull | gum format
+Invoke-Compose pull | gum format
 
 # --- Container Checks ---
 
@@ -242,9 +272,9 @@ if (-not [string]::IsNullOrWhiteSpace($CLOUDFLARE_TUNNEL_TOKEN) -and $CLOUDFLARE
 }
 
 if (gum confirm "🚀 Do you want to start the media stack now?") {
-    gum spin --spinner dot --title "🚀 Starting stack..." -- docker-compose up -d
-    gum style --foreground 46 "✅ Stack started! Check status with: docker-compose ps"
+    gum spin --spinner dot --title "🚀 Starting stack..." -- Invoke-Compose up -d
+    gum style --foreground 46 "✅ Stack started! Check status with: $ComposeDisplay ps"
 }
 else {
-    Write-Host "OK. Start later with: docker-compose up -d"
+    Write-Host "OK. Start later with: $ComposeDisplay up -d"
 }

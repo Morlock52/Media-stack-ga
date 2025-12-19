@@ -1,5 +1,4 @@
 import { ReactNode } from 'react'
-import { TopRightActions } from '../layout/TopRightActions'
 
 interface AppGuideLayoutProps {
     icon: ReactNode
@@ -20,7 +19,7 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
                             {icon}
                         </div>
                         <div>
-                            <p className="text-xs uppercase tracking-[0.2em] text-purple-300/80 mb-1">{category}</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-primary/80 mb-1">{category}</p>
                             <h2 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h2>
                             <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
                         </div>
@@ -30,12 +29,11 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/60">Estimated time</p>
                             <p className="text-base text-foreground font-medium">{estimatedTime}</p>
                         </div>
-                        <TopRightActions />
                     </div>
                 </div>
 
                 <div className="grid md:grid-cols-[2fr,1fr] gap-8 items-start">
-                    <div className="space-y-8">
+                    <div className="space-y-8 text-sm text-muted-foreground [&_section]:text-muted-foreground [&_ol]:text-muted-foreground [&_ul]:text-muted-foreground [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_h3]:text-foreground [&_h3]:font-semibold [&_h3]:tracking-tight [&_h3]:leading-tight [&_code]:bg-muted/40 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-foreground">
                         {children}
                     </div>
 
@@ -49,7 +47,7 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
                             </ol>
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-xs text-emerald-700 dark:text-emerald-100">
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-xs text-emerald-700 dark:text-emerald-200">
                             <p className="font-semibold mb-1">Non‑technical friendly</p>
                             <p>No jargon, just clear click‑by‑click instructions. If anything feels confusing, you can safely skip it now and come back later.</p>
                         </div>

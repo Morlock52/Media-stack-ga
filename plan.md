@@ -8,15 +8,15 @@ This plan outlines the review and verification steps for all functions (services
 - A copy of the appropriate env template and matching compose file (e.g. `.env.fixed.template` + `docker-compose.fixed.yml`). Use the fixed profile for CI/QA:
   ```bash
   cp .env.fixed.template .env
-  docker-compose -f docker-compose.fixed.yml config
-  docker-compose -f docker-compose.fixed.yml up -d
+  docker compose -f docker-compose.fixed.yml config
+  docker compose -f docker-compose.fixed.yml up -d
   ```
 - A valid domain and Cloudflare account (for tunnel); see AGENTS.md for profile guidance.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Security Warning**: The default credentials (user `morlock`, password `Morlock52$`) **MUST** be changed in `.env` and application configs before exposing services to the internet.
+> **Security Warning**: Do not deploy with placeholder/default credentials. Set strong secrets in `.env` and application configs before exposing services to the internet.
 
 > [!NOTE]
 > **Domain Configuration**: Ensure you have a valid domain and Cloudflare account as this stack relies on Cloudflare Tunnel for remote access.
@@ -57,7 +57,7 @@ This section details the configuration required for each functional component (s
 
 #### [VERIFY] Download Clients (qBittorrent)
 - Verify port `6881` (UDP/TCP) is correctly exposed for P2P traffic.
-- Ensure default credentials (user `morlock`, password `Morlock52$`) are changed upon first login.
+- Ensure any placeholder/default credentials are changed upon first login.
 - Confirm qBittorrent is routed via Gluetun (`network_mode: service:gluetun`) and that its reported external IP matches your VPN endpoint.
 
 #### [VERIFY] Subtitles & Analytics (Bazarr, Tautulli)
@@ -163,7 +163,7 @@ We will verify the "functions" of the stack by confirming the status and accessi
 ### Automated Verification
 Run the following command (using your chosen compose profile) to check container health:
 ```bash
-docker-compose ps
+docker compose ps
 ```
 Expected output: All containers should be in `Up` state.
 
@@ -171,7 +171,7 @@ Expected output: All containers should be in `Up` state.
 
 #### 1. Core Services
 - **Authelia**: Visit `https://auth.yourdomain.com`. Should see login page.
-- **Cloudflare Tunnel**: Check logs `docker-compose logs cloudflared`. Should show "Registered tunnel connection".
+- **Cloudflare Tunnel**: Check logs `docker compose logs cloudflared`. Should show "Registered tunnel connection".
 
 #### 2. Media Applications
 - **Plex**: Visit `http://localhost:32400/web` (tunnel required for remote).
