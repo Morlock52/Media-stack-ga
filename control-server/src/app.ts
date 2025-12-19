@@ -5,7 +5,7 @@ import { PROJECT_ROOT } from './utils/env.js';
 import { dockerRoutes } from './routes/docker.js';
 import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
-import { registryRoutes } from './routes/registry.js';
+import { arrRoutes } from './routes/arr.js';
 
 export const buildApp = async (): Promise<FastifyInstance> => {
     const app = Fastify({
@@ -76,7 +76,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(dockerRoutes);
     await app.register(aiRoutes);
     await app.register(remoteRoutes);
-    await app.register(registryRoutes);
+    await app.register(arrRoutes);
 
     return app;
 };

@@ -5,8 +5,6 @@ import { runCommand } from '../utils/docker.js';
 import fs from 'fs';
 import path from 'path';
 import { AiChatRequest } from '../types/index.js';
-import * as registryService from '../services/registryService.js';
-import * as docService from '../services/docService.js';
 import * as arrService from '../services/arrService.js';
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -494,67 +492,6 @@ Return ONLY a JSON object with the following structure:
                     {
                         type: "function",
                         function: {
-                            name: "manage_app",
-                            description: "Manage applications in the registry (list, add, remove, update)",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    action: {
-                                        type: "string",
-                                        enum: ["list", "add", "remove", "update"],
-                                        description: "Action to perform"
-                                    },
-                                    app: {
-                                        type: "object",
-                                        properties: {
-                                            id: { type: "string" },
-                                            name: { type: "string" },
-                                            description: { type: "string" },
-                                            repoUrl: { type: "string" },
-                                            category: { type: "string" },
-                                            icon: { type: "string" },
-                                            guideComponent: { type: "string" }
-                                        },
-                                        description: "App details for add/update"
-                                    },
-                                    appId: {
-                                        type: "string",
-                                        description: "App ID for remove/update"
-                                    }
-                                },
-                                required: ["action"]
-                            }
-                        }
-                    },
-                    {
-                        type: "function",
-                        function: {
-                            name: "manage_doc",
-                            description: "Manage documentation components (list, read, create, update)",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    action: {
-                                        type: "string",
-                                        enum: ["list", "read", "create", "update"],
-                                        description: "Action to perform"
-                                    },
-                                    name: {
-                                        type: "string",
-                                        description: "Name of the documentation component (e.g. 'PlexGuide')"
-                                    },
-                                    content: {
-                                        type: "string",
-                                        description: "Content for create/update (TSX code)"
-                                    }
-                                },
-                                required: ["action"]
-                            }
-                        }
-                    },
-                    {
-                        type: "function",
-                        function: {
                             name: "bootstrap_arr",
                             description: "Automatically extract API keys from running *arr containers (Sonarr, Radarr, Prowlarr, Readarr, Lidarr) and save them to .env",
                             parameters: {
@@ -695,100 +632,6 @@ Return ONLY a JSON object with the following structure:
 
                         } catch (err: any) {
                             answer = `Validation failed for ${args.filePath}: ${err.message}`;
-                        }
-                    } else if (toolCall.function.name === 'manage_app') {
-                        const args = JSON.parse(toolCall.function.arguments);
-                        let result;
-                        try {
-                            switch (args.action) {
-                                case 'list':
-                                    result = JSON.stringify(registryService.loadRegistry());
-                                    break;
-                                case 'add':
-                                    result = JSON.stringify(registryService.addApp(args.app));
-                                    break;
-                                case 'remove':
-                                    result = JSON.stringify(registryService.removeApp(args.appId));
-                                    break;
-                                case 'update':
-                                    result = JSON.stringify(registryService.updateApp(args.appId, args.app));
-                                    break;
-                                default:
-                                    result = `Unknown action: ${args.action}`;
-                            }
-
-                            messages.push(messageData);
-                            messages.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: result
-                            });
-
-                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${effectiveApiKey}`
-                                },
-                                body: JSON.stringify({
-                                    model: OPENAI_MODEL,
-                                    messages,
-                                    max_tokens: 1000,
-                                    temperature: 0.7
-                                })
-                            });
-
-                            const secondData: any = await secondResponse.json();
-                            answer = secondData.choices?.[0]?.message?.content;
-                        } catch (err: any) {
-                            answer = `App management failed: ${err.message}`;
-                        }
-                    } else if (toolCall.function.name === 'manage_doc') {
-                        const args = JSON.parse(toolCall.function.arguments);
-                        let result;
-                        try {
-                            switch (args.action) {
-                                case 'list':
-                                    result = JSON.stringify(docService.listDocs());
-                                    break;
-                                case 'read':
-                                    result = docService.readDoc(args.name);
-                                    break;
-                                case 'create':
-                                    result = JSON.stringify(docService.createDoc(args.name, args.content));
-                                    break;
-                                case 'update':
-                                    result = JSON.stringify(docService.updateDoc(args.name, args.content));
-                                    break;
-                                default:
-                                    result = `Unknown action: ${args.action}`;
-                            }
-
-                            messages.push(messageData);
-                            messages.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: result
-                            });
-
-                            const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${effectiveApiKey}`
-                                },
-                                body: JSON.stringify({
-                                    model: OPENAI_MODEL,
-                                    messages,
-                                    max_tokens: 1000,
-                                    temperature: 0.7
-                                })
-                            });
-
-                            const secondData: any = await secondResponse.json();
-                            answer = secondData.choices?.[0]?.message?.content;
-                        } catch (err: any) {
-                            answer = `Doc management failed: ${err.message}`;
                         }
                     } else if (toolCall.function.name === 'bootstrap_arr') {
                         fastify.log.info('AI bootstrapping *arr keys');

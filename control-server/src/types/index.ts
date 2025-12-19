@@ -29,6 +29,10 @@ export interface RemoteDeployRequest {
     privateKey?: string;
     password?: string;
     deployPath?: string;
+    // Optional: allow the UI to send generated outputs directly (so the control server
+    // doesn't need a writable bind-mount of the repo just to deploy).
+    composeYml?: string;
+    envFile?: string;
 }
 
 export interface AiChatRequest {

@@ -149,8 +149,8 @@ docker compose up -d
 
 Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
 
-- **AI-Powered Management**: Add, remove, or update apps in your registry via the AI Assistant.
-- **Automated Documentation**: AI can generate and update documentation components for your custom services.
+- **AI-Powered Operations**: Inspect container health, analyze logs, and run common stack commands (when the control server has Docker access).
+- **Config Validation**: Quick checks for `.env`, YAML, and JSON config issues before you deploy.
 - **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
 - **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
 - **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
@@ -167,11 +167,10 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 
 You can interact with the AI Assistant to perform complex tasks:
 
-- _"Add Paperless-ngx to my registry"_
-- _"Create a guide for my custom file server"_
 - _"Check the logs for my download client"_
 - _"Validate my updated .env file"_
 - _"Bootstrap my arr stack API keys"_
+- _"Why is Plex/Jellyfin not reachable behind Authelia?"_
 
 <p align="center">
   <img src="docs/images/ai_assistant_demo.png" alt="AI assistant chat" width="1100" />

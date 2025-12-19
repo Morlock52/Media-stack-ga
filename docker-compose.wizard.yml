@@ -8,7 +8,7 @@ services:
         VITE_CONTROL_SERVER_URL: ${VITE_CONTROL_SERVER_URL:-http://localhost:3001}
     container_name: media-stack-wizard-web
     ports:
-      - "3002:80"
+      - "127.0.0.1:3002:80"
     restart: unless-stopped
     depends_on:
       - wizard-api
@@ -23,7 +23,7 @@ services:
         OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     container_name: media-stack-wizard-api
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       - PORT=3001
       - PROJECT_ROOT=/project

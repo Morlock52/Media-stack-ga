@@ -30,7 +30,7 @@ docker compose -f docker-compose.wizard.yml up --build -d
 ## Accessing the Wizard
 
 - **Web UI**: Open [http://localhost:3002](http://localhost:3002)
-- **API**: Running internally on port 3001 (mapped to host port 3001 for compatibility).
+- **API**: [http://localhost:3001](http://localhost:3001) (ports are bound to `127.0.0.1` by default for safety).
 
 ## Troubleshooting
 

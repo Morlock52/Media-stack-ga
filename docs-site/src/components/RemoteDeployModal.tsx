@@ -6,6 +6,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { buildControlServerUrl } from '../utils/controlServer'
+import dockerComposeTemplate from '../../../docker-compose.yml?raw'
+import { useSetupStore } from '../store/setupStore'
+import { generateEnvFile } from '../utils/generateEnvFile'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
@@ -20,6 +23,7 @@ interface RemoteDeployModalProps {
 }
 
 export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
+    const { config, selectedServices } = useSetupStore()
     const [host, setHost] = useState('')
     const [port, setPort] = useState('22')
     const [username, setUsername] = useState('')
@@ -109,7 +113,9 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     authType,
                     deployPath,
                     password: authType === 'password' ? password : undefined,
-                    privateKey: authType === 'key' ? privateKey : undefined
+                    privateKey: authType === 'key' ? privateKey : undefined,
+                    composeYml: dockerComposeTemplate,
+                    envFile: generateEnvFile(config, selectedServices),
                 })
             })
 

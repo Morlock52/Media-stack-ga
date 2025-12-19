@@ -200,8 +200,28 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         };
 
         const steps: { step: string, status: string }[] = [];
+        let tmpDir: string | null = null;
 
         try {
+            // Optional: accept generated compose/.env directly from the UI.
+            const composeYmlBody = typeof request.body.composeYml === 'string' ? request.body.composeYml : '';
+            const envFileBody = typeof request.body.envFile === 'string' ? request.body.envFile : '';
+
+            let localComposeFile = COMPOSE_FILE;
+            let localEnvFile: string | null = null;
+
+            if (composeYmlBody.trim() || envFileBody.trim()) {
+                tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mediastack-deploy-'));
+                if (composeYmlBody.trim()) {
+                    localComposeFile = path.join(tmpDir, 'docker-compose.yml');
+                    await fs.promises.writeFile(localComposeFile, composeYmlBody, 'utf-8');
+                }
+                if (envFileBody.trim()) {
+                    localEnvFile = path.join(tmpDir, '.env');
+                    await fs.promises.writeFile(localEnvFile, envFileBody, 'utf-8');
+                }
+            }
+
             // Step 1: Connect (Check Echo)
             steps.push({ step: 'Connecting to server...', status: 'running' });
 
@@ -226,12 +246,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             // Step 3: Upload docker-compose.yml
             steps.push({ step: 'Uploading docker-compose.yml...', status: 'running' });
-            const uploadCompose = await scpFile(sshConfig, COMPOSE_FILE, `${remoteDeployPath}/docker-compose.yml`);
+            const uploadCompose = await scpFile(sshConfig, localComposeFile, `${remoteDeployPath}/docker-compose.yml`);
             if (uploadCompose.code !== 0) throw new Error(`Upload failed: ${uploadCompose.stderr}`);
             steps[steps.length - 1].status = 'done';
 
-            // Step 4: Upload .env if exists
-            const envFile = path.join(PROJECT_ROOT, '.env');
+            // Step 4: Upload .env if provided or exists
+            const envFile = localEnvFile || path.join(PROJECT_ROOT, '.env');
             if (fs.existsSync(envFile)) {
                 steps.push({ step: 'Uploading .env...', status: 'running' });
                 const uploadEnv = await scpFile(sshConfig, envFile, `${remoteDeployPath}/.env`);
@@ -286,6 +306,14 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 error: error.message,
                 steps
             });
+        } finally {
+            if (tmpDir) {
+                try {
+                    await fs.promises.rm(tmpDir, { recursive: true, force: true });
+                } catch {
+                    // Best-effort cleanup
+                }
+            }
         }
     });
 
