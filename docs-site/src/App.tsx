@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom'
 
 function App() {
   const [showDeployModal, setShowDeployModal] = useState(false)
-  const { currentStep, config } = useSetupStore()
+  const { currentStep } = useSetupStore()
 
   const showAssistant = Boolean(import.meta.env.DEV || import.meta.env.VITE_CONTROL_SERVER_URL)
 
@@ -121,7 +121,7 @@ function App() {
       </footer>
 
       {/* AI Assistant - Floating Chat */}
-      {showAssistant && <AIAssistant openaiKey={config.openaiApiKey} />}
+      {showAssistant && <AIAssistant />}
     </main>
   )
 }

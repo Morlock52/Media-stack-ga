@@ -6,6 +6,7 @@ describe('/api/tts', () => {
   let app: any;
 
   beforeEach(async () => {
+    process.env.OPENAI_API_KEY = 'sk-test';
     app = Fastify({ logger: false });
     await app.register(aiRoutes);
     await app.ready();
@@ -13,6 +14,7 @@ describe('/api/tts', () => {
 
   afterEach(async () => {
     vi.unstubAllGlobals();
+    delete process.env.OPENAI_API_KEY;
     if (app) await app.close();
   });
 
@@ -39,7 +41,7 @@ describe('/api/tts', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/tts',
-      payload: { text: 'Hello', openaiKey: 'sk-test' },
+      payload: { text: 'Hello' },
     });
 
     expect(res.statusCode).toBe(200);
@@ -47,6 +49,7 @@ describe('/api/tts', () => {
     expect(res.headers['x-tts-model']).toBe('gpt-4o-mini-tts');
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe('https://api.openai.com/v1/audio/speech');
+    expect(calls[0].init.headers.Authorization).toBe('Bearer sk-test');
 
     const body = JSON.parse(String(calls[0].init.body));
     expect(body.model).toBe('gpt-4o-mini-tts');
@@ -71,7 +74,7 @@ describe('/api/tts', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/tts',
-      payload: { text: 'Hello', openaiKey: 'sk-test' },
+      payload: { text: 'Hello' },
     });
 
     expect(res.statusCode).toBe(200);
@@ -84,4 +87,3 @@ describe('/api/tts', () => {
     expect(fallbackBody.model).toBe('tts-1');
   });
 });
-

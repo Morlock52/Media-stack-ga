@@ -24,6 +24,14 @@ const explicitBase = envUrl
 
 export const controlServerBaseUrl = explicitBase
 
+const envToken =
+    typeof import.meta !== 'undefined' && import.meta.env?.VITE_CONTROL_SERVER_TOKEN
+        ? String(import.meta.env.VITE_CONTROL_SERVER_TOKEN).trim()
+        : ''
+
+export const controlServerAuthHeaders = (): Record<string, string> =>
+    envToken ? { Authorization: `Bearer ${envToken}` } : {}
+
 export const buildControlServerUrl = (path: string) => {
     const normalized = path.startsWith('/') ? path : `/${path}`
     const origin = controlServerBaseUrl || getWindowOrigin()
@@ -36,7 +44,9 @@ export const buildControlServerUrl = (path: string) => {
 // API Client
 export const controlServer = {
     getContainers: async (): Promise<Container[]> => {
-        const res = await fetch(buildControlServerUrl('/api/containers'));
+        const res = await fetch(buildControlServerUrl('/api/containers'), {
+            headers: { ...controlServerAuthHeaders() },
+        });
         if (!res.ok) throw new Error('Failed to fetch containers');
         return res.json();
     },
@@ -44,7 +54,7 @@ export const controlServer = {
     serviceAction: async (serviceName: string, action: 'start' | 'stop' | 'restart') => {
         const res = await fetch(buildControlServerUrl(`/api/service/${action}`), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
             body: JSON.stringify({ serviceName })
         });
         if (!res.ok) throw new Error(`Failed to ${action} ${serviceName}`);
@@ -52,7 +62,9 @@ export const controlServer = {
     },
 
     getAgents: async (): Promise<{ agents: Agent[] }> => {
-        const res = await fetch(buildControlServerUrl('/api/agents'));
+        const res = await fetch(buildControlServerUrl('/api/agents'), {
+            headers: { ...controlServerAuthHeaders() },
+        });
         if (!res.ok) throw new Error('Failed to fetch agents');
         return res.json();
     },
@@ -60,7 +72,7 @@ export const controlServer = {
     chat: async (payload: AiChatRequest): Promise<AiChatResponse> => {
         const res = await fetch(buildControlServerUrl('/api/agent/chat'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
             body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('Chat request failed');
@@ -68,7 +80,9 @@ export const controlServer = {
     },
 
     getRegistry: async (): Promise<AppRegistryItem[]> => {
-        const res = await fetch(buildControlServerUrl('/api/registry/apps'));
+        const res = await fetch(buildControlServerUrl('/api/registry/apps'), {
+            headers: { ...controlServerAuthHeaders() },
+        });
         if (!res.ok) throw new Error('Failed to fetch registry');
         return res.json();
     },
@@ -76,7 +90,7 @@ export const controlServer = {
     scrapeRepo: async (url: string): Promise<{ success: boolean; app: AppRegistryItem }> => {
         const res = await fetch(buildControlServerUrl('/api/registry/scrape'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
             body: JSON.stringify({ url })
         });
         if (!res.ok) {
@@ -88,7 +102,8 @@ export const controlServer = {
 
     removeRegistryApp: async (id: string): Promise<{ success: boolean }> => {
         const res = await fetch(buildControlServerUrl(`/api/registry/apps/${id}`), {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: { ...controlServerAuthHeaders() },
         });
         if (!res.ok) throw new Error('Failed to remove app from registry');
         return res.json();
@@ -96,7 +111,8 @@ export const controlServer = {
 
     bootstrapArr: async (): Promise<{ success: boolean; keys: Record<string, string> }> => {
         const res = await fetch(buildControlServerUrl('/api/registry/bootstrap-arr'), {
-            method: 'POST'
+            method: 'POST',
+            headers: { ...controlServerAuthHeaders() },
         });
         if (!res.ok) throw new Error('Failed to bootstrap Arr keys');
         return res.json();

@@ -31,7 +31,6 @@ import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
 import { AIAssistant } from '../components/AIAssistant'
 import { ArrowLeft, Sparkles } from 'lucide-react'
-import { useSetupStore } from '../store/setupStore'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
@@ -39,7 +38,6 @@ import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 export function DocsPage() {
     const [selectedAppId, setSelectedAppId] = useState<AppId | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const { config } = useSetupStore()
 
     const handleSelectApp = (id: AppId) => {
         setSelectedAppId(id)
@@ -141,10 +139,7 @@ export function DocsPage() {
             </GuideModal>
 
             {/* AI Assistant - Multi-Agent System */}
-            <AIAssistant
-                currentApp={selectedAppId || undefined}
-                openaiKey={config.openaiApiKey}
-            />
+            <AIAssistant currentApp={selectedAppId || undefined} />
         </main>
     )
 }

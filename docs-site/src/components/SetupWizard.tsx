@@ -123,7 +123,6 @@ export function SetupWizard() {
     const step4Form = useForm<AdvancedSettingsFormData>({
         resolver: zodResolver(advancedSettingsSchema),
         defaultValues: {
-            openaiApiKey: config.openaiApiKey,
             cloudflareToken: config.cloudflareToken,
             plexClaim: config.plexClaim,
             wireguardPrivateKey: config.wireguardPrivateKey,
@@ -159,7 +158,6 @@ export function SetupWizard() {
             if (isValid) {
                 const values = step4Form.getValues()
                 updateConfig({
-                    openaiApiKey: values.openaiApiKey,
                     cloudflareToken: values.cloudflareToken,
                     plexClaim: values.plexClaim,
                     wireguardPrivateKey: values.wireguardPrivateKey,
@@ -214,7 +212,12 @@ export function SetupWizard() {
         if (showResetConfirm) {
             resetWizard()
             step1Form.reset(initialConfig)
-            step4Form.reset(initialConfig)
+            step4Form.reset({
+                cloudflareToken: '',
+                plexClaim: '',
+                wireguardPrivateKey: '',
+                wireguardAddresses: '',
+            })
             setShowResetConfirm(false)
         } else {
             setShowResetConfirm(true)
@@ -458,7 +461,6 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                 onClose={() => setShowVoiceCompanion(false)}
                 onApplyPlan={handleApplyVoicePlan}
                 templateMode={mode}
-                openaiKey={config.openaiApiKey}
             />
 
             {/* Floating Voice Companion Trigger */}

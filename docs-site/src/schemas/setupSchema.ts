@@ -8,7 +8,6 @@ import { z } from 'zod'
 // - What timezone to use for all containers
 // - File permission IDs (PUID/PGID)
 // - A master password to reuse for some services
-// - (Optionally) an OpenAI API key for AI features
 //
 // NOTE FOR USERS (in comments):
 // - Domain: use your real domain, e.g. media.example.com or home.mydomain.net.
@@ -42,10 +41,6 @@ export const basicConfigSchema = z.object({
         .string()
         .min(8, 'Password must be at least 8 characters')
         .max(128, 'Password is too long'),
-
-    // Optional: OpenAI API key (sk-...) for AI helpers.
-    // Can be left blank; you can also inject via environment later.
-    openaiApiKey: z.string().optional(),
 })
 
 export type BasicConfigFormData = z.infer<typeof basicConfigSchema>
@@ -81,9 +76,6 @@ export const serviceConfigSchema = z.record(z.string(), z.record(z.string(), z.s
 // - Plex claim: one-time token to link Plex server.
 // - WireGuard: VPN settings for Gluetun.
 export const advancedSettingsSchema = z.object({
-    // OpenAI API key for AI assistant features.
-    openaiApiKey: z.string().optional(),
-
     // Cloudflare API token for DNS / tunnel automation (if used).
     cloudflareToken: z.string().optional(),
 

@@ -381,6 +381,16 @@ docker compose up -d
 
 ---
 
+## ✅ Tests & stress
+
+```bash
+npm run lint
+npm test
+npm run stress
+```
+
+---
+
 ## 🧭 Operations
 
 ### Backup priorities

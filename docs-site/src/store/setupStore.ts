@@ -33,9 +33,6 @@ export interface SetupConfig {
     // (e.g. dashboards, internal UIs). You can later change it per-service.
     password: string
 
-    // Optional: OpenAI key used by AI helpers.
-    openaiApiKey?: string
-
     // Cloudflare API token (if using Cloudflare DNS/Tunnels examples).
     cloudflareToken: string
 
@@ -120,15 +117,17 @@ export interface SetupStore {
     loadProfile: (name: string) => void
 }
 
-const scrubSecrets = (config: SetupConfig): SetupConfig => ({
-    ...config,
-    openaiApiKey: '',
+const scrubSecrets = (config: SetupConfig): SetupConfig => {
+    const { openaiApiKey: _legacyOpenAiKey, ...rest } = (config as any) || {}
+    return {
+        ...rest,
     password: '',
     cloudflareToken: '',
     plexClaim: '',
     wireguardPrivateKey: '',
     wireguardAddresses: '',
-})
+    } as SetupConfig
+}
 
 const mergeStoragePlan = (plan?: StoragePlan, rootOverride?: string): StoragePlan => {
     const root = rootOverride || plan?.dataRoot?.path || DEFAULT_DATA_ROOT
@@ -146,7 +145,6 @@ export const initialConfig: SetupConfig = {
     puid: '1000',
     pgid: '1000',
     password: '',
-    openaiApiKey: '',
     cloudflareToken: '',
     plexClaim: '',
     wireguardPrivateKey: '',
@@ -373,7 +371,10 @@ export const useSetupStore = create<SetupStore>()(
             importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) =>
                 set({
                     config: {
-                        ...data.config,
+                        ...((() => {
+                            const { openaiApiKey: _legacyOpenAiKey, ...rest } = (data.config as any) || {}
+                            return rest
+                        })()),
                         storagePlan: mergeStoragePlan(data.config.storagePlan),
                     },
                     selectedServices: data.selectedServices,

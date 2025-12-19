@@ -137,11 +137,11 @@ export async function aiRoutes(fastify: FastifyInstance) {
     });
 
     // Voice companion endpoint (used by docs-site VoiceCompanion)
-    fastify.post<{ Body: { transcript?: string; history?: VoiceAgentHistoryItem[]; openaiKey?: string } }>(
+    fastify.post<{ Body: { transcript?: string; history?: VoiceAgentHistoryItem[] } }>(
         '/api/voice-agent',
         async (request, reply) => {
-            const { transcript, history = [], openaiKey } = request.body || {};
-            const effectiveApiKey = openaiKey || getOpenAIKey();
+            const { transcript, history = [] } = request.body || {};
+            const effectiveApiKey = getOpenAIKey();
 
             if (!transcript || typeof transcript !== 'string') {
                 return reply.status(400).send({ error: 'transcript is required' });
@@ -239,13 +239,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
     fastify.post<{
         Body: {
             text?: string;
-            openaiKey?: string;
             voice?: string;
             format?: 'mp3' | 'wav' | 'opus';
         };
     }>('/api/tts', async (request, reply) => {
-        const { text, openaiKey, voice, format } = request.body || {};
-        const effectiveApiKey = openaiKey || getOpenAIKey();
+        const { text, voice, format } = request.body || {};
+        const effectiveApiKey = getOpenAIKey();
 
         if (!text || typeof text !== 'string') {
             return reply.status(400).send({ error: 'text is required' });
@@ -262,7 +261,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
 
         if (!effectiveApiKey) {
-            return reply.status(400).send({ error: 'OpenAI API key is required for TTS' });
+            return reply.status(400).send({ error: 'OpenAI API key is required for TTS', reason: 'missing_api_key' });
         }
 
         const requestedVoice =
@@ -310,7 +309,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
     fastify.get('/api/settings/openai-key', async (_request, _reply) => {
         const key = getOpenAIKey();
         const hasKey = Boolean(key && key.length > 0);
-        return { hasKey };
+        return {
+            hasKey,
+            model: OPENAI_MODEL,
+            ttsModel: OPENAI_TTS_MODEL,
+            ttsVoice: OPENAI_TTS_VOICE,
+        };
     });
 
     fastify.post<{ Body: { key?: string, openaiKey?: string } }>('/api/settings/openai-key', async (request, reply) => {
@@ -348,21 +352,17 @@ export async function aiRoutes(fastify: FastifyInstance) {
             serviceId?: string;
             userContext?: string;
             config?: { domain?: string; timezone?: string; puid?: string; pgid?: string };
-            openaiKey?: string;
         }
     }>('/api/ai/service-config', async (request, reply) => {
-        const { serviceId, userContext, config, openaiKey } = request.body || {};
-        const effectiveApiKey = openaiKey || getOpenAIKey();
+        const { serviceId, userContext, config } = request.body || {};
+        const effectiveApiKey = getOpenAIKey();
 
         if (!serviceId || typeof serviceId !== 'string') {
             return reply.status(400).send({ error: 'serviceId is required' });
         }
 
         if (!effectiveApiKey) {
-            return {
-                suggestion: 'AI features are disabled. Please add an OpenAI API key to enable smart suggestions.',
-                reasoning: 'No API key provided.',
-            };
+            return reply.status(400).send({ error: 'OpenAI API key is required', reason: 'missing_api_key' });
         }
 
         const prompt = `You are an expert DevOps engineer configuring a media stack.
@@ -430,8 +430,8 @@ Return ONLY a JSON object with the following structure:
 
     // Main agent chat endpoint
     fastify.post<{ Body: AiChatRequest }>('/api/agent/chat', async (request, reply) => {
-        const { message, agentId, history = [], context = {}, openaiKey } = request.body;
-        const effectiveApiKey = openaiKey || getOpenAIKey();
+        const { message, agentId, history = [], context = {} } = request.body;
+        const effectiveApiKey = getOpenAIKey();
 
         if (!message) {
             return reply.status(400).send({ error: 'Message is required' });

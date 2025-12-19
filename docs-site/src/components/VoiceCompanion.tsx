@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send } from 'lucide-react'
-import { buildControlServerUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
+import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 
 export interface VoicePlanSummary {
   services: string[]
@@ -16,10 +17,9 @@ interface VoiceCompanionProps {
   onClose: () => void
   onApplyPlan: (plan: VoicePlanSummary) => void
   templateMode: 'newbie' | 'expert' | null
-  openaiKey?: string
 }
 
-export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, openaiKey }: VoiceCompanionProps) {
+export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: VoiceCompanionProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [transcript, setTranscript] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle')
@@ -35,19 +35,17 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
-  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'browser' | 'off'>(() => (openaiKey ? 'openai' : 'browser'))
+  const { hasKey: hasRemoteKey } = useControlServerOpenAIKeyStatus()
+  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'browser' | 'off'>(() => 'browser')
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const hasUserSetVoiceOutputRef = useRef(false)
 
   useEffect(() => {
-    if (!openaiKey && voiceOutput === 'openai') setVoiceOutput('browser')
-  }, [openaiKey, voiceOutput])
-
-  useEffect(() => {
-    if (!openaiKey) return
-    if (hasUserSetVoiceOutputRef.current) return
-    setVoiceOutput('openai')
-  }, [openaiKey])
+    if (!hasRemoteKey && voiceOutput === 'openai') setVoiceOutput('browser')
+    if (hasRemoteKey && !hasUserSetVoiceOutputRef.current && voiceOutput === 'browser') {
+      setVoiceOutput('openai')
+    }
+  }, [hasRemoteKey, voiceOutput])
 
   const handleVoiceOutputChange = useCallback((value: 'openai' | 'browser' | 'off') => {
     hasUserSetVoiceOutputRef.current = true
@@ -132,13 +130,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
         return
       }
 
-      if (voiceOutput === 'openai' && openaiKey && hasUserInteracted) {
+      if (voiceOutput === 'openai' && hasRemoteKey && hasUserInteracted) {
         try {
           setStatus('speaking')
           const response = await fetch(buildControlServerUrl('/api/tts'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: trimmed, openaiKey }),
+            headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+            body: JSON.stringify({ text: trimmed }),
           })
 
           if (!response.ok) {
@@ -219,7 +217,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
         setStatus('idle')
       }
     })()
-  }, [availableVoices, hasUserInteracted, openaiKey, pickBestBrowserVoice, stopSpeaking, voiceOutput])
+  }, [availableVoices, hasRemoteKey, hasUserInteracted, pickBestBrowserVoice, stopSpeaking, voiceOutput])
 
   // Pre-load voices (some browsers load them async)
   useEffect(() => {
@@ -405,11 +403,10 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
       setStatus('thinking')
       const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
         body: JSON.stringify({
           transcript: content,
           history: updatedHistory,
-          openaiKey: openaiKey || undefined,
         }),
       })
 
@@ -445,7 +442,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
       setError(err instanceof Error ? err.message : 'Unexpected error')
       setStatus('idle')
     }
-  }, [addTranscriptLine, openaiKey, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
+  }, [addTranscriptLine, speak, stopRecognition]) // startRecognition removed from dep array to avoid auto-loop
 
   useEffect(() => {
     processTranscriptRef.current = (userContent: string) => {
@@ -524,12 +521,12 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode, ope
                     >
                       <option value="off">Off</option>
                       <option value="browser">Browser</option>
-                      <option value="openai" disabled={!openaiKey}>OpenAI (HQ)</option>
+                      <option value="openai" disabled={!hasRemoteKey}>OpenAI (HQ)</option>
                     </select>
                   </div>
-                  {!openaiKey && (
+                  {!hasRemoteKey && (
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      Add an OpenAI key in Advanced settings to enable higher quality voice.
+                      Add an OpenAI key in Settings to enable higher quality voice.
                     </p>
                   )}
                 </div>

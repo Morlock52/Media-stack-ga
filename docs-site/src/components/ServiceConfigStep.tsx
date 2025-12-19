@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSetupStore } from '../store/setupStore'
 import { generateServiceConfig } from '../utils/aiHelper'
+import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 import { Sparkles, Loader2, AlertCircle, Info, Clock, CheckCircle } from 'lucide-react'
 import { StoragePlanner } from './StoragePlanner'
 
@@ -119,6 +120,7 @@ export function ServiceConfigStep() {
     const [activeService, setActiveService] = useState(selectedServices[0])
     const [isGenerating, setIsGenerating] = useState(false)
     const [aiError, setAiError] = useState<string | null>(null)
+    const { hasKey: hasRemoteKey } = useControlServerOpenAIKeyStatus()
 
     // Get pre-install config for the active service
     const serviceConfig = preInstallConfigs[activeService] || { fields: {}, postInstallNote: '' }
@@ -197,7 +199,7 @@ export function ServiceConfigStep() {
                         <h3 className="text-lg font-semibold text-white capitalize">
                             {activeService} Settings
                         </h3>
-                        {config.openaiApiKey && Object.keys(serviceConfig.fields).length > 0 && (
+                        {hasRemoteKey && Object.keys(serviceConfig.fields).length > 0 && (
                             <button
                                 onClick={handleAiSuggest}
                                 disabled={isGenerating}

@@ -36,7 +36,6 @@ export interface AiChatRequest {
     agentId?: string;
     history?: any[]; // We can refine this later
     context?: any;
-    openaiKey?: string;
 }
 
 export interface AiChatResponse {

@@ -1,5 +1,5 @@
 import { SetupConfig } from '../store/setupStore'
-import { buildControlServerUrl } from './controlServer'
+import { buildControlServerUrl, controlServerAuthHeaders } from './controlServer'
 
 interface AIResponse {
     suggestion: string
@@ -12,19 +12,10 @@ export async function generateServiceConfig(
     currentConfig: SetupConfig,
     userContext?: string
 ): Promise<AIResponse> {
-    const apiKey = currentConfig.openaiApiKey
-
-    if (!apiKey) {
-        return {
-            suggestion: "AI features are disabled. Please add an OpenAI API key to enable smart suggestions.",
-            reasoning: "No API key provided."
-        }
-    }
-
     try {
         const response = await fetch(buildControlServerUrl('/api/ai/service-config'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
             body: JSON.stringify({
                 serviceId,
                 userContext,
@@ -34,14 +25,22 @@ export async function generateServiceConfig(
                     puid: currentConfig.puid,
                     pgid: currentConfig.pgid,
                 },
-                openaiKey: apiKey,
             })
         })
 
         if (!response.ok) {
+            const errorJson = await response.json().catch(() => null) as any
+            const reason = typeof errorJson?.reason === 'string' ? errorJson.reason : undefined
+
+            if (reason === 'missing_api_key') {
+                return {
+                    suggestion: 'AI features are disabled. Add an OpenAI API key in Settings to enable smart suggestions.',
+                    reasoning: 'missing_api_key',
+                }
+            }
             if (response.status === 401) {
                 return {
-                    suggestion: 'Your OpenAI key looks invalid. Update it in Advanced settings to enable AI suggestions.',
+                    suggestion: 'Your OpenAI key looks invalid. Update it in Settings to enable AI suggestions.',
                     reasoning: 'invalid_api_key',
                 }
             }
@@ -54,7 +53,7 @@ export async function generateServiceConfig(
 
             return {
                 suggestion: 'AI request failed. Please try again.',
-                reasoning: `http_${response.status}`,
+                reasoning: reason || `http_${response.status}`,
             }
         }
 
@@ -62,8 +61,8 @@ export async function generateServiceConfig(
     } catch (error) {
         console.error('AI Generation Failed:', error)
         return {
-            suggestion: "Failed to generate suggestions. Please check your API key.",
-            reasoning: error instanceof Error ? error.message : "Unknown error"
+            suggestion: "Failed to generate suggestions. Make sure the control server is running and your OpenAI key is stored in Settings.",
+            reasoning: error instanceof Error ? error.message : "Unknown error",
         }
     }
 }

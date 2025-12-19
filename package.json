@@ -11,6 +11,9 @@
         "build": "npm run build --workspaces",
         "test": "npm test --workspaces",
         "lint": "npm run lint --workspaces",
+        "stress:api": "npm run stress -w control-server",
+        "stress:ui": "STRESS=1 npm run test -w docs-site -- tests/stress.wizard.spec.ts",
+        "stress": "npm run stress:api && npm run stress:ui",
         "preview": "npm run preview -w docs-site",
         "prepare": "husky install"
     },

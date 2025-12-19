@@ -1,17 +1,14 @@
 import { motion } from 'framer-motion'
-import { Sparkles, Key, ArrowRight, Shield } from 'lucide-react'
+import { Sparkles, ArrowRight, Shield, Settings } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
-import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 
 export function WelcomeStep() {
-    const { config, updateConfig, nextStep } = useSetupStore()
-    const [apiKey, setApiKey] = useState(config.openaiApiKey || '')
-    const [showKeyInput, setShowKeyInput] = useState(false)
+    const { nextStep } = useSetupStore()
+    const { serverOnline, hasKey, refresh } = useControlServerOpenAIKeyStatus()
 
     const handleStart = () => {
-        if (apiKey) {
-            updateConfig({ openaiApiKey: apiKey })
-        }
         nextStep()
     }
 
@@ -44,41 +41,40 @@ export function WelcomeStep() {
                         <Sparkles className="w-4 h-4" />
                         <span className="font-medium">AI Assistant (Optional)</span>
                     </div>
-                    <button
-                        onClick={() => setShowKeyInput(!showKeyInput)}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    <Link
+                        to="/settings"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                     >
-                        {showKeyInput ? 'Hide' : 'Add Key'}
-                    </button>
+                        <Settings className="w-3.5 h-3.5" />
+                        Settings
+                    </Link>
                 </div>
 
-                {showKeyInput ? (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="space-y-3"
-                    >
-                        <p className="text-xs text-muted-foreground text-left">
-                            Add your OpenAI API Key to enable smart configuration suggestions.
-                            Your key is stored locally and never sent to our servers.
-                        </p>
-                        <div className="relative">
-                            <Key className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="password"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                placeholder="sk-..."
-                                className="w-full bg-background/60 border border-border rounded-lg py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all outline-none"
-                            />
+                <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground text-left">
+                        Add an OpenAI API key to enable higher-quality AI guidance and voice output.
+                        Keys are stored by the local control server (not in the browser).
+                    </p>
+                    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground bg-muted/60 rounded-lg p-3 border border-border">
+                        <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-green-400" />
+                            <span>
+                                {serverOnline === false
+                                    ? 'Control server offline'
+                                    : hasKey
+                                        ? 'Key stored on control server'
+                                        : 'No key stored yet'}
+                            </span>
                         </div>
-                    </motion.div>
-                ) : (
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/60 rounded-lg p-3 border border-border">
-                        <Shield className="w-4 h-4 text-green-400" />
-                        <span>Privacy First: Keys are never stored on our servers.</span>
+                        <button
+                            onClick={refresh}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            type="button"
+                        >
+                            Refresh
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
 
             <div className="pt-4">

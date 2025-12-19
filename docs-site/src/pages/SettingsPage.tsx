@@ -11,10 +11,10 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react'
-import { buildControlServerUrl, controlServer } from '../utils/controlServer'
-import { useSetupStore } from '../store/setupStore'
+import { buildControlServerUrl, controlServer, controlServerAuthHeaders } from '../utils/controlServer'
 import { Button } from '../components/ui/button'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
+import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 
 type ToastState = { type: 'success' | 'error' | 'info'; text: string } | null
 
@@ -32,20 +32,13 @@ const formatTimestamp = (value: string | null) => {
 }
 
 export function SettingsPage() {
-  const config = useSetupStore((state) => state.config)
-  const updateConfig = useSetupStore((state) => state.updateConfig)
-
-  const [apiKeyInput, setApiKeyInput] = useState(config.openaiApiKey || '')
-  const [hasRemoteKey, setHasRemoteKey] = useState<boolean | null>(null)
-  const [serverOnline, setServerOnline] = useState<boolean | null>(null)
-  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null)
+  // Keep the key out of persisted client state; the control-server is the secure store.
+  const [apiKeyInput, setApiKeyInput] = useState('')
   const [pendingAction, setPendingAction] = useState<'idle' | 'checking' | 'saving' | 'removing'>('idle')
   const [isBootstrapping, setIsBootstrapping] = useState(false)
   const [toast, setToast] = useState<ToastState>(null)
 
-  useEffect(() => {
-    setApiKeyInput(config.openaiApiKey || '')
-  }, [config.openaiApiKey])
+  const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
 
   const setToastMessage = (update: ToastState) => {
     setToast(update)
@@ -54,29 +47,11 @@ export function SettingsPage() {
     }
   }
 
-  const recordSync = () => setLastCheckedAt(new Date().toISOString())
-
   const fetchStatus = useCallback(async () => {
     setPendingAction('checking')
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/openai-key'))
-      if (!res.ok) throw new Error('Failed to reach control server')
-      const data = await res.json()
-      setHasRemoteKey(Boolean(data?.hasKey))
-      setServerOnline(true)
-      setToast(null)
-    } catch (error) {
-      console.warn('SettingsPage: status check failed', error)
-      setServerOnline(false)
-      setToastMessage({
-        type: 'error',
-        text: 'Control server is offline. Start it on http://localhost:3001 and try again.',
-      })
-    } finally {
-      setPendingAction('idle')
-      recordSync()
-    }
-  }, [])
+    await refresh()
+    setPendingAction('idle')
+  }, [refresh])
 
   useEffect(() => {
     fetchStatus()
@@ -90,61 +65,53 @@ export function SettingsPage() {
     }
 
     setPendingAction('saving')
-    updateConfig({ openaiApiKey: trimmed })
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
         body: JSON.stringify({ key: trimmed }),
       })
       const data = await res.json()
       if (!res.ok || data?.success !== true) {
         throw new Error(data?.error || 'Failed to store key on control server')
       }
-      setHasRemoteKey(true)
-      setServerOnline(true)
+      setApiKeyInput('')
       setToastMessage({ type: 'success', text: 'OpenAI key stored securely.' })
     } catch (error) {
-      console.warn('SettingsPage: save failed, falling back to local storage', error)
-      setServerOnline(false)
-      setHasRemoteKey(null)
+      console.warn('SettingsPage: save failed', error)
       setToastMessage({
         type: 'info',
-        text: 'Saved locally. Start the control server to persist it.',
+        text: 'Control server is offline. Start it on http://localhost:3001 to store your key securely.',
       })
     } finally {
       setPendingAction('idle')
-      recordSync()
+      await refresh()
     }
   }
 
   const handleRemove = async () => {
     setPendingAction('removing')
-    updateConfig({ openaiApiKey: '' })
     setApiKeyInput('')
 
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
         method: 'DELETE',
+        headers: { ...controlServerAuthHeaders() },
       })
       const data = await res.json()
       if (!res.ok || data?.success !== true) {
         throw new Error(data?.error || 'Failed to delete key')
       }
-      setHasRemoteKey(false)
-      setServerOnline(true)
       setToastMessage({ type: 'success', text: 'OpenAI key removed.' })
     } catch (error) {
       console.warn('SettingsPage: remove failed', error)
-      setServerOnline(false)
-      setHasRemoteKey(null)
       setToastMessage({
         type: 'info',
-        text: 'Removed locally. Start the control server to sync the change.',
+        text: 'Control server is offline. Start it on http://localhost:3001 to remove the stored key.',
       })
     } finally {
       setPendingAction('idle')
-      recordSync()
+      await refresh()
     }
   }
 
@@ -265,7 +232,7 @@ export function SettingsPage() {
                   <a
                     href="https://platform.openai.com/api-keys"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="text-purple-400 hover:underline"
                   >
                     platform.openai.com/api-keys
@@ -323,7 +290,7 @@ export function SettingsPage() {
                       • Server URL: <code className="bg-muted px-1 py-0.5 rounded text-[11px]">/api/settings/openai-key</code>
                     </p>
                     <p>
-                      • Local backup: <strong>{config.openaiApiKey ? 'Ready' : 'Empty'}</strong>
+                      • Local backup: <strong>Not used</strong>
                     </p>
                     <p>• Voice Companion / AI assistant require an active key.</p>
                   </div>

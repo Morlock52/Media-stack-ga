@@ -4,10 +4,11 @@ import {
     MessageCircle, Send, X, Loader2, Bot,
     Sparkles, Copy, Check, User, HelpCircle
 } from 'lucide-react'
-import { buildControlServerUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { useSetupStore } from '../store/setupStore'
 import { wizardStepAssistantData, wizardStepNames } from '../data/wizardAssistant'
 import { useShallow } from 'zustand/react/shallow'
+import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -19,7 +20,6 @@ interface Message {
 
 interface AIAssistantProps {
     currentApp?: string
-    openaiKey?: string
 }
 
 interface Agent {
@@ -52,7 +52,7 @@ const STATUS_LABELS: Record<AgentStatus, { text: string; color: string }> = {
 
 type Suggestion = { text: string; agent: string; label?: string }
 
-export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
+export function AIAssistant({ currentApp }: AIAssistantProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
@@ -72,9 +72,9 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
             selectedServices: state.selectedServices,
         }))
     )
+    const { hasKey: hasRemoteKey } = useControlServerOpenAIKeyStatus()
     const wizardStepInfo = wizardStepAssistantData[wizardStep]
     const wizardStepName = wizardStepNames[wizardStep] || `Step ${wizardStep + 1}`
-    const effectiveOpenaiKey = openaiKey || config.openaiApiKey
 
     // Fetch available agents on mount (fronted by a single friendly orchestrator)
     useEffect(() => {
@@ -102,7 +102,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
             setSelectedAgent(orderedAgents.length > 1 ? null : orderedAgents[0]?.id ?? null)
         }
 
-        fetch(buildControlServerUrl('/api/agents'))
+        fetch(buildControlServerUrl('/api/agents'), { headers: { ...controlServerAuthHeaders() } })
             .then(r => (r.ok ? r.json() : null))
             .then(data => {
                 const serverAgents: Agent[] = data?.agents?.length ? data.agents : fallbackAgents
@@ -118,7 +118,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
         if (currentApp) {
             fetch(buildControlServerUrl('/api/agent/suggestions'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
                 body: JSON.stringify({ currentApp })
             })
                 .then(r => r.ok ? r.json() : null)
@@ -176,7 +176,6 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                     }
                 }
                 agentId?: string
-                openaiKey?: string
             } = {
                 message: messageText,
                 history: messages.slice(-8),
@@ -187,14 +186,10 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                     selectedServices,
                     userProgress: {
                         step: wizardStep,
-                        envComplete: Boolean(config.openaiApiKey),
+                        envComplete: Boolean(hasRemoteKey),
                         hasDomain: Boolean(config.domain),
                     },
                 },
-            }
-
-            if (effectiveOpenaiKey) {
-                payload.openaiKey = effectiveOpenaiKey
             }
 
             if (selectedAgent) {
@@ -203,7 +198,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
 
             const res = await fetch(buildControlServerUrl('/api/agent/chat'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
                 body: JSON.stringify(payload),
             })
 
@@ -266,7 +261,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                         title="Ask AI Assistant"
                     >
                         <MessageCircle className="w-6 h-6" />
-                        {effectiveOpenaiKey && (
+                        {hasRemoteKey && (
                             <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                                 <Sparkles className="w-2.5 h-2.5" />
                             </span>
@@ -294,7 +289,7 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     <h3 className="font-semibold text-sm">AI Stack Guide</h3>
                                     <div className="flex items-center gap-2">
                                         <p className="text-[10px] text-muted-foreground">
-                                            {effectiveOpenaiKey ? '✨ AI-powered' : 'Basic mode'}
+                                            {hasRemoteKey ? '✨ AI-powered' : 'Basic mode'}
                                         </p>
                                         {/* Status Chip */}
                                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_LABELS[status].color} text-white`}>
@@ -377,10 +372,10 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     )}
 
                                     {/* API Key prompt when not configured */}
-                                    {!effectiveOpenaiKey && (
+                                    {!hasRemoteKey && (
                                         <div className="mx-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                                             <p className="text-xs text-yellow-400">
-                                                💡 <strong>Tip:</strong> Add your OpenAI API key (click the 🔑 icon in the header) for AI-powered responses!
+                                                💡 <strong>Tip:</strong> Add your OpenAI API key in Settings for AI-powered responses!
                                             </p>
                                         </div>
                                     )}
@@ -529,9 +524,9 @@ export function AIAssistant({ currentApp, openaiKey }: AIAssistantProps) {
                                     <Send className="w-4 h-4" />
                                 </button>
                             </div>
-                            {!effectiveOpenaiKey && (
+                            {!hasRemoteKey && (
                                 <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                                    💡 Add OpenAI key in wizard for smarter responses
+                                    💡 Add an OpenAI key in Settings for smarter responses
                                 </p>
                             )}
                         </div>
