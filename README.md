@@ -4,6 +4,7 @@
 <img src="docs/images/logo.png" alt="Media Stack Logo" width="200"/>
 
 # 🎬 Ultimate Media Stack — GA
+
 ### Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a docs + wizard experience.
 
 <p align="center">
@@ -20,9 +21,9 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-security-model">Security Model</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#security-model">Security Model</a> •
   <a href="docs-site">Docs Site</a> •
   <a href="https://github.com/Morlock52/Media-stack-ga/issues">Issues</a> •
   <a href="https://github.com/Morlock52/Media-stack-ga/discussions">Discussions</a>
@@ -36,9 +37,11 @@
 
 <p align="center">
   <em>Current UI screenshots are generated via Playwright. Rebuild them with:</em>
-  <br />
-  <code>cd docs-site &amp;&amp; UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1</code>
 </p>
+
+```bash
+cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1
+```
 
 ## ✨ Screenshots (current)
 
@@ -75,78 +78,21 @@
   </tr>
 </table>
 
-## 🚀 Key Features
-
--   **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
--   **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
--   **Premium UI & Animations**: Rich visuals with glassmorphism, responsive pulsing glows, and SVG data export.
-
-<p align="center">
-  <img src="docs/images/app/06-service-config-desktop.png" alt="Storage planner and SVG export controls" width="1100" />
-  <br /><sub>Storage planner with SVG export controls</sub>
-</p>
-
--   **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
-
-<p align="center">
-  <img src="docs/images/wizard.png" alt="Setup wizard review and generate" width="1100" />
-</p>
-
-## 🤖 Agentic System
-Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
-
-- **AI-Powered Management**: Add, remove, or update apps in your registry via the AI Assistant.
-- **Automated Documentation**: AI can generate and update documentation components for your custom services.
-- **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
-- **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
-- **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
-
-<p align="center">
-  <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
-</p>
-
-<p align="center">
-  <img src="docs/images/settings_automation.png" alt="Arr-stack automation in settings" width="1100" />
-</p>
-
-
-### Using the AI Assistant
-You can interact with the AI Assistant to perform complex tasks:
-- *"Add Paperless-ngx to my registry"*
-- *"Create a guide for my custom file server"*
-- *"Check the logs for my download client"*
-- *"Validate my updated .env file"*
-- *"Bootstrap my arr stack API keys"*
-
-<p align="center">
-  <img src="docs/images/ai_assistant_demo.png" alt="AI assistant chat" width="1100" />
-</p>
-
-
----
-
-## 📖 Interactive Documentation
-
-Media Stack includes a comprehensive documentation system that goes beyond static files. The documentation is interactive and adapts to your needs.
-
-<p align="center">
-  <img src="docs/images/docs.png" alt="Docs page" width="1100" />
-</p>
-
----
-
 ## 🔎 Table of contents
 
-- [Quick Start](#-quick-start)
-- [Stack at a glance](#-stack-at-a-glance)
-- [Architecture](#-architecture)
-- [Security model](#-security-model)
-- [Storage planning](#-storage-planning)
-- [Install & run](#-install--run)
-- [Operations](#-operations)
-- [References](#-references)
-
----
+- [Screenshots](#screenshots-current)
+- [Quick Start](#quick-start)
+- [Highlights](#highlights)
+- [Stack at a glance](#stack-at-a-glance)
+- [Agentic System](#agentic-system)
+- [Interactive Documentation](#interactive-documentation)
+- [Architecture](#architecture)
+- [Security model](#security-model)
+- [Storage planning](#storage-planning)
+- [Install & run](#install--run)
+- [Tests & stress](#tests--stress)
+- [Operations](#operations)
+- [References](#references)
 
 ## 🚀 Quick start
 
@@ -179,17 +125,79 @@ docker compose up -d
 
 ---
 
+## ✅ Highlights
+
+- **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
+- **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
+- **Premium UI & Animations**: Glass UI, responsive motion, and exportable diagrams.
+- **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
+
+<details>
+<summary><strong>More UI screenshots</strong></summary>
+
+<p align="center">
+  <img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration + storage planner" width="1100" />
+</p>
+
+<p align="center">
+  <img src="docs/images/wizard.png" alt="Setup wizard review and generate" width="1100" />
+</p>
+
+</details>
+
+## 🤖 Agentic System
+
+Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
+
+- **AI-Powered Management**: Add, remove, or update apps in your registry via the AI Assistant.
+- **Automated Documentation**: AI can generate and update documentation components for your custom services.
+- **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
+- **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
+- **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
+
+<p align="center">
+  <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
+</p>
+
+<p align="center">
+  <img src="docs/images/settings_automation.png" alt="Arr-stack automation in settings" width="1100" />
+</p>
+
+### Using the AI Assistant
+
+You can interact with the AI Assistant to perform complex tasks:
+
+- _"Add Paperless-ngx to my registry"_
+- _"Create a guide for my custom file server"_
+- _"Check the logs for my download client"_
+- _"Validate my updated .env file"_
+- _"Bootstrap my arr stack API keys"_
+
+<p align="center">
+  <img src="docs/images/ai_assistant_demo.png" alt="AI assistant chat" width="1100" />
+</p>
+
+## 📖 Interactive Documentation
+
+Media Stack includes a comprehensive documentation system that goes beyond static files. The documentation is interactive and adapts to your needs.
+
+<p align="center">
+  <img src="docs/images/docs.png" alt="Docs page" width="1100" />
+</p>
+
+---
+
 ## 🧱 Stack at a glance
 
-| Layer | What it does | Key services |
-| --- | --- | --- |
-| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`) |
-| Identity | Single sign‑on + MFA in front of routes | Authelia + Redis |
-| UI / Requests | Dashboard + content requests | Homepage + Overseerr |
-| Media servers | Streaming to TVs / phones | Plex + Jellyfin |
-| Automation | Finds/organizes content | Sonarr + Radarr + Prowlarr + Bazarr |
-| Downloads | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr |
-| Ops | Visibility + updates + notifications | Portainer + Dozzle + Watchtower + Notifiarr |
+| Layer             | What it does                                | Key services                                |
+| ----------------- | ------------------------------------------- | ------------------------------------------- |
+| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`)           |
+| Identity          | Single sign‑on + MFA in front of routes     | Authelia + Redis                            |
+| UI / Requests     | Dashboard + content requests                | Homepage + Overseerr                        |
+| Media servers     | Streaming to TVs / phones                   | Plex + Jellyfin                             |
+| Automation        | Finds/organizes content                     | Sonarr + Radarr + Prowlarr + Bazarr         |
+| Downloads         | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr        |
+| Ops               | Visibility + updates + notifications        | Portainer + Dozzle + Watchtower + Notifiarr |
 
 > Tip: keep the table short; the long explanations live in the architecture + security sections.
 
