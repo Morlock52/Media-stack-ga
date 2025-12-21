@@ -12,11 +12,19 @@ export const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.env');
 
 export const readEnvFile = (): string => {
     if (!fs.existsSync(ENV_FILE_PATH)) return '';
-    return fs.readFileSync(ENV_FILE_PATH, 'utf-8');
+    try {
+        return fs.readFileSync(ENV_FILE_PATH, 'utf-8');
+    } catch (error: any) {
+        throw new Error(`Failed to read .env at ${ENV_FILE_PATH}: ${error?.message || String(error)}`);
+    }
 };
 
 export const writeEnvFile = (content: string): void => {
-    fs.writeFileSync(ENV_FILE_PATH, content.replace(/\r\n/g, '\n'));
+    try {
+        fs.writeFileSync(ENV_FILE_PATH, content.replace(/\r\n/g, '\n'));
+    } catch (error: any) {
+        throw new Error(`Failed to write .env at ${ENV_FILE_PATH}: ${error?.message || String(error)}`);
+    }
 };
 
 export const setEnvValue = (key: string, value: string): void => {

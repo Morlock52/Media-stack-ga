@@ -151,10 +151,15 @@ export const controlServer = {
                 method: 'POST',
                 headers: { ...controlServerAuthHeaders() },
             });
+            const text = await res.text().catch(() => '')
+            const parsed = text ? (JSON.parse(text) as any) : null
+
             if (!res.ok) {
-                const body = await res.text().catch(() => '')
-                throw new Error(`Failed to bootstrap Arr keys (HTTP ${res.status}): ${body || res.statusText}`)
+                const message = parsed?.error || text || res.statusText
+                throw new Error(`Failed to bootstrap Arr keys (HTTP ${res.status}): ${message}`)
             }
+
+            if (parsed && typeof parsed === 'object') return parsed
             return res.json();
         } catch (err) {
             log('error', 'controlServer.bootstrapArr failed', err)
