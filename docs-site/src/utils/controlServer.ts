@@ -4,6 +4,34 @@ import { getErrorMessage, log } from './logging';
 const getWindowOrigin = () =>
     typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : ''
 
+const tryParseJson = (text: string) => {
+    if (!text?.trim()) return null
+    try {
+        return JSON.parse(text)
+    } catch {
+        return null
+    }
+}
+
+const getDefaultControlServerBaseUrl = (): string => {
+    if (typeof window === 'undefined') return ''
+
+    const isDev = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV)
+    if (isDev) return ''
+
+    const { hostname, port } = window.location
+    const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+    const portNum = parseInt(port || '', 10)
+
+    // Vite preview defaults to 4173 and does not apply server.proxy.
+    // In that case, default to the local control-server.
+    if (isLoopback && Number.isFinite(portNum) && portNum >= 4173 && portNum <= 4199) {
+        return 'http://127.0.0.1:3001'
+    }
+
+    return ''
+}
+
 const CONTROL_SERVER_URL_STORAGE_KEY = 'mediastack.controlServerUrl'
 const CONTROL_SERVER_TOKEN_STORAGE_KEY = 'mediastack.controlServerToken'
 
@@ -68,11 +96,23 @@ export const controlServerAuthHeaders = (): Record<string, string> => {
 
 export const buildControlServerUrl = (path: string) => {
     const normalized = path.startsWith('/') ? path : `/${path}`
-    const origin = getControlServerBaseUrl() || getWindowOrigin()
-    if (!origin) return normalized
+    const configuredOrigin = getControlServerBaseUrl()
 
-    const sameOrigin = origin === getWindowOrigin()
-    return sameOrigin ? normalized : `${origin}${normalized}`
+    if (configuredOrigin) {
+        const sameOrigin = configuredOrigin === getWindowOrigin()
+        return sameOrigin ? normalized : `${configuredOrigin}${normalized}`
+    }
+
+    const isDev = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV)
+    if (isDev) {
+        return normalized
+    }
+
+    const fallbackOrigin = getDefaultControlServerBaseUrl() || getWindowOrigin()
+    if (!fallbackOrigin) return normalized
+
+    const sameOrigin = fallbackOrigin === getWindowOrigin()
+    return sameOrigin ? normalized : `${fallbackOrigin}${normalized}`
 }
 
 // API Client
@@ -152,7 +192,7 @@ export const controlServer = {
                 headers: { ...controlServerAuthHeaders() },
             });
             const text = await res.text().catch(() => '')
-            const parsed = text ? (JSON.parse(text) as any) : null
+            const parsed = tryParseJson(text) as any
 
             if (!res.ok) {
                 const message = parsed?.error || text || res.statusText
@@ -195,7 +235,7 @@ export const controlServer = {
                 body: JSON.stringify(payload),
             })
             const text = await res.text().catch(() => '')
-            const parsed = text ? (JSON.parse(text) as any) : null
+            const parsed = tryParseJson(text) as any
 
             if (!res.ok) {
                 if (parsed && typeof parsed === 'object') return parsed

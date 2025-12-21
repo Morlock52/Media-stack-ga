@@ -31,11 +31,20 @@ export async function dockerRoutes(fastify: FastifyInstance) {
 
                 const containers: Container[] = output
                     .split('\n')
-                    .filter(line => line)
-                    .map(line => {
-                        const [id, name, status, state, ports] = line.replace(/"/g, '').split('|');
-                        return { id, name, status, state, ports };
-                    });
+                    .map((line) => line.replace(/"/g, '').trim())
+                    .filter((line) => Boolean(line))
+                    .map((line) => {
+                        const [id, name, status, state, ports] = line.split('|');
+                        if (!name || !name.trim()) return null;
+                        return {
+                            id: (id || '').trim(),
+                            name: name.trim(),
+                            status: (status || '').trim(),
+                            state: (state || '').trim(),
+                            ports: (ports || '').trim(),
+                        };
+                    })
+                    .filter((c): c is Container => Boolean(c));
 
                 if (cacheMs > 0) {
                     containersCache = containers;
@@ -108,10 +117,20 @@ export async function dockerRoutes(fastify: FastifyInstance) {
                 const output = await runCommand('docker', [
                     'ps', '-a', '--format', '"{{.Names}}|{{.Status}}|{{.State}}"'
                 ]);
-                return output.split('\n').filter(l => l).map(line => {
-                    const [name, status, state] = line.replace(/"/g, '').split('|');
-                    return { name, status, state };
-                });
+                return output
+                    .split('\n')
+                    .map((line) => line.replace(/"/g, '').trim())
+                    .filter((line) => Boolean(line))
+                    .map((line) => {
+                        const [name, status, state] = line.split('|');
+                        if (!name || !name.trim()) return null;
+                        return {
+                            name: name.trim(),
+                            status: (status || '').trim(),
+                            state: (state || '').trim(),
+                        };
+                    })
+                    .filter((c): c is { name: string; status: string; state: string } => Boolean(c));
             })();
 
             const stopped = containers.filter(c => c.state !== 'running');

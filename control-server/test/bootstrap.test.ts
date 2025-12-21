@@ -64,8 +64,8 @@ describe('arrService', () => {
             const results = await bootstrapArrKeys();
 
             expect(results).toEqual({
-                sonarr: 'sonarr-key',
-                radarr: 'radarr-key'
+                SONARR_API_KEY: 'sonarr-key',
+                RADARR_API_KEY: 'radarr-key'
             });
 
             expect(envUtils.setEnvValue).toHaveBeenCalledWith('SONARR_API_KEY', 'sonarr-key');

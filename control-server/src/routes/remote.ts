@@ -64,17 +64,17 @@ type RemoteContainerStatus = {
 
 const cleanRemoteOutput = (value: string) => {
     const lines = (value || '').replace(/\r\n/g, '\n').split('\n');
-    return lines
-        .filter((line) => {
-            const trimmed = line.trim();
-            if (!trimmed) return false;
-            if (/^Warning: Permanently added .* to the list of known hosts\.?$/i.test(trimmed)) return false;
-            if (/^time=".*"\s+level=warning\s+msg="The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?"$/i.test(trimmed)) return false;
-            if (/^The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?$/i.test(trimmed)) return false;
-            return true;
-        })
-        .join('\n')
-        .trim();
+    const out: string[] = [];
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (/^Warning: Permanently added .* to the list of known hosts\.?$/i.test(trimmed)) continue;
+        if (/^time=".*"\s+level=warning\s+msg="The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?"$/i.test(trimmed)) continue;
+        if (/^The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?$/i.test(trimmed)) continue;
+        if (out.length > 0 && out[out.length - 1] === trimmed) continue;
+        out.push(trimmed);
+    }
+    return out.join('\n').trim();
 };
 
 const sshCommonOptions = [
@@ -85,6 +85,19 @@ const sshCommonOptions = [
     '-o', 'ServerAliveInterval=15',
     '-o', 'ServerAliveCountMax=2',
 ];
+
+const normalizePrivateKey = (value: string) => {
+    let normalized = String(value || '').trim();
+    if (!normalized) return '';
+
+    // Handle keys pasted as a single line with escaped newlines (e.g. env/JSON style "...\n...").
+    if (!normalized.includes('\n') && normalized.includes('\\n')) {
+        normalized = normalized.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+    }
+
+    normalized = normalized.replace(/\r\n/g, '\n');
+    return normalized.endsWith('\n') ? normalized : `${normalized}\n`;
+};
 
 const isMissingBinaryError = (stderr: string) =>
     /ENOENT/i.test(stderr) || /not found/i.test(stderr) || /spawn\s+\w+\s+ENOENT/i.test(stderr);
@@ -97,6 +110,32 @@ const isDockerDaemonUnavailableError = (value: string) =>
 
 const isCommandNotFound = (value: string) =>
     /command not found/i.test(value) || /not found/i.test(value);
+
+const isSshAuthenticationError = (value: string) => {
+    const normalized = (value || '').toLowerCase();
+    if (!normalized) return false;
+    if (normalized.includes('permission denied') && /(publickey|password|keyboard-interactive)/.test(normalized)) return true;
+    if (normalized.includes('too many authentication failures')) return true;
+    if (normalized.includes('no supported authentication methods available')) return true;
+    if (normalized.includes('authentication failed')) return true;
+    return false;
+};
+
+const getSshAuthenticationHint = (config: SSHConfig) => {
+    const lines: string[] = [];
+    lines.push('SSH authentication failed. Check:');
+    if (config.username === 'root') {
+        lines.push('- Root SSH login is often disabled; use a normal user with sudo instead.');
+    }
+    if (config.authType === 'password') {
+        lines.push('- Password auth: confirm the password is correct and the server allows PasswordAuthentication.');
+    } else {
+        lines.push('- Key auth: paste the private key (not .pub) and ensure the public key is in ~/.ssh/authorized_keys for that user.');
+        lines.push('- If the key is passphrase-protected, use an ssh-agent or a dedicated deploy key without a passphrase.');
+    }
+    lines.push(`- Test from your machine: ssh -p ${config.port} ${config.username}@${config.host}`);
+    return lines.join('\n');
+};
 
 const parseRemoteDockerPsSnapshot = (value: string): RemoteContainerStatus[] => {
     const lines = (value || '').replace(/\r\n/g, '\n').split('\n');
@@ -127,9 +166,9 @@ const getTunDeviceMissingHint = () =>
 
 const getDockerContainerNameConflictInfo = (value: string) => {
     const nameMatch =
-        value.match(/container name\s+\"([^\"]+)\"\s+is already in use/i) ||
+        value.match(/container name\s+"([^"]+)"\s+is already in use/i) ||
         value.match(/container name\s+([\S]+)\s+is already in use/i);
-    const idMatch = value.match(/already in use by container\s+\"([0-9a-f]+)\"/i);
+    const idMatch = value.match(/already in use by container\s+"([0-9a-f]+)"/i);
 
     const rawName = nameMatch?.[1] || '';
     const name = rawName.startsWith('/') ? rawName.slice(1) : rawName;
@@ -168,8 +207,10 @@ async function withTempKey<T>(privateKey: string, callback: (keyPath: string) =>
     const tmpDir = os.tmpdir();
     const keyPath = path.join(tmpDir, `ssh-key-${Date.now()}-${Math.random().toString(36).substring(7)}`);
 
-    // Ensure key ends with newline to be valid
-    const formattedKey = privateKey.endsWith('\n') ? privateKey : `${privateKey}\n`;
+    const formattedKey = normalizePrivateKey(privateKey);
+    if (!formattedKey) {
+        throw new Error('Private key is required for key authentication');
+    }
 
     await fs.promises.writeFile(keyPath, formattedKey, { mode: 0o600 });
     try {
@@ -400,7 +441,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const homeResult = await execSSH(sshConfig, 'echo $HOME');
             if (homeResult.code !== 0) {
                 const detail = cleanRemoteOutput(homeResult.stderr || homeResult.stdout);
-                throw new Error(`Connection failed: ${detail || 'unknown error'}`);
+                const base = `Connection failed: ${detail || 'unknown error'}`;
+                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(sshConfig)}` : '';
+                throw new Error(`${base}${hint}`);
             }
             steps[steps.length - 1].status = 'done';
 
@@ -542,7 +585,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
                     const retryCmd =
                         `cd ${remoteDeployPath} && ` +
-                        `COMPOSE_PROFILES="$(printf \"%s\" \"\${COMPOSE_PROFILES:-}\" | tr ',' '\\n' | grep -v -E '^(vpn|torrent)$' | tr '\\n' ',' | sed 's/,$//')" ` +
+                        `COMPOSE_PROFILES="$(printf "%s" "\${COMPOSE_PROFILES:-}" | tr ',' '\\n' | grep -v -E '^(vpn|torrent)$' | tr '\\n' ',' | sed 's/,$//')" ` +
                         `${composeCommand} up -d`;
 
                     const retryResult = await execSSH(sshConfig, retryCmd);
@@ -769,9 +812,10 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
             if (connectCheck.code !== 0) {
                 const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
+                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(scanConfig)}` : '';
                 return reply.status(200).send({
                     success: false,
-                    error: `SSH connection failed: ${detail || 'unknown error'}`,
+                    error: `SSH connection failed: ${detail || 'unknown error'}${hint}`,
                     keys: extractedKeys,
                     env: { host: envConfig.host, path: safeEnvPath },
                     scan: { host: scanConfig.host },
@@ -901,7 +945,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             if (tmpDir) {
                 try {
                     await fs.promises.rm(tmpDir, { recursive: true, force: true });
-                } catch {
+                } catch (cleanupError) {
+                    fastify.log.debug({ err: cleanupError, tmpDir }, '[arr/bootstrap-remote] cleanup failed');
                 }
             }
         }
@@ -941,9 +986,11 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         try {
             const connectCheck = await execSSH(sshConfig, 'echo mediastack-ok && echo $HOME');
             if (connectCheck.code !== 0) {
+                const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
+                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(sshConfig)}` : '';
                 return reply.status(502).send({
                     success: false,
-                    error: `SSH connection failed: ${cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout) || 'unknown error'}`,
+                    error: `SSH connection failed: ${detail || 'unknown error'}${hint}`,
                 });
             }
 

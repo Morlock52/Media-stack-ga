@@ -474,7 +474,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     <motion.div
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="mt-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg"
+                                        className="mt-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg whitespace-pre-wrap break-words"
                                     >
                                         {error}
                                     </motion.div>
@@ -660,7 +660,11 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                 )}
 
                                 {error && (
-                                    <p className={`text-sm p-2 rounded-lg ${deployLocked ? 'text-yellow-200 bg-yellow-500/10 border border-yellow-500/20' : 'text-red-400 bg-red-500/10'}`}>{error}</p>
+                                    <p
+                                        className={`text-sm p-2 rounded-lg whitespace-pre-wrap break-words ${deployLocked ? 'text-yellow-200 bg-yellow-500/10 border border-yellow-500/20' : 'text-red-400 bg-red-500/10'}`}
+                                    >
+                                        {error}
+                                    </p>
                                 )}
 
                                 {remoteContainers.length > 0 && (
