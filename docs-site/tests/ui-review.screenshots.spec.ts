@@ -1,12 +1,17 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { test, expect } from '@playwright/test'
 
 test.describe('UI Review Screenshots (manual)', () => {
   test.skip(!process.env.UI_REVIEW, 'Set UI_REVIEW=1 to generate screenshots')
 
+  const outDir = path.resolve(process.cwd(), '..', 'docs', 'images', 'app')
+
   const shots = async (page: any, name: string) => {
     await page.waitForTimeout(250)
     // Use viewport screenshots (not full page) for README-friendly framing.
-    await page.screenshot({ path: `test-results/ui-review/${name}.png`, fullPage: false })
+    fs.mkdirSync(outDir, { recursive: true })
+    await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage: false })
   }
 
   test('capture key screens', async ({ page }) => {
@@ -65,10 +70,37 @@ test.describe('UI Review Screenshots (manual)', () => {
     await page.getByTitle('Close').click()
 
     // Remote deploy modal (only available on late steps)
+    await page.route('**/api/remote-deploy', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          message: 'Deployment successful!',
+          steps: [
+            { step: 'Connecting to server...', status: 'done' },
+            { step: 'Checking Docker installation...', status: 'done' },
+            { step: 'Starting media stack...', status: 'done' },
+          ],
+          remoteContainers: [
+            { name: 'traefik', on: true },
+            { name: 'homepage', on: true },
+            { name: 'portainer', on: false },
+          ],
+          serverInfo: { host: '192.168.1.100', deployPath: '/home/root/media-stack' },
+        }),
+      })
+    })
+
     await page.getByRole('button', { name: /deploy to server/i }).click()
     await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 15000 })
+    await page.locator('input[placeholder="192.168.1.100"]:visible').fill('192.168.1.100')
+    await page.locator('input[placeholder="root"]:visible').fill('root')
+    await page.locator('input[placeholder="Enter password"]:visible').fill('TestPassword123!')
+    await page.getByRole('button', { name: /^deploy$/i }).click()
+    await expect(page.getByRole('heading', { name: /deployment successful/i })).toBeVisible({ timeout: 15000 })
     await shots(page, '09-remote-deploy-desktop')
-    await page.getByRole('button', { name: /close modal/i }).click()
+    await page.getByRole('button', { name: /^done$/i }).click()
 
     // Docs page
     await page.goto('/docs')
