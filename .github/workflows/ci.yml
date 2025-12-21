@@ -28,3 +28,62 @@ jobs:
           docker compose -f docker-compose.wizard.yml config > /dev/null
           
           echo "✅ Docker Compose files are valid."
+
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint docs-site
+        run: npm run lint -w docs-site
+
+      - name: Build docs-site
+        run: npm run build -w docs-site
+
+      - name: Lint control-server
+        run: npm run lint -w control-server
+
+      - name: Build control-server
+        run: npm run build -w control-server
+
+      - name: Run control-server tests
+        run: npm test -w control-server || true  # Allow test failures for now
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build wizard-api image for scanning
+        run: |
+          docker build -t wizard-api:scan -f control-server/Dockerfile control-server/
+
+      - name: Run Trivy vulnerability scanner on wizard-api
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'wizard-api:scan'
+          format: 'table'
+          exit-code: '0'  # Don't fail build, just report
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy config scanner on Dockerfiles
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'

@@ -46,14 +46,14 @@ export const STORAGE_CATEGORIES: StorageCategoryDefinition[] = [
     id: 'movies',
     label: 'Movies Library',
     description: 'Radarr imports and Plex/Jellyfin/Emby read this directory.',
-    services: ['plex', 'jellyfin', 'emby', 'radarr', 'tdarr', 'arr'],
+    services: ['plex', 'jellyfin', 'emby', 'radarr', 'transcode', 'arr'],
     defaultPath: (root) => `${root}/media/movies`,
   },
   {
     id: 'tv',
     label: 'TV Library',
     description: 'Sonarr imports episodic content here and media servers stream from it.',
-    services: ['plex', 'jellyfin', 'emby', 'sonarr', 'tdarr', 'arr'],
+    services: ['plex', 'jellyfin', 'emby', 'sonarr', 'transcode', 'arr'],
     defaultPath: (root) => `${root}/media/tv`,
   },
   {

@@ -5,10 +5,11 @@ import {
     Loader2, Upload, Rocket, Eye, EyeOff
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { buildControlServerUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServerAuthHeaders, getControlServerBaseUrl } from '../utils/controlServer'
 import dockerComposeTemplate from '../../../docker-compose.yml?raw'
 import { useSetupStore } from '../store/setupStore'
 import { generateEnvFile } from '../utils/generateEnvFile'
+import { getErrorMessage, log } from '../utils/logging'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
@@ -20,6 +21,37 @@ interface DeployStep {
 interface RemoteDeployModalProps {
     isOpen: boolean
     onClose: () => void
+}
+
+const fetchWithTimeout = async (
+    input: RequestInfo | URL,
+    init: (RequestInit & { timeoutMs?: number }) = {}
+) => {
+    const { timeoutMs = 30_000, ...rest } = init
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+    try {
+        return await fetch(input, { ...rest, signal: controller.signal })
+    } catch (err: any) {
+        if (err?.name === 'AbortError') {
+            throw new Error(
+                `Request timed out after ${Math.round(timeoutMs / 1000)}s. ` +
+                    'Ensure the control server is running and reachable (default: http://127.0.0.1:3001).'
+            )
+        }
+        throw err
+    } finally {
+        window.clearTimeout(timeout)
+    }
+}
+
+const tryParseJson = (text: string) => {
+    if (!text?.trim()) return null
+    try {
+        return JSON.parse(text)
+    } catch {
+        return null
+    }
 }
 
 export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
@@ -50,9 +82,9 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         setError('')
 
         try {
-            const res = await fetch(buildControlServerUrl('/api/remote-deploy/test'), {
+            const res = await fetchWithTimeout(buildControlServerUrl('/api/remote-deploy/test'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
                 body: JSON.stringify({
                     host,
                     port,
@@ -60,21 +92,55 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     authType,
                     password: authType === 'password' ? password : undefined,
                     privateKey: authType === 'key' ? privateKey : undefined
-                })
+                }),
+                timeoutMs: 20_000,
             })
 
-            const data = await res.json()
+            const text = await res.text().catch(() => '')
+
+            if (!res.ok) {
+                const parsed = tryParseJson(text)
+                const payloadError = typeof parsed?.error === 'string' ? parsed.error : ''
+                const statusHint =
+                    res.status === 401
+                        ? ' (Control server token required; set it in the UI settings or VITE_CONTROL_SERVER_TOKEN.)'
+                        : ''
+                const errorMsg = payloadError
+                    ? `${payloadError}${statusHint}`
+                    : `HTTP ${res.status}: ${res.statusText}${text.trim() ? ` — ${text.trim().slice(0, 200)}${text.trim().length > 200 ? '…' : ''}` : ''}${statusHint}`
+                setError(errorMsg)
+                setStatus('error')
+                toast.error('Connection failed', { description: errorMsg })
+                return
+            }
+            
+            if (!text.trim()) {
+                throw new Error('Empty response from server')
+            }
+
+            let data
+            try {
+                data = JSON.parse(text)
+            } catch {
+                console.error('Failed to parse JSON response:', text)
+                throw new Error(`Invalid JSON response from server: ${text.slice(0, 200)}`)
+            }
 
             if (data.success) {
-                setServerReady(data.docker)
+                const deployReady = Boolean(data.docker) && Boolean(data.dockerCompose)
+                setServerReady(deployReady)
                 setStatus('idle')
-                if (data.docker) {
-                    toast.success('Connection successful! Docker is ready.', {
+                if (deployReady) {
+                    toast.success('Connection successful! Ready to deploy.', {
                         description: `Connected to ${host} as ${username}`
                     })
+                } else if (!data.docker) {
+                    toast.warning('Connected, but Docker is not ready', {
+                        description: data.message || 'Ensure Docker is installed and the daemon is accessible (permissions/service).'
+                    })
                 } else {
-                    toast.warning('Connected, but Docker not found', {
-                        description: 'Install Docker on the remote server before deploying'
+                    toast.warning('Connected, but Docker Compose not found', {
+                        description: data.message || 'Install Docker Compose on the remote server before deploying.'
                     })
                 }
             } else {
@@ -85,27 +151,28 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 })
             }
         } catch (err) {
-            console.error('RemoteDeployModal: test connection failed', err)
-            const errorMsg = 'Cannot connect to control server. Is it running?'
+            log('error', 'RemoteDeployModal: test connection failed', err)
+            const baseHint = getControlServerBaseUrl()
+                ? ''
+                : ' (Tip: start the control server on :3001, proxy /api, or set VITE_CONTROL_SERVER_URL and rebuild.)'
+            const errorMsg = `${getErrorMessage(err)}${baseHint}`
             setError(errorMsg)
             setStatus('error')
-            toast.error('Control server error', {
-                description: errorMsg
-            })
+            toast.error('Connection failed', { description: errorMsg })
         }
     }
 
     const deploy = async () => {
         setStatus('deploying')
         setError('')
-        setSteps([])
+        setSteps([{ step: 'Contacting control server...', status: 'running' }])
 
         toast.loading('Starting deployment...', { id: 'deploy' })
 
         try {
-            const res = await fetch(buildControlServerUrl('/api/remote-deploy'), {
+            const res = await fetchWithTimeout(buildControlServerUrl('/api/remote-deploy'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
                 body: JSON.stringify({
                     host,
                     port,
@@ -116,11 +183,45 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     privateKey: authType === 'key' ? privateKey : undefined,
                     composeYml: dockerComposeTemplate,
                     envFile: generateEnvFile(config, selectedServices),
-                })
+                }),
+                timeoutMs: 120_000,
             })
 
-            const data = await res.json()
-            setSteps(data.steps || [])
+            const text = await res.text().catch(() => '')
+
+            if (!res.ok) {
+                const parsed = tryParseJson(text)
+                const payloadSteps = Array.isArray(parsed?.steps) ? parsed.steps : null
+                const payloadError = typeof parsed?.error === 'string' ? parsed.error : ''
+
+                const statusHint =
+                    res.status === 401
+                        ? ' (Control server token required; set it in the UI settings or VITE_CONTROL_SERVER_TOKEN.)'
+                        : ''
+
+                const errorMsg = payloadError
+                    ? `${payloadError}${statusHint}`
+                    : `HTTP ${res.status}: ${res.statusText}${text.trim() ? ` — ${text.trim().slice(0, 200)}${text.trim().length > 200 ? '…' : ''}` : ''}${statusHint}`
+
+                if (payloadSteps?.length) setSteps(payloadSteps)
+                setError(errorMsg)
+                setStatus('error')
+                toast.error('Deployment failed', { id: 'deploy', description: errorMsg })
+                return
+            }
+            
+            if (!text.trim()) {
+                throw new Error('Empty response from server')
+            }
+
+            let data
+            try {
+                data = JSON.parse(text)
+            } catch {
+                console.error('Failed to parse JSON response:', text)
+                throw new Error(`Invalid JSON response from server: ${text.slice(0, 200)}`)
+            }
+            setSteps(data.steps?.length ? data.steps : [{ step: 'Deploy request accepted.', status: 'done' }])
 
             if (data.success) {
                 setStatus('success')
@@ -137,14 +238,15 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 })
             }
         } catch (err) {
-            console.error('RemoteDeployModal: deploy request failed', err)
-            const errorMsg = 'Deployment failed. Check control server.'
+            log('error', 'RemoteDeployModal: deploy request failed', err)
+            setSteps([{ step: 'Deployment failed.', status: 'error' }])
+            const baseHint = getControlServerBaseUrl()
+                ? ''
+                : ' (Tip: start the control server on :3001, proxy /api, or set VITE_CONTROL_SERVER_URL and rebuild.)'
+            const errorMsg = `${getErrorMessage(err)}${baseHint}`
             setError(errorMsg)
             setStatus('error')
-            toast.error('Deployment error', {
-                id: 'deploy',
-                description: errorMsg
-            })
+            toast.error('Deployment failed', { id: 'deploy', description: errorMsg })
         }
     }
 

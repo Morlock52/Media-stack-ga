@@ -120,24 +120,36 @@ If you access the UI from a different URL than `http://localhost:3002`, set:
 
 ### P0 — Make Docker mode the most reliable path
 
-- [ ] Add a short “Pick one path” doc (host mode vs docker wizard vs power user) and link it from `README.md`.
-- [ ] Ensure every doc that mentions docker wizard uses the same ports (`3002` UI, `3001` API) and the same command (`docker compose -f docker-compose.wizard.yml up --build -d`).
-- [ ] Add an explicit `.env` section for Docker Wizard mode (absolute paths + minimal required vars).
+- [x] Add a short "Pick one path" doc (host mode vs docker wizard vs power user) and link it from `README.md`. → **Created `docs/START_HERE.md`**
+- [x] Ensure every doc that mentions docker wizard uses the same ports (`3002` UI, `3001` API) and the same command (`docker compose -f docker-compose.wizard.yml up --build -d`). → **Verified in README_DOCKER.md, QUICK_REFERENCE.md**
+- [x] Add an explicit `.env` section for Docker Wizard mode (absolute paths + minimal required vars). → **Added to `.env.example`**
 
 ### P0 — Security hardening if used beyond localhost
 
-- [ ] Require `CONTROL_SERVER_TOKEN` by default when `CONTROL_SERVER_HOST=0.0.0.0`.
-- [ ] Optional: place a restricted Docker API proxy between the API container and the host socket (example: `tecnativa/docker-socket-proxy`) to limit what the wizard can do.
+- [x] Require `CONTROL_SERVER_TOKEN` by default when `CONTROL_SERVER_HOST=0.0.0.0`. → **Implemented in `control-server/src/index.ts` - server refuses to start if exposed without token**
+- [x] Optional: place a restricted Docker API proxy between the API container and the host socket (example: `tecnativa/docker-socket-proxy`) to limit what the wizard can do. → **Created `docker-compose.wizard.secure.yml` with socket-proxy configuration**
 
 ### P1 — Reduce drift between generated compose and repo compose
 
 - [ ] Pick a single “source of truth” for service definitions (`docker-compose.yml` vs wizard generator vs setup scripts).
-- [ ] Add CI/automation step: validate any generated compose with `docker compose config` before shipping it to users.
+- [x] Add CI/automation step: validate any generated compose with `docker compose config` before shipping it to users. → **Enhanced `.github/workflows/ci.yml` with lint-and-build job**
 
 ### P2 — Developer experience improvements
 
-- [ ] Add a `docker-compose.wizard.override.yml` template (ports, socket path variants, dev logging).
-- [ ] Remove the Dockerfile lint warning (`FromAsCasing`) by standardizing `FROM ... AS ...`.
+- [x] Add a `docker-compose.wizard.override.yml` template (ports, socket path variants, dev logging). → **Created `docker-compose.wizard.override.yml.example`**
+- [x] Remove the Dockerfile lint warning (`FromAsCasing`) by standardizing `FROM ... AS ...`. → **Already correct in both Dockerfiles**
+
+### P2 — 2025 Docker Best Practices (added 2025-12-19)
+
+- [x] Add healthchecks to wizard-api and wizard-web services in `docker-compose.wizard.yml`
+- [x] Add healthcheck to `control-server/Dockerfile`
+- [x] Use BuildKit cache mounts (`--mount=type=cache`) in both Dockerfiles for faster builds
+- [x] Add non-root user setup in `control-server/Dockerfile` (prepared for future non-root execution)
+- [x] Use `npm ci` instead of `npm install` for reproducible builds
+- [x] Add `service_healthy` condition for `depends_on` in wizard compose
+- [x] Add Trivy security scanning to CI workflow (`.github/workflows/ci.yml`)
+- [x] Add graceful shutdown handling to `control-server/src/index.ts` (SIGINT/SIGTERM + uncaught exceptions)
+- [x] Add Vite build optimizations (chunk naming, Radix UI chunking, es2020 target)
 
 ## Memory (what to keep in mind later)
 

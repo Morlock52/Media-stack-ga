@@ -1,11 +1,11 @@
-<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD033 MD041 MD001 MD036 -->
 <div align="center">
 
 <img src="docs/images/logo.png" alt="Media Stack Logo" width="200"/>
 
 # 🎬 Ultimate Media Stack — GA
 
-### Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a docs + wizard experience.
+**Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a docs + wizard experience**
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready"/>
@@ -80,19 +80,20 @@ cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec
 
 ## 🔎 Table of contents
 
-- [Screenshots](#screenshots-current)
-- [Quick Start](#quick-start)
-- [Highlights](#highlights)
-- [Stack at a glance](#stack-at-a-glance)
-- [Agentic System](#agentic-system)
-- [Interactive Documentation](#interactive-documentation)
-- [Architecture](#architecture)
-- [Security model](#security-model)
-- [Storage planning](#storage-planning)
-- [Install & run](#install--run)
-- [Tests & stress](#tests--stress)
-- [Operations](#operations)
-- [References](#references)
+- [**Start Here — Pick Your Setup Path**](docs/START_HERE.md) ⬅️ New? Start here!
+- [Screenshots](#-screenshots-current)
+- [Quick Start](#-quick-start)
+- [Highlights](#-highlights)
+- [Stack at a glance](#-stack-at-a-glance)
+- [Agentic System](#-agentic-system)
+- [Interactive Documentation](#-interactive-documentation)
+- [Architecture](#-architecture)
+- [Security model](#-security-model)
+- [Storage planning](#-storage-planning)
+- [Install & run](#-install--run)
+- [Tests & stress](#-tests--stress)
+- [Operations](#-operations)
+- [References](#-references)
 
 ## 🚀 Quick start
 
@@ -154,6 +155,12 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 - **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
 - **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
 - **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
+
+### Remote deploy + voice quality
+
+- **Remote Deploy** uses the control server (`/api/remote-deploy/*`) and works automatically when the UI is running behind a proxy that forwards `/api` (Docker Wizard mode does this). For static-hosted UIs, set `VITE_CONTROL_SERVER_URL` (or use Settings → “Control Server Connection”).
+- If the control server is started with `CONTROL_SERVER_TOKEN`, also set `VITE_CONTROL_SERVER_TOKEN` (or enter the token in Settings) so the UI can authenticate.
+- For more natural voice output, you can optionally enable ElevenLabs TTS via `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` and set `TTS_PROVIDER=elevenlabs` (or configure it in Settings).
 
 <p align="center">
   <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
@@ -419,11 +426,11 @@ npm run stress
 
 These links back up the assumptions used in the diagrams & planning chart:
 
-- Cloudflare Tunnel docs (outbound-only connector model): https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/
-- Cloudflare Tunnel firewall requirements: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/
-- Authelia 2FA (WebAuthn): https://www.authelia.com/configuration/second-factor/webauthn/
-- Authelia 2FA (TOTP): https://www.authelia.com/configuration/second-factor/time-based-one-time-password/
-- Gluetun README (built-in firewall kill-switch): https://github.com/qdm12/gluetun/blob/master/README.md
-- Plex hardware-accelerated streaming requires Plex Pass: https://support.plex.tv/articles/115002178853-using-hardware-accelerated-streaming/
-- Plex server sizing note (RAM): https://support.plex.tv/articles/200375666-plex-media-server-requirements/
-- ITU press release (HEVC ~half the bitrate vs AVC claim): https://www.itu.int/net/pressoffice/press_releases/2013/01.aspx
+- [Cloudflare Tunnel docs (outbound-only connector model)](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
+- [Cloudflare Tunnel firewall requirements](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/)
+- [Authelia 2FA (WebAuthn)](https://www.authelia.com/configuration/second-factor/webauthn/)
+- [Authelia 2FA (TOTP)](https://www.authelia.com/configuration/second-factor/time-based-one-time-password/)
+- [Gluetun README (built-in firewall kill-switch)](https://github.com/qdm12/gluetun/blob/master/README.md)
+- [Plex hardware-accelerated streaming requires Plex Pass](https://support.plex.tv/articles/115002178853-using-hardware-accelerated-streaming/)
+- [Plex server sizing note (RAM)](https://support.plex.tv/articles/200375666-plex-media-server-requirements/)
+- [ITU press release (HEVC ~half the bitrate vs AVC claim)](https://www.itu.int/net/pressoffice/press_releases/2013/01.aspx)

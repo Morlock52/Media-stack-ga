@@ -11,6 +11,9 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
 const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
 const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
+const TTS_PROVIDER = process.env.TTS_PROVIDER || 'openai';
+const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_multilingual_v2';
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
 
 type VoiceAgentHistoryItem = { role: 'user' | 'assistant'; content: string };
 
@@ -26,6 +29,13 @@ const getOpenAIKey = () => {
     if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
     const envContent = readEnvFile();
     const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
+    return match ? match[1].trim() : null;
+};
+
+const getElevenLabsKey = () => {
+    if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY;
+    const envContent = readEnvFile();
+    const match = envContent.match(/^ELEVENLABS_API_KEY=(.+)$/m);
     return match ? match[1].trim() : null;
 };
 
@@ -52,6 +62,7 @@ const requestOpenAiTts = async (options: {
     model: string;
     voice: string;
     format: 'mp3' | 'wav' | 'opus';
+    speed?: number;
 }) => {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
@@ -64,13 +75,47 @@ const requestOpenAiTts = async (options: {
             voice: options.voice,
             input: options.text,
             response_format: options.format,
+            ...(typeof options.speed === 'number' ? { speed: options.speed } : {}),
         }),
     });
 
     return response;
 };
 
-const sendTtsUpstreamError = async (reply: any, response: Response, fallbackMessage: string) => {
+const requestElevenLabsTts = async (options: {
+    apiKey: string;
+    text: string;
+    voiceId: string;
+    model: string;
+}) => {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${options.voiceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': options.apiKey,
+            Accept: 'audio/mpeg',
+        },
+        body: JSON.stringify({
+            text: options.text,
+            model_id: options.model,
+            voice_settings: {
+                stability: 0.35,
+                similarity_boost: 0.85,
+                style: 0.25,
+                use_speaker_boost: true,
+            },
+        }),
+    });
+
+    return response;
+};
+
+const sendTtsUpstreamError = async (
+    reply: any,
+    response: Response,
+    fallbackMessage: string,
+    providerLabel: string
+) => {
     let upstreamBody = '';
     try {
         upstreamBody = await response.text();
@@ -84,7 +129,7 @@ const sendTtsUpstreamError = async (reply: any, response: Response, fallbackMess
 
     if (isAuthError) {
         return reply.status(401).send({
-            error: 'OpenAI authentication failed',
+            error: `${providerLabel} authentication failed`,
             reason: 'invalid_api_key',
             upstreamStatus,
         });
@@ -92,7 +137,7 @@ const sendTtsUpstreamError = async (reply: any, response: Response, fallbackMess
 
     if (isRateLimited) {
         return reply.status(429).send({
-            error: 'OpenAI rate limited',
+            error: `${providerLabel} rate limited`,
             reason: 'rate_limited',
             upstreamStatus,
         });
@@ -237,12 +282,14 @@ export async function aiRoutes(fastify: FastifyInstance) {
     fastify.post<{
         Body: {
             text?: string;
+            provider?: 'openai' | 'elevenlabs';
             voice?: string;
+            voiceId?: string;
+            speed?: number;
             format?: 'mp3' | 'wav' | 'opus';
         };
     }>('/api/tts', async (request, reply) => {
-        const { text, voice, format } = request.body || {};
-        const effectiveApiKey = getOpenAIKey();
+        const { text, voice, voiceId, speed, format, provider } = request.body || {};
 
         if (!text || typeof text !== 'string') {
             return reply.status(400).send({ error: 'text is required' });
@@ -258,6 +305,55 @@ export async function aiRoutes(fastify: FastifyInstance) {
             return reply.status(413).send({ error: 'text is too long' });
         }
 
+        const requestedProvider =
+            provider === 'elevenlabs' || provider === 'openai'
+                ? provider
+                : (TTS_PROVIDER === 'elevenlabs' ? 'elevenlabs' : 'openai');
+
+        const requestedSpeed = typeof speed === 'number' && Number.isFinite(speed) ? speed : undefined;
+        const safeSpeed =
+            typeof requestedSpeed === 'number' && requestedSpeed >= 0.25 && requestedSpeed <= 4
+                ? requestedSpeed
+                : undefined;
+
+        if (requestedProvider === 'elevenlabs') {
+            const elevenKey = getElevenLabsKey();
+            if (!elevenKey) {
+                return reply.status(400).send({ error: 'ElevenLabs API key is required for TTS', reason: 'missing_elevenlabs_key' });
+            }
+
+            const resolvedVoiceId =
+                typeof voiceId === 'string' && voiceId.trim().length > 0 ? voiceId.trim() : ELEVENLABS_VOICE_ID;
+            if (!resolvedVoiceId) {
+                return reply.status(400).send({ error: 'ElevenLabs voiceId is required for TTS', reason: 'missing_voice_id' });
+            }
+
+            try {
+                const response = await requestElevenLabsTts({
+                    apiKey: elevenKey,
+                    text: normalizedText,
+                    voiceId: resolvedVoiceId,
+                    model: ELEVENLABS_TTS_MODEL,
+                });
+
+                if (!response.ok) {
+                    fastify.log.warn({ status: response.status }, 'ElevenLabs TTS error');
+                    return sendTtsUpstreamError(reply, response, 'TTS failed', 'ElevenLabs');
+                }
+
+                const audioBuffer = Buffer.from(await response.arrayBuffer());
+                reply.header('Cache-Control', 'no-store');
+                reply.header('Content-Type', 'audio/mpeg');
+                reply.header('X-TTS-Provider', 'elevenlabs');
+                reply.header('X-TTS-Model', ELEVENLABS_TTS_MODEL);
+                return reply.send(audioBuffer);
+            } catch (error: any) {
+                fastify.log.warn({ err: error }, 'ElevenLabs TTS failed');
+                return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
+            }
+        }
+
+        const effectiveApiKey = getOpenAIKey();
         if (!effectiveApiKey) {
             return reply.status(400).send({ error: 'OpenAI API key is required for TTS', reason: 'missing_api_key' });
         }
@@ -273,6 +369,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 model: OPENAI_TTS_MODEL,
                 voice: requestedVoice,
                 format: requestedFormat,
+                speed: safeSpeed,
             });
 
             let response = primary;
@@ -284,22 +381,83 @@ export async function aiRoutes(fastify: FastifyInstance) {
                     model: OPENAI_TTS_FALLBACK_MODEL,
                     voice: requestedVoice,
                     format: requestedFormat,
+                    speed: safeSpeed,
                 });
             }
 
             if (!response.ok) {
                 fastify.log.warn({ status: response.status }, 'OpenAI TTS error');
-                return sendTtsUpstreamError(reply, response, 'TTS failed');
+                return sendTtsUpstreamError(reply, response, 'TTS failed', 'OpenAI');
             }
 
             const audioBuffer = Buffer.from(await response.arrayBuffer());
             reply.header('Cache-Control', 'no-store');
             reply.header('Content-Type', contentTypeForTtsFormat(requestedFormat));
+            reply.header('X-TTS-Provider', 'openai');
             reply.header('X-TTS-Model', response === primary ? OPENAI_TTS_MODEL : OPENAI_TTS_FALLBACK_MODEL);
             return reply.send(audioBuffer);
         } catch (error: any) {
             fastify.log.warn({ err: error }, 'TTS failed');
             return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
+        }
+    });
+
+    fastify.get('/api/settings/tts', async (_request, _reply) => {
+        const openaiKey = getOpenAIKey();
+        const elevenKey = getElevenLabsKey();
+        return {
+            defaultProvider: TTS_PROVIDER,
+            openai: {
+                hasKey: Boolean(openaiKey && openaiKey.length > 0),
+                ttsModel: OPENAI_TTS_MODEL,
+                ttsVoice: OPENAI_TTS_VOICE,
+            },
+            elevenlabs: {
+                hasKey: Boolean(elevenKey && elevenKey.length > 0),
+                ttsModel: ELEVENLABS_TTS_MODEL,
+                voiceId: ELEVENLABS_VOICE_ID,
+            },
+        };
+    });
+
+    fastify.post<{ Body: { key?: string } }>('/api/settings/elevenlabs-key', async (request, reply) => {
+        const { key } = request.body || {};
+        if (!key || typeof key !== 'string' || key.trim().length < 10) {
+            return reply.status(400).send({ error: 'ElevenLabs API key is required and must be at least 10 characters.' });
+        }
+        try {
+            setEnvValue('ELEVENLABS_API_KEY', key.trim());
+            process.env.ELEVENLABS_API_KEY = key.trim();
+            return { success: true };
+        } catch (error) {
+            fastify.log.error({ err: error }, 'Failed to save ElevenLabs key');
+            reply.status(500).send({ error: 'Failed to save ElevenLabs key' });
+        }
+    });
+
+    fastify.delete('/api/settings/elevenlabs-key', async (_request, reply) => {
+        try {
+            removeEnvKey('ELEVENLABS_API_KEY');
+            delete process.env.ELEVENLABS_API_KEY;
+            return { success: true };
+        } catch (error) {
+            fastify.log.error({ err: error }, 'Failed to remove ElevenLabs key');
+            reply.status(500).send({ error: 'Failed to remove ElevenLabs key' });
+        }
+    });
+
+    fastify.post<{ Body: { voiceId?: string } }>('/api/settings/elevenlabs-voice', async (request, reply) => {
+        const { voiceId: nextVoiceId } = request.body || {};
+        if (!nextVoiceId || typeof nextVoiceId !== 'string' || !nextVoiceId.trim()) {
+            return reply.status(400).send({ error: 'voiceId is required.' });
+        }
+        try {
+            setEnvValue('ELEVENLABS_VOICE_ID', nextVoiceId.trim());
+            process.env.ELEVENLABS_VOICE_ID = nextVoiceId.trim();
+            return { success: true };
+        } catch (error) {
+            fastify.log.error({ err: error }, 'Failed to save ElevenLabs voiceId');
+            reply.status(500).send({ error: 'Failed to save ElevenLabs voiceId' });
         }
     });
 

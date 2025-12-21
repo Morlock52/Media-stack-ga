@@ -9,7 +9,10 @@ const NAV_ITEMS = [
   { label: 'Setup Wizard', href: '#builder', shortcut: '2' },
 ] as const
 
-export function ModernNavigation() {
+export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: { 
+  showSidebarToggle?: boolean
+  onSidebarToggle?: () => void 
+} = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { toggleTheme, resolvedTheme } = useTheme()
@@ -131,6 +134,17 @@ export function ModernNavigation() {
               >
                 {resolvedTheme === 'dark' ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
               </button>
+
+              {/* Sidebar toggle */}
+              {showSidebarToggle && onSidebarToggle && (
+                <button
+                  onClick={onSidebarToggle}
+                  className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                  title="Toggle sidebar"
+                >
+                  <Menu className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
 
               {/* Mobile menu toggle */}
               <button

@@ -97,6 +97,31 @@ async function run() {
     assert.ok(snapshot.status === 200 || snapshot.status === 500)
     console.log('✅ /api/health-snapshot reachable (status %d)', snapshot.status)
   }
+
+  const remoteTest = await post('/api/remote-deploy/test', {
+    host: '127.0.0.1',
+    port: 22,
+    username: 'test',
+    authType: 'password',
+    password: 'bad'
+  })
+  assert.equal(remoteTest.status, 502)
+  assert.equal(remoteTest.body.success, false)
+  assert.ok(String(remoteTest.body.error || '').toLowerCase().includes('ssh connection failed'))
+  console.log('✅ /api/remote-deploy/test returns expected 502 on unreachable SSH')
+
+  const remoteDeploy = await post('/api/remote-deploy', {
+    host: '127.0.0.1',
+    port: 22,
+    username: 'test',
+    authType: 'password',
+    password: 'bad',
+    deployPath: '~/media-stack',
+  })
+  assert.equal(remoteDeploy.status, 200)
+  assert.equal(remoteDeploy.body.success, false)
+  assert.ok(typeof remoteDeploy.body.error === 'string' && remoteDeploy.body.error.length > 0)
+  console.log('✅ /api/remote-deploy returns 200 + success:false on failure')
 }
 
 run().catch(err => {

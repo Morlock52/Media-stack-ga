@@ -136,7 +136,6 @@ async function stressTest() {
         { label: 'root', method: 'GET', path: '/', ok: [200] },
         { label: 'health', method: 'GET', path: '/api/health', ok: [200] },
         { label: 'agents', method: 'GET', path: '/api/agents', ok: [200] },
-        { label: 'registry.list', method: 'GET', path: '/api/registry/apps', ok: [200] },
         { label: 'settings.openai-key.get', method: 'GET', path: '/api/settings/openai-key', ok: [200] },
 
         { label: 'agent.chat', method: 'POST', path: '/api/agent/chat', ok: [200, 401, 429, 502], body: { message: 'hello', agentId: 'general' } },
@@ -149,8 +148,8 @@ async function stressTest() {
         { label: 'docker.action.bad', method: 'POST', path: '/api/service/invalid', ok: [400], body: { serviceName: 'does-not-matter' } },
         { label: 'remote.bad', method: 'POST', path: '/api/remote-deploy', ok: [400], body: { host: '1.2.3.4', username: 'root' } },
         { label: 'remote.test.bad', method: 'POST', path: '/api/remote-deploy/test', ok: [400], body: { host: '1.2.3.4', username: 'root' } },
-        { label: 'registry.scrape.bad', method: 'POST', path: '/api/registry/scrape', ok: [400], body: {} },
-        { label: 'registry.add.bad', method: 'POST', path: '/api/registry/apps', ok: [400], body: {} },
+        { label: 'remote.test.unreachable', method: 'POST', path: '/api/remote-deploy/test', ok: [502], body: { host: '127.0.0.1', port: 22, username: 'test', authType: 'password', password: 'bad' } },
+        { label: 'remote.deploy.unreachable', method: 'POST', path: '/api/remote-deploy', ok: [200], body: { host: '127.0.0.1', port: 22, username: 'test', authType: 'password', password: 'bad', deployPath: '~/media-stack' } },
         { label: 'settings.openai-key.post.bad', method: 'POST', path: '/api/settings/openai-key', ok: [400], body: { key: 'short' } },
     ]
 
@@ -165,7 +164,7 @@ async function stressTest() {
 
     if (INCLUDE_ARR_BOOTSTRAP) {
         requestSpecs.push(
-            { label: 'registry.bootstrap-arr', method: 'POST', path: '/api/registry/bootstrap-arr', ok: [200, 500] },
+            { label: 'arr.bootstrap', method: 'POST', path: '/api/arr/bootstrap', ok: [200, 500] },
         )
     }
 

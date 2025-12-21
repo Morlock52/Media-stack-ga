@@ -1,0 +1,51 @@
+# docker-compose.wizard.override.yml.example
+# ============================================================================
+# Copy this file to docker-compose.wizard.override.yml and customize as needed.
+# Docker Compose automatically merges override files with the base config.
+#
+# Usage:
+#   docker compose -f docker-compose.wizard.yml -f docker-compose.wizard.override.yml up -d
+#
+# Or rename to docker-compose.wizard.override.yml and it will be auto-merged.
+# ============================================================================
+
+services:
+  wizard-web:
+    # Uncomment to change the UI port (default: 3002)
+    # ports:
+    #   - "127.0.0.1:8080:80"
+    
+    # Uncomment for development with live reload (mount source)
+    # volumes:
+    #   - ./docs-site/dist:/usr/share/nginx/html:ro
+
+  wizard-api:
+    # Uncomment to change the API port (default: 3001)
+    # ports:
+    #   - "127.0.0.1:8081:3001"
+    
+    # Uncomment to expose beyond localhost (DANGEROUS - set CONTROL_SERVER_TOKEN!)
+    # ports:
+    #   - "0.0.0.0:3001:3001"
+    
+    environment:
+      # Uncomment for verbose logging
+      # - LOG_LEVEL=debug
+      
+      # Required if exposing beyond localhost
+      # - CONTROL_SERVER_TOKEN=your-secret-token-here
+      
+      # Uncomment to allow additional CORS origins
+      # - CONTROL_SERVER_CORS_ORIGINS=http://localhost:3002,http://192.168.1.100:3002
+      
+      # Uncomment to set a custom OpenAI model
+      # - OPENAI_MODEL=gpt-4o-mini
+
+    # Alternative Docker socket path (e.g., rootless Docker on Linux)
+    # volumes:
+    #   - /run/user/1000/docker.sock:/var/run/docker.sock
+    #   - .:/project
+
+    # Match host Docker group for socket permissions (Linux)
+    # group_add:
+    #   - "999"  # Replace with your docker group ID (run: getent group docker)

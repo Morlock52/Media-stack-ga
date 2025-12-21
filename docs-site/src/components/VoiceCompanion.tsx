@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
-import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
+import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
 
 export interface VoicePlanSummary {
   services: string[]
@@ -35,19 +35,24 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
-  const { hasKey: hasRemoteKey } = useControlServerOpenAIKeyStatus()
-  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'browser' | 'off'>(() => 'browser')
+  const { openai, elevenlabs, defaultProvider } = useControlServerTtsStatus()
+  const hasOpenAiTts = Boolean(openai?.hasKey)
+  const hasElevenLabsTts = Boolean(elevenlabs?.hasKey)
+  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'elevenlabs' | 'browser' | 'off'>(() => 'browser')
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const hasUserSetVoiceOutputRef = useRef(false)
 
   useEffect(() => {
-    if (!hasRemoteKey && voiceOutput === 'openai') setVoiceOutput('browser')
-    if (hasRemoteKey && !hasUserSetVoiceOutputRef.current && voiceOutput === 'browser') {
-      setVoiceOutput('openai')
-    }
-  }, [hasRemoteKey, voiceOutput])
+    if (!hasOpenAiTts && voiceOutput === 'openai') setVoiceOutput('browser')
+    if (!hasElevenLabsTts && voiceOutput === 'elevenlabs') setVoiceOutput('browser')
 
-  const handleVoiceOutputChange = useCallback((value: 'openai' | 'browser' | 'off') => {
+    if (!hasUserSetVoiceOutputRef.current && voiceOutput === 'browser') {
+      if (defaultProvider === 'elevenlabs' && hasElevenLabsTts) setVoiceOutput('elevenlabs')
+      else if (hasOpenAiTts) setVoiceOutput('openai')
+    }
+  }, [defaultProvider, hasElevenLabsTts, hasOpenAiTts, voiceOutput])
+
+  const handleVoiceOutputChange = useCallback((value: 'openai' | 'elevenlabs' | 'browser' | 'off') => {
     hasUserSetVoiceOutputRef.current = true
     setVoiceOutput(value)
   }, [])
@@ -130,13 +135,19 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         return
       }
 
-      if (voiceOutput === 'openai' && hasRemoteKey && hasUserInteracted) {
+      const useRemoteTts =
+        (voiceOutput === 'openai' && hasOpenAiTts) || (voiceOutput === 'elevenlabs' && hasElevenLabsTts)
+
+      if (useRemoteTts && hasUserInteracted) {
         try {
           setStatus('speaking')
           const response = await fetch(buildControlServerUrl('/api/tts'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
-            body: JSON.stringify({ text: trimmed }),
+            body: JSON.stringify({
+              text: trimmed,
+              provider: voiceOutput === 'elevenlabs' ? 'elevenlabs' : 'openai',
+            }),
           })
 
           if (!response.ok) {
@@ -149,13 +160,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
             }
 
             if (response.status === 401 || reason === 'invalid_api_key') {
-              setError('OpenAI key invalid; using browser voice.')
+              setError(`${voiceOutput === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'} key invalid; using browser voice.`)
               handleVoiceOutputChange('browser')
               throw new Error('invalid_api_key')
             }
 
             if (response.status === 429 || reason === 'rate_limited') {
-              setError('OpenAI rate limited; using browser voice.')
+              setError(`${voiceOutput === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'} rate limited; using browser voice.`)
               handleVoiceOutputChange('browser')
               throw new Error('rate_limited')
             }
@@ -184,7 +195,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
           if (e instanceof Error && (e.message === 'invalid_api_key' || e.message === 'rate_limited')) {
             // handled via setError + voiceOutput switch
           } else {
-            console.warn('OpenAI TTS failed; falling back to browser TTS:', e)
+            console.warn('Remote TTS failed; falling back to browser TTS:', e)
           }
         }
       }
@@ -217,7 +228,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         setStatus('idle')
       }
     })()
-  }, [availableVoices, hasRemoteKey, hasUserInteracted, pickBestBrowserVoice, stopSpeaking, voiceOutput])
+  }, [availableVoices, hasElevenLabsTts, hasOpenAiTts, hasUserInteracted, pickBestBrowserVoice, stopSpeaking, voiceOutput])
 
   // Pre-load voices (some browsers load them async)
   useEffect(() => {
@@ -515,18 +526,19 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                     <p className="text-xs text-muted-foreground">Voice output</p>
                     <select
                       value={voiceOutput}
-                      onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'browser' | 'off')}
+                      onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'elevenlabs' | 'browser' | 'off')}
                       className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-purple-500/50"
                       aria-label="Voice output mode"
                     >
                       <option value="off">Off</option>
                       <option value="browser">Browser</option>
-                      <option value="openai" disabled={!hasRemoteKey}>OpenAI (HQ)</option>
+                      <option value="openai" disabled={!hasOpenAiTts}>OpenAI (HQ)</option>
+                      <option value="elevenlabs" disabled={!hasElevenLabsTts}>ElevenLabs (HQ)</option>
                     </select>
                   </div>
-                  {!hasRemoteKey && (
+                  {!hasOpenAiTts && !hasElevenLabsTts && (
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      Add an OpenAI key in Settings to enable higher quality voice.
+                      Add an OpenAI or ElevenLabs key in Settings to enable higher quality voice.
                     </p>
                   )}
                 </div>

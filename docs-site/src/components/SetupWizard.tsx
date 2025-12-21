@@ -24,6 +24,7 @@ import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
 import { Button } from './ui/button'
+import { GlassCard } from './ui/glass-card'
 import { services } from '../data/services'
 
 // New Step Components
@@ -638,20 +639,21 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
 
                     {/* Main Content */}
                     {showTemplates ? (
-                        <motion.div
-                            className="glass-ultra rounded-2xl p-8 border border-border min-h-[500px]"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                        <GlassCard
+                            blur="lg"
+                            variant="accent"
+                            className="p-8 min-h-[500px] transition-all duration-300"
                         >
                             <TemplateSelector
                                 onSelectTemplate={handleTemplateSelect}
                                 onSkip={() => setShowTemplates(false)}
                             />
-                        </motion.div>
+                        </GlassCard>
                     ) : (
-                        <motion.div
-                            className="glass-ultra rounded-2xl p-8 border border-border min-h-[500px]"
-                            layout
+                        <GlassCard
+                            blur="lg" 
+                            variant="default"
+                            className="p-8 min-h-[500px] transition-all duration-300 hover:bg-white/20"
                         >
                             <AnimatePresence mode="wait">
                                 {/* Step 0: Welcome */}
@@ -704,7 +706,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                     />
                                 )}
                             </AnimatePresence>
-                        </motion.div>
+                        </GlassCard>
                     )}
 
                     {/* Navigation Buttons */}

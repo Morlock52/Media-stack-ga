@@ -11,9 +11,9 @@ ENV VITE_OPENAI_MODEL=${VITE_OPENAI_MODEL}
 ENV VITE_CONTROL_SERVER_URL=${VITE_CONTROL_SERVER_URL}
 ENV VITE_CONTROL_SERVER_TOKEN=${VITE_CONTROL_SERVER_TOKEN}
 
-# Copy package info first to leverage cache
+# Copy package info first to leverage cache with BuildKit
 COPY docs-site/package*.json ./
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY docs-site/ .
 COPY docker-compose.yml ./docker-compose.yml

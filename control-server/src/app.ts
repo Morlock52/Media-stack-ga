@@ -25,14 +25,39 @@ export const buildApp = async (): Promise<FastifyInstance> => {
         ? rawCorsOrigins.split(',').map((o) => o.trim()).filter(Boolean)
         : [
             'http://localhost:5173', // Vite dev server (docs-site)
+            'http://127.0.0.1:5173',
+            'http://[::1]:5173',
             'http://localhost:3000', // common local UI port
+            'http://127.0.0.1:3000',
+            'http://[::1]:3000',
             'http://localhost:3002', // dockerized wizard-web default
+            'http://127.0.0.1:3002',
+            'http://[::1]:3002',
         ];
+
+    const isLoopbackOrigin = (origin: string) => {
+        try {
+            const url = new URL(origin);
+            const hostname = url.hostname;
+            return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+        } catch {
+            return false;
+        }
+    };
 
     await app.register(cors, {
         origin: (origin, cb) => {
             // Non-browser requests often have no Origin (curl, server-to-server).
             if (!origin) return cb(null, true);
+
+            // If CONTROL_SERVER_CORS_ORIGINS is set, only allow explicitly listed origins.
+            if (rawCorsOrigins) {
+                if (allowedOrigins.includes(origin)) return cb(null, true);
+                return cb(new Error('Not allowed by CORS'), false);
+            }
+
+            // Default dev behavior: allow any loopback origin (supports IDE/browser preview proxy ports).
+            if (isLoopbackOrigin(origin)) return cb(null, true);
             if (allowedOrigins.includes(origin)) return cb(null, true);
             return cb(new Error('Not allowed by CORS'), false);
         }

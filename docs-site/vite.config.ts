@@ -18,13 +18,20 @@ export default defineConfig(() => ({
   },
   build: {
     chunkSizeWarningLimit: 800,
+    // Production optimizations
+    minify: 'esbuild',
+    target: 'es2020',
+    sourcemap: false, // Disable sourcemaps in production for smaller builds
     rollupOptions: {
-          output: {
+      output: {
+        // Optimize chunk file names to avoid ad-blocker issues
+        chunkFileNames: 'assets/chunks/[name]-[hash].js',
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           ui: ['framer-motion', 'lucide-react', 'clsx'],
           forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
           state: ['zustand'],
+          radix: ['@radix-ui/react-dialog', '@radix-ui/react-tooltip', '@radix-ui/react-slot'],
         },
       },
     },

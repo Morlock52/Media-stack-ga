@@ -20,6 +20,10 @@ interface ComboboxInputProps {
     placeholder?: string
     description?: string
     required?: boolean
+    inputIndex?: number
+    registerInput?: (index: number) => (element: HTMLInputElement | null) => void
+    handleKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
+    updateCurrentIndex?: (element: HTMLInputElement | null) => void
 }
 
 export function ComboboxInput({
@@ -30,11 +34,16 @@ export function ComboboxInput({
     options,
     placeholder,
     description,
-    required
+    required,
+    inputIndex,
+    registerInput,
+    handleKeyDown,
+    updateCurrentIndex
 }: ComboboxInputProps) {
     const [isOpen, setIsOpen] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const { register, setValue, watch, formState: { errors } } = form
+    const registerResult = register(name)
     const currentValue = watch(name)
     const error = errors[name]
 
@@ -66,14 +75,25 @@ export function ComboboxInput({
                 )}
 
                 <input
-                    {...register(name)}
+                    {...registerResult}
+                    type="text"
+                    ref={(element) => {
+                        registerResult.ref(element)
+                        if (inputIndex !== undefined && registerInput) {
+                            registerInput(inputIndex)(element)
+                        }
+                    }}
+                    onKeyDown={handleKeyDown}
+                    onFocus={(e) => {
+                        setIsOpen(true)
+                        updateCurrentIndex?.(e.target)
+                    }}
                     className={cn(
-                        "w-full bg-background/60 border rounded-lg py-2.5 pr-10 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm",
+                        "w-full bg-background/60 border rounded-lg py-2.5 pr-10 text-foreground placeholder:text-muted-foreground transition-all backdrop-blur-sm focus:ring-2 focus:ring-primary/20",
                         Icon ? "pl-11" : "pl-4",
                         error ? "border-destructive" : "border-border"
                     )}
                     placeholder={placeholder}
-                    onFocus={() => setIsOpen(true)}
                     autoComplete="off"
                 />
 

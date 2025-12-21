@@ -1,0 +1,123 @@
+# Docker Compose for Media Stack Wizard with Socket Proxy (Security-Hardened)
+#
+# This configuration adds a docker-socket-proxy between the wizard-api and the
+# Docker daemon, limiting what API operations the wizard can perform.
+#
+# Usage:
+#   docker compose -f docker-compose.wizard.secure.yml up --build -d
+#
+# The socket proxy only allows the specific Docker API endpoints needed by the wizard:
+# - CONTAINERS: list, inspect, logs, start, stop, restart
+# - IMAGES: list, inspect
+# - NETWORKS: list, inspect
+# - INFO: system info
+# - VERSION: API version
+# - EVENTS: container events
+#
+# POST is enabled to allow start/stop/restart operations.
+# BUILD, EXEC, SECRETS, AUTH are disabled for security.
+
+services:
+  # Docker Socket Proxy - Security layer between wizard-api and Docker daemon
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: media-stack-socket-proxy
+    restart: unless-stopped
+    environment:
+      # Granted by default (read-only, safe)
+      - EVENTS=1
+      - PING=1
+      - VERSION=1
+      # Required for wizard functionality
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - INFO=1
+      - VOLUMES=1
+      # Allow container lifecycle operations
+      - POST=1
+      - ALLOW_START=1
+      - ALLOW_STOP=1
+      - ALLOW_RESTARTS=1
+      # Security-critical - DISABLED
+      - AUTH=0
+      - SECRETS=0
+      - BUILD=0
+      - COMMIT=0
+      - CONFIGS=0
+      - EXEC=0
+      - PLUGINS=0
+      - SERVICES=0
+      - SWARM=0
+      - TASKS=0
+      - NODES=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - wizard-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2375/_ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  wizard-web:
+    build:
+      context: .
+      dockerfile: docs-site/Dockerfile
+      args:
+        VITE_OPENAI_MODEL: ${VITE_OPENAI_MODEL:-gpt-4o-mini}
+        VITE_CONTROL_SERVER_URL: ${VITE_CONTROL_SERVER_URL:-http://localhost:3001}
+    container_name: media-stack-wizard-web
+    ports:
+      - "127.0.0.1:3002:80"
+    restart: unless-stopped
+    depends_on:
+      wizard-api:
+        condition: service_healthy
+    networks:
+      - wizard-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  wizard-api:
+    build:
+      context: ./control-server
+      dockerfile: Dockerfile
+      args:
+        OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+    container_name: media-stack-wizard-api
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      - PORT=3001
+      - PROJECT_ROOT=/project
+      - CONTROL_SERVER_HOST=0.0.0.0
+      - CONTROL_SERVER_CORS_ORIGINS=http://localhost:3002
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      # Use socket proxy instead of direct socket access
+      - DOCKER_HOST=tcp://socket-proxy:2375
+    volumes:
+      # No docker.sock mount - uses socket-proxy instead
+      - .:/project
+    restart: unless-stopped
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    networks:
+      - wizard-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  wizard-net:
+    driver: bridge

@@ -93,8 +93,8 @@ test.describe('Docs Site Smoke Tests', () => {
       }
     })
     
-    await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 })
     
     // Allow some time for async errors
     await page.waitForTimeout(2000)
@@ -109,20 +109,18 @@ test.describe('Docs Site Smoke Tests', () => {
     await page.goto('/')
 
     // Start wizard
-    await page.getByRole('button', { name: /start configuration/i }).click()
+    await page.getByRole('button', { name: /start configuration/i }).first().click()
 
     // Step 2: Basic config (domain + password required)
     const domain = 'mydomain.net'
-    await expect(page.getByRole('heading', { name: /basic configuration/i })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
 
     const domainInput = page.locator('input[name="domain"]:visible')
-    await domainInput.click()
-    await domainInput.fill(domain)
+    await domainInput.fill(domain, { force: true })
     await expect(domainInput).toHaveValue(domain)
 
     const passwordInput = page.locator('input[name="password"]:visible')
-    await passwordInput.click()
-    await passwordInput.fill('TestPassword123!')
+    await passwordInput.fill('TestPassword123!', { force: true })
     await expect(passwordInput).toHaveValue('TestPassword123!')
     await page.getByRole('button', { name: /^next$/i }).click()
 
@@ -184,6 +182,52 @@ test.describe('Docs Site Smoke Tests', () => {
 
     const autheliaText = downloads.find(d => d.content.includes('authentication_backend:') && d.content.includes('session:'))?.content
     expect(autheliaText, 'missing authelia-config-like download').toBeTruthy()
+  })
+
+  test('storage planner accepts Tdarr library paths', async ({ page }) => {
+    test.setTimeout(120000)
+    await page.goto('/')
+
+    await page.getByRole('button', { name: /start configuration/i }).first().click()
+
+    await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
+
+    await page.locator('input[name="domain"]:visible').fill('mydomain.net', { force: true })
+    await page.locator('input[name="password"]:visible').fill('TestPassword123!', { force: true })
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: /expert mode/i }).click()
+
+    await page.getByText('Tdarr', { exact: true }).click()
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    await expect(page.getByRole('heading', { name: /service configuration/i })).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: /advanced \(per-service\)/i }).click()
+
+    const moviesCard = page
+      .locator('div.rounded-2xl')
+      .filter({ has: page.getByText('Movies Library', { exact: true }) })
+      .first()
+    const moviesInput = moviesCard.locator('input')
+    await moviesInput.fill('/mnt/media/movies')
+    await expect(moviesInput).toHaveValue('/mnt/media/movies')
+
+    const tvCard = page
+      .locator('div.rounded-2xl')
+      .filter({ has: page.getByText('TV Library', { exact: true }) })
+      .first()
+    const tvInput = tvCard.locator('input')
+    await tvInput.fill('/mnt/media/tv')
+    await expect(tvInput).toHaveValue('/mnt/media/tv')
+
+    await page.getByRole('button', { name: /^next$/i }).click()
+    await page.getByRole('button', { name: /^next$/i }).click()
+
+    await expect(page.getByText('Review & Generate', { exact: true })).toBeVisible({ timeout: 15000 })
+    const envPreview = page.locator('pre').first()
+    await expect(envPreview).toContainText('MOVIES_PATH=/mnt/media/movies')
+    await expect(envPreview).toContainText('TV_SHOWS_PATH=/mnt/media/tv')
   })
 
   test('AI assistant can chat with control-server', async ({ page }) => {

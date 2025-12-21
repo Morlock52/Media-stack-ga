@@ -33,6 +33,42 @@ interface ExecResult {
     stderr: string;
 }
 
+const cleanRemoteOutput = (value: string) => {
+    const lines = (value || '').replace(/\r\n/g, '\n').split('\n');
+    return lines
+        .filter((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return false;
+            if (/^Warning: Permanently added .* to the list of known hosts\.?$/i.test(trimmed)) return false;
+            if (/^time=".*"\s+level=warning\s+msg="The \".*\" variable is not set\.? Defaulting to a blank string\.?"$/i.test(trimmed)) return false;
+            if (/^The \".*\" variable is not set\.? Defaulting to a blank string\.?$/i.test(trimmed)) return false;
+            return true;
+        })
+        .join('\n')
+        .trim();
+};
+
+const sshCommonOptions = [
+    '-o', 'StrictHostKeyChecking=no',
+    '-o', 'UserKnownHostsFile=/dev/null',
+    '-o', 'ConnectTimeout=12',
+    '-o', 'ConnectionAttempts=1',
+    '-o', 'ServerAliveInterval=15',
+    '-o', 'ServerAliveCountMax=2',
+];
+
+const isMissingBinaryError = (stderr: string) =>
+    /ENOENT/i.test(stderr) || /not found/i.test(stderr) || /spawn\s+\w+\s+ENOENT/i.test(stderr);
+
+const isDockerPermissionError = (value: string) =>
+    /permission denied/i.test(value) && (/docker\.sock/i.test(value) || /connect to the docker daemon/i.test(value));
+
+const isDockerDaemonUnavailableError = (value: string) =>
+    /cannot connect to the docker daemon/i.test(value) || /is the docker daemon running\?/i.test(value);
+
+const isCommandNotFound = (value: string) =>
+    /command not found/i.test(value) || /not found/i.test(value);
+
 async function withTempKey<T>(privateKey: string, callback: (keyPath: string) => Promise<T>): Promise<T> {
     const tmpDir = os.tmpdir();
     const keyPath = path.join(tmpDir, `ssh-key-${Date.now()}-${Math.random().toString(36).substring(7)}`);
@@ -82,21 +118,20 @@ async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> 
             '-p', config.port.toString(),
             '-o', 'PreferredAuthentications=password',
             '-o', 'PubkeyAuthentication=no',
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
+            ...sshCommonOptions,
             `${config.username}@${config.host}`,
             command
         ];
         const result = await runCommand('sshpass', args, { SSHPASS: config.password });
         // Provide helpful error if sshpass is not installed
-        if (result.code !== 0 && result.stderr.includes('not found')) {
+        if (result.code !== 0 && isMissingBinaryError(result.stderr)) {
             return {
                 code: 1,
                 stdout: '',
                 stderr: 'sshpass is not installed. Install it with: apt-get install sshpass (Ubuntu/Debian) or brew install sshpass (macOS)'
             };
         }
-        return result;
+        return { ...result, stderr: cleanRemoteOutput(result.stderr) };
     }
 
     if (!config.privateKey) {
@@ -107,12 +142,19 @@ async function execSSH(config: SSHConfig, command: string): Promise<ExecResult> 
         const args = [
             '-i', keyPath,
             '-p', config.port.toString(),
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
+            ...sshCommonOptions,
             `${config.username}@${config.host}`,
             command
         ];
-        return runCommand('ssh', args);
+        const result = await runCommand('ssh', args);
+        if (result.code !== 0 && isMissingBinaryError(result.stderr)) {
+            return {
+                code: 1,
+                stdout: '',
+                stderr: 'ssh is not installed in the control server environment. Install OpenSSH client (e.g. apt-get install openssh-client, apk add openssh-client, or brew install openssh).'
+            };
+        }
+        return { ...result, stderr: cleanRemoteOutput(result.stderr) };
     });
 }
 
@@ -127,21 +169,20 @@ async function scpFile(config: SSHConfig, localPath: string, remotePath: string)
             '-P', config.port.toString(), // SCP uses -P for port
             '-o', 'PreferredAuthentications=password',
             '-o', 'PubkeyAuthentication=no',
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
+            ...sshCommonOptions,
             localPath,
             `${config.username}@${config.host}:${remotePath}`
         ];
         const result = await runCommand('sshpass', args, { SSHPASS: config.password });
         // Provide helpful error if sshpass is not installed
-        if (result.code !== 0 && result.stderr.includes('not found')) {
+        if (result.code !== 0 && isMissingBinaryError(result.stderr)) {
             return {
                 code: 1,
                 stdout: '',
                 stderr: 'sshpass is not installed. Install it with: apt-get install sshpass (Ubuntu/Debian) or brew install sshpass (macOS)'
             };
         }
-        return result;
+        return { ...result, stderr: cleanRemoteOutput(result.stderr) };
     }
 
     if (!config.privateKey) {
@@ -152,12 +193,19 @@ async function scpFile(config: SSHConfig, localPath: string, remotePath: string)
         const args = [
             '-i', keyPath,
             '-P', config.port.toString(), // SCP uses -P for port
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
+            ...sshCommonOptions,
             localPath,
             `${config.username}@${config.host}:${remotePath}`
         ];
-        return runCommand('scp', args);
+        const result = await runCommand('scp', args);
+        if (result.code !== 0 && isMissingBinaryError(result.stderr)) {
+            return {
+                code: 1,
+                stdout: '',
+                stderr: 'scp is not installed in the control server environment. Install OpenSSH client (e.g. apt-get install openssh-client, apk add openssh-client, or brew install openssh).'
+            };
+        }
+        return { ...result, stderr: cleanRemoteOutput(result.stderr) };
     });
 }
 
@@ -227,7 +275,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
             const homeResult = await execSSH(sshConfig, 'echo $HOME');
             if (homeResult.code !== 0) {
-                throw new Error(`Connection failed: ${homeResult.stderr}`);
+                const detail = cleanRemoteOutput(homeResult.stderr || homeResult.stdout);
+                throw new Error(`Connection failed: ${detail || 'unknown error'}`);
             }
             steps[steps.length - 1].status = 'done';
 
@@ -241,13 +290,19 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             // Step 2: Create deploy directory
             steps.push({ step: 'Creating deploy directory...', status: 'running' });
             const mkdirResult = await execSSH(sshConfig, `mkdir -p ${remoteDeployPath}`);
-            if (mkdirResult.code !== 0) throw new Error(`Mkdir failed: ${mkdirResult.stderr}`);
+            if (mkdirResult.code !== 0) {
+                const detail = cleanRemoteOutput(mkdirResult.stderr || mkdirResult.stdout);
+                throw new Error(`Mkdir failed: ${detail || 'unknown error'}`);
+            }
             steps[steps.length - 1].status = 'done';
 
             // Step 3: Upload docker-compose.yml
             steps.push({ step: 'Uploading docker-compose.yml...', status: 'running' });
             const uploadCompose = await scpFile(sshConfig, localComposeFile, `${remoteDeployPath}/docker-compose.yml`);
-            if (uploadCompose.code !== 0) throw new Error(`Upload failed: ${uploadCompose.stderr}`);
+            if (uploadCompose.code !== 0) {
+                const detail = cleanRemoteOutput(uploadCompose.stderr || uploadCompose.stdout);
+                throw new Error(`Upload failed: ${detail || 'unknown error'}`);
+            }
             steps[steps.length - 1].status = 'done';
 
             // Step 4: Upload .env if provided or exists
@@ -255,7 +310,10 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             if (fs.existsSync(envFile)) {
                 steps.push({ step: 'Uploading .env...', status: 'running' });
                 const uploadEnv = await scpFile(sshConfig, envFile, `${remoteDeployPath}/.env`);
-                if (uploadEnv.code !== 0) throw new Error(`Env upload failed: ${uploadEnv.stderr}`);
+                if (uploadEnv.code !== 0) {
+                    const detail = cleanRemoteOutput(uploadEnv.stderr || uploadEnv.stdout);
+                    throw new Error(`Env upload failed: ${detail || 'unknown error'}`);
+                }
                 steps[steps.length - 1].status = 'done';
             }
 
@@ -264,6 +322,28 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const dockerCheck = await execSSH(sshConfig, 'docker --version');
             if (dockerCheck.code !== 0) {
                 throw new Error('Docker is not installed on the remote server');
+            }
+            steps[steps.length - 1].status = 'done';
+
+            // Step 5.25: Check Docker daemon access
+            steps.push({ step: 'Checking Docker daemon access...', status: 'running' });
+            const dockerInfo = await execSSH(sshConfig, 'docker info');
+            if (dockerInfo.code !== 0) {
+                const detail = cleanRemoteOutput(dockerInfo.stderr || dockerInfo.stdout);
+                if (isDockerPermissionError(detail)) {
+                    throw new Error(
+                        'Docker is installed, but your SSH user does not have permission to access the Docker daemon. ' +
+                            'Fix on the remote host: add the user to the docker group (e.g. `sudo usermod -aG docker $USER` and re-login) ' +
+                            'or run Docker commands via sudo/root.'
+                    );
+                }
+                if (isDockerDaemonUnavailableError(detail)) {
+                    throw new Error(
+                        'Docker is installed, but the Docker daemon is not reachable. ' +
+                            'Fix on the remote host: ensure the Docker service is running (e.g. `sudo systemctl start docker`).'
+                    );
+                }
+                throw new Error(`Docker daemon check failed: ${detail || 'unknown error'}`);
             }
             steps[steps.length - 1].status = 'done';
 
@@ -276,15 +356,36 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             steps[steps.length - 1].status = 'done';
 
             // Determine compose command (Docker Compose v2 vs legacy docker-compose)
+            steps.push({ step: 'Checking Docker Compose...', status: 'running' });
             const composeV2Check = await execSSH(sshConfig, 'docker compose version');
             const useComposeV2 = composeV2Check.code === 0;
-            const composeCommand = useComposeV2 ? 'docker compose' : 'docker-compose';
+
+            let composeCommand = 'docker compose';
+            if (!useComposeV2) {
+                const composeV1Check = await execSSH(sshConfig, 'docker-compose --version');
+                if (composeV1Check.code !== 0) {
+                    const detail = cleanRemoteOutput(
+                        (composeV2Check.stderr || composeV2Check.stdout || '') +
+                            '\n' +
+                            (composeV1Check.stderr || composeV1Check.stdout || '')
+                    );
+                    if (isCommandNotFound(detail)) {
+                        throw new Error(
+                            'Docker Compose is not installed on the remote server. ' +
+                                'Install Compose v2 (recommended) or docker-compose v1, then retry deploy.'
+                        );
+                    }
+                    throw new Error(`Docker Compose check failed: ${detail || 'unknown error'}`);
+                }
+                composeCommand = 'docker-compose';
+            }
+            steps[steps.length - 1].status = 'done';
 
             // Step 6: Start the stack
             steps.push({ step: 'Starting media stack...', status: 'running' });
             const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} up -d`);
             if (startResult.code !== 0) {
-                const errorMsg = startResult.stderr || startResult.stdout || 'Docker compose command failed';
+                const errorMsg = cleanRemoteOutput(startResult.stderr || startResult.stdout) || 'Docker compose command failed';
                 throw new Error(errorMsg);
             }
             steps[steps.length - 1].status = 'done';
@@ -301,9 +402,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 steps[steps.length - 1].status = 'error';
             }
             fastify.log.error({ err: error, host, username }, '[remote-deploy] failed');
-            return reply.status(500).send({
+            return reply.status(200).send({
                 success: false,
-                error: error.message,
+                error: cleanRemoteOutput(error?.message || '') || 'Remote deployment failed',
                 steps
             });
         } finally {
@@ -349,16 +450,54 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         };
 
         try {
-            // Quick checks
-            const dockerCheck = await execSSH(sshConfig, 'docker --version');
+            const connectCheck = await execSSH(sshConfig, 'echo mediastack-ok && echo $HOME');
+            if (connectCheck.code !== 0) {
+                return reply.status(502).send({
+                    success: false,
+                    error: `SSH connection failed: ${cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout) || 'unknown error'}`,
+                });
+            }
+
+            const dockerVersion = await execSSH(sshConfig, 'docker --version');
+            const dockerInstalled = dockerVersion.code === 0;
+
+            let dockerDaemonOk = false;
+            let dockerProblem = '';
+            if (dockerInstalled) {
+                const dockerInfo = await execSSH(sshConfig, 'docker info');
+                dockerDaemonOk = dockerInfo.code === 0;
+                if (!dockerDaemonOk) {
+                    const detail = cleanRemoteOutput(dockerInfo.stderr || dockerInfo.stdout);
+                    if (isDockerPermissionError(detail)) {
+                        dockerProblem =
+                            'Docker installed but permission denied to the Docker daemon. Add your user to the docker group and re-login, or use a user with Docker access.';
+                    } else if (isDockerDaemonUnavailableError(detail)) {
+                        dockerProblem = 'Docker installed but the Docker daemon is not running/reachable.';
+                    } else {
+                        dockerProblem = detail || 'Docker daemon not reachable.';
+                    }
+                }
+            }
+
             const composeV2Check = await execSSH(sshConfig, 'docker compose version');
-            const composeV1Check = composeV2Check.code === 0 ? { code: 0 } : await execSSH(sshConfig, 'docker-compose --version');
+            const composeV1Check = composeV2Check.code === 0
+                ? { code: 0, stdout: '', stderr: '' }
+                : await execSSH(sshConfig, 'docker-compose --version');
+            const dockerComposeOk = composeV2Check.code === 0 || composeV1Check.code === 0;
+
+            const ready = dockerInstalled && dockerDaemonOk && dockerComposeOk;
+            let message = 'Ready to deploy!';
+            if (!dockerInstalled) message = 'Docker not found on server';
+            else if (!dockerDaemonOk) message = dockerProblem || 'Docker daemon not accessible';
+            else if (!dockerComposeOk) message = 'Docker Compose not found on server';
 
             return {
                 success: true,
-                docker: dockerCheck.code === 0,
-                dockerCompose: composeV2Check.code === 0 || composeV1Check.code === 0,
-                message: dockerCheck.code === 0 ? 'Ready to deploy!' : 'Docker not found on server'
+                ssh: true,
+                docker: dockerDaemonOk,
+                dockerCompose: dockerComposeOk,
+                dockerInstalled,
+                message
             };
 
         } catch (error: any) {

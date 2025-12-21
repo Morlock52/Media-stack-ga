@@ -4,9 +4,8 @@ test.describe('Docs Site Stress Tests', () => {
   test.skip(process.env.STRESS !== '1', 'Set STRESS=1 to run stress tests')
 
   test('rapid route changes (no blank screens / crashes)', async ({ page }) => {
-    test.setTimeout(120000)
-
     const loops = Number(process.env.STRESS_ROUTE_LOOPS || 20)
+    test.setTimeout(Math.max(120000, loops * 6000))
     const criticalErrors: string[] = []
 
     page.on('pageerror', (error) => criticalErrors.push(error.message))
@@ -26,9 +25,10 @@ test.describe('Docs Site Stress Tests', () => {
   })
 
   test('wizard loop (repeat end-to-end flow)', async ({ page }) => {
-    test.setTimeout(180000)
-
     const loops = Number(process.env.STRESS_WIZARD_LOOPS || 5)
+    // Scale timeout with loop count to avoid false negatives on slower machines/CI.
+    // Rough budget: ~60s per loop, minimum 3 minutes.
+    test.setTimeout(Math.max(180000, loops * 60000))
 
     for (let i = 0; i < loops; i += 1) {
       await page.goto('/')

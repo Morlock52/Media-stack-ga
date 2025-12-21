@@ -11,10 +11,19 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react'
-import { buildControlServerUrl, controlServer, controlServerAuthHeaders } from '../utils/controlServer'
+import {
+  buildControlServerUrl,
+  controlServer,
+  controlServerAuthHeaders,
+  getControlServerBaseUrl,
+  getControlServerToken,
+  setControlServerBaseUrl,
+  setControlServerToken,
+} from '../utils/controlServer'
 import { Button } from '../components/ui/button'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
+import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
 
 type ToastState = { type: 'success' | 'error' | 'info'; text: string } | null
 
@@ -37,8 +46,14 @@ export function SettingsPage() {
   const [pendingAction, setPendingAction] = useState<'idle' | 'checking' | 'saving' | 'removing'>('idle')
   const [isBootstrapping, setIsBootstrapping] = useState(false)
   const [toast, setToast] = useState<ToastState>(null)
+  const [controlServerUrlInput, setControlServerUrlInput] = useState(() => getControlServerBaseUrl())
+  const [controlServerTokenInput, setControlServerTokenInput] = useState(() => getControlServerToken())
+  const [elevenLabsKeyInput, setElevenLabsKeyInput] = useState('')
+  const [elevenLabsVoiceIdInput, setElevenLabsVoiceIdInput] = useState('')
+  const [elevenLabsAction, setElevenLabsAction] = useState<'idle' | 'saving' | 'removing' | 'savingVoice'>('idle')
 
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
+  const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
 
   const setToastMessage = (update: ToastState) => {
     setToast(update)
@@ -115,6 +130,83 @@ export function SettingsPage() {
     }
   }
 
+  const handleSaveElevenLabsKey = async () => {
+    const trimmed = elevenLabsKeyInput.trim()
+    if (!trimmed) {
+      setToastMessage({ type: 'error', text: 'Enter an ElevenLabs API key before saving.' })
+      return
+    }
+
+    setElevenLabsAction('saving')
+    try {
+      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-key'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+        body: JSON.stringify({ key: trimmed }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Failed to store ElevenLabs key')
+      }
+      setElevenLabsKeyInput('')
+      setToastMessage({ type: 'success', text: 'ElevenLabs key stored.' })
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: error.message || 'Failed to store ElevenLabs key.' })
+    } finally {
+      setElevenLabsAction('idle')
+      await refreshTts()
+    }
+  }
+
+  const handleRemoveElevenLabsKey = async () => {
+    setElevenLabsAction('removing')
+    setElevenLabsKeyInput('')
+
+    try {
+      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-key'), {
+        method: 'DELETE',
+        headers: { ...controlServerAuthHeaders() },
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Failed to delete ElevenLabs key')
+      }
+      setToastMessage({ type: 'success', text: 'ElevenLabs key removed.' })
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: error.message || 'Failed to remove ElevenLabs key.' })
+    } finally {
+      setElevenLabsAction('idle')
+      await refreshTts()
+    }
+  }
+
+  const handleSaveElevenLabsVoice = async () => {
+    const trimmed = elevenLabsVoiceIdInput.trim()
+    if (!trimmed) {
+      setToastMessage({ type: 'error', text: 'Enter a voice ID before saving.' })
+      return
+    }
+
+    setElevenLabsAction('savingVoice')
+    try {
+      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-voice'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+        body: JSON.stringify({ voiceId: trimmed }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Failed to store voice ID')
+      }
+      setToastMessage({ type: 'success', text: 'ElevenLabs voice ID saved.' })
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: error.message || 'Failed to save voice ID.' })
+    } finally {
+      setElevenLabsAction('idle')
+      await refreshTts()
+    }
+  }
+
   const handleBootstrapArr = async () => {
     if (!serverOnline) {
       setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
@@ -146,7 +238,7 @@ export function SettingsPage() {
     return { label: 'Control server offline', color: 'bg-amber-500/15 text-amber-300' }
   }, [serverOnline])
 
-  const disableActions = pendingAction !== 'idle'
+  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle'
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -178,6 +270,90 @@ export function SettingsPage() {
 
       <section className="pt-28 pb-16">
         <div className="max-w-4xl mx-auto px-4 space-y-10">
+          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Shield className="w-6 h-6 text-purple-400" />
+                Control Server Connection
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Optional overrides for when the UI is hosted separately from the Wizard API. Leave blank for the default
+                same-origin <code className="font-mono">/api</code> proxy.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-3">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
+                    Control server URL
+                  </label>
+                  <input
+                    value={controlServerUrlInput}
+                    onChange={(e) => setControlServerUrlInput(e.target.value)}
+                    placeholder="http://localhost:3001"
+                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Example: <code className="font-mono">http://localhost:3001</code> or{' '}
+                    <code className="font-mono">https://wizard-api.yourdomain.com</code>
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-3">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
+                    Control server token (optional)
+                  </label>
+                  <input
+                    type="password"
+                    value={controlServerTokenInput}
+                    onChange={(e) => setControlServerTokenInput(e.target.value)}
+                    placeholder="Bearer token (CONTROL_SERVER_TOKEN)"
+                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Only needed if the control server is started with <code className="font-mono">CONTROL_SERVER_TOKEN</code>.
+                    This is stored in your browser (not on the server).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={async () => {
+                  setControlServerBaseUrl(controlServerUrlInput)
+                  setControlServerToken(controlServerTokenInput)
+                  setToastMessage({ type: 'success', text: 'Control server settings saved in this browser.' })
+                  await refresh()
+                }}
+                className="gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Save connection settings
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  setControlServerUrlInput('')
+                  setControlServerTokenInput('')
+                  setControlServerBaseUrl('')
+                  setControlServerToken('')
+                  setToastMessage({ type: 'info', text: 'Cleared control server overrides.' })
+                  await refresh()
+                }}
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear
+              </Button>
+            </div>
+          </div>
+
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <div className={`px-3 py-1.5 text-xs font-semibold rounded-full ${statusPill.color}`}>
@@ -330,6 +506,88 @@ export function SettingsPage() {
                 {toast.text}
               </div>
             )}
+          </div>
+
+          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Key className="w-6 h-6 text-purple-400" />
+                ElevenLabs Voice (Optional)
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Enable ElevenLabs for more natural voice output in the Voice Companion. Keys are stored by the control server.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-border p-5 bg-card/80">
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">API key</h3>
+                <input
+                  type="password"
+                  value={elevenLabsKeyInput}
+                  onChange={(e) => setElevenLabsKeyInput(e.target.value)}
+                  placeholder="xi-... / ElevenLabs API key"
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                />
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Stored on the control server as <code className="font-mono">ELEVENLABS_API_KEY</code>.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleSaveElevenLabsKey}
+                    disabled={disableActions || !elevenLabsKeyInput.trim()}
+                    className="gap-2 flex-1"
+                  >
+                    {elevenLabsAction === 'saving' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save key
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleRemoveElevenLabsKey}
+                    disabled={disableActions || !elevenlabs?.hasKey}
+                    className="gap-2"
+                  >
+                    {elevenLabsAction === 'removing' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    Remove
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border p-5 bg-card/80">
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Voice ID</h3>
+                <input
+                  value={elevenLabsVoiceIdInput}
+                  onChange={(e) => setElevenLabsVoiceIdInput(e.target.value)}
+                  placeholder={elevenlabs?.voiceId || 'e.g. 21m00Tcm4TlvDq8ikWAM'}
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                />
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Stored as <code className="font-mono">ELEVENLABS_VOICE_ID</code>. Required to use ElevenLabs TTS.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleSaveElevenLabsVoice}
+                    disabled={disableActions || !elevenLabsVoiceIdInput.trim()}
+                    className="gap-2 flex-1"
+                  >
+                    {elevenLabsAction === 'savingVoice' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save voice ID
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-6">
             <div className="space-y-2">
