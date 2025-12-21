@@ -478,10 +478,23 @@ def render_security() -> Image.Image:
     draw_background(ImageDraw.Draw(base), base)
     draw_title(ImageDraw.Draw(base), "Security Controls Map — Defense in Depth", base)
 
-    center_rect = (1160, 620, 1750, 980)
-    draw_zone(base, (120, 190, 2800, 540), "PERIMETER CONTROLS", COLORS["zone_edge"])
-    draw_zone(base, (120, 940, 2800, 1340), "OPERATIONAL CONTROLS", COLORS["zone_ops"])
-    draw_rings(base, ((center_rect[0] + center_rect[2]) // 2, (center_rect[1] + center_rect[3]) // 2), [260, 340, 420], COLORS["accent"])
+    draw_zone(base, (140, 190, 2776, 520), "PERIMETER CONTROLS", COLORS["zone_edge"])
+    draw_zone(base, (140, 560, 2776, 960), "ACCESS & POLICY", COLORS["zone_ops"])
+    draw_zone(base, (140, 1000, 2776, 1370), "OPERATIONS & AUDIT", COLORS["zone_data"])
+
+    center_rect = (980, 600, 1930, 920)
+
+    controls = [
+        ((720, 240, 1380, 480), "Zero-Trust Edge", ["Cloudflare Tunnel", "No inbound ports"], COLORS["primary"], "shield"),
+        ((1530, 240, 2190, 480), "VPN Kill Switch", ["Gluetun firewall", "No-leak downloads"], COLORS["highlight"], "shield"),
+        ((200, 620, 860, 900), "SSO + MFA", ["Authelia policies", "WebAuthn/TOTP"], COLORS["highlight"], "lock"),
+        ((2050, 620, 2710, 900), "Least Privilege", ["no-new-privileges", "socket proxy (wizard)"], COLORS["accent"], "key"),
+        ((720, 1060, 1380, 1300), "Secrets & Tokens", [".env + Authelia keys", "Rotate regularly"], COLORS["primary"], "lock"),
+        ((1530, 1060, 2190, 1300), "Audit & Logs", ["Remote deploy logs", "Container telemetry"], COLORS["accent"], "list"),
+    ]
+
+    for rect, title, lines, accent, icon in controls:
+        draw_card(base, rect, title, lines, accent, icon)
 
     draw_card(
         base,
@@ -491,32 +504,7 @@ def render_security() -> Image.Image:
         COLORS["accent"],
         "grid",
     )
-
-    controls = [
-        ((160, 260, 820, 500), "Zero-Trust Edge", ["Cloudflare Tunnel", "No inbound ports"], COLORS["primary"], "shield"),
-        ((900, 260, 1540, 500), "SSO + MFA", ["Authelia policies", "WebAuthn/TOTP"], COLORS["highlight"], "lock"),
-        ((1600, 260, 2460, 500), "Least Privilege", ["no-new-privileges", "socket proxy (wizard)"], COLORS["accent"], "key"),
-        ((160, 1030, 900, 1280), "VPN Kill Switch", ["Gluetun firewall", "No-leak downloads"], COLORS["highlight"], "shield"),
-        ((980, 1030, 1680, 1280), "Secrets & Tokens", [".env + Authelia keys", "Rotate regularly"], COLORS["primary"], "lock"),
-        ((1760, 1030, 2540, 1280), "Audit & Logs", ["Remote deploy logs", "Container telemetry"], COLORS["accent"], "list"),
-    ]
-
-    for rect, title, lines, accent, icon in controls:
-        draw_card(base, rect, title, lines, accent, icon)
-
-    for rect, *_ in controls:
-        sx = (rect[0] + rect[2]) // 2
-        sy = rect[1] if rect[1] > center_rect[1] else rect[3]
-        ex = (center_rect[0] + center_rect[2]) // 2
-        ey = center_rect[1] if rect[1] > center_rect[1] else center_rect[3]
-        draw_arrow(base, (sx, sy), (ex, ey), ARROW_CONTROL, curve=0.12)
-
-    draw_legend(
-        base,
-        (120, 1360, 760, 1600),
-        "Legend",
-        [("Controls protect core", ARROW_CONTROL)],
-    )
+    draw_tag(base, (2460, 1500), "Layered defense model", COLORS["accent"], font_size=22)
 
     return base.convert("RGB")
 
