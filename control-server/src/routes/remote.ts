@@ -13,8 +13,10 @@ type DeployLock = {
     startedAt: number;
 };
 
-const REMOTE_DEPLOY_LOCK_MS = parseInt(process.env.REMOTE_DEPLOY_LOCK_MS || '1500', 10);
-const activeDeployLocks = new Map<string, DeployLock>();
+const getRemoteDeployLockMs = () => {
+    const parsed = parseInt(process.env.REMOTE_DEPLOY_LOCK_MS || '1500', 10);
+    return Number.isFinite(parsed) ? parsed : 1500;
+};
 
 const getDeployLockKey = (host: string, port: number, username: string) => `${username}@${host}:${port}`;
 
@@ -42,6 +44,11 @@ interface ExecResult {
     stdout: string;
     stderr: string;
 }
+
+type RemoteContainerStatus = {
+    name: string;
+    on: boolean;
+};
 
 const cleanRemoteOutput = (value: string) => {
     const lines = (value || '').replace(/\r\n/g, '\n').split('\n');
@@ -79,8 +86,32 @@ const isDockerDaemonUnavailableError = (value: string) =>
 const isCommandNotFound = (value: string) =>
     /command not found/i.test(value) || /not found/i.test(value);
 
+const parseRemoteDockerPsSnapshot = (value: string): RemoteContainerStatus[] => {
+    const lines = (value || '').replace(/\r\n/g, '\n').split('\n');
+    const out: RemoteContainerStatus[] = [];
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const parts = trimmed.split('|');
+        if (parts.length < 2) continue;
+        const name = (parts[0] || '').trim();
+        const state = (parts[1] || '').trim().toLowerCase();
+        if (!name) continue;
+        out.push({ name, on: state === 'running' });
+    }
+    return out;
+};
+
 const isDockerContainerNameConflict = (value: string) =>
     /already in use by container/i.test(value) && /container name/i.test(value);
+
+const isTunDeviceMissingError = (value: string) =>
+    /\/dev\/net\/tun/i.test(value) && /no such file or directory/i.test(value);
+
+const getTunDeviceMissingHint = () =>
+    'The remote host is missing /dev/net/tun (TUN device), which is required for VPN containers like Gluetun. ' +
+    'If you are running on a host/container without TUN support, disable the vpn/torrent profiles or remove the Gluetun device mapping. ' +
+    'Otherwise, enable TUN on the host (e.g. load the tun module and ensure /dev/net/tun exists), then retry.';
 
 const getDockerContainerNameConflictInfo = (value: string) => {
     const nameMatch =
@@ -262,10 +293,13 @@ async function scpFile(config: SSHConfig, localPath: string, remotePath: string)
 }
 
 export async function remoteRoutes(fastify: FastifyInstance) {
+    const activeDeployLocks = new Map<string, DeployLock>();
+
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy', async (request, reply) => {
         const { host, port = 22, username, privateKey, password, deployPath = '~/media-stack' } = request.body;
         const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
         const autoRemoveConflictingContainers = request.body.autoRemoveConflictingContainers === true;
+        const autoDisableVpnOnTunMissing = request.body.autoDisableVpnOnTunMissing !== false;
 
         if (!host || !username) {
             fastify.log.warn({ host, username }, '[remote-deploy] validation failed: missing host/username');
@@ -326,6 +360,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         const steps: { step: string, status: string }[] = [];
         let tmpDir: string | null = null;
         let remoteDeployPath: string | null = null;
+        let remoteContainers: RemoteContainerStatus[] = [];
 
         try {
             // Optional: accept generated compose/.env directly from the UI.
@@ -356,6 +391,28 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 throw new Error(`Connection failed: ${detail || 'unknown error'}`);
             }
             steps[steps.length - 1].status = 'done';
+
+            try {
+                const remotePs = await execSSH(sshConfig, 'docker ps -a --format "{{.Names}}|{{.State}}"');
+                if (remotePs.code === 0) {
+                    remoteContainers = parseRemoteDockerPsSnapshot(remotePs.stdout);
+                    fastify.log.info(
+                        { lockKey, host, username, containerCount: remoteContainers.length, remoteContainers },
+                        '[remote-deploy] remote container snapshot'
+                    );
+                } else {
+                    const detail = cleanRemoteOutput(remotePs.stderr || remotePs.stdout);
+                    fastify.log.warn(
+                        { lockKey, host, username, code: remotePs.code, detail },
+                        '[remote-deploy] remote container snapshot unavailable'
+                    );
+                }
+            } catch (err) {
+                fastify.log.warn(
+                    { lockKey, host, username, err },
+                    '[remote-deploy] remote container snapshot failed'
+                );
+            }
 
             const remoteHome = (homeResult.stdout || '').trim();
             remoteDeployPath = safeDeployPath.startsWith('~/')
@@ -463,6 +520,43 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} up -d`);
             if (startResult.code !== 0) {
                 const detail = cleanRemoteOutput(startResult.stderr || startResult.stdout) || 'Docker compose command failed';
+                if (isTunDeviceMissingError(detail)) {
+                    if (!autoDisableVpnOnTunMissing) {
+                        throw new Error(`${getTunDeviceMissingHint()}\n${detail}`);
+                    }
+
+                    steps[steps.length - 1].status = 'error';
+                    steps.push({ step: 'TUN device missing; disabling VPN/torrent profiles and retrying...', status: 'running' });
+
+                    const retryCmd =
+                        `cd ${remoteDeployPath} && ` +
+                        `COMPOSE_PROFILES="$(printf \"%s\" \"\${COMPOSE_PROFILES:-}\" | tr ',' '\\n' | grep -v -E '^(vpn|torrent)$' | tr '\\n' ',' | sed 's/,$//')" ` +
+                        `${composeCommand} up -d`;
+
+                    const retryResult = await execSSH(sshConfig, retryCmd);
+                    if (retryResult.code !== 0) {
+                        const retryDetail = cleanRemoteOutput(retryResult.stderr || retryResult.stdout) || 'Docker compose command failed';
+                        steps[steps.length - 1].status = 'error';
+                        if (isTunDeviceMissingError(retryDetail)) {
+                            throw new Error(`${getTunDeviceMissingHint()}\n${retryDetail}`);
+                        }
+                        throw new Error(retryDetail);
+                    }
+
+                    steps[steps.length - 1].status = 'done';
+                    const durationMs = Date.now() - lock.startedAt;
+                    fastify.log.info(
+                        { lockKey, host, username, deployPath: remoteDeployPath, durationMs, autoFixTun: true },
+                        '[remote-deploy] succeeded'
+                    );
+                    return {
+                        success: true,
+                        message: 'Deployment successful!',
+                        steps,
+                        remoteContainers,
+                        serverInfo: { host, deployPath: remoteDeployPath }
+                    };
+                }
                 if (isDockerContainerNameConflict(detail)) {
                     if (!autoRemoveConflictingContainers) {
                         throw new Error(getDockerContainerNameConflictHint(detail));
@@ -513,6 +607,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                         success: true,
                         message: 'Deployment successful!',
                         steps,
+                        remoteContainers,
                         serverInfo: { host, deployPath: remoteDeployPath }
                     };
                 }
@@ -529,6 +624,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 success: true,
                 message: 'Deployment successful!',
                 steps,
+                remoteContainers,
                 serverInfo: { host, deployPath: remoteDeployPath }
             };
 
@@ -543,7 +639,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             return reply.status(200).send({
                 success: false,
                 error: cleanRemoteOutput(error?.message || '') || 'Remote deployment failed',
-                steps
+                steps,
+                remoteContainers
             });
         } finally {
             if (tmpDir) {
@@ -557,7 +654,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const currentLock = activeDeployLocks.get(lockKey);
             if (currentLock && currentLock.id === lock.id) {
                 const elapsed = Date.now() - lock.startedAt;
-                const remaining = Math.max(0, REMOTE_DEPLOY_LOCK_MS - elapsed);
+                const remoteDeployLockMs = getRemoteDeployLockMs();
+                const remaining = Math.max(0, remoteDeployLockMs - elapsed);
                 if (remaining > 0) {
                     setTimeout(() => {
                         const still = activeDeployLocks.get(lockKey);

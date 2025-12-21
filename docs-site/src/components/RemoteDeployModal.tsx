@@ -18,6 +18,11 @@ interface DeployStep {
     status: 'running' | 'done' | 'error' | 'pending'
 }
 
+type RemoteContainerStatus = {
+    name: string
+    on: boolean
+}
+
 interface RemoteDeployModalProps {
     isOpen: boolean
     onClose: () => void
@@ -71,6 +76,8 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const [serverReady, setServerReady] = useState<boolean | null>(null)
     const [deployLocked, setDeployLocked] = useState(false)
     const [autoRemoveConflictingContainers, setAutoRemoveConflictingContainers] = useState(true)
+    const [autoDisableVpnOnTunMissing, setAutoDisableVpnOnTunMissing] = useState(true)
+    const [remoteContainers, setRemoteContainers] = useState<RemoteContainerStatus[]>([])
 
     const resetForm = () => {
         setStatus('idle')
@@ -79,6 +86,8 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         setServerReady(null)
         setDeployLocked(false)
         setAutoRemoveConflictingContainers(true)
+        setAutoDisableVpnOnTunMissing(true)
+        setRemoteContainers([])
     }
 
     const testConnection = async () => {
@@ -170,6 +179,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         setStatus('deploying')
         setError('')
         setDeployLocked(false)
+        setRemoteContainers([])
         setSteps([{ step: 'Contacting control server...', status: 'running' }])
 
         toast.loading('Starting deployment...', { id: 'deploy' })
@@ -185,6 +195,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     authType,
                     deployPath,
                     autoRemoveConflictingContainers,
+                    autoDisableVpnOnTunMissing,
                     password: authType === 'password' ? password : undefined,
                     privateKey: authType === 'key' ? privateKey : undefined,
                     composeYml: dockerComposeTemplate,
@@ -199,6 +210,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 const parsed = tryParseJson(text)
                 const payloadSteps = Array.isArray(parsed?.steps) ? parsed.steps : null
                 const payloadError = typeof parsed?.error === 'string' ? parsed.error : ''
+                const payloadContainers = Array.isArray(parsed?.remoteContainers) ? parsed.remoteContainers : null
 
                 const statusHint =
                     res.status === 401
@@ -210,6 +222,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     : `HTTP ${res.status}: ${res.statusText}${text.trim() ? ` — ${text.trim().slice(0, 200)}${text.trim().length > 200 ? '…' : ''}` : ''}${statusHint}`
 
                 if (payloadSteps?.length) setSteps(payloadSteps)
+                if (payloadContainers?.length) setRemoteContainers(payloadContainers)
                 setError(errorMsg)
                 setStatus('error')
                 if (res.status === 409) {
@@ -236,6 +249,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 throw new Error(`Invalid JSON response from server: ${text.slice(0, 200)}`)
             }
             setSteps(data.steps?.length ? data.steps : [{ step: 'Deploy request accepted.', status: 'done' }])
+            setRemoteContainers(Array.isArray(data.remoteContainers) ? data.remoteContainers : [])
 
             if (data.success) {
                 setStatus('success')
@@ -270,10 +284,10 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
             <DialogContent
                 showClose={false}
-                className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden p-0"
+                className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden p-0 max-h-[90vh] flex flex-col"
             >
                 <DialogTitle className="sr-only">Deploy to Server</DialogTitle>
-                <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col flex-1">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-border">
                         <div className="flex items-center gap-2">
@@ -293,7 +307,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     </div>
 
                     {/* Content */}
-                    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <div className="p-4 space-y-4 overflow-y-auto flex-1">
                         {status === 'success' ? (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -325,6 +339,20 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     Your media stack is now running on{' '}
                                     <span className="font-semibold text-white bg-white/10 px-2 py-0.5 rounded">{host}</span>
                                 </motion.p>
+
+                                {remoteContainers.length > 0 && (
+                                    <div className="mt-6 text-left bg-background/40 border border-border rounded-lg p-3">
+                                        <div className="text-xs text-muted-foreground mb-2">Remote containers</div>
+                                        <div className="max-h-40 overflow-y-auto space-y-1">
+                                            {remoteContainers.map((c) => (
+                                                <div key={c.name} className="flex items-center justify-between text-sm">
+                                                    <span className="font-mono text-xs text-foreground truncate pr-3">{c.name}</span>
+                                                    <span className={`text-xs ${c.on ? 'text-green-400' : 'text-muted-foreground'}`}>{c.on ? 'on' : 'off'}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <Button
                                     type="button"
                                     variant="gradient"
@@ -386,6 +414,23 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     >
                                         {error}
                                     </motion.div>
+                                )}
+
+                                {remoteContainers.length > 0 && (
+                                    <div className="mt-4 bg-background/40 border border-border rounded-lg p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="text-xs text-muted-foreground">Remote containers (snapshot)</div>
+                                            <div className="text-xs text-muted-foreground">{remoteContainers.length}</div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-40 overflow-y-auto">
+                                            {remoteContainers.map((c) => (
+                                                <div key={c.name} className="flex items-center justify-between gap-3 text-xs bg-card/40 border border-border/60 rounded-md px-2 py-1">
+                                                    <span className="font-mono truncate">{c.name}</span>
+                                                    <span className={`${c.on ? 'text-green-400' : 'text-muted-foreground'}`}>{c.on ? 'on' : 'off'}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         ) : (
@@ -515,6 +560,19 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     </span>
                                 </label>
 
+                                <label className="flex items-start gap-2 text-xs text-muted-foreground select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={autoDisableVpnOnTunMissing}
+                                        onChange={(e) => setAutoDisableVpnOnTunMissing(e.target.checked)}
+                                        className="mt-0.5"
+                                        aria-label="Auto disable VPN profile if /dev/net/tun is missing"
+                                    />
+                                    <span>
+                                        Auto-disable VPN/torrent profiles if <code className="text-xs">/dev/net/tun</code> is missing (lets the rest of the stack update on hosts without TUN).
+                                    </span>
+                                </label>
+
                                 {/* Connection Status */}
                                 {serverReady !== null && (
                                     <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${
@@ -539,6 +597,20 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
 
                                 {error && (
                                     <p className={`text-sm p-2 rounded-lg ${deployLocked ? 'text-yellow-200 bg-yellow-500/10 border border-yellow-500/20' : 'text-red-400 bg-red-500/10'}`}>{error}</p>
+                                )}
+
+                                {remoteContainers.length > 0 && (
+                                    <div className="bg-background/40 border border-border rounded-lg p-3">
+                                        <div className="text-xs text-muted-foreground mb-2">Remote containers (snapshot)</div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-40 overflow-y-auto">
+                                            {remoteContainers.map((c) => (
+                                                <div key={c.name} className="flex items-center justify-between gap-3 text-xs bg-card/40 border border-border/60 rounded-md px-2 py-1">
+                                                    <span className="font-mono truncate">{c.name}</span>
+                                                    <span className={`${c.on ? 'text-green-400' : 'text-muted-foreground'}`}>{c.on ? 'on' : 'off'}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </>
                         )}

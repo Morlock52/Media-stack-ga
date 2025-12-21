@@ -53,12 +53,20 @@ open http://localhost:3002   # macOS
 1. Complete the wizard and go to **Review & Generate**.
 2. Click **Deploy to Server** and run **Test Connection**.
 3. Fill in host/port/user, choose password or key auth, and confirm deploy path.
-4. Click **Deploy** and follow the step list.
+4. (Optional) Leave **Auto‑remove conflicting containers** enabled to auto-fix container name conflicts (remove the old container and retry once).
+5. (Optional) Leave **Auto-disable VPN/torrent profiles if `/dev/net/tun` is missing** enabled so the rest of the stack can still deploy on hosts without TUN support.
+6. Click **Deploy** and follow the step list.
 
 **Notes:**
 - The remote host needs Docker + Docker Compose.
 - Password auth requires `sshpass` on the control server.
+- If you click **Deploy** twice, the control server rejects the duplicate request with **HTTP 409** (“deployment already in progress”).
+- After SSH connects, the deploy collects a best-effort **remote container snapshot** (name + on/off) and shows it in the UI.
 - Remote deploy does not configure DNS or Cloudflare; see “After Setup” below.
+
+<p align="center">
+  <img src="images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="1100" />
+</p>
 
 **Stop the wizard when done:**
 

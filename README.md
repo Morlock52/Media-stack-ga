@@ -146,14 +146,24 @@ Remote deploy lets the wizard upload your generated `docker-compose.yml` + `.env
 2. Click **Deploy to Server**.
 3. Click **Test Connection** (validates SSH, Docker daemon, and Compose).
 4. Fill in host/port/user, choose password or key auth, and confirm the deploy path.
-5. (Optional) Leave **Auto‑remove conflicting containers** enabled for safe auto-fix of name conflicts.
-6. Click **Deploy** and follow the live step list.
+5. (Optional) Leave **Auto‑remove conflicting containers** enabled to auto-fix container name conflicts (remove the old container and retry once).
+6. (Optional) Leave **Auto-disable VPN/torrent profiles if `/dev/net/tun` is missing** enabled so the rest of the stack can still deploy on hosts without TUN support.
+7. Click **Deploy** and follow the live step list.
+
+**What to expect**
+
+- If you click **Deploy** twice, the control server rejects the duplicate request with **HTTP 409** (“deployment already in progress”).
+- After SSH connects, the deploy collects a best-effort **remote container snapshot** (name + on/off) and shows it in the UI.
 
 **Where to check logs**
 
 - UI shows per-step status and error details.
 - Control server logs: `docker compose logs -f control-server` (or `wizard-api` in wizard mode).
 - Remote host logs: `ssh <host> 'cd <deployPath> && docker compose logs -f'`
+
+<p align="center">
+  <img src="docs/images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="1100" />
+</p>
 
 ---
 

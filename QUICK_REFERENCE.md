@@ -31,6 +31,13 @@ docker compose -f docker-compose.wizard.yml up -d
 3. Use **Test Connection** to verify SSH + Docker + Compose.
 4. Deploy and monitor steps in the modal.
 
+**Tips**
+
+- Double-click protection: concurrent deploys to the same host are rejected with **HTTP 409**.
+- (Optional) Auto-fix container name conflicts and retry once.
+- (Optional) If `/dev/net/tun` is missing, auto-disable VPN/torrent profiles so the rest of the stack can deploy.
+- After SSH connects, the UI shows a best-effort **remote container snapshot** (name + on/off).
+
 > Password auth requires `sshpass` on the control server host/container.
 
 ### View Logs

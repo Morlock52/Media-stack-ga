@@ -57,6 +57,13 @@ Remote deploy works from the wizard UI because the containerized UI proxies `/ap
 3. Use **Test Connection** to verify SSH + Docker + Compose.
 4. Fill in host/port/user credentials and click **Deploy**.
 
+**What to expect**
+
+- If you click **Deploy** twice, the control server rejects the duplicate request with **HTTP 409** (“deployment already in progress”).
+- (Optional) **Auto‑remove conflicting containers** can auto-fix container name conflicts (remove the old container and retry once).
+- (Optional) **Auto-disable VPN/torrent profiles if `/dev/net/tun` is missing** allows the rest of the stack to deploy on hosts without TUN support.
+- After SSH connects, the deploy collects a best-effort **remote container snapshot** (name + on/off).
+
 **Notes**
 - Remote host must have Docker + Docker Compose installed.
 - Password auth requires `sshpass` inside the control server environment.
@@ -65,7 +72,7 @@ Remote deploy works from the wizard UI because the containerized UI proxies `/ap
 ### Access after remote deploy
 
 - **Domain/Tunnel:** `https://<service>.${DOMAIN}`
-- **Local/LAN:** `http://<server-ip>` (Homepage dashboard)
+- **Local/LAN:** `http://<server-ip>` (Homepage dashboard via Traefik on port 80)
 - Add `/etc/hosts` entries if you want subdomain access without DNS.
 
 ## Stopping the Wizard

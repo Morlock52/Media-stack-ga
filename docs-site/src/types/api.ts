@@ -30,6 +30,7 @@ export interface RemoteDeployRequest {
     privateKey?: string;
     deployPath?: string;
     autoRemoveConflictingContainers?: boolean;
+    autoDisableVpnOnTunMissing?: boolean;
 }
 
 export interface AiChatRequest {

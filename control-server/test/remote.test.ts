@@ -28,6 +28,7 @@ describe('Remote Deploy API', () => {
     let spawnMock: any;
 
     beforeEach(async () => {
+        process.env.REMOTE_DEPLOY_LOCK_MS = '0';
         spawnMock = vi.mocked(child_process.spawn);
         // Setup default spawn behavior to return success
         spawnMock.mockImplementation(() => {
@@ -65,6 +66,30 @@ describe('Remote Deploy API', () => {
     });
 
     it('should execute deployment steps successfully', async () => {
+        // Provide a deterministic docker ps snapshot so we can verify monitoring output.
+        spawnMock.mockImplementation((cmd: string, args: string[]) => {
+            const full = `${cmd} ${(args || []).join(' ')}`;
+            const isDockerPsSnapshot = cmd === 'ssh' && /docker\s+ps\s+-a\s+--format/.test(full);
+            const isEchoHome = cmd === 'ssh' && /echo\s+\$HOME/.test(full);
+
+            const listeners: Record<string, any> = {};
+            return {
+                stdout: {
+                    on: (event: string, cb: any) => {
+                        if (event !== 'data') return;
+                        if (isEchoHome) cb(Buffer.from('/home/root\n'));
+                        else if (isDockerPsSnapshot) cb(Buffer.from('postgres|running\nold_container|exited\n'));
+                        else cb(Buffer.from('Success\n'));
+                    }
+                },
+                stderr: { on: () => { } },
+                on: (event: string, cb: any) => {
+                    if (event === 'close') cb(0);
+                    listeners[event] = cb;
+                }
+            };
+        });
+
         const response = await fastify.inject({
             method: 'POST',
             url: '/api/remote-deploy',
@@ -78,6 +103,13 @@ describe('Remote Deploy API', () => {
         expect(response.statusCode).toBe(200);
         const body = JSON.parse(response.payload);
         expect(body.success).toBe(true);
+        expect(Array.isArray(body.remoteContainers)).toBe(true);
+        expect(body.remoteContainers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ name: 'postgres', on: true }),
+                expect.objectContaining({ name: 'old_container', on: false }),
+            ])
+        );
         expect(spawnMock).toHaveBeenCalled();
 
         // Verify SSH calls were made
@@ -134,8 +166,10 @@ describe('Remote Deploy API', () => {
             }
         });
 
-        expect(response.statusCode).toBe(500);
+        expect(response.statusCode).toBe(200);
         const body = JSON.parse(response.payload);
         expect(body.success).toBe(false);
+        expect(typeof body.error).toBe('string');
+        expect(body.error.length).toBeGreaterThan(0);
     });
 });
