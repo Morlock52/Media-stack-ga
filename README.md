@@ -89,11 +89,14 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 
 - [**Start Here — Pick Your Setup Path**](docs/START_HERE.md) ⬅️ New? Start here!
 - [Screenshots](#-screenshots-current)
+- [TL;DR](#-tldr)
+- [Stack modes (quick map)](#-stack-modes-quick-map)
 - [Quick Start](#-quick-start)
 - [Local network install (LAN only)](#-local-network-install-lan-only)
 - [Remote access (SSO + Cloudflare Tunnel)](#-remote-access-sso--cloudflare-tunnel)
 - [Remote Deploy (SSH)](#-remote-deploy-ssh)
 - [Access after remote deploy](#-access-after-remote-deploy)
+- [Access modes (LAN vs Cloudflare)](#-access-modes-lan-vs-cloudflare)
 - [Highlights](#-highlights)
 - [Stack at a glance](#-stack-at-a-glance)
 - [Agentic System](#-agentic-system)
@@ -105,6 +108,20 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 - [Tests & stress](#-tests--stress)
 - [Operations](#-operations)
 - [References](#-references)
+
+## ⚡ TL;DR
+
+1. Run the wizard (`./setup.sh` or Docker Wizard).
+2. Pick access mode: **LAN** (`docker compose up -d`) or **Remote** (`docker compose --profile auth --profile cloudflared up -d`).
+3. Use `http://<server-ip>` for LAN, or `https://<service>.${DOMAIN}` for remote access.
+
+## 🧭 Stack modes (quick map)
+
+| Mode | When to use | Command | Includes |
+| --- | --- | --- | --- |
+| LAN-only | Trusted home network | `docker compose up -d` | No SSO, no Tunnel |
+| Remote (Zero-Trust) | Internet-facing access | `docker compose --profile auth --profile cloudflared up -d` | Authelia + Cloudflare Tunnel |
+| Remote Deploy | You want the wizard to deploy to a VPS | Wizard → Deploy to Server | SSH push + `docker compose up -d` |
 
 ## 🚀 Quick start
 
@@ -135,6 +152,12 @@ chmod +x setup.sh
 docker compose up -d
 ```
 
+> **Best defaults (recommended)**
+> - Use `DOMAIN=local` for LAN-only installs; use a real domain only when enabling Cloudflare Tunnel.
+> - Keep `vpn` + `torrent` together so downloads never leak.
+> - On Linux, start with `DATA_ROOT=/srv/mediastack` on fast storage.
+> - After first boot, apply TRaSH Guides quality profiles + naming presets (HD-1080p or UHD-2160p are safe starters).
+
 ---
 
 ## 🏠 Local network install (LAN only)
@@ -149,6 +172,11 @@ docker compose up -d
 ```
 
 3. Add local DNS/hosts entries for subdomains (e.g., `plex.local`, `sonarr.local`) or use a LAN DNS server.
+
+> **Security on LAN still matters**
+> - Use strong admin passwords and rotate default credentials.
+> - Keep Authelia enabled if multiple users access admin apps (Portainer, qBittorrent, *Arr).
+> - Restrict LAN access with firewall rules or VLANs if you share your network.
 
 > You can still enable SSO on LAN by running `docker compose --profile auth up -d`.
 
@@ -229,6 +257,12 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 
 ---
 
+## 🧭 Access modes (LAN vs Cloudflare)
+
+![Access modes map](docs/images/access_modes.jpg)
+
+---
+
 ## ✅ Highlights
 
 - **Interactive Setup Wizard**: Configure your entire media stack through a step-by-step Matrix HUD flow.
@@ -298,17 +332,28 @@ Media Stack includes a comprehensive documentation system that goes beyond stati
 
 ## 🧱 Stack at a glance
 
-| Layer             | What it does                                | Key services                                |
-| ----------------- | ------------------------------------------- | ------------------------------------------- |
-| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`)           |
-| Identity          | Single sign‑on + MFA in front of routes     | Authelia + Redis                            |
-| UI / Requests     | Dashboard + content requests                | Homepage + Overseerr                        |
-| Media servers     | Streaming to TVs / phones                   | Plex + Jellyfin                             |
-| Automation        | Finds/organizes content                     | Sonarr + Radarr + Prowlarr + Bazarr         |
-| Downloads         | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr        |
-| Ops               | Visibility + updates + notifications        | Portainer + Dozzle + Watchtower + Notifiarr |
+### Core stack
 
-> Tip: keep the table short; the long explanations live in the architecture + security sections.
+| Layer             | What it does                                | Key services                          |
+| ----------------- | ------------------------------------------- | ------------------------------------- |
+| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`)     |
+| Identity          | Single sign‑on + MFA in front of routes     | Authelia + Redis                      |
+| UI / Requests     | Dashboard + content requests                | Homepage + Overseerr                  |
+| Media servers     | Streaming to TVs / phones                   | Plex + Jellyfin                       |
+| Automation        | Finds/organizes content                     | Sonarr + Radarr + Prowlarr + Bazarr   |
+| Downloads         | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr  |
+
+### Optional ops add-ons (safe to skip for a lean stack)
+
+| Add-on | Use | Notes |
+| --- | --- | --- |
+| Portainer | Container UI | Helpful for manual ops |
+| Dozzle | Log viewer | Tail logs in-browser |
+| Watchtower | Auto updates | Keep off if you want full control |
+| Autoheal | Auto-restart unhealthy containers | Lightweight watchdog |
+| Notifiarr | Notifications | Alerts for Plex + *Arr |
+
+> Tip: keep the table short; the deep dives live in the architecture + security sections.
 
 ---
 
@@ -470,6 +515,8 @@ Rule of thumb used:
 - **1 Mbps ≈ 0.45 GB/hour** (decimal GB)
 - **HEVC/H.265 often targets similar quality at ~½ the bitrate of AVC/H.264** (codec + encoder dependent)
 
+> For tighter storage control, apply TRaSH Guides file-size limits in Sonarr/Radarr (caps per quality tier).
+
 ---
 
 ## 🧰 Install & run
@@ -537,3 +584,9 @@ These links back up the assumptions used in the diagrams & planning chart:
 - [Plex hardware-accelerated streaming requires Plex Pass](https://support.plex.tv/articles/115002178853-using-hardware-accelerated-streaming/)
 - [Plex server sizing note (RAM)](https://support.plex.tv/articles/200375666-plex-media-server-requirements/)
 - [ITU press release (HEVC ~half the bitrate vs AVC claim)](https://www.itu.int/net/pressoffice/press_releases/2013/01.aspx)
+- [TRaSH Guides: Sonarr quality profiles](https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/)
+- [TRaSH Guides: Radarr quality profiles](https://trash-guides.info/Radarr/radarr-setup-quality-profiles/)
+- [TRaSH Guides: Sonarr naming scheme](https://trash-guides.info/Sonarr/Sonarr-recommended-naming-scheme/)
+- [TRaSH Guides: Radarr naming scheme](https://trash-guides.info/Radarr/Radarr-recommended-naming-scheme/)
+- [TRaSH Guides: Sonarr file-size limits](https://trash-guides.info/Sonarr/Sonarr-Quality-Settings-File-Size/)
+- [TRaSH Guides: Radarr file-size limits](https://trash-guides.info/Radarr/Radarr-Quality-Settings-File-Size/)

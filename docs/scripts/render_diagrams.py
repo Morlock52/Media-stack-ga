@@ -509,16 +509,64 @@ def render_security() -> Image.Image:
     return base.convert("RGB")
 
 
+def render_access_modes() -> Image.Image:
+    base = Image.new("RGBA", (WIDTH, HEIGHT), (5, 8, 10, 255))
+    draw_background(ImageDraw.Draw(base), base)
+    draw_title(ImageDraw.Draw(base), "Access Modes — LAN vs Cloudflare (Dec 2025)", base)
+
+    lan_zone = (120, 260, 1420, 1240)
+    remote_zone = (1490, 260, 2790, 1240)
+
+    draw_zone(base, lan_zone, "LAN-ONLY", COLORS["zone_ops"])
+    draw_zone(base, remote_zone, "REMOTE (ZERO-TRUST)", COLORS["zone_edge"])
+
+    draw_tag(base, (lan_zone[0] + 300, lan_zone[1] + 70), "no SSO / no tunnel", COLORS["primary"], font_size=20)
+    draw_tag(base, (remote_zone[0] + 360, remote_zone[1] + 70), "tunnel + SSO", COLORS["accent"], font_size=20)
+
+    lan_cards = [
+        ((200, 520, 540, 760), "Clients", ["> browser, TV", "mobile devices"], COLORS["accent"], "clients"),
+        ((620, 520, 960, 760), "LAN Router", ["> DNS / hosts", "local gateway"], COLORS["primary"], "edge"),
+        ((1040, 520, 1380, 760), "Apps", ["> Traefik + stack", "local access"], COLORS["highlight"], "grid"),
+    ]
+
+    for rect, title, lines, accent, icon in lan_cards:
+        draw_card(base, rect, title, lines, accent, icon)
+
+    remote_cards = [
+        ((1570, 520, 1910, 760), "Clients", ["> browser, TV", "mobile devices"], COLORS["accent"], "clients"),
+        ((1990, 520, 2330, 760), "Cloudflare", ["> tunnel edge", "Authelia SSO"], COLORS["primary"], "cloud"),
+        ((2410, 520, 2750, 760), "Apps", ["> Traefik + stack", "zero-trust"], COLORS["highlight"], "grid"),
+    ]
+
+    for rect, title, lines, accent, icon in remote_cards:
+        draw_card(base, rect, title, lines, accent, icon)
+
+    draw_arrow(base, (540, 640), (620, 640), ARROW_TRAFFIC, curve=-0.12, label="LAN")
+    draw_arrow(base, (960, 640), (1040, 640), ARROW_TRAFFIC, curve=-0.12, label="HTTP")
+
+    draw_arrow(base, (1910, 640), (1990, 640), ARROW_TRAFFIC, curve=-0.12, label="HTTPS")
+    draw_arrow(base, (2330, 640), (2410, 640), ARROW_TRAFFIC, curve=-0.12, label="SSO")
+
+    draw_tag(base, (lan_zone[0] + 430, lan_zone[3] - 90), "http://<server-ip>", COLORS["accent"], font_size=22)
+    draw_tag(base, (remote_zone[0] + 470, remote_zone[3] - 90), "https://<service>.<domain>", COLORS["primary"], font_size=22)
+
+    return base.convert("RGB")
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     architecture = render_architecture()
     security = render_security()
+    access_modes = render_access_modes()
 
     architecture.save(OUT_DIR / "architecture_overview.png")
     architecture.save(OUT_DIR / "architecture_overview.jpg", quality=92)
 
     security.save(OUT_DIR / "security_controls.png")
     security.save(OUT_DIR / "security_controls.jpg", quality=92)
+
+    access_modes.save(OUT_DIR / "access_modes.png")
+    access_modes.save(OUT_DIR / "access_modes.jpg", quality=92)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AlertCircle, Check, Copy, Download, Package, Globe } from 'lucide-react'
+import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2 } from 'lucide-react'
 import { PostInstallChecklist } from '../../PostInstallChecklist'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT, STORAGE_CATEGORIES } from '../../../data/storagePlan'
 import { SetupConfig } from '../../../store/setupStore'
@@ -113,6 +113,57 @@ export function ReviewGenerateStep({
                             </div>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                    <h3 className="text-sm font-semibold text-primary">TRaSH presets (recommended)</h3>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <li>Import TRaSH quality profiles in Sonarr/Radarr (HD-1080p or UHD-2160p are safe starters).</li>
+                        <li>Apply TRaSH naming schemes for consistent filenames across apps.</li>
+                        <li>Set per-quality file-size caps to keep storage predictable.</li>
+                    </ul>
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                        Links:{' '}
+                        <a
+                            className="text-primary hover:text-primary/80 underline"
+                            href="https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Sonarr profiles
+                        </a>
+                        ,{' '}
+                        <a
+                            className="text-primary hover:text-primary/80 underline"
+                            href="https://trash-guides.info/Radarr/radarr-setup-quality-profiles/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Radarr profiles
+                        </a>
+                        ,{' '}
+                        <a
+                            className="text-primary hover:text-primary/80 underline"
+                            href="https://trash-guides.info/Sonarr/Sonarr-recommended-naming-scheme/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Sonarr naming
+                        </a>
+                        ,{' '}
+                        <a
+                            className="text-primary hover:text-primary/80 underline"
+                            href="https://trash-guides.info/Radarr/Radarr-recommended-naming-scheme/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Radarr naming
+                        </a>
+                        .
+                    </div>
                 </div>
             </div>
 

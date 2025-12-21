@@ -22,6 +22,8 @@ docker compose up -d
 
 Set `DOMAIN=local` and add LAN DNS/hosts entries for subdomains you want to use.
 
+> **Security on LAN still matters:** use strong passwords, keep Authelia enabled for shared admin apps, and segment your LAN when possible.
+
 ### Remote Access (SSO + Cloudflare Tunnel)
 ```bash
 docker compose --profile auth --profile cloudflared up -d

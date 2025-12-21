@@ -178,6 +178,26 @@ export function StoragePlanner() {
                 </div>
             </div>
 
+            <div className="p-4 bg-muted/40 border border-border rounded-xl flex gap-3">
+                <div className="p-2 rounded-lg bg-primary/20 text-primary">
+                    <HardDrive className="w-4 h-4" />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-white">Keep file sizes predictable</p>
+                    <p className="text-muted-foreground/80">
+                        Set per-quality file-size caps in Sonarr/Radarr (TRaSH Guides) to avoid oversized releases.
+                    </p>
+                    <a
+                        className="text-xs text-primary hover:text-primary/80 underline"
+                        href="https://trash-guides.info/Sonarr/Sonarr-Quality-Settings-File-Size/"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        View TRaSH size limits →
+                    </a>
+                </div>
+            </div>
+
             {isSimpleMode ? (
                 <div className="space-y-4">
                     <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">

@@ -14,6 +14,19 @@ Do you want a guided UI experience?
     └── Want full manual control? → Option C: Power User (manual)
 ```
 
+## TL;DR
+
+1. Pick a setup path (Wizard, Shell, or Manual).
+2. Pick an access mode (LAN or Remote).
+3. Deploy and open your dashboard.
+
+## Access mode (LAN vs Remote)
+
+| Mode | Command | Notes |
+| --- | --- | --- |
+| LAN-only | `docker compose up -d` | No SSO, no Tunnel |
+| Remote (Zero-Trust) | `docker compose --profile auth --profile cloudflared up -d` | Authelia + Cloudflare Tunnel |
+
 ---
 
 ## Option A: Docker Wizard (Recommended)
