@@ -90,6 +90,8 @@ python docs/scripts/render_marketing_assets.py
 - [**Start Here — Pick Your Setup Path**](docs/START_HERE.md) ⬅️ New? Start here!
 - [Screenshots](#-screenshots-current)
 - [Quick Start](#-quick-start)
+- [Local network install (LAN only)](#-local-network-install-lan-only)
+- [Remote access (SSO + Cloudflare Tunnel)](#-remote-access-sso--cloudflare-tunnel)
 - [Remote Deploy (SSH)](#-remote-deploy-ssh)
 - [Access after remote deploy](#-access-after-remote-deploy)
 - [Highlights](#-highlights)
@@ -132,6 +134,35 @@ chmod +x setup.sh
 ```bash
 docker compose up -d
 ```
+
+---
+
+## 🏠 Local network install (LAN only)
+
+If you are **LAN-only**, you can skip **Cloudflare Tunnel** and **Authelia SSO**. VPN-protected downloads (Gluetun) still apply.
+
+1. Set `DOMAIN=local` (or your LAN DNS suffix) in `.env`.
+2. Start the stack:
+
+```bash
+docker compose up -d
+```
+
+3. Add local DNS/hosts entries for subdomains (e.g., `plex.local`, `sonarr.local`) or use a LAN DNS server.
+
+> You can still enable SSO on LAN by running `docker compose --profile auth up -d`.
+
+---
+
+## 🌐 Remote access (SSO + Cloudflare Tunnel)
+
+For internet-facing access, enable both **auth** and **cloudflared** profiles:
+
+```bash
+docker compose --profile auth --profile cloudflared up -d
+```
+
+Requires Authelia secrets + Cloudflare tunnel config in `.env`.
 
 ---
 

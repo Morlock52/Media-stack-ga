@@ -75,6 +75,13 @@ Remote deploy works from the wizard UI because the containerized UI proxies `/ap
 - **Local/LAN:** `http://<server-ip>` (Homepage dashboard via Traefik on port 80)
 - Add `/etc/hosts` entries if you want subdomain access without DNS.
 
+### Local-only vs Remote access (stack deployment)
+
+- **Local LAN (no SSO/tunnel):** run the generated compose with `docker compose up -d`.
+- **Remote/Zero-Trust:** run with `docker compose --profile auth --profile cloudflared up -d`.
+
+VPN-protected downloads (Gluetun) still apply in both modes.
+
 ## Stopping the Wizard
 
 ```bash

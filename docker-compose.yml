@@ -193,6 +193,7 @@ services:
     image: authelia/authelia:latest
     container_name: authelia
     restart: unless-stopped
+    profiles: ["auth"]
     environment:
       - TZ=${TIMEZONE}
       - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET}
@@ -226,6 +227,7 @@ services:
     image: redis:alpine
     container_name: redis
     restart: unless-stopped
+    profiles: ["auth"]
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

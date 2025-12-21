@@ -15,6 +15,18 @@ Matrix HUD UI note: screenshots and visuals in the docs reflect the current cybe
 docker-compose up -d
 ```
 
+### Local LAN (no SSO/tunnel)
+```bash
+docker compose up -d
+```
+
+Set `DOMAIN=local` and add LAN DNS/hosts entries for subdomains you want to use.
+
+### Remote Access (SSO + Cloudflare Tunnel)
+```bash
+docker compose --profile auth --profile cloudflared up -d
+```
+
 ### Stop Services
 ```bash
 docker-compose down

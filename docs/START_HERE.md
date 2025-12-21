@@ -117,6 +117,26 @@ nano .env  # or your preferred editor
 docker compose up -d
 ```
 
+### Local LAN (no SSO/tunnel)
+
+If you are only on a trusted LAN, you can skip Cloudflare Tunnel and Authelia. VPN-protected downloads still apply.
+
+```bash
+docker compose up -d
+```
+
+Set `DOMAIN=local` and add LAN DNS/hosts entries for subdomains you want to use.
+
+### Remote/Zero-Trust (SSO + Cloudflare Tunnel)
+
+For internet-facing access, enable auth and cloudflared profiles:
+
+```bash
+docker compose --profile auth --profile cloudflared up -d
+```
+
+Requires Authelia secrets + Cloudflare tunnel config in `.env`.
+
 **Key `.env` variables to set:**
 
 - `PUID` / `PGID` — Your user/group IDs (run `id` to find them)
