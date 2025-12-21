@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable, Tuple
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,6 +39,43 @@ def load_font(size: int, mono: bool = False) -> ImageFont.FreeTypeFont:
         if Path(path).exists():
             return ImageFont.truetype(path, size=size)
     return ImageFont.load_default()
+
+
+def find_legacy_logo() -> Path | None:
+    legacy_root = DOCS_DIR / "_old"
+    if not legacy_root.exists():
+        return None
+    candidates = sorted(legacy_root.glob("*/logo.png"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0] if candidates else None
+
+
+def render_logo_from_legacy(path: Path) -> Image.Image:
+    base = Image.open(path).convert("RGBA")
+    size = 1024
+    if base.size != (size, size):
+        base = base.resize((size, size), Image.Resampling.LANCZOS)
+
+    grayscale = ImageOps.grayscale(base)
+    recolor = ImageOps.colorize(grayscale, black=DARK, white=(120, 255, 220)).convert("RGBA")
+    recolor = ImageEnhance.Contrast(recolor).enhance(1.1)
+    recolor = ImageEnhance.Brightness(recolor).enhance(1.05)
+
+    overlay = Image.new("RGBA", recolor.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    center = size // 2
+    draw.ellipse((center - 470, center - 470, center + 470, center + 470), outline=(*CYAN, 180), width=8)
+    draw.ellipse((center - 430, center - 430, center + 430, center + 430), outline=(*GREEN, 160), width=4)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(2))
+
+    glow = Image.new("RGBA", recolor.size, (0, 0, 0, 0))
+    gdraw = ImageDraw.Draw(glow)
+    gdraw.ellipse((center - 480, center - 480, center + 480, center + 480), outline=(*CYAN, 120), width=10)
+    glow = glow.filter(ImageFilter.GaussianBlur(8))
+
+    composed = Image.alpha_composite(recolor, glow)
+    composed = Image.alpha_composite(composed, overlay)
+
+    return composed
 
 
 def draw_text_glow(base: Image.Image, position: Tuple[int, int], text: str, font: ImageFont.FreeTypeFont) -> None:
@@ -245,7 +282,8 @@ def main() -> None:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
 
-    logo = render_logo()
+    legacy_logo = find_legacy_logo()
+    logo = render_logo_from_legacy(legacy_logo) if legacy_logo else render_logo()
     logo.save(DOCS_DIR / "logo.png")
     logo.save(PUBLIC_DIR / "media-stack-logo.png")
 
