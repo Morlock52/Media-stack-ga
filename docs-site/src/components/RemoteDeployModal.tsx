@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     X, Server, Key, Lock, CheckCircle, AlertCircle,
@@ -21,6 +21,16 @@ interface DeployStep {
 type RemoteContainerStatus = {
     name: string
     on: boolean
+}
+
+type RemoteDeployPrefs = {
+    host: string
+    port: string
+    username: string
+    authType: 'password' | 'key'
+    deployPath: string
+    autoRemoveConflictingContainers: boolean
+    autoDisableVpnOnTunMissing: boolean
 }
 
 interface RemoteDeployModalProps {
@@ -61,6 +71,7 @@ const tryParseJson = (text: string) => {
 
 export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const { config, selectedServices } = useSetupStore()
+    const didHydratePrefsRef = useRef(false)
     const [host, setHost] = useState('')
     const [port, setPort] = useState('22')
     const [username, setUsername] = useState('')
@@ -78,6 +89,59 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const [autoRemoveConflictingContainers, setAutoRemoveConflictingContainers] = useState(true)
     const [autoDisableVpnOnTunMissing, setAutoDisableVpnOnTunMissing] = useState(true)
     const [remoteContainers, setRemoteContainers] = useState<RemoteContainerStatus[]>([])
+
+    useEffect(() => {
+        if (!isOpen) return
+        if (didHydratePrefsRef.current) return
+        didHydratePrefsRef.current = true
+
+        try {
+            const raw = localStorage.getItem('remote-deploy-prefs')
+            if (!raw) return
+            const parsed = JSON.parse(raw) as Partial<RemoteDeployPrefs>
+
+            if (typeof parsed.host === 'string') setHost(parsed.host)
+            if (typeof parsed.port === 'string') setPort(parsed.port)
+            if (typeof parsed.username === 'string') setUsername(parsed.username)
+            if (parsed.authType === 'password' || parsed.authType === 'key') setAuthType(parsed.authType)
+            if (typeof parsed.deployPath === 'string') setDeployPath(parsed.deployPath)
+
+            if (typeof parsed.autoRemoveConflictingContainers === 'boolean') {
+                setAutoRemoveConflictingContainers(parsed.autoRemoveConflictingContainers)
+            }
+            if (typeof parsed.autoDisableVpnOnTunMissing === 'boolean') {
+                setAutoDisableVpnOnTunMissing(parsed.autoDisableVpnOnTunMissing)
+            }
+        } catch {
+            // ignore invalid local storage
+        }
+    }, [isOpen])
+
+    useEffect(() => {
+        if (!didHydratePrefsRef.current) return
+        try {
+            const prefs: RemoteDeployPrefs = {
+                host,
+                port,
+                username,
+                authType,
+                deployPath,
+                autoRemoveConflictingContainers,
+                autoDisableVpnOnTunMissing,
+            }
+            localStorage.setItem('remote-deploy-prefs', JSON.stringify(prefs))
+        } catch {
+            // ignore storage failures
+        }
+    }, [
+        host,
+        port,
+        username,
+        authType,
+        deployPath,
+        autoRemoveConflictingContainers,
+        autoDisableVpnOnTunMissing,
+    ])
 
     const resetForm = () => {
         setStatus('idle')
@@ -368,7 +432,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
                                     Deploying to {host}...
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                                     {steps.map((s, i) => (
                                         <motion.div
                                             key={i}

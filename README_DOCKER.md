@@ -4,7 +4,7 @@
 # Dockerized Media Stack Wizard
 </div>
 
-This document explains how to run the Media Stack Wizard (Control Server + Web UI) using Docker.
+This document explains how to run the Media Stack Wizard (Control Server + Matrix HUD Web UI) using Docker.
 
 ## Prerequisites
 - Docker

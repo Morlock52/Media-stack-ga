@@ -3,6 +3,8 @@
 ## Overview
 Updated the Media Stack UI with modern 2025 improvements based on ui.md recommendations, focusing on the highest-impact enhancements from the recommended adoption order.
 
+Theme alignment: Matrix HUD palette (emerald/cyan), scanlines, and neon glass panels.
+
 ---
 
 ## ✅ Implemented Updates
@@ -28,7 +30,7 @@ Updated the Media Stack UI with modern 2025 improvements based on ui.md recommen
   #### Visual Enhancements
   - ✅ Animated deployment steps with smooth slide-in (delay: i * 0.1s)
   - ✅ Spring animations for status icons (scale: 0 → 1)
-  - ✅ Color-coded step states (green for done, blue for running, red for error)
+  - ✅ Color-coded step states (green for done, cyan for running, red for error)
   - ✅ Enhanced success screen with celebration emoji 🎉
   - ✅ Gradient button for success state (green-600 → emerald-600)
   - ✅ Improved error display with border and background

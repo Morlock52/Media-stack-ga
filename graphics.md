@@ -2,7 +2,7 @@
 
 To elevate the **Media Stack** project to a "Premium" and "State-of-the-Art" level, I recommend the following graphic and UI enhancements. These are designed to create a "Wow" factor while maintaining usability.
 
-## 1. Visual Style: "Deep Glass"
+## 1. Visual Style: "Matrix Glass"
 
 Move beyond standard glassmorphism to **"Deep Glass"**. This involves:
 *   **Multi-layered Depth**: Use 3-4 layers of z-index with varying blur strengths (`backdrop-blur-md` to `backdrop-blur-3xl`) to create a sense of deep space.
@@ -50,14 +50,14 @@ Your dashboard needs to look like a command center.
 
 ## 7. Color Palette Refinement
 
-Move to a curated "Cyber-Midnight" palette:
+Move to a curated "Matrix Midnight" palette:
 *   **Background**: `#030712` (Rich Black) instead of `#000000`.
-*   **Primary**: `#7c3aed` (Violet) -> `#db2777` (Pink) gradients.
+*   **Primary**: `#10b981` (Emerald) -> `#22d3ee` (Cyan) gradients.
 *   **Success**: `#10b981` (Emerald) with a neon glow.
 *   **Error**: `#ef4444` (Red) with a neon glow.
 
 ## Proposed "Hero" Image Concept
 I have generated a concept image (`premium_media_dashboard`) to visualize this direction. It features:
-- Deep dark backgrounds with purple/blue ambient light.
+- Deep dark backgrounds with emerald/cyan ambient light.
 - Floating glass cards with high-fidelity blurs.
 - Neon accents for status indicators.

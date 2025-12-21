@@ -4,7 +4,9 @@
 # Quick Reference Guide
 </div>
 
-> **Last Updated:** December 20, 2025
+> **Last Updated:** December 21, 2025
+
+Matrix HUD UI note: screenshots and visuals in the docs reflect the current cyber-matrix theme.
 
 ## 🚀 Quick Commands
 

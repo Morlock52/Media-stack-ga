@@ -5,7 +5,7 @@
 
 # 🎬 Ultimate Media Stack — GA
 
-**Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a docs + wizard experience**
+**Secure self‑hosted media platform with SSO/MFA, VPN‑isolated downloads, and a Matrix HUD wizard + docs experience**
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready"/>
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN‑protected downloads (Gluetun), and a dashboard + docs site.</strong>
+  <strong>Bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN‑protected downloads (Gluetun), and a cyber‑matrix command center UI.</strong>
 </p>
 
 <p align="center">
@@ -36,16 +36,21 @@
 </p>
 
 <p align="center">
-  <em>Current UI screenshots are generated via Playwright. Rebuild them with:</em>
+  <em>Current Matrix HUD screenshots are generated via Playwright. Rebuild them with:</em>
 </p>
 
 ```bash
 cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1
 ```
 
-> **Last updated:** December 20, 2025
+```bash
+python docs/scripts/render_diagrams.py
+python docs/scripts/render_marketing_assets.py
+```
 
-## ✨ Screenshots (current)
+> **Last updated:** December 21, 2025
+
+## ✨ Screenshots (Matrix HUD)
 
 <table align="center">
   <tr>
@@ -195,9 +200,9 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 
 ## ✅ Highlights
 
-- **Interactive Setup Wizard**: Configure your entire media stack through a beautiful, step-by-step interface.
+- **Interactive Setup Wizard**: Configure your entire media stack through a step-by-step Matrix HUD flow.
 - **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
-- **Premium UI & Animations**: Glass UI, responsive motion, and exportable diagrams.
+- **Premium UI & Animations**: Matrix glass panels, scanlines, and exportable diagrams.
 - **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
 
 <details>

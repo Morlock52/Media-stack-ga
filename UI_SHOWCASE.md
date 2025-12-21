@@ -6,7 +6,7 @@
 
 ## 🖼 Visual Showcase (Cyber Matrix Theme)
 
-The new interface features a cyber‑matrix aesthetic with layered scanlines, neon HUD panels, glitch accents, and interactive motion.
+The interface uses a cyber-matrix aesthetic with layered scanlines, neon HUD panels, glitch accents, and interactive motion.
 
 ### 🎨 Hero Experience (Matrix HUD)
 ![Hero Dark Mode](docs/images/hero.png)
@@ -123,11 +123,11 @@ The deployment tool now provides real-time feedback with beautiful toast notific
 ## 🎨 Visual Design Details
 
 ### Color Palette
-- **Success**: Green (green-400, green-500, green-600)
-- **Running**: Blue (blue-400)
+- **Success**: Emerald (green-400, green-500, green-600)
+- **Running**: Cyan (cyan-400)
 - **Error**: Red (red-400, red-500)
-- **Warning**: Yellow/Amber
-- **Primary**: Purple gradient (from ui.md design system)
+- **Warning**: Amber
+- **Primary**: Emerald -> cyan gradient (matrix HUD)
 
 ### Animations
 - **Spring transitions**: stiffness: 200 (icons)

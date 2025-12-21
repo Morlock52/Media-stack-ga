@@ -14,6 +14,7 @@
 - **Icons**: lucide-react
 - **Docs rendering**: `react-markdown` + syntax highlighting
 - **Deployment**: Vite build served via Nginx in Docker; Netlify for docs hosting/functions
+- **Theme**: Matrix HUD (emerald/cyan neon on deep black)
 
 ### Key UX surfaces
 

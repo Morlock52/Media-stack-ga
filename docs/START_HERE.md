@@ -18,9 +18,9 @@ Do you want a guided UI experience?
 
 ## Option A: Docker Wizard (Recommended)
 
-**Best for:** First-time users, visual learners, anyone who wants a polished UI.
+**Best for:** First-time users, visual learners, anyone who wants a Matrix HUD experience.
 
-The wizard runs in Docker containers and provides a step-by-step web interface to configure your stack.
+The wizard runs in Docker containers and provides a step-by-step Matrix HUD interface to configure your stack.
 
 ```bash
 # 1. Clone the repo

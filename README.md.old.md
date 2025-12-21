@@ -2,7 +2,7 @@
 <div align="center">
 
 # 🎬 Ultimate Media Stack
-### Enterprise-grade self-hosted media platform with SSO, VPN isolation, and AI copilots.
+### Enterprise-grade self-hosted media platform with SSO, VPN isolation, and a Matrix HUD command center.
 
 <!-- markdownlint-disable MD013 -->
 <p align="center">
@@ -16,7 +16,7 @@
 <!-- markdownlint-enable MD013 -->
 
 <p align="center">
-  <strong>One repo to bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN-protected downloads, AI onboarding assistants, and a gorgeous dashboard.</strong>
+  <strong>One repo to bootstrap a secure, automated Plex + Jellyfin stack with Cloudflare Zero Trust, Authelia SSO/2FA, VPN-protected downloads, AI onboarding assistants, and a Matrix HUD dashboard.</strong>
 </p>
 
 <p align="center">
@@ -90,49 +90,49 @@
 <div align="center">
 
 <details open>
-<summary>🏠 Auto-Discovering Dashboard</summary>
+<summary>🏠 Wizard Command Center</summary>
 
-<img src="docs-site/public/images/dashboard_mockup.png" alt="Homepage Dashboard" width="800"/>
+<img src="docs/images/hero.png" alt="Wizard command center" width="800"/>
 
-*Homepage instantly lists every running service, synced from `config/homepage/*.yaml`.*
-
-</details>
-
-<details>
-<summary>📺 Media Library</summary>
-
-<img src="docs-site/public/images/media_library_mockup.png" alt="Media Library" width="800"/>
-
-*Track movies, shows, and metadata at a glance across Plex and Jellyfin.*
+*Matrix HUD landing for the wizard and live system status.*
 
 </details>
 
 <details>
-<summary>🎯 Request Workflow</summary>
+<summary>🧩 Service Configuration</summary>
 
-<img src="docs-site/public/images/request_ui_mockup.png" alt="Request Interface" width="800"/>
+<img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration" width="800"/>
 
-*Overseerr gives users a friendly way to request content that feeds Sonarr/Radarr automatically.*
+*Configure services and storage paths with guided validation.*
 
 </details>
 
 <details>
-<summary>⬇️ Download Control</summary>
+<summary>✅ Review & Generate</summary>
 
-<img src="docs-site/public/images/download_client_mockup.png" alt="Download Client" width="800"/>
+<img src="docs/images/app/07-wizard-review-desktop.png" alt="Review and generate" width="800"/>
 
-*qBittorrent stays fully wrapped by Gluetun so every transfer rides the VPN tunnel.*
+*Review outputs, download configs, and prep for deploy.*
+
+</details>
+
+<details>
+<summary>🛰 Remote Deploy</summary>
+
+<img src="docs/images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="800"/>
+
+*Ship the stack to a remote server over SSH with live step feedback.*
 
 </details>
 
 
 
 <details>
-<summary>📚 Interactive Documentation</summary>
+<summary>📚 Docs Hub</summary>
 
-<img src="docs-site/public/images/docs_site_hero.png" alt="Documentation Site" width="800"/>
+<img src="docs/images/app/10-docs-desktop.png" alt="Documentation hub" width="800"/>
 
-*A modern, interactive documentation site with AI-powered guides and search.*
+*Interactive documentation with app-specific guides and search.*
 
 </details>
 
