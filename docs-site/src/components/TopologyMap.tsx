@@ -3,15 +3,15 @@ import { Cloud, Lock, Server, Database, Globe, Shield } from 'lucide-react'
 
 export function TopologyMap() {
     const nodes = [
-        { id: 'internet', label: 'Internet', icon: Globe, x: 100, y: 150, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+        { id: 'internet', label: 'Internet', icon: Globe, x: 100, y: 150, color: 'text-cyan-300', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
         // Top Path (Secure Access)
-        { id: 'cf', label: 'Cloudflare', icon: Cloud, x: 250, y: 80, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-        { id: 'auth', label: 'Authelia', icon: Lock, x: 400, y: 80, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
-        { id: 'traefik', label: 'Traefik', icon: Server, x: 550, y: 80, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        { id: 'cf', label: 'Cloudflare', icon: Cloud, x: 250, y: 80, color: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        { id: 'auth', label: 'Authelia', icon: Lock, x: 400, y: 80, color: 'text-lime-300', bg: 'bg-lime-500/10', border: 'border-lime-500/20' },
+        { id: 'traefik', label: 'Traefik', icon: Server, x: 550, y: 80, color: 'text-cyan-300', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
         // Bottom Path (Privacy)
         { id: 'vpn', label: 'VPN', icon: Shield, x: 400, y: 220, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
         // Destination
-        { id: 'apps', label: 'Media Apps', icon: Database, x: 700, y: 150, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
+        { id: 'apps', label: 'Media Apps', icon: Database, x: 700, y: 150, color: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
     ]
 
     const edges = [
@@ -34,8 +34,8 @@ export function TopologyMap() {
 
                 {/* Flow Labels */}
                 <div className="absolute top-4 left-0 right-0 flex justify-center gap-16 text-xs font-medium uppercase tracking-wider">
-                    <div className="flex items-center gap-2 text-indigo-400/80">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <div className="flex items-center gap-2 text-cyan-300/80">
+                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
                         Secure User Access
                     </div>
                     <div className="flex items-center gap-2 text-emerald-400/80">
@@ -47,9 +47,9 @@ export function TopologyMap() {
                 <svg className="absolute inset-0 w-full h-full pointer-events-none">
                     <defs>
                         <linearGradient id="access-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
-                            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
+                            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
+                            <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#4ade80" stopOpacity="0.2" />
                         </linearGradient>
                         <linearGradient id="privacy-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
@@ -79,7 +79,7 @@ export function TopologyMap() {
                                     transition={{ duration: 1.5, delay: i * 0.2 }}
                                 />
                                 {/* Animated Particle */}
-                                <circle r="3" fill={isPrivacy ? "#34d399" : "#8b5cf6"}>
+                                <circle r="3" fill={isPrivacy ? "#22c55e" : "#22d3ee"}>
                                     <animateMotion
                                         dur={isPrivacy ? "3s" : "2s"}
                                         repeatCount="indefinite"

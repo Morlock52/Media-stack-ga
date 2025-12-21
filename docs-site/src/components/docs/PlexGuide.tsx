@@ -4,7 +4,7 @@ import { AppGuideLayout } from './AppGuideLayout'
 export function PlexGuide() {
     return (
         <AppGuideLayout
-            icon={<Film className="w-7 h-7 text-purple-100" />}
+            icon={<Film className="w-7 h-7 text-primary" />}
             title="Plex Media Server"
             subtitle="Set up your main media server and connect your library"
             category="Media Server Guide"
@@ -96,7 +96,7 @@ export function PlexGuide() {
                     </ol>
                 </div>
 
-                <div className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-4 flex items-start gap-3 text-xs text-purple-100">
+                <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 flex items-start gap-3 text-xs text-primary">
                     <CheckCircle2 className="w-4 h-4 mt-0.5" />
                     <div>
                         <p className="font-semibold mb-1">Core setup done</p>

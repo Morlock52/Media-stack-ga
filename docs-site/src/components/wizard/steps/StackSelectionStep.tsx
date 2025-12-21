@@ -50,11 +50,11 @@ export function StackSelectionStep({ mode, setMode, selectedServices, services, 
 
                     <button
                         onClick={() => setMode('expert')}
-                        className="group relative p-6 rounded-xl border border-border bg-gradient-to-br from-purple-500/10 to-pink-500/5 hover:from-purple-500/20 hover:to-pink-500/10 transition-all btn-lift"
+                        className="group relative p-6 rounded-xl border border-border bg-gradient-to-br from-emerald-500/10 via-cyan-500/10 to-lime-500/10 hover:from-emerald-500/20 hover:to-lime-500/15 transition-all btn-lift"
                     >
                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-purple-500/20 rounded-lg">
-                                <Settings className="w-6 h-6 text-purple-400" />
+                            <div className="p-3 bg-primary/20 rounded-lg">
+                                <Settings className="w-6 h-6 text-primary" />
                             </div>
                             <div className="flex-1 text-left">
                                 <h3 className="text-lg font-semibold text-foreground mb-1">Expert Mode</h3>
@@ -66,7 +66,7 @@ export function StackSelectionStep({ mode, setMode, selectedServices, services, 
                                 </div>
                             </div>
                         </div>
-                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-purple-400 transition-colors" />
+                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </button>
                 </div>
             )}
@@ -81,7 +81,7 @@ export function StackSelectionStep({ mode, setMode, selectedServices, services, 
                         {mode === 'newbie' && (
                             <button
                                 onClick={() => setMode('expert')}
-                                className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                                className="text-sm text-primary hover:text-primary/80 transition-colors"
                             >
                                 Customize →
                             </button>
@@ -100,14 +100,14 @@ export function StackSelectionStep({ mode, setMode, selectedServices, services, 
                                     onClick={() => !isDisabled && toggleService(service.profile)}
                                     disabled={isDisabled}
                                     className={`relative p-4 rounded-xl border transition-all ${isSelected
-                                        ? 'bg-purple-500/10 border-purple-500/50'
+                                        ? 'bg-primary/10 border-primary/50'
                                         : 'bg-card/40 border-border hover:border-border/80'
                                         } ${isDisabled ? 'cursor-default' : 'cursor-pointer btn-lift'}`}
                                     whileTap={!isDisabled ? { scale: 0.95 } : {}}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'
-                                            }`}>
+                                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary/20 text-primary' : 'bg-white/5 text-gray-400'
+                                        }`}>
                                             <Icon className="w-4 h-4" />
                                         </div>
                                         {isSelected && (

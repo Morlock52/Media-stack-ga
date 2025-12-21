@@ -83,9 +83,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="bg-gradient-to-b from-purple-500/10 to-transparent">
+      <SidebarHeader className="bg-gradient-to-b from-emerald-500/10 via-cyan-500/10 to-transparent">
         <div className="flex items-center gap-2 px-2 py-1">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-lg">
             <Sparkles className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
@@ -204,7 +204,7 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex items-center gap-2 px-4">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-lg">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>

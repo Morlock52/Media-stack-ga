@@ -4,17 +4,17 @@
 # 🎨 UI Showcase - Media Stack Updates
 </div>
 
-## 🖼 Visual Showcase (Dark Mode)
+## 🖼 Visual Showcase (Cyber Matrix Theme)
 
-The new interface features a premium dark theme with glassmorphism, smooth gradients, and interactive components.
+The new interface features a cyber‑matrix aesthetic with layered scanlines, neon HUD panels, glitch accents, and interactive motion.
 
-### 🎨 Hero Experience
+### 🎨 Hero Experience (Matrix HUD)
 ![Hero Dark Mode](docs/images/hero.png)
 
-### 🪄 Interactive Wizard
+### 🪄 Interactive Wizard (Step‑by‑Step)
 ![Wizard Dark Mode](docs/images/wizard.png)
 
-### 📖 Adaptive Documentation
+### 📖 Adaptive Documentation (Docs Hub)
 ![Docs Dark Mode](docs/images/docs.png)
 
 ---

@@ -48,6 +48,18 @@ open http://localhost:3002   # macOS
 - One-click download of all configs
 - Optional remote deploy via SSH (requires the Wizard API to be reachable from the UI; Docker Wizard mode proxies `/api` automatically, but static-hosted UIs must set `VITE_CONTROL_SERVER_URL` at build time)
 
+**Optional: Remote deploy (SSH)**
+
+1. Complete the wizard and go to **Review & Generate**.
+2. Click **Deploy to Server** and run **Test Connection**.
+3. Fill in host/port/user, choose password or key auth, and confirm deploy path.
+4. Click **Deploy** and follow the step list.
+
+**Notes:**
+- The remote host needs Docker + Docker Compose.
+- Password auth requires `sshpass` on the control server.
+- Remote deploy does not configure DNS or Cloudflare; see “After Setup” below.
+
 **Stop the wizard when done:**
 
 ```bash
@@ -125,7 +137,10 @@ docker compose up -d
 
 Once your stack is running, you can:
 
-1. **Access your services** via `http://localhost:<port>` (see [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for ports)
+1. **Access your services**:
+   - **Local/LAN:** `http://<server-ip>` (Homepage dashboard)
+   - **Domain/Tunnel:** `https://<service>.${DOMAIN}`
+   - Add local `/etc/hosts` entries if you want subdomains without DNS
 2. **Run health checks:** `./scripts/doctor.sh`
 3. **Update containers:** `./scripts/update.sh`
 4. **View logs:** `docker compose logs -f <service_name>`

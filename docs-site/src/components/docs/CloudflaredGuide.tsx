@@ -29,7 +29,7 @@ export function CloudflaredGuide() {
                                 href="https://one.dash.cloudflare.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-purple-300 hover:underline"
+                                className="text-primary hover:underline"
                             >
                                 Cloudflare Zero Trust dashboard
                             </a>{' '}

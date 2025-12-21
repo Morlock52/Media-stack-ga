@@ -23,7 +23,7 @@ export function SonarrGuide() {
                     <h3 className="text-base font-semibold text-foreground mb-2">Initial Setup</h3>
                     <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                         <li>
-                            Open Sonarr at <a href="http://localhost:8989" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:8989</a>
+                            Open Sonarr at <a href="http://localhost:8989" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">http://localhost:8989</a>
                         </li>
                         <li>
                             <strong>Media Management:</strong> Go to Settings → Media Management. Enable "Rename Episodes" to keep your library clean.

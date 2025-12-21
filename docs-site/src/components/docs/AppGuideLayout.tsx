@@ -15,7 +15,7 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
             <div className="container mx-auto px-4 max-w-5xl">
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/40 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/30 via-cyan-500/30 to-emerald-500/30 border border-primary/40 flex items-center justify-center">
                             {icon}
                         </div>
                         <div>

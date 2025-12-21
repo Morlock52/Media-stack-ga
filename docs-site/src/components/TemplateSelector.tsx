@@ -40,7 +40,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                         onClick={() => handleTemplateClick(template)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative p-6 rounded-xl border border-border bg-gradient-to-br from-muted/40 to-transparent hover:from-purple-500/10 hover:border-purple-500/30 transition-all text-left"
+                        className="group relative p-6 rounded-xl border border-border bg-gradient-to-br from-muted/40 to-transparent hover:from-primary/10 hover:border-primary/40 transition-all text-left"
                     >
                         {/* Difficulty badge */}
                         <div className="absolute top-4 right-4">
@@ -56,7 +56,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                         <div className="text-4xl mb-4">{template.icon}</div>
 
                         {/* Name */}
-                        <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-purple-300 transition-colors">
+                        <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                             {template.name}
                         </h3>
 
@@ -76,7 +76,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
             <div className="flex justify-center pt-6">
                 <button
                     onClick={onSkip}
-                    className="px-6 py-3 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-purple-500/50 transition-all"
+                    className="px-6 py-3 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
                 >
                     Skip - Customize from Scratch
                 </button>
@@ -133,10 +133,10 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                                 </div>
 
                                 {/* Highlights */}
-                                <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4">
+                                <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <Sparkles className="w-4 h-4 text-purple-400" />
-                                        <h4 className="font-semibold text-purple-300">Key Features</h4>
+                                        <Sparkles className="w-4 h-4 text-primary" />
+                                        <h4 className="font-semibold text-primary">Key Features</h4>
                                     </div>
                                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {selectedTemplate.highlights.map((highlight, i) => (
@@ -162,8 +162,8 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                                                     key={serviceId}
                                                     className="flex items-start gap-3 p-3 bg-muted/40 border border-border rounded-lg"
                                                 >
-                                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-                                                        <span className="text-xs font-bold text-purple-300">
+                                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-primary/40 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-xs font-bold text-primary">
                                                             {(info?.name || serviceId).charAt(0).toUpperCase()}
                                                         </span>
                                                     </div>
@@ -192,7 +192,7 @@ export function TemplateSelector({ onSelectTemplate, onSkip }: TemplateSelectorP
                                 </button>
                                 <button
                                     onClick={handleUseTemplate}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium rounded-lg transition-all"
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 hover:from-emerald-400 hover:via-cyan-400 hover:to-lime-300 text-white font-medium rounded-lg transition-all"
                                 >
                                     Use This Template
                                     <ArrowRight className="w-4 h-4" />

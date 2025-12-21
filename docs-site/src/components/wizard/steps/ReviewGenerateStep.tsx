@@ -64,7 +64,7 @@ export function ReviewGenerateStep({
                         </div>
                         <div className="flex justify-between">
                             <dt className="text-muted-foreground">Mode</dt>
-                            <dd className="text-purple-300 capitalize">{mode}</dd>
+                            <dd className="text-primary capitalize">{mode}</dd>
                         </div>
                         <div className="flex justify-between">
                             <dt className="text-muted-foreground">Services</dt>
@@ -77,7 +77,7 @@ export function ReviewGenerateStep({
                     <h3 className="text-sm font-semibold text-foreground/80 mb-4">Selected Services</h3>
                     <div className="flex flex-wrap gap-2">
                         {selectedServices.map((s: string) => (
-                            <span key={s} className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-300 text-xs border border-purple-500/30">
+                            <span key={s} className="px-2 py-1 rounded-md bg-primary/20 text-primary text-xs border border-primary/40">
                                 {s}
                             </span>
                         ))}
@@ -155,7 +155,7 @@ export function ReviewGenerateStep({
                 </button>
                 <button
                     onClick={handleShare}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-muted/60 hover:bg-muted/80 border border-border hover:border-purple-500/30 text-foreground rounded-xl font-semibold transition-all btn-lift"
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-muted/60 hover:bg-muted/80 border border-border hover:border-primary/40 text-foreground rounded-xl font-semibold transition-all btn-lift"
                 >
                     <Globe className="w-5 h-5" />
                     Share Configuration

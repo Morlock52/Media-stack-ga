@@ -8,6 +8,16 @@ import { RemoteDeployRequest } from '../types/index.js';
 
 const COMPOSE_FILE = path.join(PROJECT_ROOT, 'docker-compose.yml');
 
+type DeployLock = {
+    id: string;
+    startedAt: number;
+};
+
+const REMOTE_DEPLOY_LOCK_MS = parseInt(process.env.REMOTE_DEPLOY_LOCK_MS || '1500', 10);
+const activeDeployLocks = new Map<string, DeployLock>();
+
+const getDeployLockKey = (host: string, port: number, username: string) => `${username}@${host}:${port}`;
+
 // Basic guard to prevent remote-command injection via deployPath
 const sanitizeRemotePath = (input: any) => {
     const fallbackPath = '~/media-stack';
@@ -40,8 +50,8 @@ const cleanRemoteOutput = (value: string) => {
             const trimmed = line.trim();
             if (!trimmed) return false;
             if (/^Warning: Permanently added .* to the list of known hosts\.?$/i.test(trimmed)) return false;
-            if (/^time=".*"\s+level=warning\s+msg="The \".*\" variable is not set\.? Defaulting to a blank string\.?"$/i.test(trimmed)) return false;
-            if (/^The \".*\" variable is not set\.? Defaulting to a blank string\.?$/i.test(trimmed)) return false;
+            if (/^time=".*"\s+level=warning\s+msg="The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?"$/i.test(trimmed)) return false;
+            if (/^The\s+\\?"[^"]+\\?"\s+variable\s+is\s+not\s+set\.?\s+Defaulting\s+to\s+a\s+blank\s+string\.?$/i.test(trimmed)) return false;
             return true;
         })
         .join('\n')
@@ -68,6 +78,48 @@ const isDockerDaemonUnavailableError = (value: string) =>
 
 const isCommandNotFound = (value: string) =>
     /command not found/i.test(value) || /not found/i.test(value);
+
+const isDockerContainerNameConflict = (value: string) =>
+    /already in use by container/i.test(value) && /container name/i.test(value);
+
+const getDockerContainerNameConflictInfo = (value: string) => {
+    const nameMatch =
+        value.match(/container name\s+\"([^\"]+)\"\s+is already in use/i) ||
+        value.match(/container name\s+([\S]+)\s+is already in use/i);
+    const idMatch = value.match(/already in use by container\s+\"([0-9a-f]+)\"/i);
+
+    const rawName = nameMatch?.[1] || '';
+    const name = rawName.startsWith('/') ? rawName.slice(1) : rawName;
+    const id = idMatch?.[1] || '';
+    return { name, id };
+};
+
+const isSafeDockerContainerName = (value: string) => /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
+const isSafeDockerContainerId = (value: string) => /^[0-9a-f]{12,64}$/i.test(value);
+
+const getDockerContainerNameConflictHint = (value: string) => {
+    const { name, id } = getDockerContainerNameConflictInfo(value);
+
+    const headerParts = ['Docker reported a container name conflict'];
+    if (name) headerParts.push(`(name: ${name})`);
+    if (id) headerParts.push(`(id: ${id.slice(0, 12)})`);
+
+    const commands = name
+        ? [
+              `docker rm -f ${name}`,
+              '# then re-run deploy',
+          ]
+        : [
+              '# remove the existing container with the conflicting name, then re-run deploy',
+          ];
+
+    return (
+        `${headerParts.join(' ')}. ` +
+        'This usually happens when a previous container still exists with the same name. ' +
+        'Fix on the remote host by removing/renaming the existing container, or by removing/adjusting any `container_name` entries in your docker-compose.yml. ' +
+        `Commands:\n${commands.map((c) => `- ${c}`).join('\n')}`
+    );
+};
 
 async function withTempKey<T>(privateKey: string, callback: (keyPath: string) => Promise<T>): Promise<T> {
     const tmpDir = os.tmpdir();
@@ -213,21 +265,26 @@ export async function remoteRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy', async (request, reply) => {
         const { host, port = 22, username, privateKey, password, deployPath = '~/media-stack' } = request.body;
         const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+        const autoRemoveConflictingContainers = request.body.autoRemoveConflictingContainers === true;
 
         if (!host || !username) {
+            fastify.log.warn({ host, username }, '[remote-deploy] validation failed: missing host/username');
             return reply.status(400).send({ error: 'Host and username are required' });
         }
 
         // Validate authentication credentials
         if (authType === 'key') {
             if (!privateKey) {
+                fastify.log.warn({ host, username, authType }, '[remote-deploy] validation failed: missing privateKey');
                 return reply.status(400).send({ error: 'Private key is required for SSH key authentication' });
             }
         } else if (authType === 'password') {
             if (!password) {
+                fastify.log.warn({ host, username, authType }, '[remote-deploy] validation failed: missing password');
                 return reply.status(400).send({ error: 'Password is required for password authentication' });
             }
         } else {
+            fastify.log.warn({ host, username, authType }, '[remote-deploy] validation failed: invalid auth type');
             return reply.status(400).send({ error: 'Invalid authentication type. Must be "key" or "password"' });
         }
 
@@ -235,6 +292,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         try {
             safeDeployPath = sanitizeRemotePath(deployPath);
         } catch (error: any) {
+            fastify.log.warn({ host, username, error: error?.message }, '[remote-deploy] validation failed: invalid deploy path');
             return reply.status(400).send({ error: error.message });
         }
 
@@ -247,8 +305,27 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             password
         };
 
+        const lockKey = getDeployLockKey(sshConfig.host, sshConfig.port, sshConfig.username);
+        const existingLock = activeDeployLocks.get(lockKey);
+        if (existingLock) {
+            fastify.log.warn({ lockKey }, '[remote-deploy] rejected duplicate request (lock active)');
+            return reply.status(409).send({
+                success: false,
+                error: `A deployment is already in progress for ${lockKey}. Please wait and try again.`,
+                steps: [{ step: 'Another deployment is already in progress.', status: 'error' }]
+            });
+        }
+
+        const lock: DeployLock = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            startedAt: Date.now(),
+        };
+        activeDeployLocks.set(lockKey, lock);
+        fastify.log.info({ lockKey, host, username }, '[remote-deploy] starting');
+
         const steps: { step: string, status: string }[] = [];
         let tmpDir: string | null = null;
+        let remoteDeployPath: string | null = null;
 
         try {
             // Optional: accept generated compose/.env directly from the UI.
@@ -281,7 +358,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             steps[steps.length - 1].status = 'done';
 
             const remoteHome = (homeResult.stdout || '').trim();
-            const remoteDeployPath = safeDeployPath.startsWith('~/')
+            remoteDeployPath = safeDeployPath.startsWith('~/')
                 ? `${remoteHome}/${safeDeployPath.slice(2)}`
                 : safeDeployPath === '~'
                     ? remoteHome
@@ -385,11 +462,69 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             steps.push({ step: 'Starting media stack...', status: 'running' });
             const startResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} up -d`);
             if (startResult.code !== 0) {
-                const errorMsg = cleanRemoteOutput(startResult.stderr || startResult.stdout) || 'Docker compose command failed';
-                throw new Error(errorMsg);
+                const detail = cleanRemoteOutput(startResult.stderr || startResult.stdout) || 'Docker compose command failed';
+                if (isDockerContainerNameConflict(detail)) {
+                    if (!autoRemoveConflictingContainers) {
+                        throw new Error(getDockerContainerNameConflictHint(detail));
+                    }
+
+                    steps[steps.length - 1].status = 'error';
+                    const { name, id } = getDockerContainerNameConflictInfo(detail);
+                    const removalTarget = isSafeDockerContainerId(id)
+                        ? id
+                        : isSafeDockerContainerName(name)
+                            ? name
+                            : '';
+
+                    steps.push({ step: 'Removing conflicting container...', status: 'running' });
+                    if (!removalTarget) {
+                        steps[steps.length - 1].status = 'error';
+                        throw new Error(getDockerContainerNameConflictHint(detail));
+                    }
+
+                    const removeResult = await execSSH(sshConfig, `docker rm -f ${removalTarget}`);
+                    if (removeResult.code !== 0) {
+                        const removeDetail = cleanRemoteOutput(removeResult.stderr || removeResult.stdout);
+                        steps[steps.length - 1].status = 'error';
+                        throw new Error(
+                            `${getDockerContainerNameConflictHint(detail)}\nAuto-fix failed while removing container: ${removeDetail || 'unknown error'}`
+                        );
+                    }
+                    steps[steps.length - 1].status = 'done';
+
+                    steps.push({ step: 'Retrying media stack start...', status: 'running' });
+                    const retryResult = await execSSH(sshConfig, `cd ${remoteDeployPath} && ${composeCommand} up -d`);
+                    if (retryResult.code !== 0) {
+                        const retryDetail = cleanRemoteOutput(retryResult.stderr || retryResult.stdout) || 'Docker compose command failed';
+                        steps[steps.length - 1].status = 'error';
+                        if (isDockerContainerNameConflict(retryDetail)) {
+                            throw new Error(getDockerContainerNameConflictHint(retryDetail));
+                        }
+                        throw new Error(retryDetail);
+                    }
+                    steps[steps.length - 1].status = 'done';
+                    // Proceed as success (the original "Starting" step remains error, but the retry shows completion).
+                    const durationMs = Date.now() - lock.startedAt;
+                    fastify.log.info(
+                        { lockKey, host, username, deployPath: remoteDeployPath, durationMs, autoFix: true },
+                        '[remote-deploy] succeeded'
+                    );
+                    return {
+                        success: true,
+                        message: 'Deployment successful!',
+                        steps,
+                        serverInfo: { host, deployPath: remoteDeployPath }
+                    };
+                }
+                throw new Error(detail);
             }
             steps[steps.length - 1].status = 'done';
 
+            const durationMs = Date.now() - lock.startedAt;
+            fastify.log.info(
+                { lockKey, host, username, deployPath: remoteDeployPath, durationMs },
+                '[remote-deploy] succeeded'
+            );
             return {
                 success: true,
                 message: 'Deployment successful!',
@@ -401,7 +536,10 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             if (steps.length > 0) {
                 steps[steps.length - 1].status = 'error';
             }
-            fastify.log.error({ err: error, host, username }, '[remote-deploy] failed');
+            fastify.log.error(
+                { err: error, host, username, lockKey, deployPath: remoteDeployPath || safeDeployPath, steps },
+                '[remote-deploy] failed'
+            );
             return reply.status(200).send({
                 success: false,
                 error: cleanRemoteOutput(error?.message || '') || 'Remote deployment failed',
@@ -415,6 +553,24 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                     // Best-effort cleanup
                 }
             }
+
+            const currentLock = activeDeployLocks.get(lockKey);
+            if (currentLock && currentLock.id === lock.id) {
+                const elapsed = Date.now() - lock.startedAt;
+                const remaining = Math.max(0, REMOTE_DEPLOY_LOCK_MS - elapsed);
+                if (remaining > 0) {
+                    setTimeout(() => {
+                        const still = activeDeployLocks.get(lockKey);
+                        if (still && still.id === lock.id) activeDeployLocks.delete(lockKey);
+                    }, remaining);
+                } else {
+                    activeDeployLocks.delete(lockKey);
+                }
+            }
+            fastify.log.info(
+                { lockKey, host, username, released: !activeDeployLocks.has(lockKey) },
+                '[remote-deploy] lock released'
+            );
         }
     });
 
@@ -485,7 +641,6 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 : await execSSH(sshConfig, 'docker-compose --version');
             const dockerComposeOk = composeV2Check.code === 0 || composeV1Check.code === 0;
 
-            const ready = dockerInstalled && dockerDaemonOk && dockerComposeOk;
             let message = 'Ready to deploy!';
             if (!dockerInstalled) message = 'Docker not found on server';
             else if (!dockerDaemonOk) message = dockerProblem || 'Docker daemon not accessible';

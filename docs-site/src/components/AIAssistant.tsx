@@ -31,11 +31,11 @@ interface Agent {
 }
 
 const AGENT_COLORS: Record<string, string> = {
-    setup: 'from-purple-500 to-purple-600',
+    setup: 'from-emerald-500 to-cyan-500',
     troubleshoot: 'from-red-500 to-red-600',
     apps: 'from-blue-500 to-blue-600',
     deploy: 'from-green-500 to-green-600',
-    general: 'from-purple-500 to-pink-500',
+    general: 'from-emerald-500 to-cyan-500',
 }
 
 // Agent icons - using emoji from server response instead
@@ -257,7 +257,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         onClick={() => setIsOpen(true)}
-                        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-purple-500/30 hover:scale-110 transition-all flex items-center justify-center"
+                        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-lg hover:shadow-emerald-500/30 hover:scale-110 transition-all flex items-center justify-center"
                         title="Ask AI Assistant"
                     >
                         <MessageCircle className="w-6 h-6" />
@@ -280,9 +280,9 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                         className="fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-purple-600/10 to-pink-600/10">
+                        <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-lime-500/10">
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 flex items-center justify-center">
                                     <Bot className="w-4 h-4 text-white" />
                                 </div>
                                 <div>
@@ -419,11 +419,11 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                             {msg.role === 'assistant' && msg.agent && (
                                                 <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
                                                     {msg.agent.name}
-                                                    {msg.aiPowered && <Sparkles className="w-2.5 h-2.5 text-purple-400" />}
+                                                    {msg.aiPowered && <Sparkles className="w-2.5 h-2.5 text-primary" />}
                                                 </p>
                                             )}
                                             <div className={`px-3 py-2 rounded-2xl text-sm ${msg.role === 'user'
-                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
+                                                ? 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white rounded-br-md'
                                                 : 'bg-muted/60 text-foreground rounded-bl-md'
                                                 }`}>
                                                 <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -458,7 +458,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
 
                             {isLoading && (
                                 <div className="flex gap-2 items-center">
-                                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 flex items-center justify-center">
                                         <Loader2 className="w-4 h-4 animate-spin text-white" />
                                     </div>
                                     <div className="px-3 py-2 bg-muted/60 rounded-2xl rounded-bl-md">
@@ -474,25 +474,25 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mx-3 mb-2 p-2 bg-purple-500/10 border border-purple-500/20 rounded-xl"
+                                className="mx-3 mb-2 p-2 bg-primary/10 border border-primary/30 rounded-xl"
                             >
                                 <div className="flex items-start gap-2">
-                                    <Sparkles className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                                    <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                     <div className="flex-1">
-                                        <p className="text-xs text-purple-200">{proactiveNudge}</p>
+                                        <p className="text-xs text-primary/80">{proactiveNudge}</p>
                                         <button
                                             onClick={() => {
                                                 sendMessage(proactiveNudge.replace(/^💡\s*(Tip:\s*)?/i, ''))
                                                 setProactiveNudge(null)
                                             }}
-                                            className="mt-1 text-[10px] text-purple-400 hover:text-purple-300"
+                                            className="mt-1 text-[10px] text-primary/80 hover:text-primary"
                                         >
                                             Ask about this →
                                         </button>
                                     </div>
                                     <button
                                         onClick={() => setProactiveNudge(null)}
-                                        className="text-purple-400 hover:text-purple-300"
+                                        className="text-primary/80 hover:text-primary"
                                         title="Dismiss suggestion"
                                     >
                                         <X className="w-3 h-3" />
@@ -511,13 +511,13 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                                     placeholder={selectedAgent ? `Ask ${agents.find(a => a.id === selectedAgent)?.name}...` : "Ask anything..."}
-                                    className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                    className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/60"
                                     disabled={isLoading}
                                 />
                                 <button
                                     onClick={() => sendMessage()}
                                     disabled={!input.trim() || isLoading}
-                                    className="p-2.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                                    className="p-2.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                                     title="Send message"
                                     aria-label="Send message"
                                 >

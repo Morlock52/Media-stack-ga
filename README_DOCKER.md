@@ -50,6 +50,24 @@ This configuration:
 
 Remote deploy works from the wizard UI because the containerized UI proxies `/api` to the control server. If you enable `CONTROL_SERVER_TOKEN` on the API, set `VITE_CONTROL_SERVER_TOKEN` (or enter the token on the Settings page) so remote deploy and AI features can authenticate.
 
+**Quick flow**
+
+1. Open the wizard → complete your stack configuration.
+2. In **Review & Generate**, click **Deploy to Server**.
+3. Use **Test Connection** to verify SSH + Docker + Compose.
+4. Fill in host/port/user credentials and click **Deploy**.
+
+**Notes**
+- Remote host must have Docker + Docker Compose installed.
+- Password auth requires `sshpass` inside the control server environment.
+- Remote deploy does not create DNS records or tunnel routes.
+
+### Access after remote deploy
+
+- **Domain/Tunnel:** `https://<service>.${DOMAIN}`
+- **Local/LAN:** `http://<server-ip>` (Homepage dashboard)
+- Add `/etc/hosts` entries if you want subdomain access without DNS.
+
 ## Stopping the Wizard
 
 ```bash

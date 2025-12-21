@@ -23,7 +23,7 @@ export function ProwlarrGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Configuration</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Open Prowlarr at <a href="http://localhost:9696" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:9696</a>
+                            Open Prowlarr at <a href="http://localhost:9696" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">http://localhost:9696</a>
                         </li>
                         <li>
                             <strong>Add Indexers:</strong> Go to <strong>Indexers</strong> → <strong>Add Indexer</strong>.

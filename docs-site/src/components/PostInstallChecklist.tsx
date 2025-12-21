@@ -190,7 +190,7 @@ export function PostInstallChecklist() {
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-purple-400" />
+                        <Sparkles className="w-5 h-5 text-primary" />
                         Post-Installation Checklist
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -229,7 +229,7 @@ export function PostInstallChecklist() {
                             className={`rounded-xl border transition-all ${
                                 isCompleted
                                     ? 'bg-green-500/5 border-green-500/20'
-                                    : 'bg-muted/40 border-border hover:border-purple-500/30'
+                                    : 'bg-muted/40 border-border hover:border-primary/40'
                             }`}
                         >
                             {/* Item Header */}
@@ -242,7 +242,7 @@ export function PostInstallChecklist() {
                                     className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
                                         isCompleted
                                             ? 'bg-green-500 text-white'
-                                            : 'border-2 border-border hover:border-purple-500/60'
+                                            : 'border-2 border-border hover:border-primary/60'
                                     }`}
                                     title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
                                     aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
@@ -298,7 +298,7 @@ export function PostInstallChecklist() {
                                             <ol className="space-y-2 mb-4">
                                                 {item.steps.map((step, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                                                        <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs font-medium">
+                                                        <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-medium">
                                                             {i + 1}
                                                         </span>
                                                         {step}

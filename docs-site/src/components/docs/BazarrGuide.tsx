@@ -22,7 +22,7 @@ export function BazarrGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Setup Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Open Bazarr at <a href="http://localhost:6767" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:6767</a>
+                            Open Bazarr at <a href="http://localhost:6767" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">http://localhost:6767</a>
                         </li>
                         <li>
                             <strong>Settings → General:</strong> 

@@ -69,7 +69,7 @@ export function GuideModal({ isOpen, onClose, title, children }: GuideModalProps
                             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border bg-muted/40">
                                 <h2
                                     id="modal-title"
-                                    className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400"
+                                    className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-cyan-400 to-lime-400"
                                 >
                                     {title || 'Guide'}
                                 </h2>

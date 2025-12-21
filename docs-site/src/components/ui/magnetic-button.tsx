@@ -79,7 +79,7 @@ export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButton
         
         {/* Magnetic glow effect */}
         <motion.div
-          className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-md"
+          className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-lime-500/20 blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: isHovered ? 1 : 0 }}
           transition={{ duration: 0.2 }}

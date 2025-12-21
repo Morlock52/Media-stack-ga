@@ -19,8 +19,9 @@ export default {
     			midnight: '#030712',
     			neon: {
     				purple: '#7c3aed',
-    				pink: '#db2777',
-    				green: '#10b981',
+    				pink: '#f472b6',
+					green: '#22c55e',
+					cyan: '#22d3ee',
     				red: '#ef4444'
     			},
     			sidebar: {
@@ -37,13 +38,16 @@ export default {
     		fontFamily: {
     			sans: [
     				'Inter',
+    				'Space Grotesk',
     				'sans-serif'
     			],
     			heading: [
+    				'Space Grotesk',
     				'Outfit',
     				'sans-serif'
     			],
     			mono: [
+    				'Share Tech Mono',
     				'JetBrains Mono',
     				'monospace'
     			]

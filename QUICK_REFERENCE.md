@@ -4,7 +4,7 @@
 # Quick Reference Guide
 </div>
 
-> **Last Updated:** December 6, 2025
+> **Last Updated:** December 20, 2025
 
 ## 🚀 Quick Commands
 
@@ -23,6 +23,15 @@ docker-compose down
 docker compose -f docker-compose.wizard.yml up -d
 # Access at http://localhost:3002
 ```
+
+### Remote Deploy (Wizard)
+
+1. Complete the wizard → **Review & Generate**.
+2. Click **Deploy to Server**.
+3. Use **Test Connection** to verify SSH + Docker + Compose.
+4. Deploy and monitor steps in the modal.
+
+> Password auth requires `sshpass` on the control server host/container.
 
 ### View Logs
 ```bash
@@ -80,6 +89,17 @@ After setup, access services using the subdomains defined in `.env`:
 - **Sonarr:** `https://sonarr.${DOMAIN}`
 - **Tautulli:** `https://tautulli.${DOMAIN}`
 - **Tdarr:** `https://tdarr.${DOMAIN}`
+
+### Local/LAN access without DNS
+
+- **Homepage dashboard:** `http://<server-ip>`
+- Add `/etc/hosts` entries if you want subdomain access without DNS:
+
+```
+<server-ip> plex.local
+<server-ip> sonarr.local
+<server-ip> radarr.local
+```
 
 ## 🎙️ AI Voice Tips
 

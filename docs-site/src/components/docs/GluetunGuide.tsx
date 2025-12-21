@@ -30,7 +30,7 @@ export function GluetunGuide() {
                         <p>WIREGUARD_ADDRESSES=10.2.0.2/32</p>
                     </div>
                     <p className="mt-2">
-                        See the <a href="https://github.com/qdm12/gluetun/wiki" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Gluetun Wiki</a> for provider-specific details.
+                        See the <a href="https://github.com/qdm12/gluetun/wiki" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Gluetun Wiki</a> for provider-specific details.
                     </p>
                 </div>
             </section>

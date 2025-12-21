@@ -156,8 +156,8 @@ export function StoragePlanner() {
                         type="button"
                         onClick={() => setStorageMode(option.id)}
                         className={`px-4 py-2 rounded-xl text-sm font-medium transition ${storageMode === option.id
-                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                            : 'bg-muted/60 text-muted-foreground border border-border hover:border-purple-500/30'
+                            ? 'bg-primary text-white shadow-lg shadow-emerald-500/30'
+                            : 'bg-muted/60 text-muted-foreground border border-border hover:border-primary/40'
                             }`}
                     >
                         {option.label}
@@ -165,13 +165,13 @@ export function StoragePlanner() {
                 ))}
             </div>
 
-            <div className="p-4 bg-purple-500/5 border border-purple-500/30 rounded-xl flex gap-3 animate-pulse-glow">
-                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-200">
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-xl flex gap-3 animate-pulse-glow">
+                <div className="p-2 rounded-lg bg-primary/20 text-primary">
                     <Network className="w-4 h-4" />
                 </div>
-                <div className="text-sm text-purple-100/80">
+                <div className="text-sm text-primary/80">
                     <p className="font-medium text-white">Storage plan</p>
-                    <p className="text-purple-100/70">
+                    <p className="text-primary/70">
                         Paths start with your local data root ({planDataRoot}). Update them if your libraries or
                         downloads live on a NAS or mounted network share.
                     </p>
@@ -186,7 +186,7 @@ export function StoragePlanner() {
                             value={planDataRoot}
                             onChange={(e) => handleSimpleRootChange(e.target.value)}
                             placeholder={DEFAULT_DATA_ROOT}
-                            className="w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-purple-500/40"
+                            className="w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                         />
                         <p className="text-xs text-muted-foreground">
                             Every path in your compose file is derived from this root. Want per-service overrides? Flip
@@ -307,7 +307,7 @@ export function StoragePlanner() {
                                             aria-label="Path Type"
                                             value={type}
                                             onChange={(e) => handleTypeChange(category.id, e.target.value as StoragePathType)}
-                                            className="bg-background/60 border border-border rounded-lg text-xs text-foreground px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500/40"
+                                            className="bg-background/60 border border-border rounded-lg text-xs text-foreground px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/40"
                                         >
                                             <option value="local">Local disk / mount</option>
                                             <option value="network">Network share (SMB/NFS)</option>
@@ -321,7 +321,7 @@ export function StoragePlanner() {
                                         onChange={(e) => handlePathChange(category.id, e.target.value)}
                                         placeholder={defaults[category.id]?.path || ''}
                                         className={`flex-1 bg-background/60 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${validPath
-                                            ? 'border border-border focus:ring-purple-500/40'
+                                            ? 'border border-border focus:ring-primary/40'
                                             : 'border border-red-500/60 focus:ring-red-500/40'
                                             }`}
                                     />
@@ -329,14 +329,14 @@ export function StoragePlanner() {
                                         <button
                                             type="button"
                                             onClick={() => handleBrowse(category.id, value)}
-                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-purple-500/30 transition-colors"
+                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                                         >
                                             Browse
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => handleReset(category.id)}
-                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-purple-500/30 transition-colors"
+                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                                         >
                                             Reset
                                         </button>

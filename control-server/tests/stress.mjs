@@ -149,7 +149,7 @@ async function stressTest() {
         { label: 'remote.bad', method: 'POST', path: '/api/remote-deploy', ok: [400], body: { host: '1.2.3.4', username: 'root' } },
         { label: 'remote.test.bad', method: 'POST', path: '/api/remote-deploy/test', ok: [400], body: { host: '1.2.3.4', username: 'root' } },
         { label: 'remote.test.unreachable', method: 'POST', path: '/api/remote-deploy/test', ok: [502], body: { host: '127.0.0.1', port: 22, username: 'test', authType: 'password', password: 'bad' } },
-        { label: 'remote.deploy.unreachable', method: 'POST', path: '/api/remote-deploy', ok: [200], body: { host: '127.0.0.1', port: 22, username: 'test', authType: 'password', password: 'bad', deployPath: '~/media-stack' } },
+        { label: 'remote.deploy.unreachable', method: 'POST', path: '/api/remote-deploy', ok: [200, 409], body: { host: '127.0.0.1', port: 22, username: 'test', authType: 'password', password: 'bad', deployPath: '~/media-stack' } },
         { label: 'settings.openai-key.post.bad', method: 'POST', path: '/api/settings/openai-key', ok: [400], body: { key: 'short' } },
     ]
 

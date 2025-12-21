@@ -20,7 +20,7 @@ const accessibleButtonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         glass: "bg-white/10 backdrop-blur-sm border border-white/20 text-white shadow-lg hover:bg-white/20 hover:border-white/30 transition-all duration-300",
-        gradient: "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300",
+        gradient: "bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-400/40 hover:scale-105 transition-all duration-300",
       },
       size: {
         default: "h-9 px-4 py-2",

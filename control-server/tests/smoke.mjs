@@ -110,18 +110,37 @@ async function run() {
   assert.ok(String(remoteTest.body.error || '').toLowerCase().includes('ssh connection failed'))
   console.log('✅ /api/remote-deploy/test returns expected 502 on unreachable SSH')
 
-  const remoteDeploy = await post('/api/remote-deploy', {
-    host: '127.0.0.1',
-    port: 22,
-    username: 'test',
-    authType: 'password',
-    password: 'bad',
-    deployPath: '~/media-stack',
-  })
-  assert.equal(remoteDeploy.status, 200)
-  assert.equal(remoteDeploy.body.success, false)
-  assert.ok(typeof remoteDeploy.body.error === 'string' && remoteDeploy.body.error.length > 0)
-  console.log('✅ /api/remote-deploy returns 200 + success:false on failure')
+  const [deployA, deployB] = await Promise.all([
+    post('/api/remote-deploy', {
+      host: '127.0.0.1',
+      port: 22,
+      username: 'test',
+      authType: 'password',
+      password: 'bad',
+      deployPath: '~/media-stack',
+    }),
+    post('/api/remote-deploy', {
+      host: '127.0.0.1',
+      port: 22,
+      username: 'test',
+      authType: 'password',
+      password: 'bad',
+      deployPath: '~/media-stack',
+    }),
+  ])
+
+  const statuses = [deployA.status, deployB.status]
+  assert.ok(statuses.includes(200), `Expected one 200 response, got ${statuses.join(', ')}`)
+  assert.ok(statuses.includes(409), `Expected one 409 response, got ${statuses.join(', ')}`)
+
+  const okResp = deployA.status === 200 ? deployA : deployB
+  const lockedResp = deployA.status === 409 ? deployA : deployB
+
+  assert.equal(okResp.body.success, false)
+  assert.ok(typeof okResp.body.error === 'string' && okResp.body.error.length > 0)
+  assert.equal(lockedResp.body.success, false)
+  assert.ok(String(lockedResp.body.error || '').toLowerCase().includes('already in progress'))
+  console.log('✅ /api/remote-deploy prevents concurrent deploys (409 when locked)')
 }
 
 run().catch(err => {

@@ -74,7 +74,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-          ? 'glass border-b-0'
+          ? 'backdrop-blur-2xl bg-gradient-to-r from-black/70 via-slate-950/80 to-black/65 border-b border-border/70 shadow-[0_15px_60px_rgba(34,197,94,0.12)]'
           : 'bg-transparent'
           }`}
       >
@@ -84,13 +84,20 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
             <motion.div
               whileHover={{ scale: 1.05 }}
               onClick={scrollToTop}
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer group"
               title="Scroll to top"
             >
-              <div className="w-10 h-10 rounded-xl bg-background/50 border border-border flex items-center justify-center p-0.5 shadow-lg shadow-purple-500/10">
-                <img src="/media-stack-logo.png" alt="Media Stack" className="w-full h-full object-contain" />
+              <div className="p-[2px] rounded-2xl bg-gradient-to-br from-emerald-400/40 via-cyan-400/30 to-lime-400/30 shadow-lg shadow-emerald-500/25 group-hover:shadow-cyan-400/30 transition-all">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-border/60 flex items-center justify-center p-1.5">
+                  <img src="/media-stack-logo.png" alt="Media Stack" className="w-full h-full object-contain drop-shadow-[0_5px_22px_rgba(16,185,129,0.45)]" />
+                </div>
               </div>
-              <span className="font-bold text-xl text-foreground tracking-tight">MediaStack</span>
+              <div className="flex flex-col items-start leading-tight">
+                <span className="font-bold text-lg text-gradient" style={{ fontFamily: 'Share Tech Mono, monospace' }}>Media Stack</span>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: 'Share Tech Mono, monospace' }}>
+                  Cyber Control
+                </span>
+              </div>
             </motion.div>
 
             {/* Desktop navigation */}
@@ -103,7 +110,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                   title={`Navigate to ${item.label}`}
                 >
                   {item.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 group-hover:w-full transition-all duration-300" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-400 via-cyan-300 to-lime-400 group-hover:w-full transition-all duration-300" />
                 </button>
               ))}
             </div>
@@ -112,7 +119,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
           <div className="flex items-center gap-3">
               <Link
                 to="/docs"
-                className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                className="hidden md:inline-flex p-2 rounded-lg bg-slate-900/60 hover:bg-secondary/70 border border-border transition-colors shadow-inner shadow-cyan-500/5"
                 title="Open docs"
               >
                 <BookOpen className="w-4 h-4 text-muted-foreground" />
@@ -120,7 +127,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
 
               <Link
                 to="/settings"
-                className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                className="hidden md:inline-flex p-2 rounded-lg bg-slate-900/60 hover:bg-secondary/70 border border-border transition-colors shadow-inner shadow-cyan-500/5"
                 title="Open settings"
               >
                 <Settings className="w-4 h-4 text-muted-foreground" />
@@ -129,7 +136,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
               {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                className="p-2 rounded-lg bg-slate-900/60 hover:bg-secondary/70 border border-border transition-colors shadow-inner shadow-cyan-500/5"
                 title={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {resolvedTheme === 'dark' ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
@@ -139,7 +146,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
               {showSidebarToggle && onSidebarToggle && (
                 <button
                   onClick={onSidebarToggle}
-                  className="hidden md:inline-flex p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                  className="hidden md:inline-flex p-2 rounded-lg bg-slate-900/60 hover:bg-secondary/70 border border-border transition-colors shadow-inner shadow-cyan-500/5"
                   title="Toggle sidebar"
                 >
                   <Menu className="w-4 h-4 text-muted-foreground" />
@@ -149,7 +156,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
               {/* Mobile menu toggle */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 rounded-lg bg-background/60 hover:bg-muted/80 border border-border transition-colors"
+                className="md:hidden p-2 rounded-lg bg-slate-900/60 hover:bg-secondary/70 border border-border transition-colors shadow-inner shadow-cyan-500/5"
                 title="Toggle mobile menu"
               >
                 {isOpen ? <X className="w-4 h-4 text-muted-foreground" /> : <Menu className="w-4 h-4 text-muted-foreground" />}

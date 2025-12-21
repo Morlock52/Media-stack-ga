@@ -56,12 +56,15 @@ function App() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative selection:bg-neon-purple/30 selection:text-neon-purple">
+    <main className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative selection:bg-primary/30 selection:text-primary">
       {/* Deep Glass Background Blobs */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[120px] animate-pulse-glow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-900/20 rounded-full blur-[120px] animate-pulse-glow delay-1000" />
-        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-pink-900/10 rounded-full blur-[100px] animate-float" />
+        <div className="absolute inset-0 matrix-grid opacity-15" />
+        <div className="absolute inset-0 matrix-rain opacity-20" />
+        <div className="absolute inset-0 scanlines" />
+        <div className="absolute top-[-10%] left-[-8%] w-[52%] h-[52%] bg-emerald-600/25 rounded-full blur-[140px] animate-pulse-glow" />
+        <div className="absolute bottom-[-12%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/18 rounded-full blur-[140px] animate-pulse-glow delay-1000" />
+        <div className="absolute top-[38%] left-[32%] w-[32%] h-[32%] bg-lime-500/12 rounded-full blur-[110px] animate-float" />
       </div>
 
       {/* Toggle Sidebar Button */}
@@ -142,7 +145,7 @@ function App() {
             <section className="py-16 border-t border-border">
               <div className="container mx-auto px-4 text-center">
                 <div className="max-w-2xl mx-auto">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/50 border border-purple-500/20 mb-6 p-1 shadow-lg shadow-purple-500/10 overflow-hidden">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/15 via-emerald-400/15 to-lime-500/20 border border-primary/40 mb-6 p-[3px] shadow-lg shadow-cyan-500/15 overflow-hidden">
                     <img
                       src="/media-stack-logo.png"
                       alt="Logo"
@@ -150,7 +153,7 @@ function App() {
                       height={80}
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-xl bg-slate-950/80"
                     />
                   </div>
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
@@ -162,7 +165,7 @@ function App() {
                   </p>
                   <Link
                     to="/docs"
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300"
+                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 via-emerald-500 to-lime-400 rounded-xl font-semibold text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 hover:scale-105 transition-all duration-300"
                   >
                     <BookOpen className="w-5 h-5" />
                     View App Guides
@@ -262,7 +265,7 @@ function App() {
           <section className="py-16 border-t border-border">
             <div className="container mx-auto px-4 text-center">
               <div className="max-w-2xl mx-auto">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/50 border border-purple-500/20 mb-6 p-1 shadow-lg shadow-purple-500/10 overflow-hidden">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/15 via-emerald-400/15 to-lime-500/20 border border-primary/40 mb-6 p-[3px] shadow-lg shadow-cyan-500/15 overflow-hidden">
                   <img
                     src="/media-stack-logo.png"
                     alt="Logo"
@@ -270,7 +273,7 @@ function App() {
                     height={80}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-xl bg-slate-950/80"
                   />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
@@ -282,7 +285,7 @@ function App() {
                 </p>
                 <Link
                   to="/docs"
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 via-emerald-500 to-lime-400 rounded-xl font-semibold text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 hover:scale-105 transition-all duration-300"
                 >
                   <BookOpen className="w-5 h-5" />
                   View App Guides

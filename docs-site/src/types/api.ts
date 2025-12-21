@@ -29,6 +29,7 @@ export interface RemoteDeployRequest {
     password?: string;
     privateKey?: string;
     deployPath?: string;
+    autoRemoveConflictingContainers?: boolean;
 }
 
 export interface AiChatRequest {

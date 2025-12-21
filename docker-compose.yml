@@ -48,6 +48,22 @@ services:
       - "homepage.icon=autoheal.png"
       - "homepage.description=Container Health Monitor"
 
+  traefik:
+    image: traefik:v3.2
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=false"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mediastack
+
   # ===========================================
   # CLOUDFLARE TUNNEL
   # ===========================================
@@ -124,6 +140,13 @@ services:
       - mediastack
     expose:
       - 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK}"
+      - "traefik.http.routers.homepage.entrypoints=web"
+      - "traefik.http.routers.homepage.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.homepage.priority=1"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
 
   # ===========================================
   # PORTAINER - Docker Management UI
@@ -148,6 +171,18 @@ services:
       - "homepage.widget.type=portainer"
       - "homepage.widget.url=http://portainer:9000"
       - "homepage.widget.env=PORTAINER_TOKEN"
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK}"
+      - "traefik.http.routers.portainer.entrypoints=web"
+      - "traefik.http.routers.portainer.rule=HostRegexp(`portainer.{domain:.+}`)"
+      - "traefik.http.routers.portainer.priority=10"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "traefik.http.routers.portainer-path.entrypoints=web"
+      - "traefik.http.routers.portainer-path.rule=PathPrefix(`/portainer`)"
+      - "traefik.http.routers.portainer-path.priority=20"
+      - "traefik.http.routers.portainer-path.middlewares=portainer-stripprefix,portainer-forwarded-prefix"
+      - "traefik.http.middlewares.portainer-stripprefix.stripprefix.prefixes=/portainer"
+      - "traefik.http.middlewares.portainer-forwarded-prefix.headers.customrequestheaders.X-Forwarded-Prefix=/portainer"
     expose:
       - 9000
 

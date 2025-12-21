@@ -181,7 +181,7 @@ export function ServiceConfigStep() {
                                 key={serviceId}
                                 onClick={() => setActiveService(serviceId)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeService === serviceId
-                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    ? 'bg-primary/20 text-primary border border-primary/40'
                                     : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
                                     }`}
                             >
@@ -203,7 +203,7 @@ export function ServiceConfigStep() {
                             <button
                                 onClick={handleAiSuggest}
                                 disabled={isGenerating}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-xs text-purple-300 transition-all disabled:opacity-50"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/40 rounded-lg text-xs text-primary transition-all disabled:opacity-50"
                                 title="Get AI suggestions"
                             >
                                 {isGenerating ? (
@@ -239,7 +239,7 @@ export function ServiceConfigStep() {
                                         value={currentValues[key] || fieldConfig.default}
                                         onChange={(e) => handleInputChange(key, e.target.value)}
                                         placeholder={fieldConfig.default}
-                                        className="w-full bg-black/30 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none"
+                                        className="w-full bg-black/30 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                                     />
                                     <p className="mt-1 text-xs text-gray-500">{fieldConfig.description}</p>
                                 </div>

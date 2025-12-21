@@ -33,7 +33,7 @@ export function HomepageGuide() {
                 <div>
                     <h3 className="text-base font-semibold text-white mb-2">Access</h3>
                     <p>
-                        Local: <a href="http://localhost:3000" target="_blank" rel="noreferrer noopener" className="text-purple-400 hover:underline">http://localhost:3000</a>
+                        Local: <a href="http://localhost:3000" target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">http://localhost:3000</a>
                         <br />
                         Remote: <code>https://hub.yourdomain.com</code> (if Cloudflare Tunnel is set up).
                     </p>

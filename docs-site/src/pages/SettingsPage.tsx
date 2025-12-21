@@ -241,39 +241,46 @@ export function SettingsPage() {
   const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle'
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="fixed top-0 left-0 right-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-background/50 border border-purple-500/30 flex items-center justify-center p-0.5 overflow-hidden">
-              <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
+    <main className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 matrix-grid opacity-10" />
+        <div className="absolute inset-0 matrix-rain opacity-18" />
+        <div className="absolute inset-0 scanlines" />
+      </div>
+
+      <div className="relative z-10">
+        <div className="fixed top-0 left-0 right-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
+          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-background/50 border border-primary/40 flex items-center justify-center p-0.5 overflow-hidden">
+                <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Settings</p>
+                <h1 className="text-lg font-bold leading-tight">API & Integrations</h1>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Settings</p>
-              <h1 className="text-lg font-bold leading-tight">API & Integrations</h1>
+            <div className="flex items-center gap-2">
+              <Button variant="glass" asChild className="gap-2">
+                <Link to="/">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to wizard
+                </Link>
+              </Button>
+              <Button variant="glass" asChild className="gap-2 hidden sm:inline-flex">
+                <Link to="/docs">Docs</Link>
+              </Button>
+              <ThemeToggleButton />
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="glass" asChild className="gap-2">
-              <Link to="/">
-                <ArrowLeft className="w-4 h-4" />
-                Back to wizard
-              </Link>
-            </Button>
-            <Button variant="glass" asChild className="gap-2 hidden sm:inline-flex">
-              <Link to="/docs">Docs</Link>
-            </Button>
-            <ThemeToggleButton />
           </div>
         </div>
-      </div>
 
       <section className="pt-28 pb-16">
         <div className="max-w-4xl mx-auto px-4 space-y-10">
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Shield className="w-6 h-6 text-purple-400" />
+                <Shield className="w-6 h-6 text-primary" />
                 Control Server Connection
               </h2>
               <p className="text-sm text-muted-foreground max-w-2xl">
@@ -292,7 +299,7 @@ export function SettingsPage() {
                     value={controlServerUrlInput}
                     onChange={(e) => setControlServerUrlInput(e.target.value)}
                     placeholder="http://localhost:3001"
-                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                   />
                   <p className="text-[10px] text-muted-foreground mt-2">
                     Example: <code className="font-mono">http://localhost:3001</code> or{' '}
@@ -311,7 +318,7 @@ export function SettingsPage() {
                     value={controlServerTokenInput}
                     onChange={(e) => setControlServerTokenInput(e.target.value)}
                     placeholder="Bearer token (CONTROL_SERVER_TOKEN)"
-                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                   />
                   <p className="text-[10px] text-muted-foreground mt-2">
                     Only needed if the control server is started with <code className="font-mono">CONTROL_SERVER_TOKEN</code>.
@@ -381,7 +388,7 @@ export function SettingsPage() {
 
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Key className="w-6 h-6 text-purple-400" />
+                <Key className="w-6 h-6 text-primary" />
                 OpenAI API Access
               </h2>
               <p className="text-sm text-muted-foreground max-w-2xl">
@@ -401,7 +408,7 @@ export function SettingsPage() {
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="sk-..."
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                 />
                 <p className="text-[10px] text-muted-foreground mt-2">
                   Need a key? Visit{' '}
@@ -409,7 +416,7 @@ export function SettingsPage() {
                     href="https://platform.openai.com/api-keys"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-purple-400 hover:underline"
+                    className="text-primary hover:underline"
                   >
                     platform.openai.com/api-keys
                   </a>
@@ -511,7 +518,7 @@ export function SettingsPage() {
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Key className="w-6 h-6 text-purple-400" />
+                <Key className="w-6 h-6 text-primary" />
                 ElevenLabs Voice (Optional)
               </h2>
               <p className="text-sm text-muted-foreground max-w-2xl">
@@ -527,7 +534,7 @@ export function SettingsPage() {
                   value={elevenLabsKeyInput}
                   onChange={(e) => setElevenLabsKeyInput(e.target.value)}
                   placeholder="xi-... / ElevenLabs API key"
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                 />
                 <p className="text-[10px] text-muted-foreground mt-2">
                   Stored on the control server as <code className="font-mono">ELEVENLABS_API_KEY</code>.
@@ -567,7 +574,7 @@ export function SettingsPage() {
                   value={elevenLabsVoiceIdInput}
                   onChange={(e) => setElevenLabsVoiceIdInput(e.target.value)}
                   placeholder={elevenlabs?.voiceId || 'e.g. 21m00Tcm4TlvDq8ikWAM'}
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30"
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                 />
                 <p className="text-[10px] text-muted-foreground mt-2">
                   Stored as <code className="font-mono">ELEVENLABS_VOICE_ID</code>. Required to use ElevenLabs TTS.
@@ -592,7 +599,7 @@ export function SettingsPage() {
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-6">
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <RefreshCw className="w-6 h-6 text-indigo-400" />
+                <RefreshCw className="w-6 h-6 text-cyan-300" />
                 Arr-Stack Automation
               </h2>
               <p className="text-sm text-muted-foreground max-w-2xl">
@@ -608,7 +615,7 @@ export function SettingsPage() {
               </div>
               <Button
                 onClick={handleBootstrapArr}
-                className="gap-2 bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 px-6"
+                className="gap-2 bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 px-6"
                 disabled={isBootstrapping || !serverOnline}
               >
                 {isBootstrapping ? (
@@ -627,6 +634,7 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
+      </div>
     </main>
   )
 }

@@ -19,7 +19,7 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
     const variantClasses = {
       default: "bg-white/10 dark:bg-black/20 backdrop-blur-md",
       muted: "bg-white/5 dark:bg-black/10 backdrop-blur-sm", 
-      accent: "bg-purple-500/10 dark:bg-purple-500/20 backdrop-blur-md"
+      accent: "bg-primary/10 dark:bg-primary/20 backdrop-blur-md"
     }
 
     const borderClasses = border ? "border border-white/20 dark:border-white/10" : ""

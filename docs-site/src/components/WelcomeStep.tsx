@@ -20,15 +20,15 @@ export function WelcomeStep() {
             className="text-center space-y-8 py-8"
         >
             <div className="flex justify-center mb-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-3xl flex items-center justify-center border border-border relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Sparkles className="w-12 h-12 text-purple-400 animate-pulse-glow" />
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-3xl flex items-center justify-center border border-border relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Sparkles className="w-12 h-12 text-primary animate-pulse-glow" />
                 </div>
             </div>
 
             <div className="max-w-2xl mx-auto space-y-4">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                    Welcome to the <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">Next-Gen Setup</span>
+                    Welcome to the <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-cyan-400 to-lime-400">Next-Gen Setup</span>
                 </h2>
                 <p className="text-lg text-muted-foreground">
                     Configure your entire media stack with intelligent defaults and AI-powered suggestions.
@@ -37,7 +37,7 @@ export function WelcomeStep() {
 
             <div className="max-w-md mx-auto glass-card rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-purple-300">
+                    <div className="flex items-center gap-2 text-primary">
                         <Sparkles className="w-4 h-4" />
                         <span className="font-medium">AI Assistant (Optional)</span>
                     </div>
@@ -80,7 +80,7 @@ export function WelcomeStep() {
             <div className="pt-4">
                 <button
                     onClick={handleStart}
-                    className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300"
+                    className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 rounded-xl font-semibold text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-400/40 hover:scale-105 transition-all duration-300"
                 >
                     Start Configuration
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

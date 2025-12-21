@@ -22,7 +22,7 @@ export function NotifiarrGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Configuration</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            <strong>Get API Key:</strong> Sign up at <a href="https://notifiarr.com" target="_blank" rel="noreferrer noopener" className="text-purple-400 hover:underline">notifiarr.com</a> and get your API key.
+                            <strong>Get API Key:</strong> Sign up at <a href="https://notifiarr.com" target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">notifiarr.com</a> and get your API key.
                         </li>
                         <li>
                             <strong>Environment:</strong> Add <code>NOTIFIARR_API_KEY</code> to your <code>.env</code> file and restart the container.

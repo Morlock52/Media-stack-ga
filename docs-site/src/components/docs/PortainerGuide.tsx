@@ -22,7 +22,7 @@ export function PortainerGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Quick Actions</h3>
                     <ul className="list-disc list-inside space-y-2 text-gray-300">
                         <li>
-                            <strong>Access:</strong> <a href="http://localhost:9000" target="_blank" rel="noreferrer noopener" className="text-purple-400 hover:underline">http://localhost:9000</a>
+                            <strong>Access:</strong> <a href="http://localhost:9000" target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">http://localhost:9000</a>
                         </li>
                         <li>
                             <strong>View Logs:</strong> Click on a container → Click "Logs" icon.

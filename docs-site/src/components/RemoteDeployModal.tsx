@@ -69,12 +69,16 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const [steps, setSteps] = useState<DeployStep[]>([])
     const [error, setError] = useState('')
     const [serverReady, setServerReady] = useState<boolean | null>(null)
+    const [deployLocked, setDeployLocked] = useState(false)
+    const [autoRemoveConflictingContainers, setAutoRemoveConflictingContainers] = useState(true)
 
     const resetForm = () => {
         setStatus('idle')
         setSteps([])
         setError('')
         setServerReady(null)
+        setDeployLocked(false)
+        setAutoRemoveConflictingContainers(true)
     }
 
     const testConnection = async () => {
@@ -165,6 +169,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const deploy = async () => {
         setStatus('deploying')
         setError('')
+        setDeployLocked(false)
         setSteps([{ step: 'Contacting control server...', status: 'running' }])
 
         toast.loading('Starting deployment...', { id: 'deploy' })
@@ -179,6 +184,7 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     username,
                     authType,
                     deployPath,
+                    autoRemoveConflictingContainers,
                     password: authType === 'password' ? password : undefined,
                     privateKey: authType === 'key' ? privateKey : undefined,
                     composeYml: dockerComposeTemplate,
@@ -206,7 +212,15 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 if (payloadSteps?.length) setSteps(payloadSteps)
                 setError(errorMsg)
                 setStatus('error')
-                toast.error('Deployment failed', { id: 'deploy', description: errorMsg })
+                if (res.status === 409) {
+                    setDeployLocked(true)
+                    toast.warning('Deployment already in progress', {
+                        id: 'deploy',
+                        description: errorMsg,
+                    })
+                } else {
+                    toast.error('Deployment failed', { id: 'deploy', description: errorMsg })
+                }
                 return
             }
             
@@ -488,6 +502,19 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     />
                                 </div>
 
+                                <label className="flex items-start gap-2 text-xs text-muted-foreground select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={autoRemoveConflictingContainers}
+                                        onChange={(e) => setAutoRemoveConflictingContainers(e.target.checked)}
+                                        className="mt-0.5"
+                                        aria-label="Auto remove conflicting containers"
+                                    />
+                                    <span>
+                                        Auto-remove conflicting containers (recommended). If Docker reports a name conflict (e.g. existing <code className="text-xs">portainer</code>), the deploy will remove it and retry once.
+                                    </span>
+                                </label>
+
                                 {/* Connection Status */}
                                 {serverReady !== null && (
                                     <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${
@@ -501,8 +528,17 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                     </div>
                                 )}
 
+                                {deployLocked && (
+                                    <div className="text-sm bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 p-3 rounded-lg">
+                                        <div className="font-medium">Deployment already in progress</div>
+                                        <div className="text-xs text-yellow-200/80 mt-1">
+                                            Another deploy request for this server is currently running. Wait for it to finish, then try again.
+                                        </div>
+                                    </div>
+                                )}
+
                                 {error && (
-                                    <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded-lg">{error}</p>
+                                    <p className={`text-sm p-2 rounded-lg ${deployLocked ? 'text-yellow-200 bg-yellow-500/10 border border-yellow-500/20' : 'text-red-400 bg-red-500/10'}`}>{error}</p>
                                 )}
                             </>
                         )}

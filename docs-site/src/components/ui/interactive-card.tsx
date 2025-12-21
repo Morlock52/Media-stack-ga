@@ -76,7 +76,7 @@ export const InteractiveCard = React.forwardRef<HTMLDivElement, InteractiveCardP
         
         {/* Dynamic glow effect */}
         <motion.div
-          className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-blue-500/20 blur-xl"
+          className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500/20 via-cyan-500/20 to-lime-500/20 blur-xl"
           initial={{ opacity: 0 }}
           animate={{ 
             opacity: isHovered ? glowIntensity : 0,

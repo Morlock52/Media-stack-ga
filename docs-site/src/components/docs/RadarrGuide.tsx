@@ -22,7 +22,7 @@ export function RadarrGuide() {
                     <h3 className="text-base font-semibold text-foreground mb-2">Initial Setup</h3>
                     <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                         <li>
-                            Open Radarr at <a href="http://localhost:7878" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">http://localhost:7878</a>
+                            Open Radarr at <a href="http://localhost:7878" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">http://localhost:7878</a>
                         </li>
                         <li>
                             <strong>Media Management:</strong> Go to Settings → Media Management. Enable "Rename Movies".

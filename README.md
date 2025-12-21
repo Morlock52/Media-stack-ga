@@ -43,6 +43,8 @@
 cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1
 ```
 
+> **Last updated:** December 20, 2025
+
 ## ✨ Screenshots (current)
 
 <table align="center">
@@ -83,6 +85,8 @@ cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec
 - [**Start Here — Pick Your Setup Path**](docs/START_HERE.md) ⬅️ New? Start here!
 - [Screenshots](#-screenshots-current)
 - [Quick Start](#-quick-start)
+- [Remote Deploy (SSH)](#-remote-deploy-ssh)
+- [Access after remote deploy](#-access-after-remote-deploy)
 - [Highlights](#-highlights)
 - [Stack at a glance](#-stack-at-a-glance)
 - [Agentic System](#-agentic-system)
@@ -123,6 +127,59 @@ chmod +x setup.sh
 ```bash
 docker compose up -d
 ```
+
+---
+
+## 🛰 Remote deploy (SSH)
+
+Remote deploy lets the wizard upload your generated `docker-compose.yml` + `.env` to a remote host over SSH and run `docker compose up -d` for you.
+
+**Prereqs**
+
+- The **control server** is reachable from your browser (Docker wizard mode proxies `/api`; static hosting requires `VITE_CONTROL_SERVER_URL`).
+- The **remote server** has Docker + Docker Compose installed and SSH access is open.
+- **Password auth** needs `sshpass` installed in the control server environment.
+
+**Step-by-step**
+
+1. Run the wizard and reach **Review & Generate**.
+2. Click **Deploy to Server**.
+3. Click **Test Connection** (validates SSH, Docker daemon, and Compose).
+4. Fill in host/port/user, choose password or key auth, and confirm the deploy path.
+5. (Optional) Leave **Auto‑remove conflicting containers** enabled for safe auto-fix of name conflicts.
+6. Click **Deploy** and follow the live step list.
+
+**Where to check logs**
+
+- UI shows per-step status and error details.
+- Control server logs: `docker compose logs -f control-server` (or `wizard-api` in wizard mode).
+- Remote host logs: `ssh <host> 'cd <deployPath> && docker compose logs -f'`
+
+---
+
+## 🌐 Access after remote deploy
+
+The deploy does **not** create DNS records or Cloudflare routes. You still need a way to reach your services:
+
+### Option A — Domain + Cloudflare Tunnel (recommended)
+
+1. Set `DOMAIN=example.com` and configure the Cloudflare tunnel token/command in `.env`.
+2. Add DNS records or Cloudflare tunnel routes for the subdomains you want.
+3. Access apps at `https://<service>.${DOMAIN}` (e.g., `https://plex.example.com`, `https://sonarr.example.com`).
+4. Homepage (dashboard) is available at your root host (e.g., `https://example.com`).
+
+### Option B — Local/LAN access (no domain)
+
+1. Open the dashboard at `http://<server-ip>` (Traefik routes the “catch‑all” host to Homepage).
+2. For direct subdomain access, add host entries on your machine:
+
+```
+<server-ip> plex.local
+<server-ip> sonarr.local
+<server-ip> radarr.local
+```
+
+3. Set `DOMAIN=local` to match the hostnames.
 
 ---
 
