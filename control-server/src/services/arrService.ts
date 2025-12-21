@@ -38,19 +38,30 @@ export const extractArrApiKey = async (containerName: string): Promise<string | 
     }
 };
 
-/**
- * Iterates through all known *arr services, extracts their keys, and updates .env
- */
-export const bootstrapArrKeys = async (): Promise<Record<string, string>> => {
+export const extractArrKeys = async (): Promise<Record<string, string>> => {
     const results: Record<string, string> = {};
 
     for (const service of ARR_SERVICES) {
         const key = await extractArrApiKey(service.id);
         if (key) {
-            setEnvValue(service.envKey, key);
-            results[service.id] = key;
+            results[service.envKey] = key;
         }
     }
 
     return results;
+};
+
+export const writeArrKeysToEnv = (keys: Record<string, string>): void => {
+    for (const [envKey, envValue] of Object.entries(keys)) {
+        setEnvValue(envKey, envValue);
+    }
+};
+
+/**
+ * Iterates through all known *arr services, extracts their keys, and updates .env
+ */
+export const bootstrapArrKeys = async (): Promise<Record<string, string>> => {
+    const keys = await extractArrKeys();
+    writeArrKeysToEnv(keys);
+    return keys;
 };

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Iterable, Tuple
 
@@ -282,10 +283,15 @@ def main() -> None:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
 
-    legacy_logo = find_legacy_logo()
-    logo = render_logo_from_legacy(legacy_logo) if legacy_logo else render_logo()
-    logo.save(DOCS_DIR / "logo.png")
-    logo.save(PUBLIC_DIR / "media-stack-logo.png")
+    keep_logo = os.environ.get("KEEP_LOGO") == "1"
+    existing_docs_logo = DOCS_DIR / "logo.png"
+    existing_public_logo = PUBLIC_DIR / "media-stack-logo.png"
+
+    if not keep_logo or not (existing_docs_logo.exists() and existing_public_logo.exists()):
+        legacy_logo = find_legacy_logo()
+        logo = render_logo_from_legacy(legacy_logo) if legacy_logo else render_logo()
+        logo.save(existing_docs_logo)
+        logo.save(existing_public_logo)
 
     storage = render_storage_planning().convert("RGB")
     storage.save(DOCS_DIR / "storage_planning.jpg", quality=92)

@@ -4,7 +4,7 @@ To elevate the **Media Stack** project to a "Premium" and "State-of-the-Art" lev
 
 ## 1. Visual Style: "Matrix Glass"
 
-Move beyond standard glassmorphism to **"Deep Glass"**. This involves:
+Move beyond standard glassmorphism to **"Matrix Glass"**. This involves:
 *   **Multi-layered Depth**: Use 3-4 layers of z-index with varying blur strengths (`backdrop-blur-md` to `backdrop-blur-3xl`) to create a sense of deep space.
 *   **Noise Texture**: Apply a subtle SVG noise overlay to the background. This prevents color banding in gradients and adds a premium, tactile "film grain" feel.
 *   **Glowing Borders**: Use `box-shadow` or pseudo-elements to create borders that glow on hover, simulating a light source moving across the edge.

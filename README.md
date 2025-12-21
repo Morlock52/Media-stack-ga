@@ -45,7 +45,7 @@ cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec
 
 ```bash
 python docs/scripts/render_diagrams.py
-python docs/scripts/render_marketing_assets.py
+KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ```
 
 > **Last updated:** December 21, 2025

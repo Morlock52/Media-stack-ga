@@ -145,7 +145,7 @@ export const controlServer = {
         }
     },
 
-    bootstrapArr: async (): Promise<{ success: boolean; keys: Record<string, string> }> => {
+    bootstrapArr: async (): Promise<{ success: boolean; keys: Record<string, string>; error?: string }> => {
         try {
             const res = await fetch(buildControlServerUrl('/api/arr/bootstrap'), {
                 method: 'POST',

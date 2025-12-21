@@ -53,6 +53,8 @@ export function SettingsPage() {
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [pendingAction, setPendingAction] = useState<'idle' | 'checking' | 'saving' | 'removing'>('idle')
   const [isBootstrapping, setIsBootstrapping] = useState(false)
+  const [localRetrievedKeys, setLocalRetrievedKeys] = useState<Record<string, string> | null>(null)
+  const [localRetrievedError, setLocalRetrievedError] = useState('')
   const [isRemoteArrOpen, setIsRemoteArrOpen] = useState(false)
   const [isRemoteBootstrapping, setIsRemoteBootstrapping] = useState(false)
   const [remoteRetrievedKeys, setRemoteRetrievedKeys] = useState<Record<string, string> | null>(null)
@@ -287,19 +289,31 @@ export function SettingsPage() {
     }
 
     setIsBootstrapping(true)
+    setLocalRetrievedKeys(null)
+    setLocalRetrievedError('')
     try {
       const data = await controlServer.bootstrapArr()
-      if (data.success) {
-        const count = Object.keys(data.keys).length
-        setToastMessage({
-          type: 'success',
-          text: count > 0
-            ? `Successfully captured ${count} API keys (${Object.keys(data.keys).join(', ')}).`
-            : 'No keys were found. Make sure your containers are running and initialized.'
-        })
+      setLocalRetrievedKeys(data.keys || {})
+
+      if (!data.success) {
+        const message = data.error || 'No keys were found. Make sure your containers are running and initialized.'
+        setLocalRetrievedError(message)
+        setToastMessage({ type: 'error', text: message })
+        return
       }
+
+      const count = Object.keys(data.keys || {}).length
+      setToastMessage({
+        type: 'success',
+        text:
+          count > 0
+            ? `Successfully captured ${count} API keys (${Object.keys(data.keys || {}).join(', ')}).`
+            : 'No keys were found. Make sure your containers are running and initialized.',
+      })
     } catch (error: any) {
-      setToastMessage({ type: 'error', text: `Bootstrap failed: ${error.message}` })
+      const message = error?.message || 'Bootstrap failed'
+      setLocalRetrievedError(message)
+      setToastMessage({ type: 'error', text: `Bootstrap failed: ${message}` })
     } finally {
       setIsBootstrapping(false)
     }
@@ -792,6 +806,30 @@ export function SettingsPage() {
                 </Button>
               </div>
             </div>
+
+            {(localRetrievedError || (localRetrievedKeys && Object.keys(localRetrievedKeys).length > 0)) && (
+              <div className="rounded-2xl border border-border p-4 bg-card/40 space-y-3">
+                {localRetrievedError && (
+                  <div className="text-sm text-red-400 whitespace-pre-wrap">{localRetrievedError}</div>
+                )}
+                {localRetrievedKeys && Object.keys(localRetrievedKeys).length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Retrieved keys</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {Object.entries(localRetrievedKeys).map(([k, v]) => (
+                        <div
+                          key={k}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                        >
+                          <code className="text-xs font-mono text-muted-foreground">{k}</code>
+                          <code className="text-xs font-mono text-foreground truncate max-w-[60%]">{v}</code>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <Dialog open={isRemoteArrOpen} onOpenChange={setIsRemoteArrOpen}>
               <DialogContent className="max-w-2xl">
