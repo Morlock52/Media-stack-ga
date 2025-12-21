@@ -764,26 +764,51 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         };
 
         let tmpDir: string | null = null;
+        let extractedKeys: Record<string, string> = {};
         try {
             const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
             if (connectCheck.code !== 0) {
                 const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
-                return reply.status(502).send({ success: false, error: `SSH connection failed: ${detail || 'unknown error'}` });
+                return reply.status(200).send({
+                    success: false,
+                    error: `SSH connection failed: ${detail || 'unknown error'}`,
+                    keys: extractedKeys,
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                });
             }
 
             const dockerInfo = await execSSH(scanConfig, 'docker info');
             if (dockerInfo.code !== 0) {
                 const detail = cleanRemoteOutput(dockerInfo.stderr || dockerInfo.stdout);
                 if (isDockerPermissionError(detail)) {
-                    return reply.status(502).send({ success: false, error: 'Docker is installed but permission denied to the Docker daemon on scan host.' });
+                    return reply.status(200).send({
+                        success: false,
+                        error: 'Docker is installed but permission denied to the Docker daemon on scan host.',
+                        keys: extractedKeys,
+                        env: { host: envConfig.host, path: safeEnvPath },
+                        scan: { host: scanConfig.host },
+                    });
                 }
                 if (isDockerDaemonUnavailableError(detail)) {
-                    return reply.status(502).send({ success: false, error: 'Docker is installed but the Docker daemon is not reachable on scan host.' });
+                    return reply.status(200).send({
+                        success: false,
+                        error: 'Docker is installed but the Docker daemon is not reachable on scan host.',
+                        keys: extractedKeys,
+                        env: { host: envConfig.host, path: safeEnvPath },
+                        scan: { host: scanConfig.host },
+                    });
                 }
-                return reply.status(502).send({ success: false, error: `Docker check failed on scan host: ${detail || 'unknown error'}` });
+                return reply.status(200).send({
+                    success: false,
+                    error: `Docker check failed on scan host: ${detail || 'unknown error'}`,
+                    keys: extractedKeys,
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                });
             }
 
-            const keys: Record<string, string> = {};
+            extractedKeys = {};
             for (const service of ARR_SERVICES) {
                 const id = service.id;
                 const cmd = `docker exec ${id} sed -n 's:.*<ApiKey>\\(.*\\)</ApiKey>.*:\\1:p' /config/config.xml`;
@@ -791,10 +816,10 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 if (result.code !== 0) continue;
                 const key = (result.stdout || '').trim();
                 if (!key) continue;
-                keys[service.envKey] = key.replace(/\r?\n/g, '');
+                extractedKeys[service.envKey] = key.replace(/\r?\n/g, '');
             }
 
-            if (Object.keys(keys).length === 0) {
+            if (Object.keys(extractedKeys).length === 0) {
                 return {
                     success: true,
                     keys: {},
@@ -803,15 +828,33 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 };
             }
 
+            const ensureEnvDir = await execSSH(envConfig, `mkdir -p "$(dirname ${safeEnvPath})"`);
+            if (ensureEnvDir.code !== 0) {
+                const detail = cleanRemoteOutput(ensureEnvDir.stderr || ensureEnvDir.stdout);
+                return reply.status(200).send({
+                    success: false,
+                    error: `Failed to create remote env directory: ${detail || 'unknown error'}`,
+                    keys: extractedKeys,
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                });
+            }
+
             const envRead = await execSSH(envConfig, `test -f ${safeEnvPath} && cat ${safeEnvPath} || true`);
             if (envRead.code !== 0) {
                 const detail = cleanRemoteOutput(envRead.stderr || envRead.stdout);
-                return reply.status(502).send({ success: false, error: `Failed to read remote env file: ${detail || 'unknown error'}` });
+                return reply.status(200).send({
+                    success: false,
+                    error: `Failed to read remote env file: ${detail || 'unknown error'}`,
+                    keys: extractedKeys,
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                });
             }
 
             const original = (envRead.stdout || '').replace(/\r\n/g, '\n');
             let updated = original;
-            for (const [envKey, envValue] of Object.entries(keys)) {
+            for (const [envKey, envValue] of Object.entries(extractedKeys)) {
                 const line = `${envKey}=${envValue}`;
                 const re = new RegExp(`^${escapeRegExp(envKey)}=.*$`, 'm');
                 if (re.test(updated)) {
@@ -830,18 +873,30 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const upload = await scpFile(envConfig, tmpFile, safeEnvPath);
             if (upload.code !== 0) {
                 const detail = cleanRemoteOutput(upload.stderr || upload.stdout);
-                return reply.status(502).send({ success: false, error: `Failed to upload remote env file: ${detail || 'unknown error'}` });
+                return reply.status(200).send({
+                    success: false,
+                    error: `Failed to upload remote env file: ${detail || 'unknown error'}`,
+                    keys: extractedKeys,
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                });
             }
 
             return {
                 success: true,
-                keys,
+                keys: extractedKeys,
                 env: { host: envConfig.host, path: safeEnvPath },
                 scan: { host: scanConfig.host },
             };
         } catch (error: any) {
             fastify.log.error({ err: error, host, username }, '[arr/bootstrap-remote] failed');
-            return reply.status(500).send({ success: false, error: cleanRemoteOutput(error?.message || '') || 'Remote bootstrap failed' });
+            return reply.status(200).send({
+                success: false,
+                error: cleanRemoteOutput(error?.message || '') || 'Remote bootstrap failed',
+                keys: extractedKeys,
+                env: { host: envConfig.host, path: safeEnvPath },
+                scan: { host: scanConfig.host },
+            });
         } finally {
             if (tmpDir) {
                 try {

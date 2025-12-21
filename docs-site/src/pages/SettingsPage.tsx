@@ -55,6 +55,8 @@ export function SettingsPage() {
   const [isBootstrapping, setIsBootstrapping] = useState(false)
   const [isRemoteArrOpen, setIsRemoteArrOpen] = useState(false)
   const [isRemoteBootstrapping, setIsRemoteBootstrapping] = useState(false)
+  const [remoteRetrievedKeys, setRemoteRetrievedKeys] = useState<Record<string, string> | null>(null)
+  const [remoteRetrievedError, setRemoteRetrievedError] = useState('')
   const [remoteScanHost, setRemoteScanHost] = useState('')
   const [remoteScanPort, setRemoteScanPort] = useState('22')
   const [remoteScanUsername, setRemoteScanUsername] = useState('')
@@ -136,6 +138,12 @@ export function SettingsPage() {
     remoteScanPort,
     remoteScanUsername,
   ])
+
+  useEffect(() => {
+    if (!isRemoteArrOpen) return
+    setRemoteRetrievedKeys(null)
+    setRemoteRetrievedError('')
+  }, [isRemoteArrOpen])
 
   const handleSave = async () => {
     const trimmed = apiKeyInput.trim()
@@ -339,6 +347,8 @@ export function SettingsPage() {
       : {}
 
     setIsRemoteBootstrapping(true)
+    setRemoteRetrievedKeys(null)
+    setRemoteRetrievedError('')
     try {
       const data = await controlServer.bootstrapArrRemote({
         host: scanHost,
@@ -351,8 +361,13 @@ export function SettingsPage() {
         ...envPayload,
       })
 
+      setRemoteRetrievedKeys(data.keys || {})
+
       if (!data.success) {
-        throw new Error(data.error || 'Remote bootstrap failed')
+        const message = data.error || 'Remote bootstrap failed'
+        setRemoteRetrievedError(message)
+        setToastMessage({ type: 'error', text: message })
+        return
       }
 
       const count = Object.keys(data.keys || {}).length
@@ -365,7 +380,9 @@ export function SettingsPage() {
       })
       setIsRemoteArrOpen(false)
     } catch (error: any) {
-      setToastMessage({ type: 'error', text: `Remote bootstrap failed: ${error.message}` })
+      const message = error?.message || 'Remote bootstrap failed'
+      setRemoteRetrievedError(message)
+      setToastMessage({ type: 'error', text: `Remote bootstrap failed: ${message}` })
     } finally {
       setIsRemoteBootstrapping(false)
     }
@@ -769,7 +786,6 @@ export function SettingsPage() {
                   onClick={() => setIsRemoteArrOpen(true)}
                   variant="outline"
                   className="gap-2 px-6 flex-1"
-                  disabled={!serverOnline}
                 >
                   <Key className="w-4 h-4" />
                   Remote
@@ -939,6 +955,27 @@ export function SettingsPage() {
                             rows={6}
                             className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                           />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(remoteRetrievedError || (remoteRetrievedKeys && Object.keys(remoteRetrievedKeys).length > 0)) && (
+                    <div className="rounded-2xl border border-border p-4 bg-card/60 space-y-3">
+                      {remoteRetrievedError && (
+                        <div className="text-sm text-red-400 whitespace-pre-wrap">{remoteRetrievedError}</div>
+                      )}
+                      {remoteRetrievedKeys && Object.keys(remoteRetrievedKeys).length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Retrieved keys</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {Object.entries(remoteRetrievedKeys).map(([k, v]) => (
+                              <div key={k} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                                <code className="text-xs font-mono text-muted-foreground">{k}</code>
+                                <code className="text-xs font-mono text-foreground truncate max-w-[60%]">{v}</code>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

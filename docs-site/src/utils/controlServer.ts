@@ -189,10 +189,15 @@ export const controlServer = {
                 headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
                 body: JSON.stringify(payload),
             })
+            const text = await res.text().catch(() => '')
+            const parsed = text ? (JSON.parse(text) as any) : null
+
             if (!res.ok) {
-                const body = await res.text().catch(() => '')
-                throw new Error(`Failed to bootstrap Arr keys remotely (HTTP ${res.status}): ${body || res.statusText}`)
+                if (parsed && typeof parsed === 'object') return parsed
+                throw new Error(`Failed to bootstrap Arr keys remotely (HTTP ${res.status}): ${text || res.statusText}`)
             }
+
+            if (parsed && typeof parsed === 'object') return parsed
             return res.json()
         } catch (err) {
             log('error', 'controlServer.bootstrapArrRemote failed', err)
