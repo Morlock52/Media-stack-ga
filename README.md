@@ -91,6 +91,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 - [Screenshots](#-screenshots-current)
 - [TL;DR](#-tldr)
 - [Stack modes (quick map)](#-stack-modes-quick-map)
+- [Docker-first install (recommended)](#-docker-first-install-recommended)
 - [Quick Start](#-quick-start)
 - [Local network install (LAN only)](#-local-network-install-lan-only)
 - [Remote access (SSO + Cloudflare Tunnel)](#-remote-access-sso--cloudflare-tunnel)
@@ -123,7 +124,64 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 | Remote (Zero-Trust) | Internet-facing access | `docker compose --profile auth --profile cloudflared up -d` | Authelia + Cloudflare Tunnel |
 | Remote Deploy | You want the wizard to deploy to a VPS | Wizard → Deploy to Server | SSH push + `docker compose up -d` |
 
+## 🐳 Docker-first install (recommended)
+
+This project is designed to run entirely in Docker. You do **not** need Node.js locally.
+
+### 1) Clone + prep `.env`
+
+```bash
+git clone https://github.com/Morlock52/Media-stack-ga.git
+cd Media-stack-ga
+cp .env.example .env
+```
+
+> If you run the wizard in Docker, use **absolute paths** in `.env` (for example `DATA_ROOT=/srv/mediastack`). Relative paths will resolve inside the container instead of your host.
+
+### 2) Start the Wizard (Docker)
+
+```bash
+docker compose -f docker-compose.wizard.yml up --build -d
+```
+
+**Security-hardened option (recommended for production):**
+
+```bash
+docker compose -f docker-compose.wizard.secure.yml up --build -d
+```
+
+### 3) Open the Wizard UI
+
+- `http://localhost:3002` (UI)
+- `http://localhost:3001` (API, internal)
+
+<p align="center">
+  <img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration + storage planner" width="1100" />
+</p>
+
+### 4) Generate configs + run the stack
+
+In the wizard, complete **Service Config** → **Review & Generate**, download the files, then run:
+
+```bash
+docker compose up -d
+```
+
+For remote access (SSO + Tunnel):
+
+```bash
+docker compose --profile auth --profile cloudflared up -d
+```
+
+### 5) Stop the Wizard
+
+```bash
+docker compose -f docker-compose.wizard.yml down
+```
+
 ## 🚀 Quick start
+
+Prefer the Docker-first install above. Use this path if you want the shell-driven setup.
 
 ### 1) Clone
 
@@ -580,6 +638,8 @@ These links back up the assumptions used in the diagrams & planning chart:
 - [Cloudflare Tunnel firewall requirements](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/)
 - [Authelia 2FA (WebAuthn)](https://www.authelia.com/configuration/second-factor/webauthn/)
 - [Authelia 2FA (TOTP)](https://www.authelia.com/configuration/second-factor/time-based-one-time-password/)
+- [Docker Engine install](https://docs.docker.com/engine/install/)
+- [Docker Compose docs](https://docs.docker.com/compose/)
 - [Gluetun README (built-in firewall kill-switch)](https://github.com/qdm12/gluetun/blob/master/README.md)
 - [Plex hardware-accelerated streaming requires Plex Pass](https://support.plex.tv/articles/115002178853-using-hardware-accelerated-streaming/)
 - [Plex server sizing note (RAM)](https://support.plex.tv/articles/200375666-plex-media-server-requirements/)
