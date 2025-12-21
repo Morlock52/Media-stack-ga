@@ -37,6 +37,22 @@ export interface RemoteDeployRequest {
     envFile?: string;
 }
 
+export interface RemoteArrBootstrapRequest {
+    host: string;
+    port?: number;
+    username: string;
+    authType?: 'key' | 'password';
+    privateKey?: string;
+    password?: string;
+    envHost?: string;
+    envPort?: number;
+    envUsername?: string;
+    envAuthType?: 'key' | 'password';
+    envPrivateKey?: string;
+    envPassword?: string;
+    envPath?: string;
+}
+
 export interface AiChatRequest {
     message: string;
     agentId?: string;

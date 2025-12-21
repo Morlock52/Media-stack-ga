@@ -21,6 +21,14 @@ import {
   setControlServerToken,
 } from '../utils/controlServer'
 import { Button } from '../components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
@@ -45,6 +53,22 @@ export function SettingsPage() {
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [pendingAction, setPendingAction] = useState<'idle' | 'checking' | 'saving' | 'removing'>('idle')
   const [isBootstrapping, setIsBootstrapping] = useState(false)
+  const [isRemoteArrOpen, setIsRemoteArrOpen] = useState(false)
+  const [isRemoteBootstrapping, setIsRemoteBootstrapping] = useState(false)
+  const [remoteScanHost, setRemoteScanHost] = useState('')
+  const [remoteScanPort, setRemoteScanPort] = useState('22')
+  const [remoteScanUsername, setRemoteScanUsername] = useState('')
+  const [remoteScanAuthType, setRemoteScanAuthType] = useState<'password' | 'key'>('password')
+  const [remoteScanPassword, setRemoteScanPassword] = useState('')
+  const [remoteScanPrivateKey, setRemoteScanPrivateKey] = useState('')
+  const [useSeparateEnvHost, setUseSeparateEnvHost] = useState(false)
+  const [remoteEnvHost, setRemoteEnvHost] = useState('')
+  const [remoteEnvPort, setRemoteEnvPort] = useState('')
+  const [remoteEnvUsername, setRemoteEnvUsername] = useState('')
+  const [remoteEnvAuthType, setRemoteEnvAuthType] = useState<'password' | 'key' | ''>('')
+  const [remoteEnvPassword, setRemoteEnvPassword] = useState('')
+  const [remoteEnvPrivateKey, setRemoteEnvPrivateKey] = useState('')
+  const [remoteEnvPath, setRemoteEnvPath] = useState('')
   const [toast, setToast] = useState<ToastState>(null)
   const [controlServerUrlInput, setControlServerUrlInput] = useState(() => getControlServerBaseUrl())
   const [controlServerTokenInput, setControlServerTokenInput] = useState(() => getControlServerToken())
@@ -71,6 +95,47 @@ export function SettingsPage() {
   useEffect(() => {
     fetchStatus()
   }, [fetchStatus])
+
+  useEffect(() => {
+    if (!isRemoteArrOpen) return
+    try {
+      const raw = localStorage.getItem('remote-deploy-prefs')
+      if (!raw) return
+      const parsed = JSON.parse(raw) as {
+        host?: string
+        port?: string
+        username?: string
+        authType?: 'password' | 'key'
+        deployPath?: string
+      }
+
+      if (!remoteScanHost.trim() && typeof parsed.host === 'string') setRemoteScanHost(parsed.host)
+      if (remoteScanPort.trim() === '22' && typeof parsed.port === 'string') setRemoteScanPort(parsed.port)
+      if (!remoteScanUsername.trim() && typeof parsed.username === 'string') setRemoteScanUsername(parsed.username)
+      if (!remoteScanHost.trim() && !remoteScanUsername.trim() && (parsed.authType === 'password' || parsed.authType === 'key')) {
+        setRemoteScanAuthType(parsed.authType)
+      }
+
+      if (!remoteEnvPath) {
+        const deployPath = typeof parsed.deployPath === 'string' ? parsed.deployPath.trim() : ''
+        if (deployPath) {
+          const normalized = deployPath.endsWith('/') ? deployPath.slice(0, -1) : deployPath
+          setRemoteEnvPath(`${normalized}/.env`)
+        } else {
+          setRemoteEnvPath('~/media-stack/.env')
+        }
+      }
+    } catch {
+      // ignore invalid local storage
+    }
+  }, [
+    isRemoteArrOpen,
+    remoteEnvPath,
+    remoteScanAuthType,
+    remoteScanHost,
+    remoteScanPort,
+    remoteScanUsername,
+  ])
 
   const handleSave = async () => {
     const trimmed = apiKeyInput.trim()
@@ -229,6 +294,80 @@ export function SettingsPage() {
       setToastMessage({ type: 'error', text: `Bootstrap failed: ${error.message}` })
     } finally {
       setIsBootstrapping(false)
+    }
+  }
+
+  const handleBootstrapArrRemote = async () => {
+    if (!serverOnline) {
+      setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
+      return
+    }
+
+    const scanHost = remoteScanHost.trim()
+    const scanUsername = remoteScanUsername.trim()
+    const scanPort = (remoteScanPort || '22').trim()
+
+    if (!scanHost || !scanUsername) {
+      setToastMessage({ type: 'error', text: 'Enter a scan host and username.' })
+      return
+    }
+    if (!remoteEnvPath.trim()) {
+      setToastMessage({ type: 'error', text: 'Enter the remote .env path to update.' })
+      return
+    }
+
+    const scanAuthType = remoteScanAuthType
+    if (scanAuthType === 'password' && !remoteScanPassword.trim()) {
+      setToastMessage({ type: 'error', text: 'Enter the SSH password for the scan host.' })
+      return
+    }
+    if (scanAuthType === 'key' && !remoteScanPrivateKey.trim()) {
+      setToastMessage({ type: 'error', text: 'Paste the SSH private key for the scan host.' })
+      return
+    }
+
+    const envCredentialType = remoteEnvAuthType || scanAuthType
+    const envPayload = useSeparateEnvHost
+      ? {
+          envHost: remoteEnvHost.trim() || undefined,
+          envPort: remoteEnvPort.trim() || undefined,
+          envUsername: remoteEnvUsername.trim() || undefined,
+          envAuthType: remoteEnvAuthType || undefined,
+          envPassword: envCredentialType === 'password' ? (remoteEnvPassword.trim() || undefined) : undefined,
+          envPrivateKey: envCredentialType === 'key' ? (remoteEnvPrivateKey.trim() || undefined) : undefined,
+        }
+      : {}
+
+    setIsRemoteBootstrapping(true)
+    try {
+      const data = await controlServer.bootstrapArrRemote({
+        host: scanHost,
+        port: scanPort,
+        username: scanUsername,
+        authType: scanAuthType,
+        password: scanAuthType === 'password' ? remoteScanPassword : undefined,
+        privateKey: scanAuthType === 'key' ? remoteScanPrivateKey : undefined,
+        envPath: remoteEnvPath.trim(),
+        ...envPayload,
+      })
+
+      if (!data.success) {
+        throw new Error(data.error || 'Remote bootstrap failed')
+      }
+
+      const count = Object.keys(data.keys || {}).length
+      setToastMessage({
+        type: 'success',
+        text:
+          count > 0
+            ? `Updated ${count} keys in ${data.env?.host || scanHost}:${data.env?.path || remoteEnvPath.trim()}.`
+            : 'No keys were found. Make sure your containers are running and initialized.',
+      })
+      setIsRemoteArrOpen(false)
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: `Remote bootstrap failed: ${error.message}` })
+    } finally {
+      setIsRemoteBootstrapping(false)
     }
   }
 
@@ -613,19 +752,210 @@ export function SettingsPage() {
                 <p className="text-sm font-medium">Capture API Keys</p>
                 <p className="text-xs text-muted-foreground">Extracts keys from config.xml inside running containers</p>
               </div>
-              <Button
-                onClick={handleBootstrapArr}
-                className="gap-2 bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 px-6"
-                disabled={isBootstrapping || !serverOnline}
-              >
-                {isBootstrapping ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                {isBootstrapping ? 'Scanning...' : 'Bootstrap All Keys'}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <Button
+                  onClick={handleBootstrapArr}
+                  className="gap-2 bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 px-6 flex-1"
+                  disabled={isBootstrapping || !serverOnline}
+                >
+                  {isBootstrapping ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  {isBootstrapping ? 'Scanning...' : 'Local'}
+                </Button>
+                <Button
+                  onClick={() => setIsRemoteArrOpen(true)}
+                  variant="outline"
+                  className="gap-2 px-6 flex-1"
+                  disabled={!serverOnline}
+                >
+                  <Key className="w-4 h-4" />
+                  Remote
+                </Button>
+              </div>
             </div>
+
+            <Dialog open={isRemoteArrOpen} onOpenChange={setIsRemoteArrOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Remote Arr Key Bootstrap</DialogTitle>
+                  <DialogDescription>
+                    Extract API keys from your remote *arr containers and update a remote .env file.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Scan host</p>
+                      <input
+                        value={remoteScanHost}
+                        onChange={(e) => setRemoteScanHost(e.target.value)}
+                        placeholder="e.g. 192.168.1.50"
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Port</p>
+                      <input
+                        value={remoteScanPort}
+                        onChange={(e) => setRemoteScanPort(e.target.value)}
+                        placeholder="22"
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Username</p>
+                      <input
+                        value={remoteScanUsername}
+                        onChange={(e) => setRemoteScanUsername(e.target.value)}
+                        placeholder="e.g. ubuntu"
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Auth</p>
+                      <select
+                        value={remoteScanAuthType}
+                        onChange={(e) => setRemoteScanAuthType(e.target.value as 'password' | 'key')}
+                        aria-label="Scan host authentication type"
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      >
+                        <option value="password">Password</option>
+                        <option value="key">SSH Key</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {remoteScanAuthType === 'password' ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Password</p>
+                      <input
+                        value={remoteScanPassword}
+                        onChange={(e) => setRemoteScanPassword(e.target.value)}
+                        placeholder="SSH password"
+                        type="password"
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Private key</p>
+                      <textarea
+                        value={remoteScanPrivateKey}
+                        onChange={(e) => setRemoteScanPrivateKey(e.target.value)}
+                        placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                        rows={6}
+                        className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Remote .env path</p>
+                    <input
+                      value={remoteEnvPath}
+                      onChange={(e) => setRemoteEnvPath(e.target.value)}
+                      placeholder="~/media-stack/.env"
+                      className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={useSeparateEnvHost}
+                      onChange={(e) => setUseSeparateEnvHost(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Use a different host for the .env file
+                  </label>
+
+                  {useSeparateEnvHost && (
+                    <div className="rounded-2xl border border-border p-4 bg-card/60 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env host</p>
+                          <input
+                            value={remoteEnvHost}
+                            onChange={(e) => setRemoteEnvHost(e.target.value)}
+                            placeholder="e.g. 10.0.0.10"
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env port</p>
+                          <input
+                            value={remoteEnvPort}
+                            onChange={(e) => setRemoteEnvPort(e.target.value)}
+                            placeholder={remoteScanPort || '22'}
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env username</p>
+                          <input
+                            value={remoteEnvUsername}
+                            onChange={(e) => setRemoteEnvUsername(e.target.value)}
+                            placeholder={remoteScanUsername || 'e.g. ubuntu'}
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env auth</p>
+                          <select
+                            value={remoteEnvAuthType}
+                            onChange={(e) => setRemoteEnvAuthType(e.target.value as 'password' | 'key' | '')}
+                            aria-label="Env host authentication type"
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          >
+                            <option value="">Same as scan host</option>
+                            <option value="password">Password</option>
+                            <option value="key">SSH Key</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {(remoteEnvAuthType || remoteScanAuthType) === 'password' ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env password</p>
+                          <input
+                            value={remoteEnvPassword}
+                            onChange={(e) => setRemoteEnvPassword(e.target.value)}
+                            placeholder="SSH password"
+                            type="password"
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Env private key</p>
+                          <textarea
+                            value={remoteEnvPrivateKey}
+                            onChange={(e) => setRemoteEnvPrivateKey(e.target.value)}
+                            placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                            rows={6}
+                            className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setIsRemoteArrOpen(false)} disabled={isRemoteBootstrapping}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleBootstrapArrRemote} disabled={isRemoteBootstrapping || !serverOnline} className="gap-2">
+                    {isRemoteBootstrapping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {isRemoteBootstrapping ? 'Updating...' : 'Bootstrap Remote Keys'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="text-xs text-muted-foreground text-center">

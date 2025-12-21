@@ -4,7 +4,8 @@ import path from 'path';
 import { spawn } from 'child_process';
 import os from 'os';
 import { PROJECT_ROOT } from '../utils/env.js';
-import { RemoteDeployRequest } from '../types/index.js';
+import { RemoteArrBootstrapRequest, RemoteDeployRequest } from '../types/index.js';
+import { ARR_SERVICES } from '../services/arrService.js';
 
 const COMPOSE_FILE = path.join(PROJECT_ROOT, 'docker-compose.yml');
 
@@ -26,6 +27,17 @@ const sanitizeRemotePath = (input: any) => {
     const candidate = typeof input === 'string' && input.trim().length ? input.trim() : fallbackPath;
     if (!/^[-@./A-Za-z0-9_~]+$/.test(candidate)) {
         throw new Error('Invalid deploy path. Use only letters, numbers, dashes, dots, slashes, underscores, and ~');
+    }
+    return candidate;
+};
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const sanitizeRemoteFilePath = (input: any) => {
+    const fallbackPath = '~/media-stack/.env';
+    const candidate = typeof input === 'string' && input.trim().length ? input.trim() : fallbackPath;
+    if (!/^[-@./A-Za-z0-9_~]+$/.test(candidate)) {
+        throw new Error('Invalid path. Use only letters, numbers, dashes, dots, slashes, underscores, and ~');
     }
     return candidate;
 };
@@ -669,6 +681,174 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 { lockKey, host, username, released: !activeDeployLocks.has(lockKey) },
                 '[remote-deploy] lock released'
             );
+        }
+    });
+
+    fastify.post<{ Body: RemoteArrBootstrapRequest }>('/api/arr/bootstrap-remote', async (request, reply) => {
+        const {
+            host,
+            port = 22,
+            username,
+            privateKey,
+            password,
+            envHost,
+            envPort,
+            envUsername,
+            envAuthType,
+            envPrivateKey,
+            envPassword,
+            envPath,
+        } = request.body;
+
+        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+
+        if (!host || !username) {
+            fastify.log.warn({ host, username }, '[arr/bootstrap-remote] validation failed: missing host/username');
+            return reply.status(400).send({ success: false, error: 'Host and username are required' });
+        }
+
+        if (authType === 'key') {
+            if (!privateKey) {
+                return reply.status(400).send({ success: false, error: 'Private key is required for SSH key authentication' });
+            }
+        } else if (authType === 'password') {
+            if (!password) {
+                return reply.status(400).send({ success: false, error: 'Password is required for password authentication' });
+            }
+        } else {
+            return reply.status(400).send({ success: false, error: 'Invalid authentication type. Must be "key" or "password"' });
+        }
+
+        let safeEnvPath: string;
+        try {
+            safeEnvPath = sanitizeRemoteFilePath(envPath);
+        } catch (error: any) {
+            return reply.status(400).send({ success: false, error: error.message });
+        }
+
+        const scanConfig: SSHConfig = {
+            host,
+            port: typeof port === 'string' ? parseInt(port) : port,
+            username,
+            authType,
+            privateKey,
+            password,
+        };
+
+        const resolvedEnvHost = (envHost || '').trim() || scanConfig.host;
+        const resolvedEnvPort = typeof (envPort as any) === 'string' ? parseInt(envPort as any) : (envPort || scanConfig.port);
+        const resolvedEnvUsername = (envUsername || '').trim() || scanConfig.username;
+        const resolvedEnvAuthType: 'key' | 'password' = envAuthType || scanConfig.authType;
+        const resolvedEnvPrivateKey = typeof envPrivateKey === 'string' && envPrivateKey.trim() ? envPrivateKey : scanConfig.privateKey;
+        const resolvedEnvPassword = typeof envPassword === 'string' && envPassword.trim() ? envPassword : scanConfig.password;
+
+        if (resolvedEnvAuthType === 'key') {
+            if (!resolvedEnvPrivateKey) {
+                return reply.status(400).send({ success: false, error: 'Private key is required for SSH key authentication (env host)' });
+            }
+        } else if (resolvedEnvAuthType === 'password') {
+            if (!resolvedEnvPassword) {
+                return reply.status(400).send({ success: false, error: 'Password is required for password authentication (env host)' });
+            }
+        } else {
+            return reply.status(400).send({ success: false, error: 'Invalid authentication type for env host. Must be "key" or "password"' });
+        }
+
+        const envConfig: SSHConfig = {
+            host: resolvedEnvHost,
+            port: resolvedEnvPort,
+            username: resolvedEnvUsername,
+            authType: resolvedEnvAuthType,
+            privateKey: resolvedEnvPrivateKey,
+            password: resolvedEnvPassword,
+        };
+
+        let tmpDir: string | null = null;
+        try {
+            const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
+            if (connectCheck.code !== 0) {
+                const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
+                return reply.status(502).send({ success: false, error: `SSH connection failed: ${detail || 'unknown error'}` });
+            }
+
+            const dockerInfo = await execSSH(scanConfig, 'docker info');
+            if (dockerInfo.code !== 0) {
+                const detail = cleanRemoteOutput(dockerInfo.stderr || dockerInfo.stdout);
+                if (isDockerPermissionError(detail)) {
+                    return reply.status(502).send({ success: false, error: 'Docker is installed but permission denied to the Docker daemon on scan host.' });
+                }
+                if (isDockerDaemonUnavailableError(detail)) {
+                    return reply.status(502).send({ success: false, error: 'Docker is installed but the Docker daemon is not reachable on scan host.' });
+                }
+                return reply.status(502).send({ success: false, error: `Docker check failed on scan host: ${detail || 'unknown error'}` });
+            }
+
+            const keys: Record<string, string> = {};
+            for (const service of ARR_SERVICES) {
+                const id = service.id;
+                const cmd = `docker exec ${id} sed -n 's:.*<ApiKey>\\(.*\\)</ApiKey>.*:\\1:p' /config/config.xml`;
+                const result = await execSSH(scanConfig, cmd);
+                if (result.code !== 0) continue;
+                const key = (result.stdout || '').trim();
+                if (!key) continue;
+                keys[service.envKey] = key.replace(/\r?\n/g, '');
+            }
+
+            if (Object.keys(keys).length === 0) {
+                return {
+                    success: true,
+                    keys: {},
+                    env: { host: envConfig.host, path: safeEnvPath },
+                    scan: { host: scanConfig.host },
+                };
+            }
+
+            const envRead = await execSSH(envConfig, `test -f ${safeEnvPath} && cat ${safeEnvPath} || true`);
+            if (envRead.code !== 0) {
+                const detail = cleanRemoteOutput(envRead.stderr || envRead.stdout);
+                return reply.status(502).send({ success: false, error: `Failed to read remote env file: ${detail || 'unknown error'}` });
+            }
+
+            const original = (envRead.stdout || '').replace(/\r\n/g, '\n');
+            let updated = original;
+            for (const [envKey, envValue] of Object.entries(keys)) {
+                const line = `${envKey}=${envValue}`;
+                const re = new RegExp(`^${escapeRegExp(envKey)}=.*$`, 'm');
+                if (re.test(updated)) {
+                    updated = updated.replace(re, line);
+                } else {
+                    updated = updated.replace(/\s*$/, '');
+                    updated = `${updated}${updated.length ? '\n' : ''}${line}\n`;
+                }
+            }
+            if (!updated.endsWith('\n')) updated += '\n';
+
+            tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mediastack-arr-'));
+            const tmpFile = path.join(tmpDir, '.env');
+            await fs.promises.writeFile(tmpFile, updated, 'utf-8');
+
+            const upload = await scpFile(envConfig, tmpFile, safeEnvPath);
+            if (upload.code !== 0) {
+                const detail = cleanRemoteOutput(upload.stderr || upload.stdout);
+                return reply.status(502).send({ success: false, error: `Failed to upload remote env file: ${detail || 'unknown error'}` });
+            }
+
+            return {
+                success: true,
+                keys,
+                env: { host: envConfig.host, path: safeEnvPath },
+                scan: { host: scanConfig.host },
+            };
+        } catch (error: any) {
+            fastify.log.error({ err: error, host, username }, '[arr/bootstrap-remote] failed');
+            return reply.status(500).send({ success: false, error: cleanRemoteOutput(error?.message || '') || 'Remote bootstrap failed' });
+        } finally {
+            if (tmpDir) {
+                try {
+                    await fs.promises.rm(tmpDir, { recursive: true, force: true });
+                } catch {
+                }
+            }
         }
     });
 

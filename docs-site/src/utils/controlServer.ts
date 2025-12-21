@@ -160,5 +160,43 @@ export const controlServer = {
             log('error', 'controlServer.bootstrapArr failed', err)
             throw new Error(getErrorMessage(err))
         }
-    }
+    },
+
+    bootstrapArrRemote: async (payload: {
+        host: string
+        port?: number | string
+        username: string
+        authType?: 'key' | 'password'
+        privateKey?: string
+        password?: string
+        envHost?: string
+        envPort?: number | string
+        envUsername?: string
+        envAuthType?: 'key' | 'password'
+        envPrivateKey?: string
+        envPassword?: string
+        envPath?: string
+    }): Promise<{
+        success: boolean
+        keys: Record<string, string>
+        env?: { host: string; path: string }
+        scan?: { host: string }
+        error?: string
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/arr/bootstrap-remote'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+                body: JSON.stringify(payload),
+            })
+            if (!res.ok) {
+                const body = await res.text().catch(() => '')
+                throw new Error(`Failed to bootstrap Arr keys remotely (HTTP ${res.status}): ${body || res.statusText}`)
+            }
+            return res.json()
+        } catch (err) {
+            log('error', 'controlServer.bootstrapArrRemote failed', err)
+            throw new Error(getErrorMessage(err))
+        }
+    },
 };
