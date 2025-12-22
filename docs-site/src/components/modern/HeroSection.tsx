@@ -134,16 +134,6 @@ export function HeroSection() {
             {/* Badges and Logo */}
             <div className="flex flex-col items-center lg:items-start gap-6 mb-8">
               <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, type: 'spring' }}
-                className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-gradient-to-br from-slate-900/70 via-black/70 to-slate-900/70 border border-border p-2 shadow-[0_20px_80px_-30px_rgba(16,185,129,0.5)] backdrop-blur-sm overflow-hidden relative"
-              >
-                <div className="absolute inset-2 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-emerald-400/15 to-lime-400/20 blur-xl" />
-                <img src="/media-stack-logo.png" alt="Media Stack Logo" className="relative w-full h-full object-contain drop-shadow-[0_10px_40px_rgba(16,185,129,0.55)]" />
-              </motion.div>
-
-              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
