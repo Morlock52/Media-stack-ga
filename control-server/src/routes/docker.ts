@@ -191,4 +191,19 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             });
         }
     });
+
+    // Compose services (from docker compose config --services)
+    fastify.get('/api/compose/services', async (_request, reply) => {
+        try {
+            const output = await runCommand('docker', ['compose', 'config', '--services']);
+            const services = output
+                .split('\n')
+                .map((s) => s.trim())
+                .filter(Boolean);
+            return { services };
+        } catch (error: any) {
+            fastify.log.error({ err: error }, '[compose-services] Failed to list compose services');
+            reply.status(500).send({ error: error?.message || 'Failed to list compose services' });
+        }
+    });
 }

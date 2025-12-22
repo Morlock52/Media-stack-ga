@@ -170,6 +170,22 @@ export const controlServer = {
         }
     },
 
+    composeServices: async (): Promise<{ services: string[] }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/compose/services'), {
+                headers: { ...controlServerAuthHeaders() },
+            })
+            if (!res.ok) {
+                const body = await res.text().catch(() => '')
+                throw new Error(`Failed to list compose services (HTTP ${res.status}): ${body || res.statusText}`)
+            }
+            return res.json()
+        } catch (err) {
+            log('error', 'controlServer.composeServices failed', err)
+            throw new Error(getErrorMessage(err))
+        }
+    },
+
     getAgents: async (): Promise<{ agents: Agent[] }> => {
         try {
             const res = await fetch(buildControlServerUrl('/api/agents'), {

@@ -26,23 +26,32 @@ export function StatusBadge() {
             try {
                 const headers = { ...controlServerAuthHeaders() }
 
-                // Prefer derived endpoint when available.
-                const snapshotRes = await fetch(buildControlServerUrl('/api/health-snapshot'), { headers })
-                if (snapshotRes.ok) {
-                    const snapshot: HealthSnapshot = await snapshotRes.json()
-                    const total = typeof snapshot.containerCount === 'number' ? snapshot.containerCount : 0
-                    const running = typeof snapshot.runningCount === 'number' ? snapshot.runningCount : 0
-                    setStats({ total, running, loading: false, controlServerOnline: true })
-                    setLastChecked(new Date())
-                    return
+                // Compose service list (authoritative total)
+                let composeServices: string[] = []
+                try {
+                    const svcRes = await fetch(buildControlServerUrl('/api/compose/services'), { headers })
+                    if (svcRes.ok) {
+                        const data = await svcRes.json()
+                        composeServices = Array.isArray(data.services) ? data.services : []
+                    }
+                } catch {
+                    // ignore, fall back to other signals
                 }
 
-                const res = await fetch(buildControlServerUrl('/api/containers'), { headers })
-                if (!res.ok) throw new Error('Failed to fetch')
-                const data: Container[] = await res.json()
+                // Current containers
+                const containersRes = await fetch(buildControlServerUrl('/api/containers'), { headers })
+                if (!containersRes.ok) throw new Error('Failed to fetch containers')
+                const containers: Container[] = await containersRes.json()
 
-                const running = data.filter((c) => c.state === 'running').length
-                setStats({ total: data.length, running, loading: false, controlServerOnline: true })
+                const isMatch = (service: string, name: string) =>
+                    name === service || name.endsWith(`-${service}`) || name.endsWith(`_${service}_1`) || name.includes(`_${service}`)
+
+                const total = composeServices.length > 0 ? composeServices.length : containers.length
+                const running = composeServices.length > 0
+                    ? composeServices.reduce((acc, svc) => acc + (containers.some((c) => c.state === 'running' && isMatch(svc, c.name)) ? 1 : 0), 0)
+                    : containers.filter((c) => c.state === 'running').length
+
+                setStats({ total, running, loading: false, controlServerOnline: true })
                 setLastChecked(new Date())
             } catch {
                 try {
