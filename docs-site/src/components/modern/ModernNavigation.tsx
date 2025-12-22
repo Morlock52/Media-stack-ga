@@ -110,12 +110,12 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                   title={`Navigate to ${item.label}`}
                 >
                   {item.label === 'Home' ? (
-                    <span className="flex flex-col items-center leading-none">
+                    <span className="relative inline-flex items-center">
                       <span>{item.label}</span>
                       <img
                         src="/media-stack-logo.png"
                         alt="Home"
-                        className="w-5 h-5 mt-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 w-28 h-28 object-contain opacity-90 drop-shadow-[0_18px_55px_rgba(16,185,129,0.55)] group-hover:opacity-100 transition-opacity"
                       />
                     </span>
                   ) : (
