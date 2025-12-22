@@ -1,6 +1,13 @@
 #!/bin/bash
 # Media Stack Doctor - Diagnostic Tool
 
+RUN_POST_DEPLOY=false
+for arg in "$@"; do
+    if [[ "$arg" == "--post-deploy" ]]; then
+        RUN_POST_DEPLOY=true
+    fi
+done
+
 echo "🏥 Running Media Stack Doctor..."
 echo "================================="
 
@@ -56,6 +63,17 @@ if docker ps | grep -q gluetun; then
     echo "🛡️  Gluetun VPN container is running"
 else
     echo "ℹ️  Gluetun VPN container is NOT running"
+fi
+
+echo ""
+echo "🔁 Tip: deeper post-deploy checks"
+echo "Run: ./scripts/post_deploy_check.sh"
+echo "Or:  ./scripts/doctor.sh --post-deploy"
+
+if [[ "$RUN_POST_DEPLOY" == "true" ]]; then
+    echo ""
+    echo "🧪 Running post-deploy checks..."
+    bash ./scripts/post_deploy_check.sh
 fi
 
 echo "================================="

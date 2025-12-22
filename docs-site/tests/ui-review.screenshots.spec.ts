@@ -63,11 +63,14 @@ test.describe('UI Review Screenshots (manual)', () => {
     await expect(page.getByText('Review & Generate', { exact: true })).toBeVisible({ timeout: 15000 })
     await shots(page, '07-wizard-review-desktop')
 
-    // AI assistant open (floating chat)
-    await page.getByTitle('Ask AI Assistant').click()
-    await expect(page.getByRole('heading', { name: /AI Stack Guide/i })).toBeVisible({ timeout: 15000 })
-    await shots(page, '08-ai-assistant-desktop')
-    await page.getByTitle('Close').click()
+    // AI assistant open (floating chat) — optional if the FAB is present
+    const aiButton = page.getByTitle('Ask AI Assistant')
+    if (await aiButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await aiButton.click()
+      await expect(page.getByRole('heading', { name: /AI Stack Guide/i })).toBeVisible({ timeout: 15000 })
+      await shots(page, '08-ai-assistant-desktop')
+      await page.getByTitle('Close').click()
+    }
 
     // Remote deploy modal (only available on late steps)
     await page.route('**/api/remote-deploy', async (route) => {

@@ -48,7 +48,7 @@ python docs/scripts/render_diagrams.py
 KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ```
 
-> **Last updated:** December 21, 2025
+> **Last updated:** December 22, 2025
 
 ## ✨ Screenshots (Matrix HUD)
 
@@ -87,7 +87,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 
 ## 🔎 Table of contents
 
-- [**Start Here — Pick Your Setup Path**](docs/START_HERE.md) ⬅️ New? Start here!
+- [**Start Here — Pick Your Setup Path**](docs/getting-started/START_HERE.md) ⬅️ New? Start here!
 - [Screenshots](#-screenshots-current)
 - [TL;DR](#-tldr)
 - [Stack modes (quick map)](#-stack-modes-quick-map)
@@ -96,6 +96,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 - [Local network install (LAN only)](#-local-network-install-lan-only)
 - [Remote access (SSO + Cloudflare Tunnel)](#-remote-access-sso--cloudflare-tunnel)
 - [Remote Deploy (SSH)](#-remote-deploy-ssh)
+- [Docker + SSH control plane](#-docker--ssh-control-plane)
 - [Access after remote deploy](#-access-after-remote-deploy)
 - [Access modes (LAN vs Cloudflare)](#-access-modes-lan-vs-cloudflare)
 - [Highlights](#-highlights)
@@ -289,6 +290,18 @@ Remote deploy lets the wizard upload your generated `docker-compose.yml` + `.env
 
 ---
 
+## 🛰 Docker + SSH control plane
+
+Deployment and monitoring are intentionally limited to **Docker** + **SSH** to keep the footprint small and auditable.
+
+- Deploy to any host reachable over SSH: `ssh <user>@<host> 'cd <deployPath> && docker compose up -d'` (add profiles for auth/tunnel as needed).
+- Monitor health from your terminal: `ssh <host> 'cd <deployPath> && docker compose ps'` and `ssh <host> 'cd <deployPath> && docker compose logs --tail=200'`.
+- Run post-deploy validation: `ssh <host> 'cd <deployPath> && ./scripts/post_deploy_check.sh'` to verify VPN, Authelia, and Cloudflare tunnel.
+- Launch the wizard via Docker only: `docker compose -f docker-compose.wizard.yml up --build -d` (use `docker-compose.wizard.secure.yml` for hardened defaults).
+- Prefer SSH keys; if passwords are required for remote deploy, make sure `sshpass` is present in the control-server container.
+
+---
+
 ## 🌐 Access after remote deploy
 
 The deploy does **not** create DNS records or Cloudflare routes. You still need a way to reach your services:
@@ -385,6 +398,13 @@ Media Stack includes a comprehensive documentation system that goes beyond stati
 <p align="center">
   <img src="docs/images/docs.png" alt="Docs page" width="1100" />
 </p>
+
+### Docs & screenshots
+
+- Refresh UI screenshots with Playwright: `cd docs-site && UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1`.
+- Docker-only capture (no local Node needed): `docker compose -f docker-compose.wizard.yml run --rm wizard-web bash -lc "UI_REVIEW=1 npx playwright test tests/ui-review.screenshots.spec.ts --workers=1"`.
+- Updated PNGs land in `docs/images/app/`; commit them with doc changes for release notes.
+- To capture on a remote host, run the same commands over SSH once the repo is synced (`ssh user@host 'cd <path> && ...'`).
 
 ---
 
@@ -627,6 +647,8 @@ npm run stress
 - `docker compose logs -f cloudflared`
 - `docker compose logs -f authelia`
 - `docker compose logs -f gluetun`
+- `./scripts/doctor.sh` (local diagnostics)
+- `./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel sanity — see `docs/operations/POST_DEPLOY_CHECKS.md`)
 
 ---
 

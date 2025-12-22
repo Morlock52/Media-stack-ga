@@ -4,11 +4,13 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  Copy,
   Key,
   Loader2,
   RefreshCw,
   Save,
   Shield,
+  Terminal,
   Trash2,
 } from 'lucide-react'
 import {
@@ -83,6 +85,8 @@ export function SettingsPage() {
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
   const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
 
+  const startControlServerCommand = 'npm run dev -w control-server'
+
   const setToastMessage = (update: ToastState) => {
     setToast(update)
     if (update) {
@@ -95,6 +99,31 @@ export function SettingsPage() {
     await refresh()
     setPendingAction('idle')
   }, [refresh])
+
+  const handleRestartSystem = useCallback(async () => {
+    if (!serverOnline) {
+      setToastMessage({
+        type: 'info',
+        text: 'Control server is offline. Start it first, then retry restarting the server.',
+      })
+      return
+    }
+
+    setPendingAction('checking')
+    try {
+      const data = await controlServer.systemRestart()
+      if (data?.success !== true) {
+        throw new Error(data?.error || 'Restart request failed')
+      }
+      setToastMessage({ type: 'success', text: 'Restart requested. Services may take a moment to come back online.' })
+    } catch (error: any) {
+      const message = error?.message || 'Failed to restart the server'
+      setToastMessage({ type: 'error', text: message })
+    } finally {
+      setPendingAction('idle')
+      await refresh()
+    }
+  }, [refresh, serverOnline])
 
   useEffect(() => {
     fetchStatus()
@@ -409,6 +438,32 @@ export function SettingsPage() {
   }, [serverOnline])
 
   const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle'
+  const healthUrl = buildControlServerUrl('/api/health')
+
+  const copyToClipboard = async (value: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+        return true
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const el = document.createElement('textarea')
+      el.value = value
+      el.style.position = 'fixed'
+      el.style.left = '-9999px'
+      document.body.appendChild(el)
+      el.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(el)
+      return ok
+    } catch {
+      return false
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
@@ -528,6 +583,32 @@ export function SettingsPage() {
                 <Trash2 className="w-4 h-4" />
                 Clear
               </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  const ok = await copyToClipboard(startControlServerCommand)
+                  setToastMessage({
+                    type: ok ? 'success' : 'error',
+                    text: ok ? 'Start command copied to clipboard.' : 'Failed to copy start command.',
+                  })
+                }}
+                className="gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                Copy start command
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  window.open(healthUrl, '_blank', 'noopener,noreferrer')
+                }}
+                className="gap-2"
+              >
+                <Terminal className="w-4 h-4" />
+                Open /api/health
+              </Button>
             </div>
           </div>
 
@@ -537,6 +618,15 @@ export function SettingsPage() {
                 {statusPill.label}
               </div>
               <button
+                type="button"
+                onClick={handleRestartSystem}
+                className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={pendingAction === 'checking'}
+              >
+                <RefreshCw className="w-3 h-3" /> Restart server
+              </button>
+              <button
+                type="button"
                 onClick={fetchStatus}
                 className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                 disabled={pendingAction === 'checking'}

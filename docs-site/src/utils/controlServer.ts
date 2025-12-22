@@ -23,13 +23,15 @@ const getDefaultControlServerBaseUrl = (): string => {
     const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
     const portNum = parseInt(port || '', 10)
 
-    // Vite preview defaults to 4173 and does not apply server.proxy.
-    // In that case, default to the local control-server.
-    if (isLoopback && Number.isFinite(portNum) && portNum >= 4173 && portNum <= 4199) {
-        return 'http://127.0.0.1:3001'
-    }
+    if (!isLoopback) return ''
 
-    return ''
+    // For any loopback-hosted UI (including IDE browser preview proxy ports),
+    // default API calls to the local control-server.
+    // This avoids sending /api requests to the UI origin, which commonly returns
+    // SPA HTML with a 200 and can break JSON parsing in startup hooks.
+    if (!Number.isFinite(portNum)) return 'http://127.0.0.1:3001'
+    if (portNum === 3001) return ''
+    return 'http://127.0.0.1:3001'
 }
 
 const CONTROL_SERVER_URL_STORAGE_KEY = 'mediastack.controlServerUrl'
@@ -147,6 +149,23 @@ export const controlServer = {
             return res.json();
         } catch (err) {
             log('error', 'controlServer.serviceAction failed', { serviceName, action, error: err })
+            throw new Error(getErrorMessage(err))
+        }
+    },
+
+    systemRestart: async () => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/system/restart'), {
+                method: 'POST',
+                headers: { ...controlServerAuthHeaders() },
+            })
+            if (!res.ok) {
+                const body = await res.text().catch(() => '')
+                throw new Error(`Failed to restart system (HTTP ${res.status}): ${body || res.statusText}`)
+            }
+            return res.json()
+        } catch (err) {
+            log('error', 'controlServer.systemRestart failed', err)
             throw new Error(getErrorMessage(err))
         }
     },

@@ -502,6 +502,37 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // Status endpoints used by stress/load checks
+    fastify.get('/api/settings/openai-key/status', async (_request, _reply) => {
+        const key = getOpenAIKey();
+        return {
+            hasKey: Boolean(key && key.length > 0),
+            model: OPENAI_MODEL,
+        };
+    });
+
+    fastify.get('/api/settings/tts/status', async (_request, _reply) => {
+        const provider = (TTS_PROVIDER || 'openai').toLowerCase();
+        const openaiKey = getOpenAIKey();
+        const elevenKey = getElevenLabsKey();
+
+        if (provider === 'elevenlabs') {
+            return {
+                provider: 'elevenlabs',
+                hasKey: Boolean(elevenKey && elevenKey.length > 0),
+                voiceId: ELEVENLABS_VOICE_ID || null,
+                model: ELEVENLABS_TTS_MODEL,
+            };
+        }
+
+        return {
+            provider: 'openai',
+            hasKey: Boolean(openaiKey && openaiKey.length > 0),
+            model: OPENAI_TTS_MODEL,
+            voice: OPENAI_TTS_VOICE || null,
+        };
+    });
+
     // Wizard AI helper: generate service config suggestions
     fastify.post<{
         Body: {

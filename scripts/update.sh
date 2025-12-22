@@ -31,3 +31,9 @@ else
 fi
 
 echo "✅ Update Complete!"
+
+if [[ "${RUN_POST_DEPLOY_CHECK:-0}" == "1" ]]; then
+  echo ""
+  echo "🧪 Running post-deploy sanity checks..."
+  bash ./scripts/post_deploy_check.sh
+fi

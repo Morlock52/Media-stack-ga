@@ -106,6 +106,15 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         }
     });
 
+    fastify.post('/api/system/restart', async (_request, reply) => {
+        try {
+            await runCommand('docker', ['compose', 'restart']);
+            return { success: true, message: 'System restarted successfully' };
+        } catch (error: any) {
+            reply.status(500).send({ error: error.message });
+        }
+    });
+
     // Health Snapshot
     fastify.get('/api/health-snapshot', async (request, reply) => {
         try {

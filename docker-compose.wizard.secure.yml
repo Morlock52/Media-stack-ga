@@ -56,7 +56,7 @@ services:
     networks:
       - wizard-net
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2375/_ping"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2375/_ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -79,7 +79,7 @@ services:
     networks:
       - wizard-net
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:80"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -87,8 +87,8 @@ services:
 
   wizard-api:
     build:
-      context: ./control-server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: control-server/Dockerfile
       args:
         OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     container_name: media-stack-wizard-api
@@ -98,7 +98,8 @@ services:
       - PORT=3001
       - PROJECT_ROOT=/project
       - CONTROL_SERVER_HOST=0.0.0.0
-      - CONTROL_SERVER_CORS_ORIGINS=http://localhost:3002
+      - CONTROL_SERVER_ALLOW_INSECURE_NO_TOKEN=1
+      - CONTROL_SERVER_CORS_ORIGINS=http://localhost:3002,http://127.0.0.1:3002
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       # Use socket proxy instead of direct socket access
       - DOCKER_HOST=tcp://socket-proxy:2375
@@ -112,7 +113,7 @@ services:
     networks:
       - wizard-net
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3001/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

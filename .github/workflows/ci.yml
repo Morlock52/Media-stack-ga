@@ -67,7 +67,7 @@ jobs:
 
       - name: Build wizard-api image for scanning
         run: |
-          docker build -t wizard-api:scan -f control-server/Dockerfile control-server/
+          docker build -t wizard-api:scan -f control-server/Dockerfile .
 
       - name: Run Trivy vulnerability scanner on wizard-api
         uses: aquasecurity/trivy-action@master

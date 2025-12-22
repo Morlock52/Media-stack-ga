@@ -88,6 +88,13 @@ docker-compose pull
 docker-compose up -d
 ```
 
+### Post‑deploy sanity checks (recommended)
+```bash
+# VPN/Auth/Tunnel verification after updates
+bash ./scripts/post_deploy_check.sh
+```
+See `docs/operations/POST_DEPLOY_CHECKS.md` for details and overrides.
+
 ## 🔗 Service URLs
 
 After setup, access services using the subdomains defined in `.env`:

@@ -10,24 +10,27 @@ WORKDIR /app
 ENV VITE_OPENAI_MODEL=${VITE_OPENAI_MODEL}
 ENV VITE_CONTROL_SERVER_URL=${VITE_CONTROL_SERVER_URL}
 ENV VITE_CONTROL_SERVER_TOKEN=${VITE_CONTROL_SERVER_TOKEN}
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
-# Copy package info first to leverage cache with BuildKit
-COPY docs-site/package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+# Copy package manifests first to leverage cache with BuildKit (npm workspaces)
+COPY package.json package-lock.json ./
+COPY control-server/package.json control-server/package.json
+COPY docs-site/package.json docs-site/package.json
+RUN --mount=type=cache,target=/root/.npm npm ci -w docs-site
 
-COPY docs-site/ .
+COPY docs-site/ docs-site/
 COPY docker-compose.yml ./docker-compose.yml
 # The UI imports this file via `../../../docker-compose.yml?raw` from under `src/components/`,
 # which resolves to `/docker-compose.yml` inside this build container.
 COPY docker-compose.yml /docker-compose.yml
-RUN npm run build
+RUN npm run build -w docs-site
 
 FROM nginx:alpine
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/docs-site/dist /usr/share/nginx/html
 COPY docs-site/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Add a healthcheck

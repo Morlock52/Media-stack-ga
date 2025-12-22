@@ -5,6 +5,8 @@ import { FastifyInstance } from 'fastify';
 const PORT = parseInt(process.env.PORT || '3001');
 const HOST = process.env.CONTROL_SERVER_HOST || '127.0.0.1';
 const TOKEN = (process.env.CONTROL_SERVER_TOKEN || '').trim();
+const ALLOW_INSECURE_NO_TOKEN =
+    ['1', 'true', 'yes'].includes(String(process.env.CONTROL_SERVER_ALLOW_INSECURE_NO_TOKEN || '').toLowerCase());
 
 // Security check: require token when binding to non-localhost addresses
 const isExposedHost = HOST === '0.0.0.0' || HOST === '::' || (!HOST.startsWith('127.') && HOST !== 'localhost');
@@ -55,8 +57,14 @@ const start = async () => {
 │    export CONTROL_SERVER_HOST=127.0.0.1                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
 `;
+        if (!ALLOW_INSECURE_NO_TOKEN) {
+            console.error(msg);
+            process.exit(1);
+        }
         console.error(msg);
-        process.exit(1);
+        console.error(
+            'Continuing because CONTROL_SERVER_ALLOW_INSECURE_NO_TOKEN is set. Only use this when the API is not exposed beyond localhost.',
+        );
     }
 
     try {

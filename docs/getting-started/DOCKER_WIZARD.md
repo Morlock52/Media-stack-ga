@@ -95,3 +95,4 @@ docker compose -f docker-compose.wizard.secure.yml down
 - **Port Conflicts**: Ensure ports 3002 and 3001 are free on your host.
 - **Docker Socket permissions**: If you see "permission denied" errors regarding the Docker socket, you may need to adjust the user in `docker-compose.wizard.yml` or run with proper privileges.
 - **Health Check Failures**: Both services have healthchecks. Use `docker compose ps` to verify containers are healthy before accessing the UI.
+- **Post‑deploy sanity**: After updates, run `bash ./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel quick checks). See `docs/operations/POST_DEPLOY_CHECKS.md`.

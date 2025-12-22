@@ -1,17 +1,22 @@
 # Media Stack Implementation & Verification Plan
 
+> For setup instructions, start with `docs/getting-started/START_HERE.md`.  
+> For the modernization roadmap, see `docs/PLAN_MODERNIZATION.md`.
+
 This plan outlines the review and verification steps for all functions (services) within the media stack project. The goal is to ensure all components are correctly configured, integrated, and operational.
 
 ## Prerequisites
 
 - Docker >= 20.10 and Docker Compose >= 1.29
-- A copy of the appropriate env template and matching compose file (e.g. `.env.fixed.template` + `docker-compose.fixed.yml`). Use the fixed profile for CI/QA:
+- Copy the env template and edit it:
   ```bash
-  cp .env.fixed.template .env
-  docker compose -f docker-compose.fixed.yml config
-  docker compose -f docker-compose.fixed.yml up -d
+  cp .env.example .env
   ```
-- A valid domain and Cloudflare account (for tunnel); see AGENTS.md for profile guidance.
+- Validate your compose config:
+  ```bash
+  docker compose config >/dev/null
+  ```
+- A valid domain + Cloudflare account are required only if you enable the `cloudflared` profile for remote access.
 
 ## User Review Required
 
@@ -193,6 +198,18 @@ Expected output: All containers should be in `Up` state.
 - **Gluetun -> qBittorrent**: Confirm the external IP inside qBittorrent is the VPN IP, not your ISP IP.
 - **Authelia + Cloudflare Tunnel**: Access each `*.yourdomain.com` hostname and verify you are prompted for SSO (with 2FA) and redirected back to the requested app after login.
 - **Homepage + Authelia**: Ensure the Homepage dashboard itself is protected by Authelia and loads only over HTTPS via Cloudflare Tunnel.
+
+## Stress testing (Docker + SSH only)
+
+Use the Dockerized k6 harness to stress the control server (health + settings endpoints). Run it locally or over SSH on the target host:
+
+```bash
+ssh <user>@<host> 'cd <deployPath> && TARGET_BASE=http://localhost:3001 DURATION=2m VUS=25 bash scripts/stress_control_server.sh'
+```
+
+- Adjust `TARGET_BASE` if the control server is behind a reverse proxy (e.g., `http://host.docker.internal:3001` when running on Docker Desktop).
+- The script uses `--network=host`; if host networking is unavailable, set `TARGET_BASE` to a reachable address and remove that flag.
+- Thresholds: `<1%` failures, p95 latency `<500ms`. Inspect the k6 summary for regressions.
 
 ---
 

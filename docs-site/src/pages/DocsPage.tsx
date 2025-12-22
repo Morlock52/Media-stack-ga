@@ -26,6 +26,7 @@ import {
     FlareSolverrGuide,
     RedisGuide,
     WatchtowerGuide,
+    PostDeployChecksGuide,
 } from '../components/docs'
 import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
@@ -143,6 +144,7 @@ export function DocsPage() {
                     {selectedAppId === 'flaresolverr' && <FlareSolverrGuide />}
                     {selectedAppId === 'redis' && <RedisGuide />}
                     {selectedAppId === 'watchtower' && <WatchtowerGuide />}
+                    {selectedAppId === 'post-deploy' && <PostDeployChecksGuide />}
                 </GuideModal>
 
                 {/* AI Assistant - Multi-Agent System */}

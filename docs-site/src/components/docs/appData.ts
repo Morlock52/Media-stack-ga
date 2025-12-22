@@ -55,6 +55,7 @@ export type AppId =
     | 'flaresolverr'
     | 'redis'
     | 'watchtower'
+    | 'post-deploy'
 
 export interface AppInfo {
     id: AppId
@@ -273,6 +274,15 @@ export const appCards: AppInfo[] = [
         icon: RefreshCw,
         difficulty: 'Easy',
         time: '5 min',
+    },
+    {
+        id: 'post-deploy',
+        name: 'Post‑Deploy Checks',
+        category: 'Maintenance',
+        description: 'One‑shot script to verify VPN, Auth, and Tunnel after updates.',
+        icon: ShieldCheck,
+        difficulty: 'Easy',
+        time: '2–3 min',
     },
     {
         id: 'overseerr',

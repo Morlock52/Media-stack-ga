@@ -1,0 +1,34 @@
+name: Post-Deploy Checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - "docker-compose.yml"
+      - "scripts/post_deploy_check.sh"
+      - ".github/workflows/post-deploy-check.yml"
+
+jobs:
+  sanity:
+    # This workflow is intended for a self-hosted runner on (or near) your Docker host.
+    # It requires docker socket access and outbound internet for tunnel checks.
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run post-deploy checks
+        env:
+          # Optional overrides (recommended). Configure as GitHub Actions Variables.
+          AUTHELIA_BASE: ${{ vars.AUTHELIA_BASE }}
+          TEST_HOST: ${{ vars.TEST_HOST }}
+          HEALTH_PATH: ${{ vars.HEALTH_PATH }}
+          # Defaults match docker-compose.yml; override if you changed container_name values.
+          GLUETUN_CONTAINER: gluetun
+          AUTHELIA_CONTAINER: authelia
+          CLOUDFLARED_CONTAINER: cloudflared
+          QBITTORRENT_CONTAINER: qbittorrent
+        run: |
+          bash ./scripts/post_deploy_check.sh
+

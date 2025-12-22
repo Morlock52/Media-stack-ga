@@ -183,8 +183,9 @@ Once your stack is running, you can:
    - **Domain/Tunnel:** `https://<service>.${DOMAIN}`
    - Add local `/etc/hosts` entries if you want subdomains without DNS
 2. **Run health checks:** `./scripts/doctor.sh`
-3. **Update containers:** `./scripts/update.sh`
-4. **View logs:** `docker compose logs -f <service_name>`
+3. **Run post‑deploy sanity checks (VPN/Auth/Tunnel):** `./scripts/post_deploy_check.sh` (see `docs/operations/POST_DEPLOY_CHECKS.md`)
+4. **Update containers:** `./scripts/update.sh`
+5. **View logs:** `docker compose logs -f <service_name>`
 
 ---
 
