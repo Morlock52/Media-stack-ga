@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react'
-import { buildControlServerUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
 interface Container {
@@ -10,22 +10,49 @@ interface Container {
     state: string
 }
 
+type HealthSnapshot = {
+    healthy: boolean
+    summary?: string
+    containerCount?: number
+    runningCount?: number
+}
+
 export function StatusBadge() {
-    const [stats, setStats] = useState({ total: 0, running: 0, loading: true })
+    const [stats, setStats] = useState({ total: 0, running: 0, loading: true, controlServerOnline: true })
     const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch(buildControlServerUrl('/api/containers'))
+                const headers = { ...controlServerAuthHeaders() }
+
+                // Prefer derived endpoint when available.
+                const snapshotRes = await fetch(buildControlServerUrl('/api/health-snapshot'), { headers })
+                if (snapshotRes.ok) {
+                    const snapshot: HealthSnapshot = await snapshotRes.json()
+                    const total = typeof snapshot.containerCount === 'number' ? snapshot.containerCount : 0
+                    const running = typeof snapshot.runningCount === 'number' ? snapshot.runningCount : 0
+                    setStats({ total, running, loading: false, controlServerOnline: true })
+                    setLastChecked(new Date())
+                    return
+                }
+
+                const res = await fetch(buildControlServerUrl('/api/containers'), { headers })
                 if (!res.ok) throw new Error('Failed to fetch')
                 const data: Container[] = await res.json()
 
-                const running = data.filter(c => c.state === 'running').length
-                setStats({ total: data.length, running, loading: false })
+                const running = data.filter((c) => c.state === 'running').length
+                setStats({ total: data.length, running, loading: false, controlServerOnline: true })
                 setLastChecked(new Date())
             } catch {
-                setStats(s => ({ ...s, loading: false }))
+                try {
+                    const healthRes = await fetch(buildControlServerUrl('/api/health'), {
+                        headers: { ...controlServerAuthHeaders() },
+                    })
+                    setStats((s) => ({ ...s, loading: false, controlServerOnline: healthRes.ok }))
+                } catch {
+                    setStats((s) => ({ ...s, loading: false, controlServerOnline: false }))
+                }
                 setLastChecked(new Date())
             }
         }
@@ -37,7 +64,7 @@ export function StatusBadge() {
 
     if (stats.loading) return null
 
-    const isHealthy = stats.running === stats.total && stats.total > 0
+    const isHealthy = stats.controlServerOnline && stats.running === stats.total && stats.total > 0
     const uptime = stats.total > 0 ? ((stats.running / stats.total) * 100).toFixed(1) : '0.0'
 
     return (
@@ -52,7 +79,7 @@ export function StatusBadge() {
                     `}>
                         {isHealthy ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                         <span>
-                            {stats.running}/{stats.total} Services Online
+                            {stats.controlServerOnline ? `${stats.running}/${stats.total} Services Online` : 'Control server offline'}
                         </span>
                         <span className="relative flex h-2 w-2 ml-1">
                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`}></span>
