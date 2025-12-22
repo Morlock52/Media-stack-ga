@@ -109,7 +109,18 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                   className="text-muted-foreground hover:text-foreground transition-colors relative group"
                   title={`Navigate to ${item.label}`}
                 >
-                  {item.label}
+                  {item.label === 'Home' ? (
+                    <span className="flex flex-col items-center leading-none">
+                      <span>{item.label}</span>
+                      <img
+                        src="/media-stack-logo.png"
+                        alt="Home"
+                        className="w-5 h-5 mt-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                      />
+                    </span>
+                  ) : (
+                    item.label
+                  )}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-400 via-cyan-300 to-lime-400 group-hover:w-full transition-all duration-300" />
                 </button>
               ))}
