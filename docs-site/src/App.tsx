@@ -89,7 +89,7 @@ function App() {
           }
         >
           <SidebarLayout>
-          <div className="relative z-10">
+          <div className="relative z-10 pt-20 md:pt-48">
             <ModernNavigation showSidebarToggle={false} />
             {/* Rest of content */}
             {showDeployModal && (
@@ -200,6 +200,8 @@ function App() {
       ) : (
         <>
           <ModernNavigation showSidebarToggle={true} onSidebarToggle={() => setUseSidebar(true)} />
+
+          <div className="relative z-10 pt-20 md:pt-48">
 
           {/* Remote Deploy Modal */}
           {showDeployModal && (
@@ -318,6 +320,7 @@ function App() {
               <AIAssistant />
             </Suspense>
           )}
+          </div>
         </>
       )}
     </main>

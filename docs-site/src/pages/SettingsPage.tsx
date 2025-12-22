@@ -34,6 +34,7 @@ import {
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
+import { StatusBadge } from '../components/StatusBadge'
 
 type ToastState = { type: 'success' | 'error' | 'info'; text: string } | null
 
@@ -440,6 +441,7 @@ export function SettingsPage() {
 
   const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || isRestarting
   const healthUrl = buildControlServerUrl('/api/health')
+  const lastCheckedLabel = lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'
 
   const copyToClipboard = async (value: string) => {
     try {
@@ -502,6 +504,64 @@ export function SettingsPage() {
         </div>
 
       <section className="pt-28 pb-16">
+        <div className="max-w-6xl mx-auto px-4 mb-8">
+          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-background/70 to-emerald-500/10 p-6 md:p-8 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]">
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative">
+              <div className="space-y-3 max-w-2xl">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">Control Plane</p>
+                <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+                  Control server cockpit
+                </h1>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Keep the wizard API healthy, rotate secrets, and push automation keys from one place. Status is derived from your live docker compose stack.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    onClick={fetchStatus}
+                    variant="secondary"
+                    className="gap-2"
+                    disabled={pendingAction === 'checking' || isRestarting}
+                  >
+                    {pendingAction === 'checking' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {pendingAction === 'checking' ? 'Checking...' : 'Re-check status'}
+                  </Button>
+                  <Button
+                    onClick={handleRestartSystem}
+                    className="gap-2"
+                    disabled={isRestarting || pendingAction === 'checking'}
+                  >
+                    {isRestarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                    {isRestarting ? 'Restarting…' : 'Restart server'}
+                  </Button>
+                  <StatusBadge />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
+                <div className="rounded-2xl border border-border/50 bg-background/60 px-4 py-3 space-y-1">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Status</p>
+                  <p className="text-sm font-semibold">{statusPill.label}</p>
+                  <p className="text-[11px] text-muted-foreground">Last check: {lastCheckedLabel}</p>
+                </div>
+                <div className="rounded-2xl border border-border/50 bg-background/60 px-4 py-3 space-y-1">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Health</p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className={`h-2 w-2 rounded-full ${serverOnline ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    {serverOnline ? 'Online' : 'Offline'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => window.open(healthUrl, '_blank', 'noopener,noreferrer')}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Open /api/health
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-4xl mx-auto px-4 space-y-10">
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
             <div className="space-y-2">
