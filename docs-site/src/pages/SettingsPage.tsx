@@ -81,6 +81,7 @@ export function SettingsPage() {
   const [elevenLabsKeyInput, setElevenLabsKeyInput] = useState('')
   const [elevenLabsVoiceIdInput, setElevenLabsVoiceIdInput] = useState('')
   const [elevenLabsAction, setElevenLabsAction] = useState<'idle' | 'saving' | 'removing' | 'savingVoice'>('idle')
+  const [isRestarting, setIsRestarting] = useState(false)
 
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
   const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
@@ -109,7 +110,7 @@ export function SettingsPage() {
       return
     }
 
-    setPendingAction('checking')
+    setIsRestarting(true)
     try {
       const data = await controlServer.systemRestart()
       if (data?.success !== true) {
@@ -120,7 +121,7 @@ export function SettingsPage() {
       const message = error?.message || 'Failed to restart the server'
       setToastMessage({ type: 'error', text: message })
     } finally {
-      setPendingAction('idle')
+      setIsRestarting(false)
       await refresh()
     }
   }, [refresh, serverOnline])
@@ -437,7 +438,7 @@ export function SettingsPage() {
     return { label: 'Control server offline', color: 'bg-amber-500/15 text-amber-300' }
   }, [serverOnline])
 
-  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle'
+  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || isRestarting
   const healthUrl = buildControlServerUrl('/api/health')
 
   const copyToClipboard = async (value: string) => {
@@ -621,9 +622,10 @@ export function SettingsPage() {
                 type="button"
                 onClick={handleRestartSystem}
                 className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                disabled={pendingAction === 'checking'}
+                disabled={isRestarting || pendingAction === 'checking'}
               >
-                <RefreshCw className="w-3 h-3" /> Restart server
+                {isRestarting ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}{' '}
+                {isRestarting ? 'Restarting...' : 'Restart server'}
               </button>
               <button
                 type="button"
