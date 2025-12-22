@@ -3,6 +3,7 @@
 This repo is already a strong “wizard + compose” stack. The goal of this plan is to make it **cleaner to navigate**, **safer to deploy**, and **more reliable to operate**, while keeping changes incremental and reversible.
 
 > **Last reviewed:** December 22, 2025 — Deployment and monitoring stay Docker + SSH only. Refresh screenshots alongside doc edits so the docs-site stays in sync with the UI.
+> **Status notes:** Stress harness passes with new status endpoints; Authelia state requires forwarded headers; VPN profile depends on `/dev/net/tun`; Cloudflare Tunnel needs a real token.
 
 ## What changed already (from the shared spec)
 
@@ -93,6 +94,11 @@ Steps:
 - `docker compose -f docker-compose.wizard.yml up --build -d` starts cleanly
 - Wizard UI loads and docs modal includes “Post‑Deploy Checks”
 - `bash ./scripts/post_deploy_check.sh` passes on a correctly configured stack
+- `/api/settings/openai-key/status` and `/api/settings/tts/status` are exposed for stress/health checks (control server)
+- Stress harness (`scripts/stress_control_server.sh`) runs cleanly at 25 VUs/2m with `<1%` failures
+- Authelia `/api/verify` and `/api/state` return expected codes when forwarded headers are present (X-Forwarded-Host/Proto)
+- Gluetun/qBittorrent start only on hosts with `/dev/net/tun` available (document host requirement)
+- Cloudflared starts with a real tunnel token/command in `.env`
 - CI builds the wizard-api image successfully for scanning
 - Screenshots are current (regenerated via Playwright) and linked from `README.md` and docs-site pages
 - Docs are discoverable from `README.md` and not scattered across root

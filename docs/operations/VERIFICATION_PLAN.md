@@ -12,11 +12,13 @@ This plan outlines the review and verification steps for all functions (services
   ```bash
   cp .env.example .env
   ```
+- If you enable the VPN profile, the host must provide `/dev/net/tun` (enable TUN in your hypervisor/host before starting Gluetun).
 - Validate your compose config:
   ```bash
   docker compose config >/dev/null
   ```
 - A valid domain + Cloudflare account are required only if you enable the `cloudflared` profile for remote access.
+- Cloudflare Tunnel requires a real token/command in `.env` (`CLOUDFLARE_TUNNEL_TOKEN` or `CLOUDFLARED_COMMAND`).
 
 ## User Review Required
 
@@ -177,6 +179,7 @@ Expected output: All containers should be in `Up` state.
 #### 1. Core Services
 - **Authelia**: Visit `https://auth.yourdomain.com`. Should see login page.
 - **Cloudflare Tunnel**: Check logs `docker compose logs cloudflared`. Should show "Registered tunnel connection".
+- **Authelia state API**: If `/api/state` returns 403 behind a proxy, ensure forwarded headers are present (`X-Forwarded-Proto`, `X-Forwarded-Host`). You can override via env when running the post-deploy check: `AUTHELIA_HOST=auth.example.com AUTHELIA_PROTO=https`.
 
 #### 2. Media Applications
 - **Plex**: Visit `http://localhost:32400/web` (tunnel required for remote).
