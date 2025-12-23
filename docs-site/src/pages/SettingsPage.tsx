@@ -4,11 +4,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
-  Copy,
   Key,
   Loader2,
-  RefreshCw,
   Save,
+  RefreshCw,
   Shield,
   Terminal,
   Trash2,
@@ -17,10 +16,6 @@ import {
   buildControlServerUrl,
   controlServer,
   controlServerAuthHeaders,
-  getControlServerBaseUrl,
-  getControlServerToken,
-  setControlServerBaseUrl,
-  setControlServerToken,
 } from '../utils/controlServer'
 import { Button } from '../components/ui/button'
 import {
@@ -77,8 +72,6 @@ export function SettingsPage() {
   const [remoteEnvPrivateKey, setRemoteEnvPrivateKey] = useState('')
   const [remoteEnvPath, setRemoteEnvPath] = useState('')
   const [toast, setToast] = useState<ToastState>(null)
-  const [controlServerUrlInput, setControlServerUrlInput] = useState(() => getControlServerBaseUrl())
-  const [controlServerTokenInput, setControlServerTokenInput] = useState(() => getControlServerToken())
   const [elevenLabsKeyInput, setElevenLabsKeyInput] = useState('')
   const [elevenLabsVoiceIdInput, setElevenLabsVoiceIdInput] = useState('')
   const [elevenLabsAction, setElevenLabsAction] = useState<'idle' | 'saving' | 'removing' | 'savingVoice'>('idle')
@@ -86,8 +79,6 @@ export function SettingsPage() {
 
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
   const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
-
-  const startControlServerCommand = 'npm run dev -w control-server'
 
   const setToastMessage = (update: ToastState) => {
     setToast(update)
@@ -443,31 +434,6 @@ export function SettingsPage() {
   const healthUrl = buildControlServerUrl('/api/health')
   const lastCheckedLabel = lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'
 
-  const copyToClipboard = async (value: string) => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value)
-        return true
-      }
-    } catch {
-      // ignore
-    }
-
-    try {
-      const el = document.createElement('textarea')
-      el.value = value
-      el.style.position = 'fixed'
-      el.style.left = '-9999px'
-      document.body.appendChild(el)
-      el.select()
-      const ok = document.execCommand('copy')
-      document.body.removeChild(el)
-      return ok
-    } catch {
-      return false
-    }
-  }
-
   return (
     <main className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -504,210 +470,63 @@ export function SettingsPage() {
         </div>
 
       <section className="pt-28 pb-16">
-        <div className="max-w-6xl mx-auto px-4 mb-8">
-          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-background/70 to-emerald-500/10 p-6 md:p-8 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]">
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative">
-              <div className="space-y-3 max-w-2xl">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">Control Plane</p>
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                  Control server cockpit
-                </h1>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Keep the wizard API healthy, rotate secrets, and push automation keys from one place. Status is derived from your live docker compose stack.
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
+        <div className="max-w-4xl mx-auto px-4 space-y-10">
+          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-6">
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-semibold flex items-center gap-2">
+                    <Shield className="w-6 h-6 text-primary" />
+                    Control server
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-2xl">
+                    Check connectivity and request a restart for the Wizard control server that powers settings and automation.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className={`px-3 py-1.5 text-xs font-semibold rounded-full ${statusPill.color}`}>
+                      {statusPill.label}
+                    </div>
+                    <StatusBadge hideText />
+                    <span className="text-xs text-muted-foreground">Last checked: {lastCheckedLabel}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleRestartSystem}
+                    className="gap-2"
+                    data-testid="cockpit-restart"
+                    disabled={isRestarting || pendingAction === 'checking'}
+                  >
+                    {isRestarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                    {isRestarting ? 'Restarting…' : 'Restart server'}
+                  </Button>
                   <Button
                     onClick={fetchStatus}
                     variant="secondary"
                     className="gap-2"
+                    data-testid="cockpit-recheck"
                     disabled={pendingAction === 'checking' || isRestarting}
                   >
                     {pendingAction === 'checking' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     {pendingAction === 'checking' ? 'Checking...' : 'Re-check status'}
                   </Button>
                   <Button
-                    onClick={handleRestartSystem}
-                    className="gap-2"
-                    disabled={isRestarting || pendingAction === 'checking'}
-                  >
-                    {isRestarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                    {isRestarting ? 'Restarting…' : 'Restart server'}
-                  </Button>
-                  <StatusBadge />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
-                <div className="rounded-2xl border border-border/50 bg-background/60 px-4 py-3 space-y-1">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Status</p>
-                  <p className="text-sm font-semibold">{statusPill.label}</p>
-                  <p className="text-[11px] text-muted-foreground">Last check: {lastCheckedLabel}</p>
-                </div>
-                <div className="rounded-2xl border border-border/50 bg-background/60 px-4 py-3 space-y-1">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Health</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className={`h-2 w-2 rounded-full ${serverOnline ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                    {serverOnline ? 'Online' : 'Offline'}
-                  </div>
-                  <button
                     type="button"
-                    onClick={() => window.open(healthUrl, '_blank', 'noopener,noreferrer')}
-                    className="text-[11px] text-primary hover:underline"
+                    variant="outline"
+                    onClick={() => {
+                      window.open(healthUrl, '_blank', 'noopener,noreferrer')
+                    }}
+                    className="gap-2"
                   >
+                    <Terminal className="w-4 h-4" />
                     Open /api/health
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 space-y-10">
-          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Shield className="w-6 h-6 text-primary" />
-                Control Server Connection
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-2xl">
-                Optional overrides for when the UI is hosted separately from the Wizard API. Leave blank for the default
-                same-origin <code className="font-mono">/api</code> proxy.
-              </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-3">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
-                    Control server URL
-                  </label>
-                  <input
-                    value={controlServerUrlInput}
-                    onChange={(e) => setControlServerUrlInput(e.target.value)}
-                    placeholder="http://localhost:3001"
-                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    Example: <code className="font-mono">http://localhost:3001</code> or{' '}
-                    <code className="font-mono">https://wizard-api.yourdomain.com</code>
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-3">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
-                    Control server token (optional)
-                  </label>
-                  <input
-                    type="password"
-                    value={controlServerTokenInput}
-                    onChange={(e) => setControlServerTokenInput(e.target.value)}
-                    placeholder="Bearer token (CONTROL_SERVER_TOKEN)"
-                    className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    Only needed if the control server is started with <code className="font-mono">CONTROL_SERVER_TOKEN</code>.
-                    This is stored in your browser (not on the server).
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                onClick={async () => {
-                  setControlServerBaseUrl(controlServerUrlInput)
-                  setControlServerToken(controlServerTokenInput)
-                  setToastMessage({ type: 'success', text: 'Control server settings saved in this browser.' })
-                  await refresh()
-                }}
-                className="gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save connection settings
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  setControlServerUrlInput('')
-                  setControlServerTokenInput('')
-                  setControlServerBaseUrl('')
-                  setControlServerToken('')
-                  setToastMessage({ type: 'info', text: 'Cleared control server overrides.' })
-                  await refresh()
-                }}
-                className="gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={async () => {
-                  const ok = await copyToClipboard(startControlServerCommand)
-                  setToastMessage({
-                    type: ok ? 'success' : 'error',
-                    text: ok ? 'Start command copied to clipboard.' : 'Failed to copy start command.',
-                  })
-                }}
-                className="gap-2"
-              >
-                <Copy className="w-4 h-4" />
-                Copy start command
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  window.open(healthUrl, '_blank', 'noopener,noreferrer')
-                }}
-                className="gap-2"
-              >
-                <Terminal className="w-4 h-4" />
-                Open /api/health
-              </Button>
-            </div>
-          </div>
 
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className={`px-3 py-1.5 text-xs font-semibold rounded-full ${statusPill.color}`}>
-                {statusPill.label}
-              </div>
-              <button
-                type="button"
-                onClick={handleRestartSystem}
-                className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                disabled={isRestarting || pendingAction === 'checking'}
-              >
-                {isRestarting ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}{' '}
-                {isRestarting ? 'Restarting...' : 'Restart server'}
-              </button>
-              <button
-                type="button"
-                onClick={fetchStatus}
-                className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                disabled={pendingAction === 'checking'}
-              >
-                {pendingAction === 'checking' ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" /> Checking
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-3 h-3" /> Re-check status
-                  </>
-                )}
-              </button>
-              <span className="text-xs text-muted-foreground">
-                Last checked: {lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'}
-              </span>
-            </div>
-
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
                 <Key className="w-6 h-6 text-primary" />

@@ -13,9 +13,10 @@ interface Container {
 type StatusBadgeProps = {
     iconClassName?: string
     forceFullColor?: boolean
+    hideText?: boolean
 }
 
-export function StatusBadge({ iconClassName, forceFullColor }: StatusBadgeProps) {
+export function StatusBadge({ iconClassName, forceFullColor, hideText }: StatusBadgeProps) {
     const [stats, setStats] = useState({ total: 0, running: 0, loading: true, controlServerOnline: true })
     const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
@@ -87,15 +88,17 @@ export function StatusBadge({ iconClassName, forceFullColor }: StatusBadgeProps)
                         ${isHealthy
                             ? 'bg-green-500/10 border-green-500/20 text-green-500'
                             : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}
-                    `}>
+                    `} data-testid="status-badge">
                         {isHealthy ? (
                             <CheckCircle className={`${iconSizeClass} ${iconColorClass} ${iconOpacityClass}`} />
                         ) : (
                             <AlertCircle className={`${iconSizeClass} ${iconColorClass} ${iconOpacityClass}`} />
                         )}
-                        <span>
-                            {stats.controlServerOnline ? `${stats.running}/${stats.total} Services Online` : 'Control server offline'}
-                        </span>
+                        {!hideText && (
+                            <span>
+                                {stats.controlServerOnline ? `${stats.running}/${stats.total} Services Online` : 'Control server offline'}
+                            </span>
+                        )}
                         <span className="relative flex h-2 w-2 ml-1">
                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                             <span className={`relative inline-flex rounded-full h-2 w-2 ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`}></span>

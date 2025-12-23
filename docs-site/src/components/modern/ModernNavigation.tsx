@@ -115,7 +115,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                       <img
                         src="/media-stack-logo.png"
                         alt="Home"
-                        className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 w-28 h-28 object-contain opacity-90 drop-shadow-[0_18px_55px_rgba(16,185,129,0.55)] group-hover:opacity-100 transition-opacity"
+                        className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 w-80 h-80 object-contain opacity-100 saturate-150 drop-shadow-[0_22px_70px_rgba(16,185,129,0.65)]"
                       />
                     </span>
                   ) : (
