@@ -10,14 +10,12 @@ interface Container {
     state: string
 }
 
-type HealthSnapshot = {
-    healthy: boolean
-    summary?: string
-    containerCount?: number
-    runningCount?: number
+type StatusBadgeProps = {
+    iconClassName?: string
+    forceFullColor?: boolean
 }
 
-export function StatusBadge() {
+export function StatusBadge({ iconClassName, forceFullColor }: StatusBadgeProps) {
     const [stats, setStats] = useState({ total: 0, running: 0, loading: true, controlServerOnline: true })
     const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
@@ -76,6 +74,10 @@ export function StatusBadge() {
     const isHealthy = stats.controlServerOnline && stats.running === stats.total && stats.total > 0
     const uptime = stats.total > 0 ? ((stats.running / stats.total) * 100).toFixed(1) : '0.0'
 
+    const iconSizeClass = iconClassName ?? 'w-4 h-4'
+    const iconColorClass = isHealthy ? 'text-green-500' : 'text-amber-500'
+    const iconOpacityClass = forceFullColor ? 'opacity-100' : ''
+
     return (
         <TooltipProvider>
             <Tooltip delayDuration={200}>
@@ -86,7 +88,11 @@ export function StatusBadge() {
                             ? 'bg-green-500/10 border-green-500/20 text-green-500'
                             : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}
                     `}>
-                        {isHealthy ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {isHealthy ? (
+                            <CheckCircle className={`${iconSizeClass} ${iconColorClass} ${iconOpacityClass}`} />
+                        ) : (
+                            <AlertCircle className={`${iconSizeClass} ${iconColorClass} ${iconOpacityClass}`} />
+                        )}
                         <span>
                             {stats.controlServerOnline ? `${stats.running}/${stats.total} Services Online` : 'Control server offline'}
                         </span>

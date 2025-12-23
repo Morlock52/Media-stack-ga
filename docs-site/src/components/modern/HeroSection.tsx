@@ -150,7 +150,7 @@ export function HeroSection() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                <StatusBadge />
+                <StatusBadge iconClassName="w-12 h-12" forceFullColor />
               </motion.div>
             </div>
 
@@ -345,7 +345,16 @@ export function HeroSection() {
                     &gt; summary: {pulse.status === 'offline' ? 'start :3001' : (pulse.snapshot?.summary || '—')}
                   </div>
                   <div>
-                    &gt; checked: {pulse.lastCheckedAt ? pulse.lastCheckedAt.toLocaleTimeString() : '—'}
+                    &gt; checked:{' '}
+                    {pulse.lastCheckedAt
+                      ? pulse.lastCheckedAt.toLocaleString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          month: '2-digit',
+                          day: '2-digit',
+                        })
+                      : '—'}
                   </div>
                 </div>
               </div>
