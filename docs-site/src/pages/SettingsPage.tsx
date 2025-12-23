@@ -704,7 +704,7 @@ export function SettingsPage() {
                 )}
               </button>
               <span className="text-xs text-muted-foreground">
-                Last checked: {formatTimestamp(lastCheckedAt)}
+                Last checked: {lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'}
               </span>
             </div>
 

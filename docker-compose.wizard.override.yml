@@ -1,0 +1,9 @@
+services:
+  wizard-api:
+    ports:
+      - "127.0.0.1:3301:3001"
+
+  wizard-web:
+    build:
+      args:
+        VITE_CONTROL_SERVER_URL: ${VITE_CONTROL_SERVER_URL:-http://127.0.0.1:3301}

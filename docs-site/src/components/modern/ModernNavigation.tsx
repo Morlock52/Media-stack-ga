@@ -93,8 +93,8 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                 </div>
               </div>
               <div className="flex flex-col items-start leading-tight">
-                <span className="font-bold text-lg text-gradient" style={{ fontFamily: 'Share Tech Mono, monospace' }}>Media Stack</span>
-                <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: 'Share Tech Mono, monospace' }}>
+                <span className="font-bold text-lg text-gradient font-mono">Media Stack</span>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80 font-mono">
                   Cyber Control
                 </span>
               </div>
@@ -233,7 +233,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1 }}
-        className="fixed bottom-6 left-6 z-40 hidden lg:block"
+        className="fixed bottom-6 left-6 z-40 hidden lg:block pointer-events-none"
       >
         <div className="bg-background/80 backdrop-blur-sm rounded-lg border border-border px-3 py-2">
           <p className="text-xs text-muted-foreground">
