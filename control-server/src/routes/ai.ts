@@ -907,5 +907,110 @@ Return ONLY a JSON object with the following structure:
         }
 
         return { suggestions: suggestions.slice(0, 5) };
+
+          // ═══════════════════════════════════════════════════════════════════════════
+          // NEW: Agent Tools API Routes
+          // ═══════════════════════════════════════════════════════════════════════════
+
+          // Import the new modules (add these imports at the top of the file)
+          // import { agentTools } from '../tools/agentTools.js';
+          // import { getCompletion, getAvailableProviders } from '../services/aiProviders.js';
+          // import * as conversationStore from '../services/conversationStore.js';
+
+          // List available tools
+          fastify.get('/api/ai/tools', async (request, reply) => {
+                  // Dynamic import to avoid circular dependencies
+                  const { agentTools } = await import('../tools/agentTools.js');
+                  return reply.send({
+                            tools: Object.keys(agentTools),
+                            descriptions: {
+                                        check_service_health: 'Check Docker service status, uptime, and resources',
+                                        restart_service: 'Restart a Docker service (graceful or hard)',
+                                        generate_env_diff: 'Compare .env with .env.example',
+                                        run_post_deploy_check: 'Run health checks on VPN, services, etc.',
+                                        list_running_services: 'List all running Docker services with status'
+                            }
+                  });
+          });
+
+          // Execute a tool
+          fastify.post<{ Params: { toolName: string }; Body: Record<string, any> }>('/api/ai/tools/:toolName', async (request, reply) => {
+                  const { toolName } = request.params;
+                  const params = request.body || {};
+                  const { agentTools } = await import('../tools/agentTools.js');
+
+                  const tool = agentTools[toolName as keyof typeof agentTools];
+                  if (!tool) {
+                            return reply.code(404).send({ error: `Tool "${toolName}" not found` });
+                  }
+
+                  try {
+                            let result;
+                            switch (toolName) {
+                                case 'check_service_health':
+                                              result = await agentTools.check_service_health(params?.serviceName);
+                                              break;
+                                case 'restart_service':
+                                              result = await agentTools.restart_service(params?.serviceName, params?.mode);
+                                              break;
+                                case 'generate_env_diff':
+                                              result = await agentTools.generate_env_diff();
+                                              break;
+                                case 'run_post_deploy_check':
+                                              result = await agentTools.run_post_deploy_check();
+                                              break;
+                                case 'list_running_services':
+                                              result = await agentTools.list_running_services();
+                                              break;
+                                default:
+                                              return reply.code(404).send({ error: `Tool "${toolName}" not implemented` });
+                            }
+                            return reply.send(result);
+                  } catch (err: any) {
+                            return reply.code(500).send({ error: err.message });
+              }
+          });
+
+          // ═══════════════════════════════════════════════════════════════════════════
+          // NEW: Conversation API Routes
+          // ═══════════════════════════════════════════════════════════════════════════
+
+          fastify.get('/api/ai/conversations', async (request, reply) => {
+                  const conversationStore = await import('../services/conversationStore.js');
+                  const { limit } = request.query as { limit?: string };
+                  const conversations = await conversationStore.listConversations(limit ? parseInt(limit, 10) : 20);
+                  return reply.send({ conversations });
+          });
+
+          fastify.get<{ Params: { id: string } }>('/api/ai/conversations/:id', async (request, reply) => {
+                  const conversationStore = await import('../services/conversationStore.js');
+                  const conversation = await conversationStore.getConversation(request.params.id);
+                  if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
+                  return reply.send(conversation);
+          });
+
+          fastify.post('/api/ai/conversations', async (request, reply) => {
+                  const conversationStore = await import('../services/conversationStore.js');
+                  const { message, metadata } = request.body as { message?: string; metadata?: any };
+                  const initialMessage = message ? { role: 'user' as const, content: message, timestamp: new Date().toISOString() } : undefined;
+                  const conversation = await conversationStore.createConversation(initialMessage, metadata);
+                  return reply.send(conversation);
+          });
+
+          fastify.delete<{ Params: { id: string } }>('/api/ai/conversations/:id', async (request, reply) => {
+                  const conversationStore = await import('../services/conversationStore.js');
+                  const deleted = await conversationStore.deleteConversation(request.params.id);
+                  return reply.send({ deleted });
+          });
+
+          // ═══════════════════════════════════════════════════════════════════════════
+          // NEW: AI Provider Status
+          // ═══════════════════════════════════════════════════════════════════════════
+
+          fastify.get('/api/ai/providers', async (request, reply) => {
+                  const { getAvailableProviders } = await import('../services/aiProviders.js');
+                  const providers = getAvailableProviders();
+                  return reply.send({ providers, primary: process.env.PRIMARY_AI_PROVIDER || 'openai' });
+          });
     });
 }
