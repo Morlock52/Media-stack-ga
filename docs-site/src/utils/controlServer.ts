@@ -17,11 +17,12 @@ const getDefaultControlServerBaseUrl = (): string => {
     if (typeof window === 'undefined') return ''
 
     const isDev = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV)
-    if (isDev) return ''
-
     const { hostname, port } = window.location
     const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
     const portNum = parseInt(port || '', 10)
+
+    // Dev default: point the SPA to the local API unless explicitly configured.
+    if (isDev && isLoopback) return 'http://127.0.0.1:3001'
 
     if (!isLoopback) return ''
 
@@ -52,10 +53,11 @@ export const getControlServerBaseUrl = (): string => {
     if (typeof window === 'undefined') return ''
     try {
         const stored = window.localStorage.getItem(CONTROL_SERVER_URL_STORAGE_KEY)
-        return stored ? stored.trim().replace(/\/$/, '') : ''
+        if (stored) return stored.trim().replace(/\/$/, '')
     } catch {
-        return ''
+        // ignore storage failures
     }
+    return getDefaultControlServerBaseUrl()
 }
 
 export const setControlServerBaseUrl = (nextUrl: string) => {
@@ -103,11 +105,6 @@ export const buildControlServerUrl = (path: string) => {
     if (configuredOrigin) {
         const sameOrigin = configuredOrigin === getWindowOrigin()
         return sameOrigin ? normalized : `${configuredOrigin}${normalized}`
-    }
-
-    const isDev = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV)
-    if (isDev) {
-        return normalized
     }
 
     const fallbackOrigin = getDefaultControlServerBaseUrl() || getWindowOrigin()

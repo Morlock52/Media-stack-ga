@@ -14,6 +14,24 @@ const AIAssistant = lazy(() => import('./components/AIAssistant').then((m) => ({
 const TopologyMap = lazy(() => import('./components/TopologyMap').then((m) => ({ default: m.TopologyMap })))
 const SidebarLayout = lazy(() => import('./components/ModernSidebar').then((m) => ({ default: m.SidebarLayout })))
 
+const LogoBadge = () => (
+  <div className="inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-emerald-400/20 to-amber-300/20 border border-primary/50 mb-6 p-[4px] shadow-[0_25px_90px_rgba(34,197,94,0.35)] overflow-hidden">
+    <picture className="w-full h-full rounded-2xl bg-slate-950/80">
+      <source srcSet="/media-stack-logo.webp" type="image/webp" />
+      <img
+        src="/media-stack-logo.png"
+        alt="Logo"
+        width={128}
+        height={128}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-contain rounded-2xl drop-shadow-[0_26px_80px_rgba(16,185,129,0.65)] saturate-150"
+        {...({ fetchpriority: 'low' } as any)}
+      />
+    </picture>
+  </div>
+)
+
 function App() {
   const [showDeployModal, setShowDeployModal] = useState(false)
   const { currentStep } = useSetupStore()
@@ -57,14 +75,11 @@ function App() {
 
   return (
     <main className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative selection:bg-primary/30 selection:text-primary">
-      {/* Deep Glass Background Blobs */}
+      {/* Background grid effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 matrix-grid opacity-15" />
-        <div className="absolute inset-0 matrix-rain opacity-20" />
-        <div className="absolute inset-0 scanlines" />
-        <div className="absolute top-[-10%] left-[-8%] w-[52%] h-[52%] bg-emerald-600/25 rounded-full blur-[140px] animate-pulse-glow" />
-        <div className="absolute bottom-[-12%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/18 rounded-full blur-[140px] animate-pulse-glow delay-1000" />
-        <div className="absolute top-[38%] left-[32%] w-[32%] h-[32%] bg-lime-500/12 rounded-full blur-[110px] animate-float" />
+        <div className="absolute inset-0 matrix-grid opacity-15 pointer-events-none" />
+        <div className="absolute inset-0 matrix-rain opacity-20 pointer-events-none" />
+        <div className="absolute inset-0 scanlines pointer-events-none" />
       </div>
 
       {/* Toggle Sidebar Button */}
@@ -143,19 +158,9 @@ function App() {
               <SetupWizard />
             </section>
             <section className="py-16 border-t border-border">
-              <div className="container mx-auto px-4 text-center">
-                <div className="max-w-2xl mx-auto">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/15 via-emerald-400/15 to-lime-500/20 border border-primary/40 mb-6 p-[3px] shadow-lg shadow-cyan-500/15 overflow-hidden">
-                    <img
-                      src="/media-stack-logo.png"
-                      alt="Logo"
-                      width={80}
-                      height={80}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-contain rounded-xl bg-slate-950/80"
-                    />
-                  </div>
+                <div className="container mx-auto px-4 text-center">
+                  <div className="max-w-2xl mx-auto">
+                  <LogoBadge />
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
                     Need help setting up your apps?
                   </h2>
@@ -267,17 +272,7 @@ function App() {
           <section className="py-16 border-t border-border">
             <div className="container mx-auto px-4 text-center">
               <div className="max-w-2xl mx-auto">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/15 via-emerald-400/15 to-lime-500/20 border border-primary/40 mb-6 p-[3px] shadow-lg shadow-cyan-500/15 overflow-hidden">
-                  <img
-                    src="/media-stack-logo.png"
-                    alt="Logo"
-                    width={80}
-                    height={80}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-contain rounded-xl bg-slate-950/80"
-                  />
-                </div>
+                <LogoBadge />
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
                   Need help setting up your apps?
                 </h2>

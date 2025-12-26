@@ -4,6 +4,7 @@ test.describe('Settings: Control server cockpit', () => {
   test('cockpit actions are clickable and update status', async ({ page }) => {
     let openAiKeyGets = 0
     let systemRestarts = 0
+    let healthChecks = 0
 
     await page.route('**/api/settings/openai-key', async (route) => {
       const method = route.request().method()
@@ -59,6 +60,18 @@ test.describe('Settings: Control server cockpit', () => {
 
     // Health used by the "Open /api/health" link and offline fallbacks
     await page.route('**/api/health', async (route) => {
+      healthChecks += 1
+
+      // Simulate a brief restart window where /api/health is temporarily unavailable.
+      // The UI should keep polling until it becomes reachable again.
+      if (systemRestarts > 0 && healthChecks < 3) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: false }),
+        })
+        return
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -106,6 +119,14 @@ test.describe('Settings: Control server cockpit', () => {
       .toBeGreaterThan(0)
 
     await expect(page.getByText(/Restart requested\./i)).toBeVisible({ timeout: 15000 })
+
+    // During restart polling the UI should not get stuck showing "offline".
+    await expect(page.getByText(/Control server offline/i)).not.toBeVisible({ timeout: 15000 })
+
+    // Ensure the restart poll loop actually exercised /api/health.
+    await expect
+      .poll(() => healthChecks, { timeout: 15000 })
+      .toBeGreaterThan(1)
 
     // StatusBadge should render without blocking clicks
     await expect(cockpit.getByTestId('status-badge')).toBeVisible({ timeout: 15000 })

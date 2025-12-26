@@ -76,7 +76,7 @@ export function StatusBadge({ iconClassName, forceFullColor, hideText }: StatusB
     const uptime = stats.total > 0 ? ((stats.running / stats.total) * 100).toFixed(1) : '0.0'
 
     const iconSizeClass = iconClassName ?? 'w-4 h-4'
-    const iconColorClass = isHealthy ? 'text-green-500' : 'text-amber-500'
+    const iconColorClass = isHealthy ? 'text-emerald-300' : 'text-amber-300'
     const iconOpacityClass = forceFullColor ? 'opacity-100' : ''
 
     return (
@@ -84,10 +84,10 @@ export function StatusBadge({ iconClassName, forceFullColor, hideText }: StatusB
             <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                     <div className={`
-                        inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border backdrop-blur-md cursor-help
+                        inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold border backdrop-blur-md cursor-help
                         ${isHealthy
-                            ? 'bg-green-500/10 border-green-500/20 text-green-500'
-                            : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}
+                            ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-200'
+                            : 'bg-amber-500/10 border-amber-500/25 text-amber-200'}
                     `} data-testid="status-badge">
                         {isHealthy ? (
                             <CheckCircle className={`${iconSizeClass} ${iconColorClass} ${iconOpacityClass}`} />
@@ -100,8 +100,8 @@ export function StatusBadge({ iconClassName, forceFullColor, hideText }: StatusB
                             </span>
                         )}
                         <span className="relative flex h-2 w-2 ml-1">
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                            <span className={`relative inline-flex rounded-full h-2 w-2 ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                            <span className={`relative inline-flex rounded-full h-2 w-2 ${isHealthy ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
                         </span>
                     </div>
                 </TooltipTrigger>

@@ -111,17 +111,9 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-transparent">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-16 left-10 w-80 h-80 bg-emerald-500/25 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-10 right-12 w-[28rem] h-[28rem] bg-cyan-500/18 rounded-full blur-3xl animate-pulse delay-700" />
-        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-lime-500/12 rounded-full blur-3xl animate-pulse delay-500" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(16,185,129,0.08),transparent_30%),radial-gradient(circle_at_90%_15%,rgba(56,189,248,0.08),transparent_25%),radial-gradient(circle_at_50%_80%,rgba(74,222,128,0.12),transparent_28%)]" />
-      </div>
-
       {/* Matrix grid + scanlines */}
-      <div className="absolute inset-0 opacity-35 matrix-grid" />
-      <div className="absolute inset-0 scanlines" />
+      <div className="absolute inset-0 opacity-35 matrix-grid pointer-events-none" />
+      <div className="absolute inset-0 scanlines pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4">
         <motion.div
@@ -152,6 +144,7 @@ export function HeroSection() {
               >
                 <StatusBadge iconClassName="w-12 h-12" forceFullColor />
               </motion.div>
+
             </div>
 
             {/* Main heading */}
@@ -198,7 +191,7 @@ export function HeroSection() {
                   Launch Setup Wizard
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 blur-xl opacity-50 group-hover:opacity-75 transition-opacity pointer-events-none" />
               </button>
 
               <Link
@@ -236,9 +229,9 @@ export function HeroSection() {
                     : 'bg-slate-950/80')
               }
             >
-              <div className="absolute inset-0 matrix-grid opacity-15" />
-              <div className="absolute -top-14 -right-10 w-48 h-48 bg-emerald-400/20 blur-3xl" />
-              <div className="absolute -bottom-14 -left-10 w-48 h-48 bg-cyan-400/15 blur-3xl" />
+              <div className="absolute inset-0 matrix-grid opacity-15 pointer-events-none" />
+              <div className="absolute -top-14 -right-10 w-48 h-48 bg-emerald-400/20 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-14 -left-10 w-48 h-48 bg-cyan-400/15 blur-3xl pointer-events-none" />
               <div className="relative space-y-4">
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-primary/70 font-mono">
                   <span>System Pulse</span>
@@ -262,6 +255,13 @@ export function HeroSection() {
 
                 <div className="hud-line" />
 
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.28em] text-primary/60 font-mono">
+                  <span>Bars: normalized score (0–100)</span>
+                  <span className="text-muted-foreground">
+                    Source: {pulse.status === 'offline' ? '—' : '/api/health-snapshot'}
+                  </span>
+                </div>
+
                 <div className="space-y-4 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Docker Services</span>
@@ -282,6 +282,10 @@ export function HeroSection() {
                           : 'NO CONTAINERS'}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Uptime</span>
+                    <span className="font-mono text-primary/80">{pulse.status === 'offline' ? '—' : `${computed.uptimePct}%`}</span>
+                  </div>
                   <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
                     <div
                       className={
@@ -301,6 +305,10 @@ export function HeroSection() {
                       {pulse.status === 'offline' ? '—' : `${computed.issues}`}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Health score</span>
+                    <span className="font-mono text-primary/80">{pulse.status === 'offline' ? '—' : `${Math.max(0, 100 - computed.issues * 15)}%`}</span>
+                  </div>
                   <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
                     <div
                       className={`h-full bg-gradient-to-r from-cyan-300 to-lime-300 ${computed.issuesWidthClass}`}
@@ -313,11 +321,21 @@ export function HeroSection() {
                       {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${pulse.latencyMs}ms`}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Latency score</span>
+                    <span className="font-mono text-primary/80">
+                      {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${Math.max(10, 100 - pulse.latencyMs)}%`}
+                    </span>
+                  </div>
                   <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
                     <div
                       className={`h-full bg-gradient-to-r from-emerald-300 to-lime-300 ${computed.latencyWidthClass}`}
                     />
                   </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground/90 font-mono">
+                  Metrics are polled every 10s. Scores are simplified for quick at-a-glance diagnostics.
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">

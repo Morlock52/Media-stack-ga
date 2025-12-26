@@ -6,6 +6,7 @@ import os from 'os';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { RemoteArrBootstrapRequest, RemoteDeployRequest } from '../types/index.js';
 import { ARR_SERVICES } from '../services/arrService.js';
+import { z } from 'zod';
 
 const COMPOSE_FILE = path.join(PROJECT_ROOT, 'docker-compose.yml');
 
@@ -203,6 +204,29 @@ const getDockerContainerNameConflictHint = (value: string) => {
     );
 };
 
+const remoteDeploySchema = z.object({
+    host: z.string().trim().min(1),
+    port: z.union([z.number().int().positive().max(65535), z.string().trim().regex(/^\d+$/).transform((v) => Number(v))]).optional(),
+    username: z.string().trim().min(1),
+    authType: z.enum(['key', 'password']).optional(),
+    privateKey: z.string().trim().min(1).optional(),
+    password: z.string().trim().min(1).optional(),
+    deployPath: z.string().trim().max(200).optional(),
+    autoRemoveConflictingContainers: z.boolean().optional(),
+    autoDisableVpnOnTunMissing: z.boolean().optional(),
+    composeYml: z.string().max(250_000).optional(),
+    envFile: z.string().max(250_000).optional(),
+});
+
+const remoteDeployTestSchema = z.object({
+    host: z.string().trim().min(1),
+    port: z.union([z.number().int().positive().max(65535), z.string().trim().regex(/^\d+$/).transform((v) => Number(v))]).optional(),
+    username: z.string().trim().min(1),
+    authType: z.enum(['key', 'password']).optional(),
+    password: z.string().trim().min(1).optional(),
+    privateKey: z.string().trim().min(1).optional(),
+});
+
 async function withTempKey<T>(privateKey: string, callback: (keyPath: string) => Promise<T>): Promise<T> {
     const tmpDir = os.tmpdir();
     const keyPath = path.join(tmpDir, `ssh-key-${Date.now()}-${Math.random().toString(36).substring(7)}`);
@@ -349,10 +373,17 @@ export async function remoteRoutes(fastify: FastifyInstance) {
     const activeDeployLocks = new Map<string, DeployLock>();
 
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy', async (request, reply) => {
-        const { host, port = 22, username, privateKey, password, deployPath = '~/media-stack' } = request.body;
-        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
-        const autoRemoveConflictingContainers = request.body.autoRemoveConflictingContainers === true;
-        const autoDisableVpnOnTunMissing = request.body.autoDisableVpnOnTunMissing !== false;
+        const parsed = remoteDeploySchema.safeParse(request.body || {});
+        if (!parsed.success) {
+            return reply.status(400).send({ error: 'Invalid request', details: parsed.error.issues });
+        }
+        const body = parsed.data;
+
+        const { host, username, privateKey, password, deployPath = '~/media-stack' } = body;
+        const port = body.port ?? 22;
+        const authType: 'key' | 'password' = body.authType || (password ? 'password' : 'key');
+        const autoRemoveConflictingContainers = body.autoRemoveConflictingContainers === true;
+        const autoDisableVpnOnTunMissing = body.autoDisableVpnOnTunMissing !== false;
 
         if (!host || !username) {
             fastify.log.warn({ host, username }, '[remote-deploy] validation failed: missing host/username');
@@ -417,8 +448,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
         try {
             // Optional: accept generated compose/.env directly from the UI.
-            const composeYmlBody = typeof request.body.composeYml === 'string' ? request.body.composeYml : '';
-            const envFileBody = typeof request.body.envFile === 'string' ? request.body.envFile : '';
+            const composeYmlBody = typeof body.composeYml === 'string' ? body.composeYml : '';
+            const envFileBody = typeof body.envFile === 'string' ? body.envFile : '';
 
             let localComposeFile = COMPOSE_FILE;
             let localEnvFile: string | null = null;
@@ -954,8 +985,13 @@ export async function remoteRoutes(fastify: FastifyInstance) {
 
     // Test SSH connection
     fastify.post<{ Body: RemoteDeployRequest }>('/api/remote-deploy/test', async (request, reply) => {
-        const { host, port = 22, username, privateKey, password } = request.body;
-        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+        const parsed = remoteDeployTestSchema.safeParse(request.body || {});
+        if (!parsed.success) {
+            return reply.status(400).send({ error: 'Invalid request', details: parsed.error.issues });
+        }
+        const { host, username, privateKey, password } = parsed.data;
+        const port = parsed.data.port ?? 22;
+        const authType: 'key' | 'password' = parsed.data.authType || (password ? 'password' : 'key');
 
         if (!host || !username) {
             return reply.status(400).send({ error: 'Host and username are required' });

@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { runCommand } from '../utils/docker.js';
 import { Container, ServiceIssue } from '../types/index.js';
+import { PROJECT_ROOT } from '../utils/env.js';
+import { z } from 'zod';
 
 export async function dockerRoutes(fastify: FastifyInstance) {
     const cacheMs = Math.max(0, parseInt(process.env.DOCKER_STATUS_CACHE_MS || '1500', 10) || 0);
@@ -8,6 +10,51 @@ export async function dockerRoutes(fastify: FastifyInstance) {
     let containersCache: Container[] | null = null;
     let containersCacheAt = 0;
     let containersInFlight: Promise<Container[]> | null = null;
+    let composeServicesCache: string[] | null = null;
+    let composeServicesCacheAt = 0;
+    let composeServicesInFlight: Promise<string[]> | null = null;
+
+    const isDockerUnavailable = (error: any) => {
+        const msg = String(error?.message || '').toLowerCase();
+        return msg.includes('docker daemon is not running')
+            || msg.includes('docker: command not found')
+            || msg.includes('required cli')
+            || msg.includes('docker cli is not available')
+            || msg.includes('connect to the docker daemon')
+            || msg.includes('no such file or directory') && msg.includes('docker');
+    };
+
+    const getComposeServices = async (): Promise<string[]> => {
+        const now = Date.now();
+        if (cacheMs > 0 && composeServicesCache && now - composeServicesCacheAt < cacheMs) {
+            return composeServicesCache;
+        }
+        if (composeServicesInFlight) return composeServicesInFlight;
+
+        composeServicesInFlight = (async () => {
+            const output = await runCommand('docker', ['compose', '--project-directory', PROJECT_ROOT, 'config', '--services'], {
+                timeoutMs: 10_000,
+                label: 'compose:services',
+            });
+            const services = output
+                .split('\n')
+                .map((s) => s.trim())
+                .filter(Boolean);
+            if (cacheMs > 0) {
+                composeServicesCache = services;
+                composeServicesCacheAt = Date.now();
+            }
+            return services;
+        })();
+
+        try {
+            return await composeServicesInFlight;
+        } finally {
+            composeServicesInFlight = null;
+        }
+    };
+
+    const composeActionArgs = (extra: string[] = []) => ['compose', '--project-directory', PROJECT_ROOT, ...extra];
 
     // Get Container Status
     fastify.get('/api/containers', async (request, reply) => {
@@ -22,12 +69,11 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             }
 
             containersInFlight = (async () => {
-                const output = await runCommand('docker', [
-                    'ps',
-                    '-a',
-                    '--format',
-                    '"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}"'
-                ]);
+                const output = await runCommand(
+                    'docker',
+                    ['ps', '-a', '--format', '"{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}"'],
+                    { timeoutMs: 12_000, label: 'docker ps' }
+                );
 
                 const containers: Container[] = output
                     .split('\n')
@@ -61,45 +107,69 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             }
         } catch (error: any) {
             fastify.log.error('Error fetching containers:', error);
-            reply.status(500).send({ error: 'Failed to fetch container status' });
+            if (isDockerUnavailable(error)) {
+                return reply.status(503).send({
+                    error: 'docker_unavailable',
+                    message: error?.message || 'Docker is not running or not installed',
+                    containers: []
+                });
+            }
+            reply.status(500).send({ error: error?.message || 'Failed to fetch container status' });
         }
     });
 
     // Start/Stop/Restart a Service
-    fastify.post<{ Params: { action: string }, Body: { serviceName: string } }>('/api/service/:action', async (request, reply) => {
-        const { action } = request.params;
-        const { serviceName } = request.body;
+    fastify.post<{ Params: { action: string }, Body: { serviceName: string } }>(
+        '/api/service/:action',
+        async (request, reply) => {
+            const { action } = request.params;
+            const parseBody = z.object({ serviceName: z.string().min(1) }).safeParse(request.body);
+            if (!parseBody.success) {
+                return reply.status(400).send({ error: 'Invalid service name' });
+            }
+            const { serviceName } = parseBody.data;
 
-        if (!['start', 'stop', 'restart', 'up'].includes(action)) {
-            return reply.status(400).send({ error: 'Invalid action' });
-        }
-
-        try {
-            let cmdArgs: string[] = [];
-            if (action === 'up') {
-                cmdArgs = ['compose', 'up', '-d', serviceName];
-            } else if (action === 'start') {
-                cmdArgs = ['compose', 'start', serviceName];
-            } else if (action === 'stop') {
-                cmdArgs = ['compose', 'stop', serviceName];
-            } else if (action === 'restart') {
-                cmdArgs = ['compose', 'restart', serviceName];
+            if (!['start', 'stop', 'restart', 'up'].includes(action)) {
+                return reply.status(400).send({ error: 'Invalid action' });
             }
 
-            await runCommand('docker', cmdArgs);
-            return { success: true, message: `Service ${serviceName} ${action}ed successfully` };
-        } catch (error: any) {
-            fastify.log.error(`Error performing ${action} on ${serviceName}:`, error);
-            reply.status(500).send({ error: error.message });
-        }
-    });
+            try {
+                const services = await getComposeServices();
+                if (!services.includes(serviceName)) {
+                    return reply
+                        .status(400)
+                        .send({ error: `Unknown service "${serviceName}". Known services: ${services.join(', ') || 'none'}` });
+                }
+
+                let cmdArgs: string[] = [];
+                if (action === 'up') {
+                    cmdArgs = composeActionArgs(['up', '-d', serviceName]);
+                } else if (action === 'start') {
+                    cmdArgs = composeActionArgs(['start', serviceName]);
+                } else if (action === 'stop') {
+                    cmdArgs = composeActionArgs(['stop', serviceName]);
+                } else if (action === 'restart') {
+                    cmdArgs = composeActionArgs(['restart', serviceName]);
+                }
+
+                await runCommand('docker', cmdArgs, { timeoutMs: 20_000, label: `compose:${action}:${serviceName}` });
+                return { success: true, message: `Service ${serviceName} ${action}ed successfully` };
+            } catch (error: any) {
+                fastify.log.error(`Error performing ${action} on ${serviceName}:`, error);
+                reply.status(500).send({ error: error.message });
+            }
+        },
+    );
 
     // Run Updates
     fastify.post('/api/system/update', async (request, reply) => {
         try {
-            await runCommand('docker', ['compose', 'pull']);
-            await runCommand('docker', ['compose', 'up', '-d', '--remove-orphans']);
-            await runCommand('docker', ['image', 'prune', '-f']);
+            await runCommand('docker', composeActionArgs(['pull']), { timeoutMs: 60_000, label: 'compose:pull' });
+            await runCommand('docker', composeActionArgs(['up', '-d', '--remove-orphans']), {
+                timeoutMs: 60_000,
+                label: 'compose:up',
+            });
+            await runCommand('docker', ['image', 'prune', '-f'], { timeoutMs: 30_000, label: 'docker:image-prune' });
             return { success: true, message: 'System updated successfully' };
         } catch (error: any) {
             reply.status(500).send({ error: error.message });
@@ -108,7 +178,7 @@ export async function dockerRoutes(fastify: FastifyInstance) {
 
     fastify.post('/api/system/restart', async (_request, reply) => {
         try {
-            await runCommand('docker', ['compose', 'restart']);
+            await runCommand('docker', composeActionArgs(['restart']), { timeoutMs: 30_000, label: 'compose:restart' });
             return { success: true, message: 'System restarted successfully' };
         } catch (error: any) {
             reply.status(500).send({ error: error.message });
@@ -123,9 +193,11 @@ export async function dockerRoutes(fastify: FastifyInstance) {
                 if (cacheMs > 0 && containersCache && Date.now() - containersCacheAt < cacheMs) {
                     return containersCache.map((c) => ({ name: c.name, status: c.status, state: c.state }));
                 }
-                const output = await runCommand('docker', [
-                    'ps', '-a', '--format', '"{{.Names}}|{{.Status}}|{{.State}}"'
-                ]);
+                const output = await runCommand(
+                    'docker',
+                    ['ps', '-a', '--format', '"{{.Names}}|{{.Status}}|{{.State}}"'],
+                    { timeoutMs: 12_000, label: 'docker ps (health)' }
+                );
                 return output
                     .split('\n')
                     .map((line) => line.replace(/"/g, '').trim())
@@ -180,9 +252,11 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             };
         } catch (error: any) {
             fastify.log.error({ err: error }, '[health-snapshot] Failed to gather docker status');
-            reply.status(500).send({
+            const unavailable = isDockerUnavailable(error);
+            const statusCode = unavailable ? 503 : 500;
+            reply.status(statusCode).send({
                 healthy: false,
-                summary: 'Unable to fetch container status',
+                summary: unavailable ? 'Docker is not running or not installed' : 'Unable to fetch container status',
                 issues: [],
                 suggestions: [],
                 containerCount: 0,
@@ -195,15 +269,49 @@ export async function dockerRoutes(fastify: FastifyInstance) {
     // Compose services (from docker compose config --services)
     fastify.get('/api/compose/services', async (_request, reply) => {
         try {
-            const output = await runCommand('docker', ['compose', 'config', '--services']);
-            const services = output
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean);
+            const services = await getComposeServices();
             return { services };
         } catch (error: any) {
             fastify.log.error({ err: error }, '[compose-services] Failed to list compose services');
-            reply.status(500).send({ error: error?.message || 'Failed to list compose services' });
+            const unavailable = isDockerUnavailable(error);
+            reply
+                .status(unavailable ? 503 : 500)
+                .send({ error: unavailable ? 'Docker is not running or not installed' : error?.message || 'Failed to list compose services' });
         }
+    });
+
+    // System status (cached signals + compose target)
+    fastify.get('/api/system/status', async (_request, _reply) => {
+        const now = Date.now();
+        const cacheAge = containersCache ? now - containersCacheAt : null;
+        const composeAge = composeServicesCache ? now - composeServicesCacheAt : null;
+        return {
+            projectRoot: PROJECT_ROOT,
+            composeFile: `${PROJECT_ROOT}/docker-compose.yml`,
+            cache: {
+                containersMs: cacheAge,
+                containersCount: containersCache?.length ?? 0,
+                composeServicesMs: composeAge,
+                composeServicesCount: composeServicesCache?.length ?? 0,
+            },
+            limits: {
+                maxParallel: process.env.DOCKER_STATUS_MAX_PARALLEL || '4',
+                cacheMs,
+            },
+        };
+    });
+
+    // Optional self-reload hook for process managers (disabled by default)
+    fastify.post('/api/system/reload', async (request, _reply) => {
+        const allowed = ['1', 'true', 'yes'].includes(
+            String(process.env.CONTROL_SERVER_ALLOW_SELF_RELOAD || '').toLowerCase(),
+        );
+        if (!allowed) {
+            return _reply.status(405).send({ error: 'self-reload disabled (set CONTROL_SERVER_ALLOW_SELF_RELOAD=1 to enable)' });
+        }
+        request.log.warn('Control server reload requested via API');
+        _reply.send({ success: true, message: 'Reloading control-server process' });
+        // Give the response a moment to flush
+        setTimeout(() => process.exit(0), 250);
     });
 }

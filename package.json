@@ -11,19 +11,24 @@
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces",
     "lint": "npm run lint --workspaces",
-    "stress:api": "npm run stress -w control-server",
+    "check": "npm run lint && npm test -w control-server && npm run test -w docs-site -- tests/smoke.spec.ts",
+    "pm2:start": "pm2 start scripts/pm2.control-server.config.cjs",
+    "pm2:stop": "pm2 delete media-stack-control-server || true",
+    "stress:api": "START_CONTROL_SERVER=1 npm run stress -w control-server",
     "stress:ui": "STRESS=1 npm run test -w docs-site -- tests/stress.wizard.spec.ts",
     "stress": "npm run stress:api && npm run stress:ui",
     "preview": "npm run preview -w docs-site",
     "prepare": "node -e \"const fs=require('fs');if(process.env.HUSKY==='0'||!fs.existsSync('.git'))process.exit(0);try{require.resolve('husky')}catch(e){process.exit(0)};process.exit(1)\" || husky install"
   },
   "devDependencies": {
+    "@types/react": "18.3.27",
+    "@types/react-dom": "18.3.7",
+    "@upstash/context7-mcp": "^1.0.33",
     "concurrently": "^8.2.2",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
     "prettier": "^3.7.4",
-    "@types/react": "18.3.27",
-    "@types/react-dom": "18.3.7"
+    "shadcn": "^3.5.0"
   },
   "overrides": {
     "esbuild": "0.25.12",

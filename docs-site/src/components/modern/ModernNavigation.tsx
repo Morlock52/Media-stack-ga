@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Moon, Sun, Settings, BookOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
+import { buildControlServerUrl, controlServerAuthHeaders } from '../../utils/controlServer'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '#hero', shortcut: '1' },
@@ -16,6 +17,10 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { toggleTheme, resolvedTheme } = useTheme()
+  const [health, setHealth] = useState<{ status: 'checking' | 'ok' | 'down'; latency: number | null }>({
+    status: 'checking',
+    latency: null,
+  })
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,6 +72,67 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [handleNavClick])
 
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      const started = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      try {
+        const res = await fetch(buildControlServerUrl('/api/health'), {
+          headers: { ...controlServerAuthHeaders() },
+        })
+        const ended = typeof performance !== 'undefined' ? performance.now() : Date.now()
+        const latency = Math.max(0, Math.round(ended - started))
+        if (!res.ok) throw new Error('health check failed')
+        if (cancelled) return
+        setHealth({ status: 'ok', latency })
+      } catch {
+        if (cancelled) return
+        setHealth({ status: 'down', latency: null })
+      }
+    }
+
+    poll()
+    const id = window.setInterval(poll, 15000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [])
+
+  const healthChip = useMemo(() => {
+    const base = 'text-[10px] font-semibold uppercase tracking-[0.18em] rounded-full px-3 py-1 border transition-colors'
+    if (health.status === 'ok') {
+      return {
+        text: health.latency ? `Online ${health.latency}ms` : 'Online',
+        className: `${base} bg-emerald-500/10 border-emerald-400/50 text-emerald-100 shadow-sm shadow-emerald-500/25`,
+      }
+    }
+    if (health.status === 'down') {
+      return {
+        text: 'Offline',
+        className: `${base} bg-rose-500/10 border-rose-400/60 text-rose-100 shadow-sm shadow-rose-500/25`,
+      }
+    }
+    return {
+      text: 'Checking…',
+      className: `${base} bg-white/5 border-border text-muted-foreground`,
+    }
+  }, [health])
+
+  const LogoMark = ({ className = '', fetchPriority = 'auto' }: { className?: string; fetchPriority?: 'high' | 'auto' | 'low' }) => (
+    <picture className={className}>
+      <source srcSet="/media-stack-logo.webp" type="image/webp" />
+      <img
+        src="/media-stack-logo.png"
+        alt="Media Stack"
+        className="w-full h-full object-contain"
+        loading="lazy"
+        decoding="async"
+        {...({ fetchpriority: fetchPriority } as any)}
+      />
+    </picture>
+  )
+
   return (
     <>
       {/* Navigation bar */}
@@ -89,13 +155,16 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
             >
               <div className="p-[2px] rounded-2xl bg-gradient-to-br from-emerald-400/40 via-cyan-400/30 to-lime-400/30 shadow-lg shadow-emerald-500/25 group-hover:shadow-cyan-400/30 transition-all">
                 <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-border/60 flex items-center justify-center p-1.5">
-                  <img src="/media-stack-logo.png" alt="Media Stack" className="w-full h-full object-contain drop-shadow-[0_5px_22px_rgba(16,185,129,0.45)]" />
+                  <LogoMark className="w-full h-full drop-shadow-[0_5px_22px_rgba(16,185,129,0.45)]" fetchPriority="high" />
                 </div>
               </div>
               <div className="flex flex-col items-start leading-tight">
                 <span className="font-bold text-lg text-gradient font-mono">Media Stack</span>
                 <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80 font-mono">
                   Cyber Control
+                </span>
+                <span className={healthChip.className}>
+                  {healthChip.text}
                 </span>
               </div>
             </motion.div>
@@ -109,18 +178,7 @@ export function ModernNavigation({ showSidebarToggle = true, onSidebarToggle }: 
                   className="text-muted-foreground hover:text-foreground transition-colors relative group"
                   title={`Navigate to ${item.label}`}
                 >
-                  {item.label === 'Home' ? (
-                    <span className="relative inline-flex items-center">
-                      <span>{item.label}</span>
-                      <img
-                        src="/media-stack-logo.png"
-                        alt="Home"
-                        className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 w-80 h-80 object-contain opacity-100 saturate-150 drop-shadow-[0_22px_70px_rgba(16,185,129,0.65)]"
-                      />
-                    </span>
-                  ) : (
-                    item.label
-                  )}
+                  {item.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-400 via-cyan-300 to-lime-400 group-hover:w-full transition-all duration-300" />
                 </button>
               ))}

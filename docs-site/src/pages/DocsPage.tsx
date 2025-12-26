@@ -61,7 +61,10 @@ export function DocsPage() {
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-background/50 border border-primary/40 flex items-center justify-center p-0.5 overflow-hidden">
-                                <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
+                                <picture className="w-full h-full">
+                                    <source srcSet="/media-stack-logo.webp" type="image/webp" />
+                                    <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                                </picture>
                             </div>
                             <div>
                                 <h1 className="font-bold text-foreground text-lg leading-tight">Media Stack Docs</h1>
@@ -81,6 +84,23 @@ export function DocsPage() {
                 {/* Hero Section */}
                 <section className="pt-32 pb-16 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
+                    {/* Large muted background logo */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                        <div className="relative w-[600px] h-[600px] md:w-[800px] md:h-[800px] opacity-[0.06]">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/40 via-cyan-400/30 to-lime-400/40 rounded-full blur-3xl" />
+                            <picture className="relative block w-full h-full">
+                                <source srcSet="/media-stack-logo.webp" type="image/webp" />
+                                <img
+                                    src="/media-stack-logo.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="w-full h-full object-contain drop-shadow-[0_0_120px_rgba(16,185,129,0.5)] saturate-150"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </picture>
+                        </div>
+                    </div>
                     <div className="container mx-auto px-4 text-center relative z-10">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6">
                             <Sparkles className="w-4 h-4 text-primary" />

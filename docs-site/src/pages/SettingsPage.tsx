@@ -109,6 +109,24 @@ export function SettingsPage() {
         throw new Error(data?.error || 'Restart request failed')
       }
       setToastMessage({ type: 'success', text: 'Restart requested. Services may take a moment to come back online.' })
+
+      // During a restart, an immediate refresh often races the server reboot and flips the UI to
+      // "offline". Poll /api/health until the control server is reachable again.
+      const startedAt = Date.now()
+      const timeoutMs = 60_000
+      const pollIntervalMs = 2_000
+
+      while (Date.now() - startedAt < timeoutMs) {
+        try {
+          const healthRes = await fetch(buildControlServerUrl('/api/health'), {
+            headers: { ...controlServerAuthHeaders() },
+          })
+          if (healthRes.ok) break
+        } catch {
+          // ignore, keep polling
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+      }
     } catch (error: any) {
       const message = error?.message || 'Failed to restart the server'
       setToastMessage({ type: 'error', text: message })
@@ -425,10 +443,11 @@ export function SettingsPage() {
   }
 
   const statusPill = useMemo(() => {
+    if (isRestarting) return { label: 'Restarting…', color: 'bg-sky-500/15 text-sky-200' }
     if (serverOnline === null) return { label: 'Checking...', color: 'bg-muted text-muted-foreground' }
     if (serverOnline) return { label: 'Control server connected', color: 'bg-emerald-500/15 text-emerald-300' }
     return { label: 'Control server offline', color: 'bg-amber-500/15 text-amber-300' }
-  }, [serverOnline])
+  }, [isRestarting, serverOnline])
 
   const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || isRestarting
   const healthUrl = buildControlServerUrl('/api/health')
@@ -447,7 +466,10 @@ export function SettingsPage() {
           <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-background/50 border border-primary/40 flex items-center justify-center p-0.5 overflow-hidden">
-                <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" />
+                <picture className="w-full h-full">
+                  <source srcSet="/media-stack-logo.webp" type="image/webp" />
+                  <img src="/media-stack-logo.png" alt="Logo" className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                </picture>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Settings</p>
