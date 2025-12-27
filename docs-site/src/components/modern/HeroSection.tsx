@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
 import { ArrowRight, BookOpen, Code, Shield, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -27,6 +27,7 @@ export function HeroSection() {
     lastCheckedAt: Date | null
     snapshot: HealthSnapshot | null
   }>(() => ({ status: 'loading', latencyMs: null, lastCheckedAt: null, snapshot: null }))
+  const featureCardsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -116,6 +117,32 @@ export function HeroSection() {
       latencyWidthClass: pctToWidthClass(latencyScorePct),
     }
   }, [pulse.snapshot, pulse.status, pulse.latencyMs])
+
+  useEffect(() => {
+    const node = featureCardsRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+
+    const cards = Array.from(node.querySelectorAll<HTMLElement>('[data-feature-card]'))
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const target = entry.target as HTMLElement
+          if (entry.isIntersecting) {
+            target.classList.add('feature-card-visible')
+          } else {
+            target.classList.remove('feature-card-visible')
+          }
+        })
+      },
+      {
+        threshold: [0.2, 0.5],
+        rootMargin: '0px 0px -10% 0px',
+      }
+    )
+
+    cards.forEach((card) => observer.observe(card))
+    return () => observer.disconnect()
+  }, [])
 
 
   return (
@@ -409,20 +436,33 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          ref={featureCardsRef}
         >
-          <div className="p-6 rounded-2xl glass-deep hover:border-emerald-400/70 transition-all duration-300 hover:-translate-y-1 group">
+          <div
+            className="feature-card p-6 rounded-2xl glass-deep hover:border-emerald-400/70 transition-all duration-500 hover:-translate-y-1 group"
+            data-feature-card
+            style={{ transitionDelay: '60ms' }}
+          >
             <Code className="w-8 h-8 text-emerald-300 mb-4 group-hover:animate-pulse" />
             <h3 className="text-lg font-heading font-semibold text-foreground mb-2">Generate Configs</h3>
             <p className="text-muted-foreground text-sm">Download .env, Authelia, and Cloudflare files</p>
           </div>
 
-          <div className="p-6 rounded-2xl glass-deep hover:border-cyan-300/70 transition-all duration-300 hover:-translate-y-1 group">
+          <div
+            className="feature-card p-6 rounded-2xl glass-deep hover:border-cyan-300/70 transition-all duration-500 hover:-translate-y-1 group"
+            data-feature-card
+            style={{ transitionDelay: '140ms' }}
+          >
             <Shield className="w-8 h-8 text-cyan-300 mb-4 group-hover:animate-pulse" />
             <h3 className="text-lg font-heading font-semibold text-foreground mb-2">Production Ready</h3>
             <p className="text-muted-foreground text-sm">Security & best practices built-in</p>
           </div>
 
-          <div className="p-6 rounded-2xl glass-deep hover:border-lime-300/70 transition-all duration-300 hover:-translate-y-1 group">
+          <div
+            className="feature-card p-6 rounded-2xl glass-deep hover:border-lime-300/70 transition-all duration-500 hover:-translate-y-1 group"
+            data-feature-card
+            style={{ transitionDelay: '220ms' }}
+          >
             <Zap className="w-8 h-8 text-lime-300 mb-4 group-hover:animate-pulse" />
             <h3 className="text-lg font-heading font-semibold text-foreground mb-2">Save Progress</h3>
             <p className="text-muted-foreground text-sm">Auto-saves so you can return anytime</p>

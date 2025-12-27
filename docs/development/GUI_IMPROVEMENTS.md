@@ -2,13 +2,13 @@
 
 ## 📊 Deployment Status Tracker
 
-**Last Updated:** December 21, 2025 - 2:00 PM EST
+**Last Updated:** December 27, 2025 - aligned to current dependency versions
 
 **Theme:** Matrix HUD (emerald/cyan neon on deep black)
 
 | # | Improvement | Status | Implementation | Tests | Notes |
 |---|-------------|--------|----------------|-------|-------|
-| 1 | Motion.dev Animations | 🔴 DEFERRED | 0% | ⬜ Not Started | Deferred - framer-motion has incompatible API structure |
+| 1 | Motion.dev Animations | 🟡 IN PROGRESS | 40% | ⬜ Manual Testing | Hero + feature cards now use Motion.dev; wizard/voice views still on framer-motion |
 | 2 | Shadcn UI System | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ Button, Tooltip, Dialog components added |
 | 3 | CSS Anchor Positioning | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ Enhanced StatusBadge with detailed tooltip |
 | 4 | AI-Powered Smart Forms | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ SmartInput with auto-detect & suggestions |
@@ -16,16 +16,16 @@
 
 ### 🎉 Deployment Summary
 
-**Successfully Implemented (4/5 improvements - 80% completion rate):**
+**Successfully Implemented (4/5 improvements shipped, Motion.dev in progress):**
 
 1. ✅ **Shadcn UI System** - Full Radix UI integration with Button, Tooltip, and Dialog components
 2. ✅ **Enhanced Tooltips** - StatusBadge now shows detailed system info on hover
 3. ✅ **Smart Forms** - SmartInput component with timezone auto-detection and suggestions
 4. ✅ **Micro-interactions** - Enhanced buttons with scale animations and hover effects
 
-**Deferred (1/5):**
+**In Progress (1/5):**
 
-- 🔴 **Motion.dev Migration** - Incompatible with framer-motion component structure; would require rewriting 43 components
+- 🟡 **Motion.dev Adoption** - Hero + feature cards migrated to Motion.dev; remaining wizard/assistant flows stay on framer-motion until a safe migration path is proven
 
 **Legend:**
 
@@ -43,19 +43,19 @@
 
 Based on comprehensive research of the latest UI/UX trends as of December 14, 2025, this document outlines 5 cutting-edge improvements for the Media Stack GUI with detailed implementation and testing plans.
 
-**Research conducted on:** December 14, 2025
+**Research conducted on:** December 14, 2025 (status + versions refreshed)
 
 ---
 
 ## Current Technology Stack
 
-The docs-site is built with:
+The docs-site is built with (current mainline versions):
 
-- **React 19.2.0** (latest stable with Server Components support)
+- **React 18.3.1**
 - **TypeScript 5.2.2**
-- **Vite 5.1.4** (build tool)
+- **Vite 6.0.0** (build tool)
 - **Tailwind CSS 3.4.1** (utility-first styling)
-- **Framer Motion 11.0.3** (animation library)
+- **Framer Motion 11.18.2** (animation library)
 - **Zustand 5.0.8** (state management)
 - **React Router DOM 7.9.6** (routing)
 - **Zod 4.1.13** (schema validation)
@@ -1307,9 +1307,9 @@ test.describe('Micro-interactions', () => {
    - Update dialog/modal system
    - Run accessibility tests
 
-2. **Motion.dev Migration** (Priority: High)
-   - Replace Framer Motion
-   - Update all animation components
+2. **Motion.dev Adoption** (Priority: High)
+   - Replace Framer Motion where safe (hero, marketing shells ✅; wizard/assistant pending coverage)
+   - Update remaining animation components once e2e coverage exists
    - Performance benchmark tests
    - Cross-browser validation
 
@@ -1445,24 +1445,19 @@ test.describe('Micro-interactions', () => {
   - `transition-all duration-150` - Smooth 150ms transitions
 - All variants support micro-interactions
 
-#### 🔴 Deferred: Motion.dev Migration
+#### 🟡 Partial: Motion.dev Adoption
 
-##### Reason for Deferral
+##### Current State
 
-- Framer Motion uses element-specific components (`motion.div`, `motion.span`, etc.)
-- Motion.dev uses a single `<Motion>` component
-- Migration would require manual rewriting of 43 component files
-- Each file has multiple animation instances with complex configurations
-- Risk of breaking existing animations too high
-- **Recommendation:** Keep framer-motion for now, consider Motion.dev for new components only
+- Installed `motion` package and migrated the Hero + feature cards to Motion.dev (`Motion.div`/`Motion.h1`), with scroll-linked reveals driven by IntersectionObserver.
+- Framer Motion remains for wizard/assistant flows (`AnimatePresence`, step transitions, magnetic buttons); these need bespoke rewrites.
 
-##### Migration Attempt Summary
+##### Why Full Migration Is Still Pending
 
-1. Installed `motion` package successfully
-2. Created migration script to automate conversion
-3. Script replaced imports but failed to handle:
-   - Element-specific closing tags
-   - Transform syntax differences (y/x vs translateY/translateX)
+- Framer Motion uses element-specific components (`motion.div`, `motion.span`, etc.); Motion.dev uses a single `<Motion>` component.
+- Migration would require manual rewriting of 40+ component files with complex nested animations.
+- Risk of breaking multi-step wizard transitions is high without dedicated e2e coverage.
+- **Recommendation:** Continue progressive adoption (new/hero surfaces on Motion.dev) and migrate wizard flows once coverage exists.
    - AnimatePresence integration differences
 4. Build errors: 90+ TypeScript errors for mismatched JSX tags
 5. **Decision:** Revert changes, defer migration
@@ -1560,7 +1555,7 @@ test.describe('Micro-interactions', () => {
 
 ### Long-term Considerations
 
-1. **Motion.dev**: Consider for new components only, not migration
+1. **Motion.dev**: Continue progressive adoption (hero/marketing done); migrate wizard/assistant once Playwright coverage is in place
 2. **CSS Anchor Positioning**: Monitor browser support, add progressive enhancement
 3. **Design System**: Expand Shadcn component library
 4. **Performance**: Set up Playwright tests for animations
@@ -1590,8 +1585,8 @@ test.describe('Micro-interactions', () => {
 
 ### Technical Debt Added
 
-- **Deferred Migration**: Motion.dev migration creates future technical debt if decided to pursue
-- **Mixed Libraries**: Now using both Framer Motion and Radix UI animations
+- **Partial Migration**: Motion.dev is live on hero/feature cards; wizard/assistant still use framer-motion until coverage allows a safe swap
+- **Mixed Libraries**: Currently shipping both Motion.dev and Framer Motion (plus Radix UI animations)
 - **Testing Gap**: No automated tests yet for new components
 
 ### Performance Impact
