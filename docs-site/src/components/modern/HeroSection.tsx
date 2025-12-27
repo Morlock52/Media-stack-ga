@@ -15,6 +15,7 @@ export function HeroSection() {
     healthy: boolean
     summary: string
     issues: Array<{ type: string; service: string; message: string }>
+    suggestions?: Array<{ action: string; service: string; label: string }>
     containerCount: number
     runningCount: number
     error?: string
@@ -75,6 +76,10 @@ export function HeroSection() {
     const total = pulse.snapshot?.containerCount ?? 0
     const running = pulse.snapshot?.runningCount ?? 0
     const issues = pulse.snapshot?.issues?.length ?? 0
+    const stopped = pulse.snapshot?.issues?.filter((i) => i.type === 'stopped').length ?? 0
+    const unhealthy = pulse.snapshot?.issues?.filter((i) => i.type === 'unhealthy').length ?? 0
+    const restarting = pulse.snapshot?.issues?.filter((i) => i.type === 'restarting').length ?? 0
+    const suggestions = pulse.snapshot?.suggestions ?? []
     const snapshotHealthy = Boolean(pulse.snapshot?.healthy)
     const hasContainers = total > 0
     const uptimePct = hasContainers ? Math.round((running / total) * 100) : snapshotHealthy ? 100 : 0
@@ -99,6 +104,10 @@ export function HeroSection() {
       total,
       running,
       issues,
+      stopped,
+      unhealthy,
+      restarting,
+      suggestions,
       snapshotHealthy,
       hasContainers,
       uptimePct,
@@ -255,19 +264,47 @@ export function HeroSection() {
 
                 <div className="hud-line" />
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.28em] text-primary/60 font-mono">
-                  <span>Bars: normalized score (0–100)</span>
-                  <span className="text-muted-foreground">
-                    Source: {pulse.status === 'offline' ? '—' : '/api/health-snapshot'}
-                  </span>
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="rounded-xl border border-primary/30 bg-black/40 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono">Control Server</p>
+                    <p
+                      className={
+                        'text-base font-semibold ' +
+                        (pulse.status === 'offline' ? 'text-amber-300' : pulse.status === 'loading' ? 'text-muted-foreground' : 'text-emerald-300')
+                      }
+                    >
+                      {pulse.status === 'offline' ? 'Offline' : pulse.status === 'loading' ? 'Checking…' : 'Online'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${pulse.latencyMs}ms latency`}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-primary/30 bg-black/40 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono">Containers</p>
+                    <p className="text-base font-semibold text-foreground font-mono">
+                      {pulse.status === 'offline'
+                        ? '—'
+                        : computed.hasContainers
+                          ? `${computed.running}/${computed.total}`
+                          : '0'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pulse.status === 'offline'
+                        ? 'API unreachable'
+                        : computed.hasContainers
+                          ? 'running / total'
+                          : 'No containers detected'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Docker Services</span>
+                <div className="rounded-xl border border-primary/20 bg-black/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-primary/70 uppercase tracking-[0.2em]">Summary</span>
                     <span
                       className={
-                        'font-mono text-xs ' +
+                        'text-xs ' +
                         (pulse.status === 'offline'
                           ? 'text-amber-300'
                           : computed.snapshotHealthy
@@ -275,92 +312,75 @@ export function HeroSection() {
                             : 'text-amber-300')
                       }
                     >
-                      {pulse.status === 'offline'
-                        ? 'OFFLINE'
-                        : computed.hasContainers
-                          ? `${computed.running}/${computed.total} RUNNING`
-                          : 'NO CONTAINERS'}
+                      {pulse.status === 'offline' ? 'Unavailable' : computed.snapshotHealthy ? 'Healthy' : 'Degraded'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Uptime</span>
-                    <span className="font-mono text-primary/80">{pulse.status === 'offline' ? '—' : `${computed.uptimePct}%`}</span>
-                  </div>
-                  <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
-                    <div
-                      className={
-                        `h-full bg-gradient-to-r animate-pulse ${computed.uptimeWidthClass} ` +
-                        (pulse.status === 'offline'
-                          ? 'from-amber-400 to-amber-300'
-                          : computed.snapshotHealthy
-                            ? 'from-emerald-400 to-cyan-300'
-                            : 'from-amber-400 to-cyan-300')
-                      }
-                    />
+                  <div className="text-xs text-primary/80 font-mono break-words">
+                    {pulse.status === 'offline'
+                      ? 'Control server not reachable (start it on :3001)'
+                      : pulse.snapshot?.error
+                        ? pulse.snapshot.error
+                        : pulse.snapshot?.summary || '—'}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Issues</span>
-                    <span className="text-cyan-300 font-mono text-xs">
-                      {pulse.status === 'offline' ? '—' : `${computed.issues}`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Health score</span>
-                    <span className="font-mono text-primary/80">{pulse.status === 'offline' ? '—' : `${Math.max(0, 100 - computed.issues * 15)}%`}</span>
-                  </div>
-                  <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r from-cyan-300 to-lime-300 ${computed.issuesWidthClass}`}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Latency</span>
-                    <span className="text-lime-300 font-mono text-xs">
-                      {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${pulse.latencyMs}ms`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Latency score</span>
-                    <span className="font-mono text-primary/80">
-                      {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${Math.max(10, 100 - pulse.latencyMs)}%`}
-                    </span>
-                  </div>
-                  <div className="h-1 rounded-full bg-primary/10 overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r from-emerald-300 to-lime-300 ${computed.latencyWidthClass}`}
-                    />
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className="rounded-lg border border-primary/20 bg-black/30 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-mono">Stopped</div>
+                      <div className="text-sm font-semibold text-foreground font-mono">{pulse.status === 'offline' ? '—' : computed.stopped}</div>
+                    </div>
+                    <div className="rounded-lg border border-primary/20 bg-black/30 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-mono">Unhealthy</div>
+                      <div className="text-sm font-semibold text-foreground font-mono">{pulse.status === 'offline' ? '—' : computed.unhealthy}</div>
+                    </div>
+                    <div className="rounded-lg border border-primary/20 bg-black/30 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-mono">Restarting</div>
+                      <div className="text-sm font-semibold text-foreground font-mono">{pulse.status === 'offline' ? '—' : computed.restarting}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-xs text-muted-foreground/90 font-mono">
-                  Metrics are polled every 10s. Scores are simplified for quick at-a-glance diagnostics.
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="rounded-xl border border-primary/30 bg-black/40 p-3">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono">Deploys</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {pulse.status === 'offline' ? '—' : computed.issues === 0 ? '0' : String(computed.issues)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">issues</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-primary/20 bg-black/30 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono mb-2">Issues</p>
+                    {pulse.status === 'offline' ? (
+                      <p className="text-xs text-muted-foreground font-mono">—</p>
+                    ) : computed.issues === 0 ? (
+                      <p className="text-xs text-emerald-300 font-mono">None</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {(pulse.snapshot?.issues || []).slice(0, 3).map((issue, idx) => (
+                          <div key={`${issue.service}-${issue.type}-${idx}`} className="text-xs font-mono text-primary/80">
+                            <span className="text-primary/60">[{issue.type}]</span> {issue.service}
+                          </div>
+                        ))}
+                        {computed.issues > 3 && (
+                          <div className="text-xs font-mono text-muted-foreground">+{computed.issues - 3} more</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="rounded-xl border border-primary/30 bg-black/40 p-3">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono">Latency</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {pulse.status === 'offline' || pulse.latencyMs == null ? '—' : `${pulse.latencyMs}ms`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">last poll</p>
+
+                  <div className="rounded-xl border border-primary/20 bg-black/30 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-mono mb-2">Suggested Actions</p>
+                    {pulse.status === 'offline' ? (
+                      <p className="text-xs text-muted-foreground font-mono">—</p>
+                    ) : computed.suggestions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground font-mono">No actions</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {computed.suggestions.slice(0, 3).map((s, idx) => (
+                          <div key={`${s.service}-${s.action}-${idx}`} className="text-xs font-mono text-primary/80">
+                            {s.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-primary/20 bg-black/30 p-3 font-mono text-xs text-primary/80 space-y-1">
                   <div>
-                    &gt; control-server: {pulse.status === 'offline' ? 'offline' : pulse.status === 'loading' ? 'loading' : 'online'}
-                  </div>
-                  <div>
-                    &gt; summary: {pulse.status === 'offline' ? 'start :3001' : (pulse.snapshot?.summary || '—')}
+                    &gt; poll: every 10s
                   </div>
                   <div>
                     &gt; checked:{' '}
@@ -373,6 +393,9 @@ export function HeroSection() {
                           day: '2-digit',
                         })
                       : '—'}
+                  </div>
+                  <div>
+                    &gt; source: {pulse.status === 'offline' ? '—' : '/api/health-snapshot'}
                   </div>
                 </div>
               </div>

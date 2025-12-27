@@ -42,7 +42,8 @@ const release = () => {
 };
 
 const friendlyDockerError = (command: string, err: any) => {
-    const msg = String(err?.message || err || '').toLowerCase();
+    const raw = err?.message ?? err;
+    const msg = String(raw || '').toLowerCase();
     if (msg.includes('enoent') || msg.includes('not found')) {
         return `Required CLI "${command}" is not available. Install Docker Desktop/Engine or ensure "${command}" is on PATH.`;
     }
@@ -51,6 +52,9 @@ const friendlyDockerError = (command: string, err: any) => {
     }
     if (msg.includes('timed out')) {
         return `${command} timed out. Docker may be hung; verify the daemon is healthy.`;
+    }
+    if (typeof raw === 'string' && raw.trim()) {
+        return raw.trim();
     }
     return err?.message || `Failed to run ${command}`;
 };
