@@ -1,5 +1,5 @@
 <div align="center">
-<img src="docs/images/logo.png" alt="Media Stack Logo" width="100"/>
+<img src="../images/logo.png" alt="Media Stack Logo" width="100"/>
 
 # Dockerized Media Stack Wizard
 </div>
@@ -68,6 +68,7 @@ Remote deploy works from the wizard UI because the containerized UI proxies `/ap
 - Remote host must have Docker + Docker Compose installed.
 - Password auth requires `sshpass` inside the control server environment.
 - Remote deploy does not create DNS records or tunnel routes.
+- Use **Settings** to set the control-server URL/token when self-hosting the UI and to store OpenAI/ElevenLabs keys for high-quality voice output.
 
 ### Access after remote deploy
 

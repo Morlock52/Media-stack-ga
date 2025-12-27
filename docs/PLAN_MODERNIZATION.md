@@ -2,7 +2,7 @@
 
 This repo is already a strong “wizard + compose” stack. The goal of this plan is to make it **cleaner to navigate**, **safer to deploy**, and **more reliable to operate**, while keeping changes incremental and reversible.
 
-> **Last reviewed:** December 22, 2025 — Deployment and monitoring stay Docker + SSH only. Refresh screenshots alongside doc edits so the docs-site stays in sync with the UI.
+> **Last reviewed:** December 27, 2025 — Deployment and monitoring stay Docker + SSH only. Screenshots regenerated via Playwright alongside this doc refresh.
 > **Status notes:** Stress harness passes with new status endpoints; Authelia state requires forwarded headers; VPN profile depends on `/dev/net/tun`; Cloudflare Tunnel needs a real token.
 
 ## What changed already (from the shared spec)

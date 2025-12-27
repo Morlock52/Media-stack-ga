@@ -1,5 +1,5 @@
 <div align="center">
-<img src="docs/images/logo.png" alt="Media Stack Logo" width="120"/>
+<img src="../images/logo.png" alt="Media Stack Logo" width="120"/>
 
 # 🎨 UI Showcase - Media Stack Updates
 </div>
@@ -9,13 +9,13 @@
 The interface uses a cyber-matrix aesthetic with layered scanlines, neon HUD panels, glitch accents, and interactive motion.
 
 ### 🎨 Hero Experience (Matrix HUD)
-![Hero Dark Mode](docs/images/hero.png)
+![Hero Dark Mode](../images/hero.png)
 
 ### 🪄 Interactive Wizard (Step‑by‑Step)
-![Wizard Dark Mode](docs/images/wizard.png)
+![Wizard Dark Mode](../images/wizard.png)
 
 ### 📖 Adaptive Documentation (Docs Hub)
-![Docs Dark Mode](docs/images/docs.png)
+![Docs Dark Mode](../images/docs.png)
 
 ---
 

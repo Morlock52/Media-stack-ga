@@ -76,9 +76,10 @@ open http://localhost:3002   # macOS
 - If you click **Deploy** twice, the control server rejects the duplicate request with **HTTP 409** (“deployment already in progress”).
 - After SSH connects, the deploy collects a best-effort **remote container snapshot** (name + on/off) and shows it in the UI.
 - Remote deploy does not configure DNS or Cloudflare; see “After Setup” below.
+- Use **Settings** to store the control-server URL/token (when self-hosting the UI) and optional OpenAI/ElevenLabs keys for higher-quality voice output.
 
 <p align="center">
-  <img src="images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="1100" />
+  <img src="../images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="1100" />
 </p>
 
 **Stop the wizard when done:**

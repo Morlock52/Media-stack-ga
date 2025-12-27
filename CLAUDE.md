@@ -31,6 +31,7 @@ npm run build -w docs-site       # Build docs-site only
 
 ### Testing
 ```bash
+npm run check            # Quick lint + control-server tests + docs-site smoke
 npm test                 # Run all workspace tests
 npm test -w control-server       # Run control-server vitest tests
 npm test -w docs-site            # Run docs-site Playwright tests
@@ -57,6 +58,7 @@ Fastify-based API server that provides:
 - **AI routes** (`/api/agents/*`) - AI assistant endpoints for config validation
 - **Remote routes** (`/api/remote-deploy/*`) - SSH-based remote deployment
 - **Arr routes** (`/api/arr/*`) - \*Arr stack API key extraction
+- **TTS + Settings** (`/api/tts`, `/api/settings/*`) - OpenAI/ElevenLabs voice output plus API key/status management
 
 Key files:
 - `src/index.ts` - Server entrypoint with security checks for exposed hosts

@@ -1,10 +1,10 @@
 <div align="center">
-<img src="docs/images/logo.png" alt="Media Stack Logo" width="100"/>
+<img src="../images/logo.png" alt="Media Stack Logo" width="100"/>
 
 # Quick Reference Guide
 </div>
 
-> **Last Updated:** December 21, 2025
+> **Last Updated:** December 27, 2025
 
 Matrix HUD UI note: screenshots and visuals in the docs reflect the current cyber-matrix theme.
 
@@ -12,7 +12,7 @@ Matrix HUD UI note: screenshots and visuals in the docs reflect the current cybe
 
 ### Start Services
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Local LAN (no SSO/tunnel)
@@ -31,7 +31,7 @@ docker compose --profile auth --profile cloudflared up -d
 
 ### Stop Services
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Start Wizard (Docker Mode)
@@ -59,17 +59,17 @@ docker compose -f docker-compose.wizard.yml up -d
 ### View Logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f authelia
-docker-compose logs -f plex
-docker-compose logs -f gluetun
+docker compose logs -f authelia
+docker compose logs -f plex
+docker compose logs -f gluetun
 ```
 
 ### Restart a Service
 ```bash
-docker-compose restart servicename
+docker compose restart servicename
 ```
 
 ### Interactive Setup (TUI)
@@ -84,8 +84,8 @@ docker-compose restart servicename
 ### Update Containers
 ```bash
 # Manual update (Watchtower handles this automatically usually)
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 ### Post‑deploy sanity checks (recommended)
@@ -136,6 +136,7 @@ After setup, access services using the subdomains defined in `.env`:
 - **Wake Word**: None. Just click the mic button.
 - **Microphone Issues?**: Use the **Text Input** box at the bottom of the specialized modal.
 - **Privacy**: No audio is recorded to disk. Transcripts are sent to OpenAI for processing only.
+- **Audio quality**: With an OpenAI key saved in **Settings**, the wizard uses OpenAI TTS (`gpt-5.2-mini-tts` with fallback); ElevenLabs is optional via API key + voice ID.
 - **Context**: The AI knows about "Plex", "Arr stack", "NAS", and "VPS". Use these terms for best results.
 
 
@@ -168,13 +169,13 @@ sudo chown -R 1000:1000 /srv/mediastack
 
 ### Clear and Restart
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Check Container Status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### View Container Resource Usage
@@ -225,15 +226,15 @@ docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --
 
 ### Stop everything and remove containers (data preserved)
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Stop and remove everything including volumes (⚠️ DANGER)
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Force recreate containers
 ```bash
-docker-compose up -d --force-recreate
+docker compose up -d --force-recreate
 ```

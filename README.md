@@ -48,7 +48,7 @@ python docs/scripts/render_diagrams.py
 KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ```
 
-> **Last updated:** December 22, 2025
+> **Last updated:** December 27, 2025
 
 ## ✨ Screenshots (Matrix HUD)
 
@@ -361,14 +361,15 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 - **AI-Powered Operations**: Inspect container health, analyze logs, and run common stack commands (when the control server has Docker access).
 - **Config Validation**: Quick checks for `.env`, YAML, and JSON config issues before you deploy.
 - **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
-- **Voice Companion**: Control and configure your stack using voice commands through the integrated Voice Companion.
+- **Voice Companion**: Control and configure your stack using voice commands; high-quality TTS uses OpenAI voices by default with an optional ElevenLabs provider, configurable via **Settings → Voice output**.
 - **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
+- **Hardened Control Server**: Docker calls are project-scoped, concurrency-limited, and cached; use `/api/system/status` for compose context/cache age and `/api/system/reload` when managed by PM2/systemd.
 
 ### Remote deploy + voice quality
 
 - **Remote Deploy** uses the control server (`/api/remote-deploy/*`) and works automatically when the UI is running behind a proxy that forwards `/api` (Docker Wizard mode does this). For static-hosted UIs, set `VITE_CONTROL_SERVER_URL` (or use Settings → “Control Server Connection”).
 - If the control server is started with `CONTROL_SERVER_TOKEN`, also set `VITE_CONTROL_SERVER_TOKEN` (or enter the token in Settings) so the UI can authenticate.
-- For more natural voice output, you can optionally enable ElevenLabs TTS via `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` and set `TTS_PROVIDER=elevenlabs` (or configure it in Settings).
+- High-quality voice output defaults to OpenAI TTS (`gpt-5.2-mini-tts` with fallback) when an OpenAI API key is present; ElevenLabs is optional via `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` (both are configurable from the Settings page).
 
 <p align="center">
   <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
@@ -626,6 +627,7 @@ docker compose up -d
 ## ✅ Tests & stress
 
 ```bash
+npm run check        # lint + control-server tests + docs-site smoke
 npm run lint
 npm test
 npm run stress
@@ -647,6 +649,7 @@ npm run stress
 - `docker compose logs -f cloudflared`
 - `docker compose logs -f authelia`
 - `docker compose logs -f gluetun`
+- `curl http://127.0.0.1:3001/api/system/status` (compose context, cache age, restart hints)
 - `./scripts/doctor.sh` (local diagnostics)
 - `./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel sanity — see `docs/operations/POST_DEPLOY_CHECKS.md`)
 
