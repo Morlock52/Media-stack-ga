@@ -8,7 +8,7 @@
 
 | # | Improvement | Status | Implementation | Tests | Notes |
 |---|-------------|--------|----------------|-------|-------|
-| 1 | Motion.dev Animations | 🟡 IN PROGRESS | 40% | ⬜ Manual Testing | Hero + feature cards now use Motion.dev; wizard/voice views still on framer-motion |
+| 1 | Motion.dev Animations | 🟡 IN PROGRESS | 55% | ⬜ Manual Testing | Hero, navigation, and feature cards now use Motion.dev; wizard/voice views still on framer-motion |
 | 2 | Shadcn UI System | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ Button, Tooltip, Dialog components added |
 | 3 | CSS Anchor Positioning | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ Enhanced StatusBadge with detailed tooltip |
 | 4 | AI-Powered Smart Forms | 🟢 COMPLETED | 100% | ⬜ Manual Testing | ✅ SmartInput with auto-detect & suggestions |
@@ -25,7 +25,7 @@
 
 **In Progress (1/5):**
 
-- 🟡 **Motion.dev Adoption** - Hero + feature cards migrated to Motion.dev; remaining wizard/assistant flows stay on framer-motion until a safe migration path is proven
+- 🟡 **Motion.dev Adoption** - Hero, navigation bar, and feature cards migrated to Motion.dev; remaining wizard/assistant flows stay on framer-motion until a safe migration path is proven
 
 **Legend:**
 
@@ -1449,7 +1449,7 @@ test.describe('Micro-interactions', () => {
 
 ##### Current State
 
-- Installed `motion` package and migrated the Hero + feature cards to Motion.dev (`Motion.div`/`Motion.h1`), with scroll-linked reveals driven by IntersectionObserver.
+- Installed `motion` package and migrated the Hero + navigation + feature cards to Motion.dev (`motion.div`/`motion.h1`), with scroll-linked reveals driven by IntersectionObserver.
 - Framer Motion remains for wizard/assistant flows (`AnimatePresence`, step transitions, magnetic buttons); these need bespoke rewrites.
 
 ##### Why Full Migration Is Still Pending
