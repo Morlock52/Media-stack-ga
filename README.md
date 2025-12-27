@@ -155,6 +155,7 @@ docker compose -f docker-compose.wizard.secure.yml up --build -d
 
 - `http://localhost:3002` (UI)
 - `http://localhost:3001` (API, internal)
+- **Tip:** In Docker wizard mode the UI proxies `/api` for you. If you host the UI elsewhere, set `VITE_CONTROL_SERVER_URL` (and optionally `VITE_CONTROL_SERVER_TOKEN`) at build time or via **Settings → Control Server Connection** so AI + remote deploy keep working.
 
 <p align="center">
   <img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration + storage planner" width="1100" />
@@ -173,6 +174,8 @@ For remote access (SSO + Tunnel):
 ```bash
 docker compose --profile auth --profile cloudflared up -d
 ```
+
+**After deploy:** run `bash ./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel) and open `http://<server-ip>` (LAN) or `https://<service>.${DOMAIN}` (remote) to confirm routing.
 
 ### 5) Stop the Wizard
 
@@ -340,6 +343,7 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 - **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
 - **Premium UI & Animations**: Matrix glass panels, scanlines, and exportable diagrams.
 - **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
+- **Control Plane Safety**: Docker calls are project-scoped with timeouts/concurrency limits; `/api/system/status` shows compose context and cache age, `/api/system/reload` restarts when managed by PM2/systemd.
 
 <details>
 <summary><strong>More UI screenshots</strong></summary>
