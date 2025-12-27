@@ -7,10 +7,70 @@ import path from 'path';
 import { AiChatRequest } from '../types/index.js';
 import * as arrService from '../services/arrService.js';
 
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-5.2-mini-tts';
-const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'gpt-4o-mini-tts';
+// Model configuration - Updated December 2025 for production-ready models
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1-hd';
+const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
 const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Circuit breaker state
+interface CircuitBreakerState {
+    failures: number;
+    lastFailure: number | null;
+    state: 'closed' | 'open' | 'half-open';
+}
+const circuitBreaker: CircuitBreakerState = { failures: 0, lastFailure: null, state: 'closed' };
+const CIRCUIT_BREAKER_THRESHOLD = 5;
+const CIRCUIT_BREAKER_RESET_MS = 30000;
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+
+    if (!record || now > record.resetAt) {
+        rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+        return { allowed: true };
+    }
+
+    if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+        return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
+    }
+
+    record.count++;
+    return { allowed: true };
+}
+
+function checkCircuitBreaker(): { allowed: boolean } {
+    const now = Date.now();
+
+    if (circuitBreaker.state === 'open') {
+        if (circuitBreaker.lastFailure && (now - circuitBreaker.lastFailure) > CIRCUIT_BREAKER_RESET_MS) {
+            circuitBreaker.state = 'half-open';
+            return { allowed: true };
+        }
+        return { allowed: false };
+    }
+    return { allowed: true };
+}
+
+function recordCircuitBreakerSuccess() {
+    circuitBreaker.failures = 0;
+    circuitBreaker.lastFailure = null;
+    circuitBreaker.state = 'closed';
+}
+
+function recordCircuitBreakerFailure() {
+    circuitBreaker.failures++;
+    circuitBreaker.lastFailure = Date.now();
+    if (circuitBreaker.failures >= CIRCUIT_BREAKER_THRESHOLD) {
+        circuitBreaker.state = 'open';
+    }
+}
 const TTS_PROVIDER = process.env.TTS_PROVIDER || 'openai';
 const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_multilingual_v2';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
@@ -673,6 +733,31 @@ Return ONLY a JSON object with the following structure:
 
     // Main agent chat endpoint
     fastify.post<{ Body: AiChatRequest }>('/api/agent/chat', async (request, reply) => {
+        const clientIp = request.ip || 'unknown';
+        const startTime = Date.now();
+
+        // Rate limiting check
+        const rateLimit = checkRateLimit(clientIp);
+        if (!rateLimit.allowed) {
+            reply.header('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
+            reply.header('X-RateLimit-Remaining', 0);
+            reply.header('Retry-After', rateLimit.retryAfter);
+            return reply.status(429).send({
+                error: 'Rate limit exceeded',
+                retryAfter: rateLimit.retryAfter
+            });
+        }
+
+        // Circuit breaker check
+        const circuitCheck = checkCircuitBreaker();
+        if (!circuitCheck.allowed) {
+            return reply.status(503).send({
+                error: 'Service temporarily unavailable',
+                reason: 'circuit_breaker_open',
+                retryAfter: Math.ceil(CIRCUIT_BREAKER_RESET_MS / 1000)
+            });
+        }
+
         const { message, agentId, history = [], context = {} } = request.body;
         const effectiveApiKey = getOpenAIKey();
 
@@ -918,6 +1003,18 @@ Return ONLY a JSON object with the following structure:
                     }
                 }
 
+                // Record circuit breaker success
+                recordCircuitBreakerSuccess();
+
+                // Log metrics
+                fastify.log.info({
+                    event: 'agent_chat_success',
+                    agent: agent.id,
+                    latencyMs: Date.now() - startTime,
+                    toolUsed: toolUsed?.command,
+                    aiPowered: true
+                });
+
                 return {
                     answer: answer || 'Sorry, I could not generate a response.',
                     agent: { id: agent.id, name: agent.name, icon: agent.icon },
@@ -927,7 +1024,14 @@ Return ONLY a JSON object with the following structure:
                 };
 
             } catch (error: any) {
-                fastify.log.error({ err: error, agent: agent?.id }, '[agent/chat] OpenAI error, falling back to canned response');
+                // Record circuit breaker failure
+                recordCircuitBreakerFailure();
+                fastify.log.error({
+                    err: error,
+                    agent: agent?.id,
+                    latencyMs: Date.now() - startTime,
+                    circuitState: circuitBreaker.state
+                }, '[agent/chat] OpenAI error, falling back to canned response');
             }
         }
 
@@ -963,69 +1067,204 @@ Return ONLY a JSON object with the following structure:
         }
 
         return { suggestions: suggestions.slice(0, 5) };
+    });
 
-          // ═══════════════════════════════════════════════════════════════════════════
-          // NEW: Agent Tools API Routes
-          // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SSE Streaming Chat Endpoint
+    // ═══════════════════════════════════════════════════════════════════════════
+    fastify.get<{ Querystring: { message: string; agentId?: string } }>(
+        '/api/agent/chat/stream',
+        async (request, reply) => {
+            const clientIp = request.ip || 'unknown';
+
+            // Rate limiting
+            const rateLimit = checkRateLimit(clientIp);
+            if (!rateLimit.allowed) {
+                return reply.status(429).send({ error: 'Rate limit exceeded' });
+            }
+
+            // Circuit breaker
+            const circuitCheck = checkCircuitBreaker();
+            if (!circuitCheck.allowed) {
+                return reply.status(503).send({ error: 'Service temporarily unavailable' });
+            }
+
+            const { message, agentId } = request.query;
+            const effectiveApiKey = getOpenAIKey();
+
+            if (!message) {
+                return reply.status(400).send({ error: 'Message is required' });
+            }
+
+            if (!effectiveApiKey) {
+                return reply.status(400).send({ error: 'OpenAI API key not configured' });
+            }
+
+            let agent = agentId ? (AGENTS as any)[agentId] : undefined;
+            if (!agent) {
+                agent = detectAgent(message);
+            }
+
+            const messages = buildAgentMessages(agent, message, [], {});
+
+            // Set SSE headers
+            reply.raw.setHeader('Content-Type', 'text/event-stream');
+            reply.raw.setHeader('Cache-Control', 'no-cache');
+            reply.raw.setHeader('Connection', 'keep-alive');
+            reply.raw.setHeader('X-Accel-Buffering', 'no');
+
+            try {
+                // Send agent info first
+                reply.raw.write(`data: ${JSON.stringify({ type: 'agent', agent: { id: agent.id, name: agent.name, icon: agent.icon } })}\n\n`);
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${effectiveApiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: OPENAI_MODEL,
+                        messages,
+                        max_tokens: 1000,
+                        temperature: 0.7,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok || !response.body) {
+                    recordCircuitBreakerFailure();
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: 'API request failed' })}\n\n`);
+                    reply.raw.end();
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                reply.raw.write('data: [DONE]\n\n');
+                                continue;
+                            }
+                            try {
+                                const parsed = JSON.parse(data);
+                                const delta = parsed.choices?.[0]?.delta;
+                                if (delta?.content) {
+                                    reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+                                }
+                            } catch {
+                                // Skip invalid JSON
+                            }
+                        }
+                    }
+                }
+
+                recordCircuitBreakerSuccess();
+                reply.raw.write('data: [DONE]\n\n');
+                reply.raw.end();
+            } catch (error: any) {
+                recordCircuitBreakerFailure();
+                fastify.log.error({ err: error }, 'Streaming chat error');
+                reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+                reply.raw.end();
+            }
+        }
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Agent Tools API Routes
+    // ═══════════════════════════════════════════════════════════════════════════
 
           // Import the new modules (add these imports at the top of the file)
           // import { agentTools } from '../tools/agentTools.js';
           // import { getCompletion, getAvailableProviders } from '../services/aiProviders.js';
           // import * as conversationStore from '../services/conversationStore.js';
 
-          // List available tools
-          fastify.get('/api/ai/tools', async (request, reply) => {
-                  // Dynamic import to avoid circular dependencies
-                  const { agentTools } = await import('../tools/agentTools.js');
-                  return reply.send({
-                            tools: Object.keys(agentTools),
-                            descriptions: {
-                                        check_service_health: 'Check Docker service status, uptime, and resources',
-                                        restart_service: 'Restart a Docker service (graceful or hard)',
-                                        generate_env_diff: 'Compare .env with .env.example',
-                                        run_post_deploy_check: 'Run health checks on VPN, services, etc.',
-                                        list_running_services: 'List all running Docker services with status'
-                            }
-                  });
-          });
+    // List available tools
+    fastify.get('/api/ai/tools', async (_request, reply) => {
+        const { agentTools } = await import('../tools/agentTools.js');
+        return reply.send({
+            tools: Object.keys(agentTools),
+            descriptions: {
+                check_service_health: 'Check Docker service status, uptime, and resources',
+                restart_service: 'Restart a Docker service (graceful or hard)',
+                generate_env_diff: 'Compare .env with .env.example',
+                run_post_deploy_check: 'Run health checks on VPN, services, etc.',
+                list_running_services: 'List all running Docker services with status',
+                analyze_logs: 'Search and analyze container logs for errors/patterns',
+                network_diagnostics: 'Check DNS, internet connectivity, VPN, and ports',
+                optimize_config: 'Get optimization suggestions for a service'
+            }
+        });
+    });
 
-          // Execute a tool
-          fastify.post<{ Params: { toolName: string }; Body: Record<string, any> }>('/api/ai/tools/:toolName', async (request, reply) => {
-                  const { toolName } = request.params;
-                  const params = request.body || {};
-                  const { agentTools } = await import('../tools/agentTools.js');
+    // Execute a tool
+    fastify.post<{ Params: { toolName: string }; Body: Record<string, any> }>('/api/ai/tools/:toolName', async (request, reply) => {
+        const { toolName } = request.params;
+        const params = request.body || {};
+        const { agentTools } = await import('../tools/agentTools.js');
 
-                  const tool = agentTools[toolName as keyof typeof agentTools];
-                  if (!tool) {
-                            return reply.code(404).send({ error: `Tool "${toolName}" not found` });
-                  }
+        const tool = agentTools[toolName as keyof typeof agentTools];
+        if (!tool) {
+            return reply.code(404).send({ error: `Tool "${toolName}" not found` });
+        }
 
-                  try {
-                            let result;
-                            switch (toolName) {
-                                case 'check_service_health':
-                                              result = await agentTools.check_service_health(params?.serviceName);
-                                              break;
-                                case 'restart_service':
-                                              result = await agentTools.restart_service(params?.serviceName, params?.mode);
-                                              break;
-                                case 'generate_env_diff':
-                                              result = await agentTools.generate_env_diff();
-                                              break;
-                                case 'run_post_deploy_check':
-                                              result = await agentTools.run_post_deploy_check();
-                                              break;
-                                case 'list_running_services':
-                                              result = await agentTools.list_running_services();
-                                              break;
-                                default:
-                                              return reply.code(404).send({ error: `Tool "${toolName}" not implemented` });
-                            }
-                            return reply.send(result);
-                  } catch (err: any) {
-                            return reply.code(500).send({ error: err.message });
-              }
-          });
+        try {
+            let result;
+            switch (toolName) {
+                case 'check_service_health':
+                    result = await agentTools.check_service_health(params?.serviceName);
+                    break;
+                case 'restart_service':
+                    result = await agentTools.restart_service(params?.serviceName, params?.mode);
+                    break;
+                case 'generate_env_diff':
+                    result = await agentTools.generate_env_diff();
+                    break;
+                case 'run_post_deploy_check':
+                    result = await agentTools.run_post_deploy_check();
+                    break;
+                case 'list_running_services':
+                    result = await agentTools.list_running_services();
+                    break;
+                case 'analyze_logs':
+                    result = await agentTools.analyze_logs(params?.serviceName, {
+                        pattern: params?.pattern,
+                        severity: params?.severity,
+                        lines: params?.lines
+                    });
+                    break;
+                case 'network_diagnostics':
+                    result = await agentTools.network_diagnostics({
+                        checkDns: params?.checkDns,
+                        checkPorts: params?.checkPorts,
+                        checkVpn: params?.checkVpn,
+                        checkInternet: params?.checkInternet
+                    });
+                    break;
+                case 'optimize_config':
+                    result = await agentTools.optimize_config(params?.serviceName, params?.focus);
+                    break;
+                default:
+                    return reply.code(404).send({ error: `Tool "${toolName}" not implemented` });
+            }
+            return reply.send(result);
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
 
           // ═══════════════════════════════════════════════════════════════════════════
           // NEW: Conversation API Routes
@@ -1063,10 +1302,126 @@ Return ONLY a JSON object with the following structure:
           // NEW: AI Provider Status
           // ═══════════════════════════════════════════════════════════════════════════
 
-          fastify.get('/api/ai/providers', async (request, reply) => {
-                  const { getAvailableProviders } = await import('../services/aiProviders.js');
-                  const providers = getAvailableProviders();
-                  return reply.send({ providers, primary: process.env.PRIMARY_AI_PROVIDER || 'openai' });
-          });
+    fastify.get('/api/ai/providers', async (_request, reply) => {
+        const { getAvailableProviders } = await import('../services/aiProviders.js');
+        const providers = getAvailableProviders();
+        return reply.send({ providers, primary: process.env.PRIMARY_AI_PROVIDER || 'openai' });
     });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Metrics and Observability API
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Get metrics summary
+    fastify.get<{ Querystring: { from?: string; to?: string; agent?: string; model?: string } }>(
+        '/api/ai/metrics',
+        async (request, reply) => {
+            const { getMetrics } = await import('../services/metricsService.js');
+            const { from, to, agent, model } = request.query;
+
+            const metrics = getMetrics({
+                from: from ? new Date(from) : undefined,
+                to: to ? new Date(to) : undefined,
+                agent,
+                model
+            });
+
+            return reply.send(metrics);
+        }
+    );
+
+    // Get health status
+    fastify.get('/api/ai/health', async (_request, reply) => {
+        const { getHealthStatus } = await import('../services/metricsService.js');
+        return reply.send(getHealthStatus());
+    });
+
+    // Get cost breakdown
+    fastify.get<{ Querystring: { from?: string; to?: string } }>(
+        '/api/ai/costs',
+        async (request, reply) => {
+            const { getCostBreakdown } = await import('../services/metricsService.js');
+            const { from, to } = request.query;
+            return reply.send(getCostBreakdown(
+                from ? new Date(from) : undefined,
+                to ? new Date(to) : undefined
+            ));
+        }
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RAG Knowledge Base API
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Search knowledge base
+    fastify.get<{ Querystring: { q: string; limit?: number } }>(
+        '/api/ai/knowledge/search',
+        async (request, reply) => {
+            const { searchLocalKnowledge } = await import('../services/ragService.js');
+            const { q, limit = 5 } = request.query;
+
+            if (!q) {
+                return reply.status(400).send({ error: 'Query parameter q is required' });
+            }
+
+            const results = searchLocalKnowledge(q, limit);
+            return reply.send({ results, query: q });
+        }
+    );
+
+    // Get document by ID
+    fastify.get<{ Params: { id: string } }>(
+        '/api/ai/knowledge/:id',
+        async (request, reply) => {
+            const { getDocument } = await import('../services/ragService.js');
+            const doc = getDocument(request.params.id);
+
+            if (!doc) {
+                return reply.status(404).send({ error: 'Document not found' });
+            }
+
+            return reply.send(doc);
+        }
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Realtime Voice API Status
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Get Realtime API status and configuration
+    fastify.get('/api/ai/realtime/status', async (_request, reply) => {
+        const { getRealtimeStatus, getRealtimeConfig } = await import('../services/realtimeVoice.js');
+        const status = getRealtimeStatus();
+        const config = getRealtimeConfig();
+
+        return reply.send({
+            ...status,
+            // Don't expose the full auth headers, just indicate if configured
+            configured: !!config
+        });
+    });
+
+    // Get session configuration for client-side WebSocket
+    fastify.post<{ Body: { voice?: string; instructions?: string } }>(
+        '/api/ai/realtime/session',
+        async (request, reply) => {
+            const { createSessionConfig, getRealtimeConfig } = await import('../services/realtimeVoice.js');
+            const config = getRealtimeConfig();
+
+            if (!config) {
+                return reply.status(400).send({ error: 'OpenAI API key not configured' });
+            }
+
+            const sessionConfig = createSessionConfig({
+                voice: request.body.voice as any,
+                instructions: request.body.instructions
+            });
+
+            return reply.send({
+                websocketUrl: config.url,
+                model: config.model,
+                sessionConfig
+            });
+        }
+    );
 }
