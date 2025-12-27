@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: docs-site/Dockerfile
       args:
-        VITE_OPENAI_MODEL: ${VITE_OPENAI_MODEL:-gpt-4o-mini}
+        VITE_OPENAI_MODEL: ${VITE_OPENAI_MODEL:-gpt-5.2-mini}
         VITE_CONTROL_SERVER_URL: ${VITE_CONTROL_SERVER_URL:-http://localhost:3001}
     container_name: media-stack-wizard-web
     ports:
@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: control-server/Dockerfile
       args:
-        OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+        OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.2}
     container_name: media-stack-wizard-api
     ports:
       - "127.0.0.1:3001:3001"
@@ -36,7 +36,7 @@ services:
       - PROJECT_ROOT=/project
       - CONTROL_SERVER_HOST=0.0.0.0
       - CONTROL_SERVER_ALLOW_INSECURE_NO_TOKEN=1
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-5.2}
       # Set PUID/PGID to 0 (root) by default for docker socket access, 
       # or users must configure their own id mapping.
       # Ideally we use the same user as the host docker group.

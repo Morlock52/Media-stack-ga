@@ -34,15 +34,19 @@ test.describe('Settings: Arr-Stack Automation', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ hasKey: true, model: 'gpt-4o' }),
+        body: JSON.stringify({ hasKey: true, model: 'gpt-5.2' }),
       })
     })
 
-    await page.route('**/api/settings/tts-status', async (route) => {
+    await page.route('**/api/settings/tts', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ elevenlabs: { hasKey: false, voiceId: null } }),
+        body: JSON.stringify({
+          defaultProvider: 'openai',
+          openai: { hasKey: true, ttsModel: 'tts-1', ttsVoice: 'alloy' },
+          elevenlabs: { hasKey: false, ttsModel: 'eleven_multilingual_v2', voiceId: null },
+        }),
       })
     })
   })

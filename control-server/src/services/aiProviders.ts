@@ -1,6 +1,7 @@
 /**
  * AI Provider Abstraction with Claude Fallback
- * Primary: OpenAI GPT-4o | Fallback: Claude 3.5 Sonnet
+ * Primary: OpenAI GPT-5.2 | Fallback: Claude Sonnet 4.5
+ * Updated December 2025 for latest model support
  */
 
 import pino from 'pino';
@@ -32,7 +33,7 @@ async function callOpenAI(messages: Message[], options: CompletionOptions = {}):
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-  const model = options.model || process.env.OPENAI_MODEL || 'gpt-4o';
+  const model = options.model || process.env.OPENAI_MODEL || 'gpt-5.2';
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -58,7 +59,7 @@ async function callClaude(messages: Message[], options: CompletionOptions = {}):
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const model = options.model || process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
+  const model = options.model || process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
     const systemMessage = messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
 

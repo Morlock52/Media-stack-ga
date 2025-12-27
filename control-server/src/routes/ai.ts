@@ -7,13 +7,16 @@ import path from 'path';
 import { AiChatRequest } from '../types/index.js';
 import * as arrService from '../services/arrService.js';
 
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
-const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-5.2-mini-tts';
+const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'gpt-4o-mini-tts';
 const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 const TTS_PROVIDER = process.env.TTS_PROVIDER || 'openai';
 const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_multilingual_v2';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
+
+// Claude/Anthropic settings (December 2025: Claude Sonnet 4.5)
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
 
 type VoiceAgentHistoryItem = { role: 'user' | 'assistant'; content: string };
 
@@ -36,6 +39,13 @@ const getElevenLabsKey = () => {
     if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY;
     const envContent = readEnvFile();
     const match = envContent.match(/^ELEVENLABS_API_KEY=(.+)$/m);
+    return match ? match[1].trim() : null;
+};
+
+const getAnthropicKey = () => {
+    if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+    const envContent = readEnvFile();
+    const match = envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m);
     return match ? match[1].trim() : null;
 };
 
@@ -446,6 +456,13 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
     });
 
+    fastify.get('/api/settings/elevenlabs-voice', async (_request, _reply) => {
+        return {
+            voiceId: ELEVENLABS_VOICE_ID || null,
+            model: ELEVENLABS_TTS_MODEL,
+        };
+    });
+
     fastify.post<{ Body: { voiceId?: string } }>('/api/settings/elevenlabs-voice', async (request, reply) => {
         const { voiceId: nextVoiceId } = request.body || {};
         if (!nextVoiceId || typeof nextVoiceId !== 'string' || !nextVoiceId.trim()) {
@@ -499,6 +516,45 @@ export async function aiRoutes(fastify: FastifyInstance) {
         } catch (error) {
             fastify.log.error({ err: error }, 'Failed to remove OpenAI key');
             reply.status(500).send({ error: 'Failed to remove OpenAI key' });
+        }
+    });
+
+    // Settings: Claude/Anthropic key management
+    fastify.get('/api/settings/claude-key', async (_request, _reply) => {
+        const key = getAnthropicKey();
+        const hasKey = Boolean(key && key.length > 0);
+        return {
+            hasKey,
+            model: CLAUDE_MODEL,
+        };
+    });
+
+    fastify.post<{ Body: { key?: string, anthropicKey?: string } }>('/api/settings/claude-key', async (request, reply) => {
+        const { key, anthropicKey } = request.body || {};
+        const apiKey = key || anthropicKey;
+
+        if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 10) {
+            return reply.status(400).send({ error: 'Claude API key is required and must be at least 10 characters.' });
+        }
+
+        try {
+            setEnvValue('ANTHROPIC_API_KEY', apiKey.trim());
+            process.env.ANTHROPIC_API_KEY = apiKey.trim();
+            return { success: true };
+        } catch (error) {
+            fastify.log.error({ err: error }, 'Failed to save Claude key');
+            reply.status(500).send({ error: 'Failed to save Claude key' });
+        }
+    });
+
+    fastify.delete('/api/settings/claude-key', async (_request, reply) => {
+        try {
+            removeEnvKey('ANTHROPIC_API_KEY');
+            delete process.env.ANTHROPIC_API_KEY;
+            return { success: true };
+        } catch (error) {
+            fastify.log.error({ err: error }, 'Failed to remove Claude key');
+            reply.status(500).send({ error: 'Failed to remove Claude key' });
         }
     });
 

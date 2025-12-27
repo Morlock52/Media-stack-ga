@@ -46,13 +46,13 @@ describe('/api/tts', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('audio/mpeg');
-    expect(res.headers['x-tts-model']).toBe('gpt-4o-mini-tts');
+    expect(res.headers['x-tts-model']).toBe('gpt-5.2-mini-tts');
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe('https://api.openai.com/v1/audio/speech');
     expect(calls[0].init.headers.Authorization).toBe('Bearer sk-test');
 
     const body = JSON.parse(String(calls[0].init.body));
-    expect(body.model).toBe('gpt-4o-mini-tts');
+    expect(body.model).toBe('gpt-5.2-mini-tts');
     expect(body.voice).toBeTruthy();
     expect(body.input).toBe('Hello');
     expect(body.response_format).toBe('mp3');
@@ -78,12 +78,12 @@ describe('/api/tts', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.headers['x-tts-model']).toBe('tts-1');
+    expect(res.headers['x-tts-model']).toBe('gpt-4o-mini-tts');
     expect(calls).toHaveLength(2);
 
     const primaryBody = JSON.parse(String(calls[0].init.body));
     const fallbackBody = JSON.parse(String(calls[1].init.body));
-    expect(primaryBody.model).toBe('gpt-4o-mini-tts');
-    expect(fallbackBody.model).toBe('tts-1');
+    expect(primaryBody.model).toBe('gpt-5.2-mini-tts');
+    expect(fallbackBody.model).toBe('gpt-4o-mini-tts');
   });
 });

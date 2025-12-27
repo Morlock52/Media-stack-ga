@@ -128,7 +128,7 @@ interface RequestBody {
     history?: { role: 'user' | 'assistant'; content: string }[]
 }
 
- const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2-mini'
 
 export const handler: Handler = async (event: HandlerEvent) => {
     // Only allow POST

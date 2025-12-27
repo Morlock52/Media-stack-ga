@@ -13,7 +13,7 @@ test.describe('Settings: Control server cockpit', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ hasKey: true, model: 'gpt-4o' }),
+          body: JSON.stringify({ hasKey: true, model: 'gpt-5.2' }),
         })
         return
       }

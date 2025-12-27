@@ -28,6 +28,7 @@ import {
 } from '../components/ui/dialog'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
+import { useControlServerClaudeKeyStatus } from '../hooks/useControlServerClaudeKeyStatus'
 import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
 import { StatusBadge } from '../components/StatusBadge'
 
@@ -75,9 +76,12 @@ export function SettingsPage() {
   const [elevenLabsKeyInput, setElevenLabsKeyInput] = useState('')
   const [elevenLabsVoiceIdInput, setElevenLabsVoiceIdInput] = useState('')
   const [elevenLabsAction, setElevenLabsAction] = useState<'idle' | 'saving' | 'removing' | 'savingVoice'>('idle')
+  const [claudeKeyInput, setClaudeKeyInput] = useState('')
+  const [claudeAction, setClaudeAction] = useState<'idle' | 'saving' | 'removing'>('idle')
   const [isRestarting, setIsRestarting] = useState(false)
 
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
+  const { hasKey: hasClaudeKey, model: claudeModel, refresh: refreshClaude } = useControlServerClaudeKeyStatus()
   const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
 
   const setToastMessage = (update: ToastState) => {
@@ -322,6 +326,56 @@ export function SettingsPage() {
     }
   }
 
+  const handleSaveClaudeKey = async () => {
+    const trimmed = claudeKeyInput.trim()
+    if (!trimmed) {
+      setToastMessage({ type: 'error', text: 'Enter a Claude API key before saving.' })
+      return
+    }
+
+    setClaudeAction('saving')
+    try {
+      const res = await fetch(buildControlServerUrl('/api/settings/claude-key'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+        body: JSON.stringify({ key: trimmed }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Failed to store Claude key')
+      }
+      setClaudeKeyInput('')
+      setToastMessage({ type: 'success', text: 'Claude API key stored securely.' })
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: error.message || 'Failed to store Claude key.' })
+    } finally {
+      setClaudeAction('idle')
+      await refreshClaude()
+    }
+  }
+
+  const handleRemoveClaudeKey = async () => {
+    setClaudeAction('removing')
+    setClaudeKeyInput('')
+
+    try {
+      const res = await fetch(buildControlServerUrl('/api/settings/claude-key'), {
+        method: 'DELETE',
+        headers: { ...controlServerAuthHeaders() },
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Failed to delete Claude key')
+      }
+      setToastMessage({ type: 'success', text: 'Claude API key removed.' })
+    } catch (error: any) {
+      setToastMessage({ type: 'error', text: error.message || 'Failed to remove Claude key.' })
+    } finally {
+      setClaudeAction('idle')
+      await refreshClaude()
+    }
+  }
+
   const handleBootstrapArr = async () => {
     if (!serverOnline) {
       setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
@@ -449,7 +503,7 @@ export function SettingsPage() {
     return { label: 'Control server offline', color: 'bg-amber-500/15 text-amber-300' }
   }, [isRestarting, serverOnline])
 
-  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || isRestarting
+  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || claudeAction !== 'idle' || isRestarting
   const healthUrl = buildControlServerUrl('/api/health')
   const lastCheckedLabel = lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'
 
@@ -676,6 +730,116 @@ export function SettingsPage() {
                 {toast.text}
               </div>
             )}
+          </div>
+
+          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Key className="w-6 h-6 text-orange-400" />
+                Claude API Access (Fallback)
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Store your Anthropic API key to enable Claude as a fallback AI provider. When OpenAI is unavailable,
+                the system automatically switches to Claude for uninterrupted operation.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-border p-5 bg-card/80">
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Manage key</h3>
+                <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
+                  API key
+                </label>
+                <input
+                  type="password"
+                  value={claudeKeyInput}
+                  onChange={(e) => setClaudeKeyInput(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Need a key? Visit{' '}
+                  <a
+                    href="https://console.anthropic.com/settings/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    console.anthropic.com/settings/keys
+                  </a>
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleSaveClaudeKey}
+                    disabled={disableActions || !claudeKeyInput.trim()}
+                    className="gap-2 flex-1"
+                  >
+                    {claudeAction === 'saving' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save key
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleRemoveClaudeKey}
+                    disabled={disableActions || (!claudeKeyInput && !hasClaudeKey)}
+                    className="gap-2"
+                  >
+                    {claudeAction === 'removing' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    Remove
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-orange-300" />
+                  Status & diagnostics
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    {hasClaudeKey ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    )}
+                    <span>
+                      {hasClaudeKey
+                        ? 'Key stored on control server.'
+                        : 'No key stored on the control server yet.'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">
+                    <p>
+                      • Server URL: <code className="bg-muted px-1 py-0.5 rounded text-[11px]">/api/settings/claude-key</code>
+                    </p>
+                    <p>
+                      • Model: <code className="bg-muted px-1 py-0.5 rounded text-[11px]">{claudeModel || 'claude-sonnet-4-5-20250929'}</code>
+                    </p>
+                    <p>• Claude is used as fallback when OpenAI is unavailable.</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={refreshClaude}
+                  disabled={claudeAction !== 'idle'}
+                  className="w-full gap-2"
+                >
+                  {claudeAction !== 'idle' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Run connectivity check
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
