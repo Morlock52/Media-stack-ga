@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     MessageCircle, Send, X, Loader2, Bot,
-    Sparkles, Copy, Check, User, HelpCircle
+    Sparkles, Copy, Check, User, HelpCircle, Brain
 } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { useSetupStore } from '../store/setupStore'
 import { wizardStepAssistantData, wizardStepNames } from '../data/wizardAssistant'
 import { useShallow } from 'zustand/react/shallow'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
+import { useStreamingChat } from '../hooks/useStreamingChat'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -41,16 +42,68 @@ const AGENT_COLORS: Record<string, string> = {
 // Agent icons - using emoji from server response instead
 // const AGENT_REACT_ICONS kept for potential future use
 
-type AgentStatus = 'idle' | 'thinking' | 'using-computer' | 'responding'
+// Enhanced agent status types for better UX transparency
+type AgentStatus =
+    | 'idle'
+    | 'listening'      // Voice input active
+    | 'thinking'       // LLM processing
+    | 'searching'      // RAG retrieval
+    | 'tool:check'     // Running health check
+    | 'tool:docker'    // Docker operation
+    | 'tool:network'   // Network diagnostics
+    | 'using-computer' // Generic tool use
+    | 'generating'     // Streaming response
+    | 'responding'     // Sending response
+    | 'speaking'       // TTS output
+    | 'error'          // Recoverable error
+    | 'offline'        // No connectivity
+
+// Estimate tokens (roughly 4 chars per token for English text)
+function estimateTokens(messages: Message[]): number {
+    return Math.ceil(
+        messages.reduce((total, msg) => total + msg.content.length, 0) / 4
+    )
+}
 
 const STATUS_LABELS: Record<AgentStatus, { text: string; color: string }> = {
     idle: { text: 'Ready', color: 'bg-gray-500' },
+    listening: { text: 'Listening...', color: 'bg-purple-500' },
     thinking: { text: 'Thinking...', color: 'bg-yellow-500' },
+    searching: { text: 'Searching docs...', color: 'bg-cyan-500' },
+    'tool:check': { text: 'Checking health...', color: 'bg-blue-500' },
+    'tool:docker': { text: 'Docker operation...', color: 'bg-blue-600' },
+    'tool:network': { text: 'Network check...', color: 'bg-indigo-500' },
     'using-computer': { text: 'Using computer...', color: 'bg-blue-500' },
+    generating: { text: 'Generating...', color: 'bg-emerald-500' },
     responding: { text: 'Responding...', color: 'bg-green-500' },
+    speaking: { text: 'Speaking...', color: 'bg-violet-500' },
+    error: { text: 'Error - Retry?', color: 'bg-red-500' },
+    offline: { text: 'Offline', color: 'bg-gray-600' },
 }
 
 type Suggestion = { text: string; agent: string; label?: string }
+
+// LocalStorage key for dismissed nudges
+const DISMISSED_NUDGES_KEY = 'ai-assistant-dismissed-nudges'
+
+function getDismissedNudges(): Set<string> {
+    try {
+        const stored = localStorage.getItem(DISMISSED_NUDGES_KEY)
+        return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch {
+        return new Set()
+    }
+}
+
+function saveDismissedNudge(nudge: string): void {
+    try {
+        const dismissed = getDismissedNudges()
+        dismissed.add(nudge)
+        localStorage.setItem(DISMISSED_NUDGES_KEY, JSON.stringify([...dismissed]))
+    } catch {
+        // Ignore storage errors
+    }
+}
 
 export function AIAssistant({ currentApp }: AIAssistantProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -63,8 +116,28 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
     const [proactiveNudge, setProactiveNudge] = useState<string | null>(null)
+    const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(() => getDismissedNudges())
+    const [streamingContent, setStreamingContent] = useState<string>('')
+    const [streamingAgent, setStreamingAgent] = useState<{ id: string; name: string; icon: string } | null>(null)
+    const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    // Streaming chat hook
+    const { streamChat, isStreaming, cancelStream } = useStreamingChat({
+        onToken: (token) => {
+            setStreamingContent(prev => prev + token)
+        },
+        onAgentInfo: (agent) => {
+            setStreamingAgent(agent)
+        },
+        onComplete: () => {
+            setStatus('idle')
+        },
+        onError: () => {
+            setStatus('error')
+        }
+    })
     const { currentStep: wizardStep, config, selectedServices } = useSetupStore(
         useShallow((state) => ({
             currentStep: state.currentStep,
@@ -151,16 +224,45 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
 
     const sendMessage = async (text?: string) => {
         const messageText = text || input.trim()
-        if (!messageText || isLoading) return
+        if (!messageText || isLoading || isStreaming) return
 
         setInput('')
+        setLastFailedMessage(null) // Clear any previous failed message
         const userMsg: Message = { role: 'user', content: messageText }
         setMessages(prev => [...prev, userMsg])
         setIsLoading(true)
         setStatus('thinking')
         setProactiveNudge(null)
+        setStreamingContent('')
+        setStreamingAgent(null)
 
+        // Try streaming first for real-time feedback
         try {
+            setStatus('generating')
+            const response = await streamChat(messageText, selectedAgent || undefined)
+
+            // Streaming complete - add the final message
+            const assistantMsg: Message = {
+                role: 'assistant',
+                content: response || 'Sorry, I could not respond.',
+                agent: streamingAgent || { id: 'general', name: 'AI Assistant', icon: '🤖' },
+                aiPowered: true
+            }
+            setMessages(prev => [...prev, assistantMsg])
+            setStreamingContent('')
+            setStreamingAgent(null)
+            setIsLoading(false)
+            setStatus('idle')
+            return
+        } catch (streamErr) {
+            console.warn('Streaming failed, falling back to non-streaming:', streamErr)
+            setStreamingContent('')
+            setStreamingAgent(null)
+        }
+
+        // Fallback to non-streaming for richer context
+        try {
+            setStatus('thinking')
             const payload: {
                 message: string
                 history: Message[]
@@ -218,21 +320,36 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
             }
             setMessages(prev => [...prev, assistantMsg])
 
-            // Show proactive nudge if available
+            // Show proactive nudge if available (filter out dismissed ones)
             if (data.nudges?.length > 0) {
-                setProactiveNudge(data.nudges[0].message)
+                const availableNudge = data.nudges.find(
+                    (n: { message: string }) => !dismissedNudges.has(n.message)
+                )
+                if (availableNudge) {
+                    setProactiveNudge(availableNudge.message)
+                }
             }
 
         } catch (err) {
             console.warn('AIAssistant chat request failed:', err)
+            setLastFailedMessage(messageText) // Store for retry
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: "I'm having trouble connecting. Make sure the control server is running (`npm start` in control-server/).",
                 agent: { id: 'general', name: 'System', icon: '⚠️' }
             }])
+            setStatus('error')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const retryLastMessage = () => {
+        if (lastFailedMessage) {
+            // Remove the last error message before retrying
+            setMessages(prev => prev.slice(0, -1))
             setStatus('idle')
+            sendMessage(lastFailedMessage)
         }
     }
 
@@ -291,20 +408,40 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                         <p className="text-[10px] text-muted-foreground">
                                             {hasRemoteKey ? '✨ AI-powered' : 'Basic mode'}
                                         </p>
-                                        {/* Status Chip */}
-                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_LABELS[status].color} text-white`}>
-                                            {status !== 'idle' && <Loader2 className="w-2 h-2 animate-spin" />}
-                                            {STATUS_LABELS[status].text}
-                                        </span>
+                                        {/* Status Chip - clickable when error */}
+                                        {status === 'error' && lastFailedMessage ? (
+                                            <button
+                                                onClick={retryLastMessage}
+                                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_LABELS[status].color} text-white hover:opacity-80 transition-opacity cursor-pointer`}
+                                                title="Click to retry"
+                                            >
+                                                ↻ Retry
+                                            </button>
+                                        ) : (
+                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_LABELS[status].color} text-white`}>
+                                                {status !== 'idle' && status !== 'error' && <Loader2 className="w-2 h-2 animate-spin" />}
+                                                {STATUS_LABELS[status].text}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
+                                {/* Memory indicator */}
+                                {messages.length > 0 && (
+                                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mr-1" title="Conversation memory">
+                                        <Brain className="w-3 h-3" />
+                                        <span>{messages.length} msgs</span>
+                                        <span className={estimateTokens(messages) > 3000 ? 'text-amber-500' : ''}>
+                                            ({estimateTokens(messages)} tokens)
+                                        </span>
+                                    </div>
+                                )}
                                 {messages.length > 0 && (
                                     <button
                                         onClick={clearChat}
-                                        className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground text-xs"
-                                        title="Clear chat"
+                                        className={`p-1.5 hover:bg-muted/60 rounded-lg text-xs ${estimateTokens(messages) > 3000 ? 'text-amber-500 hover:text-amber-400' : 'text-muted-foreground hover:text-foreground'}`}
+                                        title={estimateTokens(messages) > 3000 ? "Clear to save tokens" : "Clear chat"}
                                     >
                                         Clear
                                     </button>
@@ -456,13 +593,52 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                 ))
                             )}
 
-                            {isLoading && (
-                                <div className="flex gap-2 items-center">
-                                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 flex items-center justify-center">
-                                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            {/* Streaming response display */}
+                            {(isLoading || isStreaming) && (
+                                <div className="flex gap-2 items-start">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                                        streamingAgent?.id
+                                            ? `bg-gradient-to-r ${AGENT_COLORS[streamingAgent.id] || AGENT_COLORS.general}`
+                                            : 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400'
+                                    }`}>
+                                        {streamingContent ? (
+                                            <span className="text-sm">{streamingAgent?.icon || '🤖'}</span>
+                                        ) : (
+                                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                        )}
                                     </div>
-                                    <div className="px-3 py-2 bg-muted/60 rounded-2xl rounded-bl-md">
-                                        <span className="text-sm text-muted-foreground">Thinking...</span>
+                                    <div className="max-w-[80%]">
+                                        {streamingAgent && (
+                                            <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                                                {streamingAgent.name}
+                                                <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                            </p>
+                                        )}
+                                        <div className="px-3 py-2 bg-muted/60 rounded-2xl rounded-bl-md">
+                                            {streamingContent ? (
+                                                <div className="text-sm whitespace-pre-wrap">
+                                                    {streamingContent}
+                                                    <span className="inline-block w-1 h-4 bg-primary/50 animate-pulse ml-0.5" />
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">
+                                                    {status === 'generating' ? 'Generating...' : 'Thinking...'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {isStreaming && (
+                                            <button
+                                                onClick={() => {
+                                                    cancelStream()
+                                                    setIsLoading(false)
+                                                    setStatus('idle')
+                                                    setStreamingContent('')
+                                                }}
+                                                className="mt-1 text-[10px] text-muted-foreground hover:text-foreground"
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -480,15 +656,27 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                     <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                     <div className="flex-1">
                                         <p className="text-xs text-primary/80">{proactiveNudge}</p>
-                                        <button
-                                            onClick={() => {
-                                                sendMessage(proactiveNudge.replace(/^💡\s*(Tip:\s*)?/i, ''))
-                                                setProactiveNudge(null)
-                                            }}
-                                            className="mt-1 text-[10px] text-primary/80 hover:text-primary"
-                                        >
-                                            Ask about this →
-                                        </button>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <button
+                                                onClick={() => {
+                                                    sendMessage(proactiveNudge.replace(/^💡\s*(Tip:\s*)?/i, ''))
+                                                    setProactiveNudge(null)
+                                                }}
+                                                className="text-[10px] text-primary/80 hover:text-primary"
+                                            >
+                                                Ask about this →
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    saveDismissedNudge(proactiveNudge)
+                                                    setDismissedNudges(prev => new Set([...prev, proactiveNudge]))
+                                                    setProactiveNudge(null)
+                                                }}
+                                                className="text-[10px] text-muted-foreground hover:text-primary/60"
+                                            >
+                                                Don't show again
+                                            </button>
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => setProactiveNudge(null)}

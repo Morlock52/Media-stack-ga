@@ -114,23 +114,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <SidebarMenuButton 
                         isActive={isActive}
                         className={isCompleted ? "text-green-600" : ""}
+                        onClick={() => {
+                          // Navigate to step if it's a step
+                          if ('step' in item) {
+                            const { setCurrentStep } = useSetupStore.getState()
+                            setCurrentStep(item.step)
+                          }
+                        }}
                       >
-                        <button
-                          onClick={() => {
-                            // Navigate to step if it's a step
-                            if ('step' in item) {
-                              const { setCurrentStep } = useSetupStore.getState()
-                              setCurrentStep(item.step)
-                            }
-                          }}
-                          className="w-full text-left"
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span>{item.title}</span>
-                          {isCompleted && (
-                            <div className="w-2 h-2 bg-green-500 rounded-full ml-auto" />
-                          )}
-                        </button>
+                        <Icon className="w-4 h-4" />
+                        <span>{item.title}</span>
+                        {isCompleted && (
+                          <div className="w-2 h-2 bg-green-500 rounded-full ml-auto" />
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )

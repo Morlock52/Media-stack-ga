@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { PROJECT_ROOT } from './utils/env.js';
 
 import { dockerRoutes } from './routes/docker.js';
@@ -61,6 +62,13 @@ export const buildApp = async (): Promise<FastifyInstance> => {
             if (allowedOrigins.includes(origin)) return cb(null, true);
             return cb(new Error('Not allowed by CORS'), false);
         }
+    });
+
+    // Register multipart for file uploads (audio transcription)
+    await app.register(multipart, {
+        limits: {
+            fileSize: 25 * 1024 * 1024, // 25MB max file size for audio
+        },
     });
 
     // Optional API auth (recommended when control-server is reachable beyond localhost)

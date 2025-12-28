@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
-import { HelpCircle, Shield } from 'lucide-react'
+import { HelpCircle, Shield, Home, Cloud } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 import { AdvancedSettingsFormData } from '../../../schemas/setupSchema'
+import { useSetupStore } from '../../../store/setupStore'
 
 interface AdvancedSettingsStepProps {
     form: UseFormReturn<AdvancedSettingsFormData>
@@ -10,6 +11,8 @@ interface AdvancedSettingsStepProps {
 
 export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSettingsStepProps) {
     const { register, formState: { errors } } = form
+    const { config } = useSetupStore()
+    const isLocalMode = config.deploymentMode === 'local'
 
     return (
         <motion.div
@@ -21,32 +24,54 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
         >
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Advanced Settings</h2>
-                <p className="text-muted-foreground">Optional configurations (can be set later)</p>
+                <p className="text-muted-foreground">
+                    {isLocalMode
+                        ? 'Local deployment - just a few optional settings'
+                        : 'Optional configurations (can be set later)'}
+                </p>
             </div>
 
             <div className="space-y-6">
-                {/* Cloudflare Token */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                        Cloudflare Tunnel Token
-                        <a
-                            href="https://one.dash.cloudflare.com/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300"
-                            title="Open Cloudflare dashboard in a new tab to get your tunnel token"
-                        >
-                            <HelpCircle className="w-4 h-4" />
-                        </a>
-                    </label>
-                    <input
-                        {...register('cloudflareToken')}
-                        type="password"
-                        className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
-                        placeholder="ey..."
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">Required for remote access via Cloudflare Tunnel</p>
-                </div>
+                {/* Local Mode Banner */}
+                {isLocalMode && (
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            <Home className="w-5 h-5 text-emerald-400" />
+                            <div>
+                                <h3 className="font-semibold text-emerald-400">Local Installation Mode</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Access via *.local domains. No Cloudflare or external authentication needed.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Cloudflare Token - Only show for cloud mode */}
+                {!isLocalMode && (
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                            <Cloud className="w-4 h-4 text-blue-400" />
+                            Cloudflare Tunnel Token
+                            <a
+                                href="https://one.dash.cloudflare.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                                title="Open Cloudflare dashboard in a new tab to get your tunnel token"
+                            >
+                                <HelpCircle className="w-4 h-4" />
+                            </a>
+                        </label>
+                        <input
+                            {...register('cloudflareToken')}
+                            type="password"
+                            className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
+                            placeholder="ey..."
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">Required for remote access via Cloudflare Tunnel</p>
+                    </div>
+                )}
 
                 {/* Plex Claim */}
                 {selectedServices.includes('plex') && (

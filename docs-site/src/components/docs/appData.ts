@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
 import {
     Activity,
+    BarChart3,
     Bell,
+    Book,
     BookOpen,
     Bug,
     Camera,
@@ -9,11 +11,18 @@ import {
     Container,
     Database,
     Download,
+    FileText,
     FileVideo,
     Film,
+    FolderOpen,
+    HardDrive,
     Home,
+    Inbox,
     Languages,
     Layers,
+    ListVideo,
+    Music,
+    Radio,
     RefreshCw,
     Search,
     Shield,
@@ -26,7 +35,9 @@ import {
 export const ICON_MAP: Record<string, LucideIcon> = {
     Film, Tv, Activity, Search, Download, Shield, Home, Container,
     FileVideo, Bell, Languages, ShieldCheck, Layers, Utensils,
-    BookOpen, Camera, Cloud, Terminal, Bug, Database, RefreshCw
+    BookOpen, Camera, Cloud, Terminal, Bug, Database, RefreshCw,
+    BarChart3, FileText, Music, Book, Radio, Inbox, ListVideo,
+    FolderOpen, HardDrive
 }
 
 export type AppId =
@@ -56,6 +67,16 @@ export type AppId =
     | 'redis'
     | 'watchtower'
     | 'post-deploy'
+    | 'grafana'
+    | 'loki'
+    | 'promtail'
+    | 'lidarr'
+    | 'readarr'
+    | 'sabnzbd'
+    | 'ombi'
+    | 'petio'
+    | 'kavita'
+    | 'filebrowser'
 
 export interface AppInfo {
     id: AppId
@@ -301,5 +322,95 @@ export const appCards: AppInfo[] = [
         icon: Activity,
         difficulty: 'Medium',
         time: '20-30 min',
+    },
+    {
+        id: 'grafana',
+        name: 'Grafana',
+        category: 'Monitoring',
+        description: 'Beautiful dashboards for logs, metrics, and alerts.',
+        icon: BarChart3,
+        difficulty: 'Medium',
+        time: '15-30 min',
+    },
+    {
+        id: 'loki',
+        name: 'Loki',
+        category: 'Monitoring',
+        description: 'Log aggregation system designed for Grafana.',
+        icon: FileText,
+        difficulty: 'Easy',
+        time: '10 min',
+    },
+    {
+        id: 'promtail',
+        name: 'Promtail',
+        category: 'Monitoring',
+        description: 'Ships container logs to Loki for centralized viewing.',
+        icon: FileText,
+        difficulty: 'Easy',
+        time: '5 min',
+    },
+    {
+        id: 'lidarr',
+        name: 'Lidarr',
+        category: 'Automation',
+        description: 'Music collection manager in the *Arr family.',
+        icon: Music,
+        difficulty: 'Medium',
+        time: '20-30 min',
+    },
+    {
+        id: 'readarr',
+        name: 'Readarr',
+        category: 'Automation',
+        description: 'Book and audiobook manager in the *Arr family.',
+        icon: Book,
+        difficulty: 'Medium',
+        time: '20-30 min',
+    },
+    {
+        id: 'sabnzbd',
+        name: 'SABnzbd',
+        category: 'Download',
+        description: 'Usenet downloader for NZB files.',
+        icon: Inbox,
+        difficulty: 'Medium',
+        time: '15-20 min',
+    },
+    {
+        id: 'ombi',
+        name: 'Ombi',
+        category: 'Requests',
+        description: 'Media request system with user management.',
+        icon: ListVideo,
+        difficulty: 'Medium',
+        time: '20-30 min',
+    },
+    {
+        id: 'petio',
+        name: 'Petio',
+        category: 'Requests',
+        description: 'Request portal with personalized recommendations.',
+        icon: Search,
+        difficulty: 'Medium',
+        time: '20-30 min',
+    },
+    {
+        id: 'kavita',
+        name: 'Kavita',
+        category: 'Media',
+        description: 'Comics, manga, and ebook reading server.',
+        icon: Book,
+        difficulty: 'Easy',
+        time: '15-20 min',
+    },
+    {
+        id: 'filebrowser',
+        name: 'File Browser',
+        category: 'Utility',
+        description: 'Web-based file manager for your media folders.',
+        icon: FolderOpen,
+        difficulty: 'Easy',
+        time: '5-10 min',
     },
 ]

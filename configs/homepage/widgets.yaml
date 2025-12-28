@@ -1,0 +1,36 @@
+---
+# Homepage Widgets
+# https://gethomepage.dev/configs/widgets/
+
+# Search bar at top
+- search:
+    provider: duckduckgo
+    target: _blank
+    showSearchSuggestions: true
+
+# System resources with visual indicators
+- resources:
+    label: System
+    cpu: true
+    memory: true
+    disk: /
+    cputemp: true
+    uptime: true
+    refresh: 3000
+
+# Date and time widget
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: full
+      hourCycle: h23
+
+# OpenMeteo weather (optional - can be customized)
+# - openmeteo:
+#     label: Weather
+#     latitude: 40.7128
+#     longitude: -74.0060
+#     timezone: America/New_York
+#     units: imperial
+#     cache: 5

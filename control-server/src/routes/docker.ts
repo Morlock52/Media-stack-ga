@@ -314,4 +314,154 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         // Give the response a moment to flush
         setTimeout(() => process.exit(0), 250);
     });
+
+    // Local Deploy - writes .env and runs docker-compose up
+    fastify.post<{
+        Body: {
+            envContent: string;
+            profiles: string[];
+            composeFile?: string;
+        };
+    }>('/api/local-deploy', async (request, reply) => {
+        const parseBody = z
+            .object({
+                envContent: z.string().min(1),
+                profiles: z.array(z.string()).min(1),
+                composeFile: z.string().optional(),
+            })
+            .safeParse(request.body);
+
+        if (!parseBody.success) {
+            return reply.status(400).send({
+                success: false,
+                error: 'Invalid request body',
+                details: parseBody.error.issues,
+            });
+        }
+
+        const { envContent, profiles, composeFile } = parseBody.data;
+        const steps: Array<{ step: string; status: 'done' | 'error' }> = [];
+
+        try {
+            // Step 1: Write .env file
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const envPath = path.join(PROJECT_ROOT, '.env');
+
+            await fs.writeFile(envPath, envContent, 'utf-8');
+            steps.push({ step: 'Wrote .env file', status: 'done' });
+            fastify.log.info({ envPath }, '[local-deploy] Wrote .env file');
+
+            // Step 2: Create required directories
+            const dataRoot = envContent.match(/DATA_ROOT=(.+)/)?.[1]?.trim() || '/opt/media-stack';
+            const configRoot = envContent.match(/CONFIG_ROOT=(.+)/)?.[1]?.trim() || `${dataRoot}/config`;
+            const dirs = [
+                configRoot,
+                `${configRoot}/loki`,
+                `${configRoot}/promtail`,
+                `${configRoot}/grafana/provisioning/datasources`,
+                `${configRoot}/grafana/provisioning/dashboards`,
+                `${configRoot}/grafana/dashboards`,
+                `${configRoot}/homepage`,
+                `${dataRoot}/media/movies`,
+                `${dataRoot}/media/tv`,
+                `${dataRoot}/media/music`,
+                `${dataRoot}/downloads`,
+                `${dataRoot}/transcode`,
+            ];
+
+            for (const dir of dirs) {
+                try {
+                    await fs.mkdir(dir, { recursive: true });
+                } catch {
+                    // Ignore mkdir errors - may not have permissions
+                }
+            }
+            steps.push({ step: 'Created data directories', status: 'done' });
+
+            // Step 2b: Copy bundled config files
+            const configsDir = path.join(PROJECT_ROOT, 'configs');
+            const copyConfigs = async (src: string, dest: string) => {
+                try {
+                    const entries = await fs.readdir(src, { withFileTypes: true });
+                    for (const entry of entries) {
+                        const srcPath = path.join(src, entry.name);
+                        const destPath = path.join(dest, entry.name);
+                        if (entry.isDirectory()) {
+                            await fs.mkdir(destPath, { recursive: true });
+                            await copyConfigs(srcPath, destPath);
+                        } else {
+                            // Only copy if destination doesn't exist (don't overwrite user customizations)
+                            try {
+                                await fs.access(destPath);
+                            } catch {
+                                await fs.copyFile(srcPath, destPath);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    fastify.log.warn({ err, src, dest }, '[local-deploy] Config copy failed');
+                }
+            };
+
+            try {
+                await copyConfigs(path.join(configsDir, 'loki'), `${configRoot}/loki`);
+                await copyConfigs(path.join(configsDir, 'promtail'), `${configRoot}/promtail`);
+                await copyConfigs(path.join(configsDir, 'grafana'), `${configRoot}/grafana`);
+                await copyConfigs(path.join(configsDir, 'homepage'), `${configRoot}/homepage`);
+                steps.push({ step: 'Copied monitoring and dashboard configs', status: 'done' });
+            } catch (err) {
+                fastify.log.warn({ err }, '[local-deploy] Some config files could not be copied');
+            }
+
+            // Step 3: Run docker-compose up
+            const composeFileName = composeFile || 'docker-compose.local.yml';
+
+            // Set COMPOSE_PROFILES environment variable
+            const env = { ...process.env, COMPOSE_PROFILES: profiles.join(',') };
+
+            fastify.log.info({ profiles, composeFileName }, '[local-deploy] Starting docker-compose up');
+
+            await runCommand(
+                'docker',
+                ['compose', '--project-directory', PROJECT_ROOT, '-f', composeFileName, 'up', '-d', '--remove-orphans'],
+                { timeoutMs: 120_000, label: 'local-deploy:up', env }
+            );
+            steps.push({ step: 'Started containers with docker-compose', status: 'done' });
+
+            // Step 4: Get container status
+            const output = await runCommand(
+                'docker',
+                ['ps', '-a', '--format', '"{{.Names}}|{{.State}}"'],
+                { timeoutMs: 10_000, label: 'local-deploy:ps' }
+            );
+
+            const containers = output
+                .split('\n')
+                .map((line) => line.replace(/"/g, '').trim())
+                .filter(Boolean)
+                .map((line) => {
+                    const [name, state] = line.split('|');
+                    return { name: name?.trim() || '', on: state?.trim() === 'running' };
+                })
+                .filter((c) => c.name);
+
+            steps.push({ step: 'Verified container status', status: 'done' });
+
+            return reply.status(200).send({
+                success: true,
+                steps,
+                containers,
+                message: `Deployed ${profiles.length} service profiles`,
+            });
+        } catch (error: any) {
+            fastify.log.error({ err: error }, '[local-deploy] failed');
+            steps.push({ step: error?.message || 'Deployment failed', status: 'error' });
+            return reply.status(200).send({
+                success: false,
+                steps,
+                error: error?.message || 'Local deployment failed',
+            });
+        }
+    });
 }

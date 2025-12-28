@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'Media Stack Dashboards'
+    orgId: 1
+    folder: 'Media Stack'
+    folderUid: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

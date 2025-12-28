@@ -17,6 +17,7 @@ Media Stack's current agentic implementation is functional but has significant t
 ### 1.1 Invalid Model References
 
 **Current Problem:**
+
 ```typescript
 // control-server/src/routes/ai.ts - LINE ~45
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2'  // DOES NOT EXIST
@@ -24,6 +25,7 @@ const TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-5.2-mini-tts'  // DOES NO
 ```
 
 **Fix:**
+
 ```typescript
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o'  // or 'gpt-4o-mini' for cost
 const TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1'  // or 'tts-1-hd'
@@ -32,7 +34,7 @@ const TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1'  // or 'tts-1-hd'
 ### 1.2 Security Vulnerabilities
 
 | Issue | Location | Severity | Fix |
-|-------|----------|----------|-----|
+| ----- | -------- | -------- | --- |
 | No input sanitization on `serviceName` | `agentTools.ts:restart_service` | HIGH | Add allowlist validation |
 | Command injection risk | Docker exec calls | HIGH | Escape/validate container names |
 | No rate limiting | `/api/tts`, `/api/agent/chat` | MEDIUM | Add per-IP rate limits |
@@ -43,6 +45,7 @@ const TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1'  // or 'tts-1-hd'
 **Problem:** Generic error messages don't help debugging.
 
 **Current:**
+
 ```typescript
 catch (err) {
   return { answer: 'Something went wrong', aiPowered: false }
@@ -50,6 +53,7 @@ catch (err) {
 ```
 
 **Fixed:**
+
 ```typescript
 catch (err: unknown) {
   const errorContext = {
@@ -76,7 +80,7 @@ catch (err: unknown) {
 **Why it's the best fit for this project:**
 
 | Criterion | OpenAI Agents SDK | LangGraph | CrewAI |
-|-----------|-------------------|-----------|--------|
+| --------- | ----------------- | --------- | ------ |
 | Learning curve | Low | High | Medium |
 | Existing OpenAI integration | Native | Adapter | Adapter |
 | Voice/Realtime support | Native | Manual | None |
@@ -86,6 +90,7 @@ catch (err: unknown) {
 | Production readiness | High | High | Medium |
 
 **Migration path:**
+
 1. Wrap existing agents in SDK `Agent` class
 2. Convert tools to `@function_tool` decorators
 3. Add `Handoff` for agent-to-agent delegation
@@ -94,16 +99,19 @@ catch (err: unknown) {
 ### 2.2 Current Architecture vs Recommended
 
 **Current (Homegrown):**
-```
+
+```text
 User Input → detectAgent() → buildSystemPrompt() → OpenAI API → Parse Response
 ```
 
 **Recommended (Agents SDK):**
-```
+
+```text
 User Input → Runner.run() → Agent (with Tools, Guardrails, Handoffs) → Streaming Events → UI
 ```
 
 **Key Upgrades:**
+
 - **Guardrails:** Input/output validation before/after LLM
 - **Handoffs:** Seamless agent switching with context preservation
 - **Sessions:** Automatic conversation state management
@@ -116,7 +124,7 @@ User Input → Runner.run() → Agent (with Tools, Guardrails, Handoffs) → Str
 ### 3.1 Recommended Model Matrix
 
 | Use Case | Primary Model | Fallback | Rationale |
-|----------|---------------|----------|-----------|
+| -------- | ------------- | -------- | --------- |
 | Chat (complex) | `claude-sonnet-4` | `gpt-4o` | Better agentic reasoning |
 | Chat (simple) | `gpt-4o-mini` | `claude-haiku-3-5` | Cost efficiency |
 | Tool calling | `gpt-4o` | `claude-sonnet-4` | Reliable function calling |
@@ -126,10 +134,12 @@ User Input → Runner.run() → Agent (with Tools, Guardrails, Handoffs) → Str
 ### 3.2 Cost Optimization
 
 **Current estimated costs (per 1000 user sessions):**
+
 - Full conversation (5 turns avg): ~$15 with GPT-4o
 - TTS (30 sec avg): ~$0.30 OpenAI, ~$0.45 ElevenLabs
 
 **Recommended optimizations:**
+
 1. **Context compression:** Summarize history beyond 4 messages
 2. **Prompt caching:** Use `store: true` with Responses API (40-80% cache hit)
 3. **Model tiering:** Route simple queries to `gpt-4o-mini`
@@ -150,6 +160,7 @@ function selectModel(query: string, complexity: number): string {
 ### 4.1 Current Limitation
 
 All responses wait for full completion before display. This creates:
+
 - Poor perceived performance (3-5s wait times)
 - No feedback during tool execution
 - User uncertainty about agent status
@@ -157,6 +168,7 @@ All responses wait for full completion before display. This creates:
 ### 4.2 Implementation Plan
 
 **Backend (SSE endpoint):**
+
 ```typescript
 // control-server/src/routes/ai.ts
 app.get('/api/agent/chat/stream', async (request, reply) => {
@@ -186,6 +198,7 @@ app.get('/api/agent/chat/stream', async (request, reply) => {
 ```
 
 **Frontend (EventSource):**
+
 ```typescript
 // docs-site/src/components/AIAssistant.tsx
 const streamChat = async (message: string) => {
@@ -210,13 +223,14 @@ const streamChat = async (message: string) => {
 ### 5.1 Why It's Needed
 
 Current agents rely solely on system prompts. They cannot:
+
 - Answer service-specific configuration questions
 - Reference official documentation
 - Provide accurate CLI commands for Plex/Sonarr/etc.
 
 ### 5.2 Recommended Architecture: Agentic RAG
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                     Meta-Agent                          │
 │  (Orchestrates document retrieval & response)           │
@@ -256,8 +270,8 @@ const agent = new Agent({
 ### 5.4 Documentation to Index
 
 | Priority | Document | Source |
-|----------|----------|--------|
-| P0 | Plex Media Server docs | https://support.plex.tv |
+| -------- | -------- | ------ |
+| P0 | Plex Media Server docs | <https://support.plex.tv> |
 | P0 | Sonarr/Radarr wiki | GitHub wikis |
 | P0 | Docker Compose reference | Local + official |
 | P1 | Cloudflare Tunnel setup | Cloudflare docs |
@@ -278,12 +292,14 @@ const agent = new Agent({
 ### 6.2 Recommended: OpenAI Realtime API
 
 **Why migrate:**
+
 - Sub-200ms voice-to-voice latency
 - Native speech-to-speech (no STT→LLM→TTS chain)
 - Tool calling during voice conversations
 - Emotion and intent preserved in audio
 
 **Implementation:**
+
 ```typescript
 // WebSocket connection for server-side
 import WebSocket from 'ws'
@@ -416,7 +432,7 @@ async function withRetry<T>(
 
 ### 7.3 Graceful Degradation Hierarchy
 
-```
+```text
 OpenAI GPT-4o (Primary)
     ↓ (failure)
 Claude Sonnet 4 (Secondary)
@@ -435,7 +451,7 @@ Helpful Error with Retry Option (Last Resort)
 ### 8.1 Agentic UX Patterns (2025 Best Practices)
 
 | Pattern | Current State | Recommendation |
-|---------|---------------|----------------|
+| ------- | ------------- | -------------- |
 | **Transparency** | Shows "thinking" status | Add step-by-step reasoning display |
 | **Control** | Agent auto-selects | Let users override agent selection |
 | **Proactive Nudges** | Good (implemented) | Add dismissible + "don't show again" |
@@ -447,6 +463,7 @@ Helpful Error with Retry Option (Last Resort)
 **Current states:** `thinking`, `using-computer`, `responding`, `idle`
 
 **Recommended additions:**
+
 ```typescript
 type AgentStatus =
   | 'idle'
@@ -465,6 +482,7 @@ type AgentStatus =
 ### 8.3 Conversation Memory Display
 
 Add visual memory indicator:
+
 ```tsx
 <div className="flex items-center gap-2 text-xs text-muted">
   <BrainIcon className="h-3 w-3" />
@@ -484,7 +502,7 @@ Add visual memory indicator:
 ### 9.1 Current Tools Assessment
 
 | Tool | Status | Issues | Improvements |
-|------|--------|--------|--------------|
+| ---- | ------ | ------ | ------------ |
 | `check_service_health` | Working | Basic stats only | Add memory/CPU trends |
 | `restart_service` | Working | No pre-flight checks | Add dependency check |
 | `generate_env_diff` | Working | No suggestions | Add fix recommendations |
@@ -660,37 +678,43 @@ logger.info({
 
 ## 12. Implementation Roadmap
 
-### Phase 1: Critical Fixes (Week 1)
-- [ ] Fix invalid model references
-- [ ] Add input validation to tools
-- [ ] Implement basic rate limiting
-- [ ] Add structured error handling
+### Phase 1: Critical Fixes ✅ COMPLETED (12/27/25)
 
-### Phase 2: Streaming & Performance (Week 2)
-- [ ] Implement SSE streaming endpoint
-- [ ] Update frontend to handle streaming
-- [ ] Add prompt caching with Responses API
-- [ ] Implement intelligent model routing
+- [x] Fix invalid model references (gpt-5.2 → gpt-4o, tts → tts-1-hd)
+- [x] Add input validation to tools (service allowlist, path validation)
+- [x] Implement basic rate limiting (30 req/min per IP)
+- [x] Add structured error handling (circuit breaker pattern)
 
-### Phase 3: RAG Integration (Week 3)
-- [ ] Set up vector store with service documentation
-- [ ] Create File Search tool integration
-- [ ] Test knowledge retrieval accuracy
-- [ ] Add documentation update pipeline
+### Phase 2: Streaming & Performance ✅ COMPLETED (12/27/25)
 
-### Phase 4: Voice Modernization (Week 4)
-- [ ] Implement OpenAI Realtime API connection
-- [ ] Add WebSocket handler for voice streaming
-- [ ] Maintain chained fallback for reliability
-- [ ] Add voice-specific UI indicators
+- [x] Implement SSE streaming endpoint (`/api/agent/chat/stream`)
+- [x] Update frontend to handle streaming (`useStreamingChat` hook)
+- [x] Add prompt caching with `store: true`
+- [x] Implement intelligent model routing (`selectModelForQuery`, `estimateComplexity`)
 
-### Phase 5: Production Hardening (Week 5)
-- [ ] Migrate to SQLite conversation store
-- [ ] Add encryption for API keys and conversations
-- [ ] Implement circuit breakers
-- [ ] Add comprehensive observability
+### Phase 3: RAG Integration ✅ COMPLETED (12/27/25)
 
-### Phase 6: Agent Framework Migration (Week 6)
+- [x] Set up vector store with service documentation (local knowledge base)
+- [x] Create File Search tool integration (OpenAI optional, local fallback)
+- [x] Test knowledge retrieval accuracy
+- [x] Add documentation update pipeline (`loadCustomDocs`)
+
+### Phase 4: Voice Modernization ✅ COMPLETED (12/27/25)
+
+- [x] Implement OpenAI Realtime API connection (`realtimeVoice.ts`)
+- [x] Add WebSocket handler for voice streaming
+- [x] Maintain chained fallback for reliability
+- [x] Add voice-specific UI indicators
+
+### Phase 5: Production Hardening ✅ COMPLETED (12/27/25)
+
+- [x] Migrate to SQLite conversation store
+- [x] Add encryption for API keys and conversations (AES-256-GCM)
+- [x] Implement circuit breakers (3 failures → 30s timeout)
+- [x] Add comprehensive observability (`metricsService.ts`)
+
+### Phase 6: Agent Framework Migration (Future)
+
 - [ ] Refactor to OpenAI Agents SDK
 - [ ] Add handoffs between specialist agents
 - [ ] Implement guardrails for input/output
@@ -701,41 +725,56 @@ logger.info({
 ## 13. References
 
 ### Frameworks
+
 - [OpenAI Agents SDK](https://platform.openai.com/docs/guides/agents-sdk)
 - [LangGraph](https://www.langflow.org/blog/the-complete-guide-to-choosing-an-ai-agent-framework-in-2025)
 - [CrewAI vs LangGraph vs AutoGen](https://www.datacamp.com/tutorial/crewai-vs-langgraph-vs-autogen)
 
 ### UX Patterns
+
 - [Agentic Design Patterns](https://agentic-design.ai/patterns/ui-ux-patterns)
 - [Microsoft UX Design for Agents](https://microsoft.design/articles/ux-design-for-agents/)
 - [Shape of AI - UX Patterns](https://www.shapeof.ai)
 
 ### Voice
+
 - [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime)
 - [Voice Agents Guide](https://platform.openai.com/docs/guides/voice-agents)
 
 ### RAG
+
 - [RAG Architectures 2025](https://humanloop.com/blog/rag-architectures)
 - [Enterprise Knowledge Base with RAG](https://xenoss.io/blog/enterprise-knowledge-base-llm-rag-architecture)
 
 ### Error Handling
+
 - [Error Recovery in AI Agents](https://www.gocodeo.com/post/error-recovery-and-fallback-strategies-in-ai-agent-development)
 - [7 Types of AI Agent Failure](https://galileo.ai/blog/prevent-ai-agent-failure)
 
 ### Models
+
 - [Claude Sonnet 4.5 vs GPT-5](https://portkey.ai/blog/claude-sonnet-4-5-vs-gpt-5/)
 - [API Pricing Comparison 2025](https://intuitionlabs.ai/articles/llm-api-pricing-comparison-2025)
 
 ---
 
-## Appendix: Quick Wins Checklist
+## Appendix: Quick Wins Checklist ✅ ALL COMPLETED (12/27/25)
 
-Immediate changes that can be made today:
+All immediate changes implemented:
 
-- [ ] Change `gpt-5.2` → `gpt-4o` in `ai.ts`
-- [ ] Change `gpt-5.2-mini-tts` → `tts-1` in `ai.ts`
-- [ ] Add `serviceName` allowlist validation in `agentTools.ts`
-- [ ] Add `X-RateLimit-*` headers to AI endpoints
-- [ ] Enable `store: true` in OpenAI API calls for caching
-- [ ] Add try-catch with specific error types around all API calls
-- [ ] Log token usage for cost tracking
+- [x] Change `gpt-5.2` → `gpt-4o` in `ai.ts`
+- [x] Change `gpt-5.2-mini-tts` → `tts-1-hd` in `ai.ts`
+- [x] Add `serviceName` allowlist validation in `agentTools.ts`
+- [x] Add `X-RateLimit-*` headers to AI endpoints
+- [x] Enable `store: true` in OpenAI API calls for caching
+- [x] Add try-catch with specific error types around all API calls
+- [x] Log token usage for cost tracking (recordRequest integration complete)
+- [x] Add intelligent model routing based on query complexity
+- [x] Add token count memory indicator to frontend
+- [x] Add `formatUserFriendlyError()` with debug info in dev mode
+- [x] Add enhanced agent status types (13 states: idle, listening, thinking, searching, etc.)
+- [x] Add "Don't show again" option for proactive nudges (localStorage persistence)
+- [x] Integrate `useStreamingChat` hook into AIAssistant with real-time token display
+- [x] Add streaming cancel button and fallback to non-streaming on error
+- [x] Add intelligent model routing to streaming endpoint
+- [x] Add retry button for error recovery (clickable status chip with retry functionality)

@@ -1,0 +1,307 @@
+# docker-compose.local.yml
+# Local deployment - Direct port access (simple and reliable)
+# No Cloudflare, No Authelia - just local access via ports
+
+networks:
+  mediastack:
+    name: ${DOCKER_NETWORK:-mediastack}
+    driver: bridge
+
+services:
+  # ===========================================
+  # HOMEPAGE - Dashboard (Main Menu)
+  # ===========================================
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - HOMEPAGE_VAR_DOMAIN=${DOMAIN:-localhost}
+      - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN:-}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mediastack
+
+  # ===========================================
+  # PLEX - Media Server
+  # ===========================================
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    restart: unless-stopped
+    ports:
+      - "32400:32400"
+      - "3005:3005"
+      - "8324:8324"
+      - "32469:32469"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM:-}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/plex:/config
+      - ${MOVIES_PATH:-./media/movies}:/movies
+      - ${TV_SHOWS_PATH:-./media/tv}:/tv
+      - ${MUSIC_PATH:-./media/music}:/music
+      - ${TRANSCODE_PATH:-./transcode}:/transcode
+    networks:
+      - mediastack
+    profiles: ["plex"]
+
+  # ===========================================
+  # SONARR - TV Series Management
+  # ===========================================
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - "8989:8989"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/sonarr:/config
+      - ${TV_SHOWS_PATH:-./media/tv}:/tv
+      - ${DOWNLOADS_PATH:-./downloads}:/downloads
+    networks:
+      - mediastack
+    profiles: ["arr", "sonarr"]
+
+  # ===========================================
+  # RADARR - Movie Management
+  # ===========================================
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    ports:
+      - "7878:7878"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/radarr:/config
+      - ${MOVIES_PATH:-./media/movies}:/movies
+      - ${DOWNLOADS_PATH:-./downloads}:/downloads
+    networks:
+      - mediastack
+    profiles: ["arr", "radarr"]
+
+  # ===========================================
+  # PROWLARR - Indexer Manager
+  # ===========================================
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/prowlarr:/config
+    networks:
+      - mediastack
+    profiles: ["arr", "prowlarr"]
+
+  # ===========================================
+  # BAZARR - Subtitle Management
+  # ===========================================
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    ports:
+      - "6767:6767"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/bazarr:/config
+      - ${MOVIES_PATH:-./media/movies}:/movies
+      - ${TV_SHOWS_PATH:-./media/tv}:/tv
+    networks:
+      - mediastack
+    profiles: ["arr", "bazarr"]
+
+  # ===========================================
+  # OVERSEERR - Request Management
+  # ===========================================
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    restart: unless-stopped
+    ports:
+      - "5055:5055"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/overseerr:/config
+    networks:
+      - mediastack
+    profiles: ["arr", "overseerr"]
+
+  # ===========================================
+  # QBITTORRENT - Torrent Client
+  # ===========================================
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${CONFIG_ROOT:-./config}/qbittorrent:/config
+      - ${DOWNLOADS_PATH:-./downloads}:/downloads
+    ports:
+      - "8081:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
+    networks:
+      - mediastack
+    profiles: ["torrent", "qbittorrent"]
+
+  # ===========================================
+  # TAUTULLI - Plex Statistics
+  # ===========================================
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/tautulli:/config
+    networks:
+      - mediastack
+    profiles: ["stats", "tautulli"]
+
+  # ===========================================
+  # JELLYFIN - Free Media Server
+  # ===========================================
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-America/New_York}
+    volumes:
+      - ${CONFIG_ROOT:-./config}/jellyfin:/config
+      - ${MOVIES_PATH:-./media/movies}:/movies
+      - ${TV_SHOWS_PATH:-./media/tv}:/tv
+      - ${MUSIC_PATH:-./media/music}:/music
+    networks:
+      - mediastack
+    profiles: ["jellyfin"]
+
+  # ===========================================
+  # LOKI - Log Aggregation
+  # ===========================================
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ${CONFIG_ROOT:-./config}/loki:/etc/loki
+      - ${CONFIG_ROOT:-./config}/loki/data:/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - mediastack
+
+  # ===========================================
+  # PROMTAIL - Log Collector
+  # ===========================================
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG_ROOT:-./config}/promtail:/etc/promtail
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      - mediastack
+    depends_on:
+      - loki
+
+  # ===========================================
+  # GRAFANA - Monitoring Dashboard
+  # ===========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-mediastack}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+    volumes:
+      - ${CONFIG_ROOT:-./config}/grafana:/var/lib/grafana
+      - ${CONFIG_ROOT:-./config}/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - mediastack
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # WATCHTOWER - Auto-Update Containers
+  # ===========================================
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      - TZ=${TIMEZONE:-America/New_York}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      - DOCKER_API_VERSION=1.44
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mediastack
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"

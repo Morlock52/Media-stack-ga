@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     X, Server, Key, Lock, CheckCircle, AlertCircle,
-    Loader2, Upload, Rocket, Eye, EyeOff
+    Loader2, Upload, Rocket, Eye, EyeOff, KeyRound
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { buildControlServerUrl, controlServerAuthHeaders, getControlServerBaseUrl } from '../utils/controlServer'
+import { buildControlServerUrl, controlServer, controlServerAuthHeaders, getControlServerBaseUrl } from '../utils/controlServer'
 import dockerComposeTemplate from '../../../docker-compose.yml?raw'
 import { useSetupStore } from '../store/setupStore'
 import { generateEnvFile } from '../utils/generateEnvFile'
@@ -90,6 +90,11 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const [autoDisableVpnOnTunMissing, setAutoDisableVpnOnTunMissing] = useState(true)
     const [remoteContainers, setRemoteContainers] = useState<RemoteContainerStatus[]>([])
 
+    // Bootstrap state
+    const [bootstrapStatus, setBootstrapStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+    const [bootstrapMessage, setBootstrapMessage] = useState('')
+    const [bootstrapKeys, setBootstrapKeys] = useState<Record<string, string>>({})
+
     useEffect(() => {
         if (!isOpen) return
         if (didHydratePrefsRef.current) return
@@ -152,6 +157,46 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         setAutoRemoveConflictingContainers(true)
         setAutoDisableVpnOnTunMissing(true)
         setRemoteContainers([])
+        setBootstrapStatus('idle')
+        setBootstrapMessage('')
+        setBootstrapKeys({})
+    }
+
+    const handleBootstrapKeys = async () => {
+        setBootstrapStatus('loading')
+        setBootstrapMessage('Waiting for *arr services to initialize...')
+
+        try {
+            const result = await controlServer.autoBootstrapArrRemote({
+                host,
+                port,
+                username,
+                authType,
+                password: authType === 'password' ? password : undefined,
+                privateKey: authType === 'key' ? privateKey : undefined,
+                envPath: deployPath ? `${deployPath}/.env` : undefined,
+                timeout: 120000,
+                pollInterval: 5000,
+            })
+
+            if (result.success) {
+                setBootstrapStatus('success')
+                setBootstrapKeys(result.keys)
+                setBootstrapMessage(`Successfully extracted ${Object.keys(result.keys).length} API keys and wrote to remote .env`)
+                toast.success('API keys bootstrapped!', {
+                    description: `${Object.keys(result.keys).length} keys written to ${host}`
+                })
+            } else {
+                setBootstrapStatus('error')
+                setBootstrapMessage(result.error || `Failed at step: ${result.step}`)
+                toast.error('Bootstrap failed', { description: result.error })
+            }
+        } catch (err) {
+            setBootstrapStatus('error')
+            const msg = err instanceof Error ? err.message : 'Failed to bootstrap API keys'
+            setBootstrapMessage(msg)
+            toast.error('Bootstrap failed', { description: msg })
+        }
     }
 
     const testConnection = async () => {
@@ -417,6 +462,65 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Bootstrap API Keys Section */}
+                                {selectedServices.includes('arr') && (
+                                    <div className="mt-6 text-left bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <KeyRound className="w-4 h-4 text-purple-400" />
+                                            <span className="text-sm font-medium text-purple-300">Bootstrap API Keys</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mb-3">
+                                            Automatically extract *arr API keys and write to remote .env
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleBootstrapKeys}
+                                            disabled={bootstrapStatus === 'loading'}
+                                            className="w-full border-purple-500/50 hover:bg-purple-500/20"
+                                        >
+                                            {bootstrapStatus === 'loading' ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Waiting for services...
+                                                </>
+                                            ) : bootstrapStatus === 'success' ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
+                                                    Keys Extracted
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Key className="w-4 h-4 mr-2" />
+                                                    Bootstrap Keys
+                                                </>
+                                            )}
+                                        </Button>
+
+                                        {bootstrapStatus !== 'idle' && (
+                                            <div className={`mt-3 p-2 rounded text-xs ${
+                                                bootstrapStatus === 'loading' ? 'bg-blue-500/10 text-blue-300' :
+                                                bootstrapStatus === 'success' ? 'bg-green-500/10 text-green-300' :
+                                                'bg-red-500/10 text-red-300'
+                                            }`}>
+                                                {bootstrapMessage}
+                                                {bootstrapStatus === 'success' && Object.keys(bootstrapKeys).length > 0 && (
+                                                    <div className="mt-2 space-y-1 font-mono">
+                                                        {Object.entries(bootstrapKeys).map(([key, value]) => (
+                                                            <div key={key} className="flex gap-1">
+                                                                <span className="text-green-400">{key}:</span>
+                                                                <span className="text-muted-foreground">{value.slice(0, 6)}...{value.slice(-4)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <Button
                                     type="button"
                                     variant="gradient"

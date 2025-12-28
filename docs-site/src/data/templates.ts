@@ -10,6 +10,7 @@ export interface Template {
     config?: {
         puid?: string
         pgid?: string
+        deploymentMode?: 'local' | 'cloud'
     }
 }
 
@@ -42,6 +43,27 @@ export const serviceInfo: Record<string, { name: string; description: string }> 
 }
 
 export const templates: Template[] = [
+    {
+        id: 'local-install',
+        name: 'Local Install',
+        description: 'Simple local-only setup with Traefik - no Cloudflare or auth',
+        detailedDescription: 'Perfect for home networks where you only need local access. Uses Traefik as a simple reverse proxy without Cloudflare tunnels or Authelia authentication. Access your services via *.local domains (e.g., plex.local, sonarr.local). Just set a password and deploy!',
+        icon: '🏠',
+        difficulty: 'beginner',
+        services: ['plex', 'arr', 'torrent'],
+        highlights: [
+            'Access via *.local domains (plex.local, sonarr.local)',
+            'No Cloudflare or external services needed',
+            'Simple Traefik reverse proxy included',
+            'Just needs a password to get started',
+            'One-click deploy ready'
+        ],
+        config: {
+            puid: '1000',
+            pgid: '1000',
+            deploymentMode: 'local'
+        }
+    },
     {
         id: 'plex-enthusiast',
         name: 'Plex Enthusiast',

@@ -12,8 +12,101 @@ export const ARR_SERVICES: ArrServiceInfo[] = [
     { id: 'prowlarr', envKey: 'PROWLARR_API_KEY' },
     { id: 'readarr', envKey: 'READARR_API_KEY' },
     { id: 'lidarr', envKey: 'LIDARR_API_KEY' },
-    { id: 'bazarr', envKey: 'BAZARR_API_KEY' }, // Included as it often follows similar patterns
+    { id: 'bazarr', envKey: 'BAZARR_API_KEY' },
 ];
+
+export interface ArrServiceStatus {
+    id: string;
+    running: boolean;
+    ready: boolean; // config.xml exists
+}
+
+/**
+ * Check if a container is running
+ */
+export const isContainerRunning = async (containerName: string): Promise<boolean> => {
+    try {
+        const result = await runCommand('docker', [
+            'inspect',
+            '-f',
+            '{{.State.Running}}',
+            containerName
+        ]);
+        return result.trim() === 'true';
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Check if an *arr container has initialized (config.xml exists)
+ */
+export const isArrReady = async (containerName: string): Promise<boolean> => {
+    try {
+        await runCommand('docker', [
+            'exec',
+            containerName,
+            'test',
+            '-f',
+            '/config/config.xml'
+        ]);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Get status of all *arr services
+ */
+export const getArrServicesStatus = async (): Promise<ArrServiceStatus[]> => {
+    const statuses: ArrServiceStatus[] = [];
+
+    for (const service of ARR_SERVICES) {
+        const running = await isContainerRunning(service.id);
+        const ready = running ? await isArrReady(service.id) : false;
+        statuses.push({
+            id: service.id,
+            running,
+            ready
+        });
+    }
+
+    return statuses;
+};
+
+/**
+ * Wait for *arr services to be ready (with timeout)
+ */
+export const waitForArrServices = async (
+    timeoutMs: number = 120000,
+    pollIntervalMs: number = 5000
+): Promise<{ ready: boolean; services: ArrServiceStatus[] }> => {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+        const statuses = await getArrServicesStatus();
+        const runningServices = statuses.filter(s => s.running);
+
+        // If no services are running, return immediately
+        if (runningServices.length === 0) {
+            return { ready: false, services: statuses };
+        }
+
+        // Check if all running services are ready
+        const allReady = runningServices.every(s => s.ready);
+        if (allReady) {
+            return { ready: true, services: statuses };
+        }
+
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+
+    // Timeout - return current status
+    const finalStatuses = await getArrServicesStatus();
+    return { ready: false, services: finalStatuses };
+};
 
 /**
  * Extracts the API key from an *arr container by reading its config.xml

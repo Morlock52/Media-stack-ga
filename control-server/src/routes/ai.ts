@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges } from '../agents.js';
 import { readEnvFile, setEnvValue, removeEnvKey, PROJECT_ROOT } from '../utils/env.js';
 import { runCommand } from '../utils/docker.js';
+import { selectModelForQuery, estimateComplexity } from '../services/aiProviders.js';
+import { recordRequest } from '../services/metricsService.js';
 import fs from 'fs';
 import path from 'path';
 import { AiChatRequest } from '../types/index.js';
@@ -9,9 +11,14 @@ import * as arrService from '../services/arrService.js';
 
 // Model configuration - Updated December 2025 for production-ready models
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1-hd';
-const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
-const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
+// TTS: gpt-4o-mini-tts is the latest with better steerability and new voices (marin, cedar)
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
+const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1-hd';
+// New recommended voices: marin, cedar (best quality), also: alloy, ash, ballad, coral, echo, fable, onyx, nova, sage, shimmer, verse
+const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'coral';
+// STT: gpt-4o-transcribe is the most accurate transcription model (Dec 2025)
+// It has significantly lower Word Error Rate (WER) than whisper-1 or gpt-4o-mini-transcribe
+const OPENAI_STT_MODEL = process.env.OPENAI_STT_MODEL || 'gpt-4o-transcribe';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
@@ -28,21 +35,39 @@ const circuitBreaker: CircuitBreakerState = { failures: 0, lastFailure: null, st
 const CIRCUIT_BREAKER_THRESHOLD = 5;
 const CIRCUIT_BREAKER_RESET_MS = 30000;
 
-function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+interface RateLimitResult {
+    allowed: boolean;
+    retryAfter?: number;
+    remaining: number;
+    resetAt: number;
+}
+
+function checkRateLimit(ip: string): RateLimitResult {
     const now = Date.now();
     const record = rateLimitMap.get(ip);
 
     if (!record || now > record.resetAt) {
         rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-        return { allowed: true };
+        return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetAt: now + RATE_LIMIT_WINDOW_MS };
     }
 
     if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-        return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
+        return {
+            allowed: false,
+            retryAfter: Math.ceil((record.resetAt - now) / 1000),
+            remaining: 0,
+            resetAt: record.resetAt
+        };
     }
 
     record.count++;
-    return { allowed: true };
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count, resetAt: record.resetAt };
+}
+
+function addRateLimitHeaders(reply: any, rateLimit: RateLimitResult): void {
+    reply.header('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
+    reply.header('X-RateLimit-Remaining', rateLimit.remaining);
+    reply.header('X-RateLimit-Reset', Math.ceil(rateLimit.resetAt / 1000));
 }
 
 function checkCircuitBreaker(): { allowed: boolean } {
@@ -113,6 +138,61 @@ const assertValidTtsFormat = (format: unknown): 'mp3' | 'wav' | 'opus' => {
     if (format === 'wav' || format === 'opus' || format === 'mp3') return format;
     return 'mp3';
 };
+
+// Error context interface for structured error handling
+interface ErrorContext {
+    code: string;
+    provider: string;
+    retryable: boolean;
+    message: string;
+}
+
+// Format user-friendly error messages based on error type
+function formatUserFriendlyError(context: ErrorContext): string {
+    if (context.code === 'rate_limit_exceeded' || context.retryable) {
+        return "I'm getting too many requests right now. Please wait a moment and try again.";
+    }
+    if (context.code === 'invalid_api_key' || context.code === 'authentication_error') {
+        return "There's an issue with the API configuration. Please check your API keys in Settings.";
+    }
+    if (context.code === 'context_length_exceeded') {
+        return "The conversation is too long. Please clear the chat and start fresh.";
+    }
+    if (context.code === 'timeout' || context.message.includes('timeout')) {
+        return "The request took too long. Please try again with a simpler question.";
+    }
+    if (context.code === 'service_unavailable' || context.code === '503') {
+        return "The AI service is temporarily unavailable. Please try again in a few moments.";
+    }
+    return "I encountered an issue processing your request. Please try again.";
+}
+
+// Parse error into structured context
+function parseErrorContext(err: unknown, provider: string = 'openai'): ErrorContext {
+    const error = err instanceof Error ? err : new Error('Unknown error');
+    const message = error.message || 'Unknown error';
+
+    // Detect error codes from message
+    let code = 'unknown';
+    let retryable = false;
+
+    if (message.includes('429') || message.includes('rate')) {
+        code = 'rate_limit_exceeded';
+        retryable = true;
+    } else if (message.includes('401') || message.includes('api_key') || message.includes('auth')) {
+        code = 'authentication_error';
+    } else if (message.includes('context_length') || message.includes('token')) {
+        code = 'context_length_exceeded';
+    } else if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+        code = 'timeout';
+        retryable = true;
+    } else if (message.includes('503') || message.includes('unavailable')) {
+        code = 'service_unavailable';
+        retryable = true;
+    }
+
+    return { code, provider, retryable, message };
+}
 
 const contentTypeForTtsFormat = (format: 'mp3' | 'wav' | 'opus') => {
     switch (format) {
@@ -319,7 +399,8 @@ export async function aiRoutes(fastify: FastifyInstance) {
                         model: OPENAI_MODEL,
                         messages,
                         max_tokens: 600,
-                        temperature: 0.7
+                        temperature: 0.7,
+                        store: true
                     })
                 });
 
@@ -470,6 +551,117 @@ export async function aiRoutes(fastify: FastifyInstance) {
             fastify.log.warn({ err: error }, 'TTS failed');
             return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
         }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Speech-to-Text (Transcription) Endpoint - Using OpenAI gpt-4o-transcribe
+    // ═══════════════════════════════════════════════════════════════════════════
+    fastify.post('/api/transcribe', async (request, reply) => {
+        const effectiveApiKey = getOpenAIKey();
+        if (!effectiveApiKey) {
+            return reply.status(400).send({ error: 'OpenAI API key is required for transcription', reason: 'missing_api_key' });
+        }
+
+        const contentType = request.headers['content-type'] || '';
+
+        // Helper to call OpenAI transcription API
+        const transcribeWithOpenAI = async (audioBuffer: Buffer, filename: string, model: string): Promise<Response> => {
+            const formData = new FormData();
+            // Create ArrayBuffer view for Blob compatibility - use type assertion for strict TS
+            const arrayBuffer = audioBuffer.buffer.slice(
+                audioBuffer.byteOffset,
+                audioBuffer.byteOffset + audioBuffer.byteLength
+            ) as ArrayBuffer;
+            formData.append('file', new Blob([arrayBuffer]), filename);
+            formData.append('model', model);
+            formData.append('language', 'en');
+
+            return fetch('https://api.openai.com/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${effectiveApiKey}`,
+                },
+                body: formData,
+            });
+        };
+
+        // Handle multipart form data
+        if (contentType.includes('multipart/form-data')) {
+            try {
+                // Use type assertion for multipart - the plugin adds this method
+                const data = await (request as any).file();
+                if (!data) {
+                    return reply.status(400).send({ error: 'No audio file provided' });
+                }
+
+                const audioBuffer: Buffer = await data.toBuffer();
+                const filename = data.filename || 'audio.webm';
+
+                let response = await transcribeWithOpenAI(audioBuffer, filename, OPENAI_STT_MODEL);
+
+                // Fallback to whisper-1 if gpt-4o-transcribe fails
+                if (!response.ok && (response.status === 400 || response.status === 404)) {
+                    const errorText = await response.text();
+                    fastify.log.warn({ status: response.status, error: errorText }, 'Primary STT model failed, trying fallback');
+                    response = await transcribeWithOpenAI(audioBuffer, filename, 'whisper-1');
+                    if (response.ok) {
+                        const result = await response.json() as { text: string };
+                        return { text: result.text, model: 'whisper-1', fallback: true };
+                    }
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    fastify.log.warn({ status: response.status, error: errorText }, 'Transcription failed');
+                    return reply.status(response.status).send({ error: 'Transcription failed', reason: 'upstream_error' });
+                }
+
+                const result = await response.json() as { text: string };
+                return { text: result.text, model: OPENAI_STT_MODEL };
+            } catch (error: any) {
+                fastify.log.error({ err: error }, 'Transcription error');
+                return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error' });
+            }
+        }
+
+        // Handle raw audio body (for simpler clients)
+        try {
+            const rawBody = request.body;
+            if (!rawBody || (rawBody instanceof Buffer && rawBody.length === 0)) {
+                return reply.status(400).send({ error: 'No audio data provided' });
+            }
+
+            const audioBuffer = rawBody instanceof Buffer ? rawBody : Buffer.from(rawBody as string, 'binary');
+            const format = contentType.includes('wav') ? 'wav' :
+                           contentType.includes('mp3') ? 'mp3' :
+                           contentType.includes('webm') ? 'webm' :
+                           contentType.includes('ogg') ? 'ogg' : 'webm';
+
+            const response = await transcribeWithOpenAI(audioBuffer, `audio.${format}`, OPENAI_STT_MODEL);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                fastify.log.warn({ status: response.status, error: errorText }, 'Transcription failed');
+                return reply.status(response.status).send({ error: 'Transcription failed', reason: 'upstream_error' });
+            }
+
+            const result = await response.json() as { text: string };
+            return { text: result.text, model: OPENAI_STT_MODEL };
+        } catch (error: any) {
+            fastify.log.error({ err: error }, 'Transcription error');
+            return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error' });
+        }
+    });
+
+    // Settings: Get available STT models and status
+    fastify.get('/api/settings/stt', async (_request, _reply) => {
+        const openaiKey = getOpenAIKey();
+        return {
+            hasKey: Boolean(openaiKey && openaiKey.length > 0),
+            model: OPENAI_STT_MODEL,
+            fallbackModel: 'whisper-1',
+            supportedFormats: ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg'],
+        };
     });
 
     fastify.get('/api/settings/tts', async (_request, _reply) => {
@@ -703,7 +895,8 @@ Return ONLY a JSON object with the following structure:
                         { role: 'user', content: prompt }
                     ],
                     temperature: 0.7,
-                    response_format: { type: 'json_object' }
+                    response_format: { type: 'json_object' },
+                    store: true
                 })
             });
 
@@ -738,9 +931,8 @@ Return ONLY a JSON object with the following structure:
 
         // Rate limiting check
         const rateLimit = checkRateLimit(clientIp);
+        addRateLimitHeaders(reply, rateLimit);
         if (!rateLimit.allowed) {
-            reply.header('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
-            reply.header('X-RateLimit-Remaining', 0);
             reply.header('Retry-After', rateLimit.retryAfter);
             return reply.status(429).send({
                 error: 'Rate limit exceeded',
@@ -771,6 +963,13 @@ Return ONLY a JSON object with the following structure:
         }
 
         const nudges = getProactiveNudges(context);
+
+        // Intelligent model routing based on query complexity
+        const complexity = estimateComplexity(message);
+        const selectedModel = selectModelForQuery(message, complexity);
+        // Use OpenAI models only for direct OpenAI API calls, fall back to default for Claude
+        const modelToUse = selectedModel.startsWith('claude') ? OPENAI_MODEL : selectedModel;
+        fastify.log.info({ complexity, selectedModel, modelToUse }, 'Selected model for query');
 
         if (effectiveApiKey) {
             try {
@@ -839,12 +1038,13 @@ Return ONLY a JSON object with the following structure:
                         'Authorization': `Bearer ${effectiveApiKey}`
                     },
                     body: JSON.stringify({
-                        model: OPENAI_MODEL,
+                        model: modelToUse,
                         messages,
                         tools,
                         tool_choice: "auto",
                         max_tokens: 1000,
-                        temperature: 0.7
+                        temperature: 0.7,
+                        store: true
                     })
                 });
 
@@ -861,6 +1061,11 @@ Return ONLY a JSON object with the following structure:
 
                 let answer = messageData?.content;
                 let toolUsed = null;
+                const toolsUsed: string[] = [];
+
+                // Track token usage across all API calls
+                let totalPromptTokens = data.usage?.prompt_tokens || 0;
+                let totalCompletionTokens = data.usage?.completion_tokens || 0;
 
                 if (messageData?.tool_calls?.length > 0) {
                     const toolCall = messageData.tool_calls[0];
@@ -872,6 +1077,7 @@ Return ONLY a JSON object with the following structure:
 
                         fastify.log.info({ service, lines }, 'AI analyzing logs');
                         toolUsed = { command, type: 'logs' };
+                        toolsUsed.push('analyze_logs');
 
                         try {
                             const output = await runCommand('docker', ['logs', '--tail', lines.toString(), service]);
@@ -893,15 +1099,20 @@ Return ONLY a JSON object with the following structure:
                                     model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
-                                    temperature: 0.7
+                                    temperature: 0.7,
+                                    store: true
                                 })
                             });
 
                             const secondData: any = await secondResponse.json();
                             answer = secondData.choices?.[0]?.message?.content;
+                            // Accumulate tokens from follow-up call
+                            totalPromptTokens += secondData.usage?.prompt_tokens || 0;
+                            totalCompletionTokens += secondData.usage?.completion_tokens || 0;
 
-                        } catch (err: any) {
-                            answer = `I tried to check logs for ${service} but failed: ${err.message}`;
+                        } catch (err: unknown) {
+                            const errMsg = err instanceof Error ? err.message : 'Unknown error';
+                            answer = `I tried to check logs for ${service} but failed: ${errMsg}`;
                         }
                     } else if (toolCall.function.name === 'validate_config') {
                         const args = JSON.parse(toolCall.function.arguments);
@@ -910,6 +1121,7 @@ Return ONLY a JSON object with the following structure:
 
                         fastify.log.info({ filePath, type }, 'AI validating config');
                         toolUsed = { command: `validate ${args.filePath}`, type: 'validation' };
+                        toolsUsed.push('validate_config');
 
                         try {
                             if (!fs.existsSync(filePath)) {
@@ -953,19 +1165,25 @@ Return ONLY a JSON object with the following structure:
                                     model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
-                                    temperature: 0.7
+                                    temperature: 0.7,
+                                    store: true
                                 })
                             });
 
                             const secondData: any = await secondResponse.json();
                             answer = secondData.choices?.[0]?.message?.content;
+                            // Accumulate tokens from follow-up call
+                            totalPromptTokens += secondData.usage?.prompt_tokens || 0;
+                            totalCompletionTokens += secondData.usage?.completion_tokens || 0;
 
-                        } catch (err: any) {
-                            answer = `Validation failed for ${args.filePath}: ${err.message}`;
+                        } catch (err: unknown) {
+                            const errMsg = err instanceof Error ? err.message : 'Unknown error';
+                            answer = `Validation failed for ${args.filePath}: ${errMsg}`;
                         }
                     } else if (toolCall.function.name === 'bootstrap_arr') {
                         fastify.log.info('AI bootstrapping *arr keys');
                         toolUsed = { command: 'bootstrap-arr-keys', type: 'setup' };
+                        toolsUsed.push('bootstrap_arr');
 
                         try {
                             const results = await arrService.bootstrapArrKeys();
@@ -991,14 +1209,19 @@ Return ONLY a JSON object with the following structure:
                                     model: OPENAI_MODEL,
                                     messages,
                                     max_tokens: 1000,
-                                    temperature: 0.7
+                                    temperature: 0.7,
+                                    store: true
                                 })
                             });
 
                             const secondData: any = await secondResponse.json();
                             answer = secondData.choices?.[0]?.message?.content;
-                        } catch (err: any) {
-                            answer = `Bootstrap failed: ${err.message}`;
+                            // Accumulate tokens from follow-up call
+                            totalPromptTokens += secondData.usage?.prompt_tokens || 0;
+                            totalCompletionTokens += secondData.usage?.completion_tokens || 0;
+                        } catch (err: unknown) {
+                            const errMsg = err instanceof Error ? err.message : 'Unknown error';
+                            answer = `Bootstrap failed: ${errMsg}`;
                         }
                     }
                 }
@@ -1006,13 +1229,30 @@ Return ONLY a JSON object with the following structure:
                 // Record circuit breaker success
                 recordCircuitBreakerSuccess();
 
+                const latencyMs = Date.now() - startTime;
+
+                // Record request metrics for cost tracking
+                recordRequest({
+                    agent: agent.id,
+                    model: modelToUse,
+                    provider: 'openai',
+                    promptTokens: totalPromptTokens,
+                    completionTokens: totalCompletionTokens,
+                    totalTokens: totalPromptTokens + totalCompletionTokens,
+                    latencyMs,
+                    success: true,
+                    toolsUsed,
+                    fallbackUsed: false
+                });
+
                 // Log metrics
                 fastify.log.info({
                     event: 'agent_chat_success',
                     agent: agent.id,
-                    latencyMs: Date.now() - startTime,
+                    latencyMs,
                     toolUsed: toolUsed?.command,
-                    aiPowered: true
+                    aiPowered: true,
+                    tokens: totalPromptTokens + totalCompletionTokens
                 });
 
                 return {
@@ -1020,18 +1260,53 @@ Return ONLY a JSON object with the following structure:
                     agent: { id: agent.id, name: agent.name, icon: agent.icon },
                     nudges,
                     aiPowered: true,
-                    toolUsed
+                    toolUsed,
+                    model: modelToUse,
+                    complexity
                 };
 
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Record circuit breaker failure
                 recordCircuitBreakerFailure();
+
+                // Parse error into structured context
+                const errorContext = parseErrorContext(error, 'openai');
+                const errorLatencyMs = Date.now() - startTime;
+
+                // Record failed request for metrics
+                recordRequest({
+                    agent: agent.id,
+                    model: modelToUse,
+                    provider: 'openai',
+                    promptTokens: 0,
+                    completionTokens: 0,
+                    totalTokens: 0,
+                    latencyMs: errorLatencyMs,
+                    success: false,
+                    error: errorContext.message,
+                    toolsUsed: [],
+                    fallbackUsed: false
+                });
+
                 fastify.log.error({
-                    err: error,
+                    errorContext,
                     agent: agent?.id,
-                    latencyMs: Date.now() - startTime,
+                    latencyMs: errorLatencyMs,
                     circuitState: circuitBreaker.state
                 }, '[agent/chat] OpenAI error, falling back to canned response');
+
+                // Return user-friendly error with debug info in development
+                const userFriendlyError = formatUserFriendlyError(errorContext);
+                return {
+                    answer: userFriendlyError,
+                    agent: { id: agent.id, name: agent.name, icon: agent.icon },
+                    nudges,
+                    aiPowered: false,
+                    error: {
+                        retryable: errorContext.retryable,
+                        ...(process.env.NODE_ENV === 'development' ? { debug: errorContext } : {})
+                    }
+                };
             }
         }
 
@@ -1079,8 +1354,10 @@ Return ONLY a JSON object with the following structure:
 
             // Rate limiting
             const rateLimit = checkRateLimit(clientIp);
+            addRateLimitHeaders(reply, rateLimit);
             if (!rateLimit.allowed) {
-                return reply.status(429).send({ error: 'Rate limit exceeded' });
+                reply.header('Retry-After', rateLimit.retryAfter);
+                return reply.status(429).send({ error: 'Rate limit exceeded', retryAfter: rateLimit.retryAfter });
             }
 
             // Circuit breaker
@@ -1107,7 +1384,18 @@ Return ONLY a JSON object with the following structure:
 
             const messages = buildAgentMessages(agent, message, [], {});
 
-            // Set SSE headers
+            // Intelligent model routing for streaming
+            const complexity = estimateComplexity(message);
+            const selectedModel = selectModelForQuery(message, complexity);
+            // Use OpenAI for streaming (Claude doesn't support same SSE format)
+            const streamingModel = selectedModel.startsWith('claude') ? OPENAI_MODEL : selectedModel;
+
+            // Set SSE headers (including CORS since we bypass Fastify's reply)
+            const origin = request.headers.origin;
+            if (origin) {
+                reply.raw.setHeader('Access-Control-Allow-Origin', origin);
+                reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+            }
             reply.raw.setHeader('Content-Type', 'text/event-stream');
             reply.raw.setHeader('Cache-Control', 'no-cache');
             reply.raw.setHeader('Connection', 'keep-alive');
@@ -1124,11 +1412,12 @@ Return ONLY a JSON object with the following structure:
                         'Authorization': `Bearer ${effectiveApiKey}`
                     },
                     body: JSON.stringify({
-                        model: OPENAI_MODEL,
+                        model: streamingModel,
                         messages,
                         max_tokens: 1000,
                         temperature: 0.7,
-                        stream: true
+                        stream: true,
+                        store: true
                     })
                 });
 

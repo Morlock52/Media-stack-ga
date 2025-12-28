@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Globe, Clock, User, Lock, AlertCircle } from 'lucide-react'
+import { Globe, Clock, User, Lock, AlertCircle, Home } from 'lucide-react'
 import { ComboboxInput } from '../../ui/ComboboxInput'
 import { UseFormReturn } from 'react-hook-form'
 import { BasicConfigFormData } from '../../../schemas/setupSchema'
@@ -7,6 +7,7 @@ import { useFocusManagement, useAutoFocus } from '../../../hooks/useFocusManagem
 import { useRef } from 'react'
 import { FocusRing } from '../../ui/focus-ring'
 import { InteractiveCard } from '../../ui/interactive-card'
+import { useSetupStore } from '../../../store/setupStore'
 
 interface BasicConfigurationStepProps {
     form: UseFormReturn<BasicConfigFormData>
@@ -15,6 +16,8 @@ interface BasicConfigurationStepProps {
 
 export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationStepProps) {
     const { register, formState: { errors } } = form
+    const { config } = useSetupStore()
+    const isLocalMode = config.deploymentMode === 'local'
     const { registerInput, handleKeyDown, updateCurrentIndex } = useFocusManagement()
     const domainInputRef = useRef<HTMLInputElement>(null) as React.MutableRefObject<HTMLInputElement | null>
     
@@ -62,12 +65,16 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Domain */}
                 <InteractiveCard className={`md:col-span-2 ${shakeField === 'domain' ? 'animate-shake' : ''}`}>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                        Domain <span className="text-destructive">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        {isLocalMode ? <Home className="w-4 h-4 text-emerald-400" /> : <Globe className="w-4 h-4" />}
+                        {isLocalMode ? 'Local Hostname' : 'Domain'} <span className="text-destructive">*</span>
                     </label>
                     <FocusRing focused={document.activeElement === domainInputRef.current}>
                         <div className="relative">
-                            <Globe className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                            {isLocalMode
+                                ? <Home className="absolute left-3 top-3 w-5 h-5 text-emerald-400" />
+                                : <Globe className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                            }
                             <input
                                 {...domainRegister}
                                 ref={(e) => {
@@ -78,7 +85,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                                 onKeyDown={handleKeyDown}
                                 onFocus={() => updateCurrentIndex(domainInputRef.current)}
                                 className={`w-full bg-background/60 border ${errors.domain ? 'border-destructive' : 'border-border'} rounded-lg py-2.5 pl-11 pr-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
-                                placeholder="yourdomain.com"
+                                placeholder={isLocalMode ? 'mediastack.local' : 'yourdomain.com'}
                             />
                         </div>
                     </FocusRing>
@@ -87,7 +94,11 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                             <AlertCircle className="w-3 h-3" /> {errors.domain.message as string}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-muted-foreground">Your domain for Cloudflare Tunnel access</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {isLocalMode
+                            ? 'Services will be accessible at *.local (e.g., plex.local, sonarr.local)'
+                            : 'Your domain for Cloudflare Tunnel access'}
+                    </p>
                 </InteractiveCard>
 
                 {/* Timezone */}

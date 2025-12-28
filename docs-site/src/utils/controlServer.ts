@@ -167,6 +167,39 @@ export const controlServer = {
         }
     },
 
+    localDeploy: async (payload: {
+        envContent: string
+        profiles: string[]
+        composeFile?: string
+    }): Promise<{
+        success: boolean
+        steps: Array<{ step: string; status: 'done' | 'error' }>
+        containers?: Array<{ name: string; on: boolean }>
+        message?: string
+        error?: string
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/local-deploy'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+                body: JSON.stringify(payload),
+            })
+            const text = await res.text().catch(() => '')
+            const parsed = tryParseJson(text) as any
+
+            if (!res.ok) {
+                const message = parsed?.error || text || res.statusText
+                throw new Error(`Local deploy failed (HTTP ${res.status}): ${message}`)
+            }
+
+            if (parsed && typeof parsed === 'object') return parsed
+            return { success: false, steps: [], error: 'Invalid response' }
+        } catch (err) {
+            log('error', 'controlServer.localDeploy failed', err)
+            throw new Error(getErrorMessage(err))
+        }
+    },
+
     composeServices: async (): Promise<{ services: string[] }> => {
         try {
             const res = await fetch(buildControlServerUrl('/api/compose/services'), {
@@ -239,6 +272,65 @@ export const controlServer = {
         }
     },
 
+    // Get status of all *arr services
+    getArrStatus: async (): Promise<{
+        success: boolean;
+        services: Array<{ id: string; running: boolean; ready: boolean }>;
+        error?: string;
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/arr/status'), {
+                headers: { ...controlServerAuthHeaders() },
+            });
+            const text = await res.text().catch(() => '');
+            const parsed = tryParseJson(text) as any;
+
+            if (!res.ok) {
+                const message = parsed?.error || text || res.statusText;
+                throw new Error(`Failed to get Arr status (HTTP ${res.status}): ${message}`);
+            }
+
+            if (parsed && typeof parsed === 'object') return parsed;
+            return { success: false, services: [], error: 'Invalid response' };
+        } catch (err) {
+            log('error', 'controlServer.getArrStatus failed', err);
+            throw new Error(getErrorMessage(err));
+        }
+    },
+
+    // Auto-bootstrap: wait for services, extract keys, write to .env
+    autoBootstrapArr: async (options?: {
+        timeout?: number;
+        pollInterval?: number;
+    }): Promise<{
+        success: boolean;
+        step: string;
+        keys: Record<string, string>;
+        services: Array<{ id: string; running: boolean; ready: boolean }>;
+        error?: string;
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/arr/auto-bootstrap'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+                body: JSON.stringify(options || {}),
+            });
+            const text = await res.text().catch(() => '');
+            const parsed = tryParseJson(text) as any;
+
+            if (!res.ok) {
+                const message = parsed?.error || text || res.statusText;
+                throw new Error(`Auto-bootstrap failed (HTTP ${res.status}): ${message}`);
+            }
+
+            if (parsed && typeof parsed === 'object') return parsed;
+            return { success: false, step: 'error', keys: {}, services: [], error: 'Invalid response' };
+        } catch (err) {
+            log('error', 'controlServer.autoBootstrapArr failed', err);
+            throw new Error(getErrorMessage(err));
+        }
+    },
+
     bootstrapArrRemote: async (payload: {
         host: string
         port?: number | string
@@ -278,6 +370,53 @@ export const controlServer = {
             return res.json()
         } catch (err) {
             log('error', 'controlServer.bootstrapArrRemote failed', err)
+            throw new Error(getErrorMessage(err))
+        }
+    },
+
+    autoBootstrapArrRemote: async (payload: {
+        host: string
+        port?: number | string
+        username: string
+        authType?: 'key' | 'password'
+        privateKey?: string
+        password?: string
+        envHost?: string
+        envPort?: number | string
+        envUsername?: string
+        envAuthType?: 'key' | 'password'
+        envPrivateKey?: string
+        envPassword?: string
+        envPath?: string
+        timeout?: number
+        pollInterval?: number
+    }): Promise<{
+        success: boolean
+        step: string
+        keys: Record<string, string>
+        services: Array<{ id: string; running: boolean; ready: boolean }>
+        env?: { host: string; path: string }
+        scan?: { host: string }
+        error?: string
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/arr/auto-bootstrap-remote'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
+                body: JSON.stringify(payload),
+            })
+            const text = await res.text().catch(() => '')
+            const parsed = tryParseJson(text) as any
+
+            if (!res.ok) {
+                if (parsed && typeof parsed === 'object') return parsed
+                throw new Error(`Failed to auto-bootstrap Arr keys remotely (HTTP ${res.status}): ${text || res.statusText}`)
+            }
+
+            if (parsed && typeof parsed === 'object') return parsed
+            return { success: false, step: 'error', keys: {}, services: [], error: 'Invalid response' }
+        } catch (err) {
+            log('error', 'controlServer.autoBootstrapArrRemote failed', err)
             throw new Error(getErrorMessage(err))
         }
     },

@@ -537,6 +537,79 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 steps[steps.length - 1].status = 'done';
             }
 
+            // Step 4b: Upload monitoring and dashboard configs
+            steps.push({ step: 'Uploading monitoring configs (Loki, Promtail, Grafana, Homepage)...', status: 'running' });
+            try {
+                // Parse DATA_ROOT from env content or use default
+                const envContent = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf-8') : '';
+                const dataRootMatch = envContent.match(/DATA_ROOT=(.+)/);
+                const configRootMatch = envContent.match(/CONFIG_ROOT=(.+)/);
+                const dataRoot = dataRootMatch?.[1]?.trim() || `${remoteDeployPath}/data`;
+                const configRoot = configRootMatch?.[1]?.trim() || `${dataRoot}/config`;
+
+                // Create config directories on remote
+                const configDirs = [
+                    `${configRoot}/loki`,
+                    `${configRoot}/promtail`,
+                    `${configRoot}/grafana/provisioning/datasources`,
+                    `${configRoot}/grafana/provisioning/dashboards`,
+                    `${configRoot}/grafana/dashboards`,
+                    `${configRoot}/homepage`,
+                ];
+                await execSSH(sshConfig, `mkdir -p ${configDirs.join(' ')}`);
+
+                // Upload config files from bundled configs directory
+                const configsDir = path.join(PROJECT_ROOT, 'configs');
+                const uploadConfigFile = async (localRel: string, remoteDir: string) => {
+                    const localPath = path.join(configsDir, localRel);
+                    if (fs.existsSync(localPath)) {
+                        const fileName = path.basename(localPath);
+                        const remotePath = `${remoteDir}/${fileName}`;
+                        // Check if file exists on remote first
+                        const checkExists = await execSSH(sshConfig, `test -f ${remotePath}`);
+                        if (checkExists.code !== 0) {
+                            // File doesn't exist, upload it
+                            await scpFile(sshConfig, localPath, remotePath);
+                        }
+                    }
+                };
+
+                // Upload Loki config
+                await uploadConfigFile('loki/loki-config.yaml', `${configRoot}/loki`);
+
+                // Upload Promtail config
+                await uploadConfigFile('promtail/promtail-config.yaml', `${configRoot}/promtail`);
+
+                // Upload Grafana configs
+                await uploadConfigFile('grafana/provisioning/datasources/loki.yaml', `${configRoot}/grafana/provisioning/datasources`);
+                await uploadConfigFile('grafana/provisioning/dashboards/default.yaml', `${configRoot}/grafana/provisioning/dashboards`);
+
+                // Upload Grafana dashboards
+                const dashboardsDir = path.join(configsDir, 'grafana/dashboards');
+                if (fs.existsSync(dashboardsDir)) {
+                    const dashboards = fs.readdirSync(dashboardsDir);
+                    for (const dashboard of dashboards) {
+                        if (dashboard.endsWith('.json')) {
+                            await uploadConfigFile(`grafana/dashboards/${dashboard}`, `${configRoot}/grafana/dashboards`);
+                        }
+                    }
+                }
+
+                // Upload Homepage configs
+                const homepageDir = path.join(configsDir, 'homepage');
+                if (fs.existsSync(homepageDir)) {
+                    const homepageFiles = fs.readdirSync(homepageDir);
+                    for (const hpFile of homepageFiles) {
+                        await uploadConfigFile(`homepage/${hpFile}`, `${configRoot}/homepage`);
+                    }
+                }
+
+                steps[steps.length - 1].status = 'done';
+            } catch (configErr: any) {
+                fastify.log.warn({ err: configErr }, '[remote-deploy] Config upload partially failed');
+                steps[steps.length - 1].status = 'done'; // Continue anyway, not critical
+            }
+
             // Step 5: Check Docker is installed
             steps.push({ step: 'Checking Docker installation...', status: 'running' });
             const dockerCheck = await execSSH(sshConfig, 'docker --version');
@@ -978,6 +1051,226 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                     await fs.promises.rm(tmpDir, { recursive: true, force: true });
                 } catch (cleanupError) {
                     fastify.log.debug({ err: cleanupError, tmpDir }, '[arr/bootstrap-remote] cleanup failed');
+                }
+            }
+        }
+    });
+
+    // Auto-bootstrap remote: wait for services to initialize, then extract keys
+    fastify.post<{ Body: RemoteArrBootstrapRequest & { timeout?: number; pollInterval?: number } }>('/api/arr/auto-bootstrap-remote', async (request, reply) => {
+        const {
+            host,
+            port = 22,
+            username,
+            privateKey,
+            password,
+            envHost,
+            envPort,
+            envUsername,
+            envAuthType,
+            envPrivateKey,
+            envPassword,
+            envPath,
+            timeout = 120000,
+            pollInterval = 5000,
+        } = request.body;
+
+        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+
+        if (!host || !username) {
+            return reply.status(400).send({ success: false, error: 'Host and username are required' });
+        }
+
+        if (authType === 'key' && !privateKey) {
+            return reply.status(400).send({ success: false, error: 'Private key is required for SSH key authentication' });
+        }
+        if (authType === 'password' && !password) {
+            return reply.status(400).send({ success: false, error: 'Password is required for password authentication' });
+        }
+
+        let safeEnvPath: string;
+        try {
+            safeEnvPath = sanitizeRemoteFilePath(envPath);
+        } catch (error: any) {
+            return reply.status(400).send({ success: false, error: error.message });
+        }
+
+        const scanConfig: SSHConfig = {
+            host,
+            port: typeof port === 'string' ? parseInt(port) : port,
+            username,
+            authType,
+            privateKey,
+            password,
+        };
+
+        const resolvedEnvHost = (envHost || '').trim() || scanConfig.host;
+        const resolvedEnvPort = typeof (envPort as any) === 'string' ? parseInt(envPort as any) : (envPort || scanConfig.port);
+        const resolvedEnvUsername = (envUsername || '').trim() || scanConfig.username;
+        const resolvedEnvAuthType: 'key' | 'password' = envAuthType || scanConfig.authType;
+        const resolvedEnvPrivateKey = typeof envPrivateKey === 'string' && envPrivateKey.trim() ? envPrivateKey : scanConfig.privateKey;
+        const resolvedEnvPassword = typeof envPassword === 'string' && envPassword.trim() ? envPassword : scanConfig.password;
+
+        const envConfig: SSHConfig = {
+            host: resolvedEnvHost,
+            port: resolvedEnvPort,
+            username: resolvedEnvUsername,
+            authType: resolvedEnvAuthType,
+            privateKey: resolvedEnvPrivateKey,
+            password: resolvedEnvPassword,
+        };
+
+        let tmpDir: string | null = null;
+        const extractedKeys: Record<string, string> = {};
+        const serviceStatuses: Array<{ id: string; running: boolean; ready: boolean }> = [];
+
+        try {
+            // Step 1: Connect
+            const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
+            if (connectCheck.code !== 0) {
+                const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
+                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(scanConfig)}` : '';
+                return reply.status(200).send({
+                    success: false,
+                    step: 'connect',
+                    error: `SSH connection failed: ${detail || 'unknown error'}${hint}`,
+                    keys: {},
+                    services: [],
+                });
+            }
+
+            // Step 2: Wait for *arr services to be ready
+            fastify.log.info('[arr/auto-bootstrap-remote] Waiting for *arr services to initialize...');
+            const startTime = Date.now();
+            let allReady = false;
+
+            while (Date.now() - startTime < timeout) {
+                serviceStatuses.length = 0; // Clear array
+
+                for (const service of ARR_SERVICES) {
+                    // Check if container is running
+                    const runningCheck = await execSSH(scanConfig, `docker inspect -f '{{.State.Running}}' ${service.id} 2>/dev/null`);
+                    const running = runningCheck.code === 0 && runningCheck.stdout.trim() === 'true';
+
+                    // Check if config.xml exists (service is ready)
+                    let ready = false;
+                    if (running) {
+                        const readyCheck = await execSSH(scanConfig, `docker exec ${service.id} test -f /config/config.xml 2>/dev/null`);
+                        ready = readyCheck.code === 0;
+                    }
+
+                    serviceStatuses.push({ id: service.id, running, ready });
+                }
+
+                const runningServices = serviceStatuses.filter(s => s.running);
+                if (runningServices.length > 0 && runningServices.every(s => s.ready)) {
+                    allReady = true;
+                    break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            if (!allReady) {
+                const notReady = serviceStatuses.filter(s => s.running && !s.ready);
+                return reply.status(200).send({
+                    success: false,
+                    step: 'wait',
+                    error: `Timeout: Some services not ready: ${notReady.map(s => s.id).join(', ')}`,
+                    keys: {},
+                    services: serviceStatuses,
+                });
+            }
+
+            // Step 3: Extract API keys
+            fastify.log.info('[arr/auto-bootstrap-remote] Extracting API keys...');
+            for (const service of ARR_SERVICES) {
+                const cmd = `docker exec ${service.id} sed -n 's:.*<ApiKey>\\(.*\\)</ApiKey>.*:\\1:p' /config/config.xml`;
+                const result = await execSSH(scanConfig, cmd);
+                if (result.code !== 0) continue;
+                const key = (result.stdout || '').trim();
+                if (!key) continue;
+                extractedKeys[service.envKey] = key.replace(/\r?\n/g, '');
+            }
+
+            if (Object.keys(extractedKeys).length === 0) {
+                return reply.status(200).send({
+                    success: false,
+                    step: 'extract',
+                    error: 'No API keys found in running services.',
+                    keys: {},
+                    services: serviceStatuses,
+                });
+            }
+
+            // Step 4: Write keys to remote .env
+            fastify.log.info('[arr/auto-bootstrap-remote] Writing keys to remote .env...');
+            const ensureEnvDir = await execSSH(envConfig, `mkdir -p "$(dirname ${safeEnvPath})"`);
+            if (ensureEnvDir.code !== 0) {
+                return reply.status(200).send({
+                    success: false,
+                    step: 'write',
+                    error: 'Failed to create remote env directory',
+                    keys: extractedKeys,
+                    services: serviceStatuses,
+                });
+            }
+
+            const envRead = await execSSH(envConfig, `test -f ${safeEnvPath} && cat ${safeEnvPath} || true`);
+            const original = (envRead.stdout || '').replace(/\r\n/g, '\n');
+            let updated = original;
+
+            for (const [envKey, envValue] of Object.entries(extractedKeys)) {
+                const line = `${envKey}=${envValue}`;
+                const re = new RegExp(`^${escapeRegExp(envKey)}=.*$`, 'm');
+                if (re.test(updated)) {
+                    updated = updated.replace(re, line);
+                } else {
+                    updated = updated.replace(/\s*$/, '');
+                    updated = `${updated}${updated.length ? '\n' : ''}${line}\n`;
+                }
+            }
+            if (!updated.endsWith('\n')) updated += '\n';
+
+            tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mediastack-arr-auto-'));
+            const tmpFile = path.join(tmpDir, '.env');
+            await fs.promises.writeFile(tmpFile, updated, 'utf-8');
+
+            const upload = await scpFile(envConfig, tmpFile, safeEnvPath);
+            if (upload.code !== 0) {
+                return reply.status(200).send({
+                    success: false,
+                    step: 'write',
+                    error: 'Failed to upload remote env file',
+                    keys: extractedKeys,
+                    services: serviceStatuses,
+                });
+            }
+
+            fastify.log.info({ keys: Object.keys(extractedKeys) }, '[arr/auto-bootstrap-remote] Complete!');
+            return reply.status(200).send({
+                success: true,
+                step: 'complete',
+                keys: extractedKeys,
+                services: serviceStatuses,
+                env: { host: envConfig.host, path: safeEnvPath },
+            });
+
+        } catch (error: any) {
+            fastify.log.error({ err: error, host, username }, '[arr/auto-bootstrap-remote] failed');
+            return reply.status(200).send({
+                success: false,
+                step: 'error',
+                error: cleanRemoteOutput(error?.message || '') || 'Auto-bootstrap failed',
+                keys: extractedKeys,
+                services: serviceStatuses,
+            });
+        } finally {
+            if (tmpDir) {
+                try {
+                    await fs.promises.rm(tmpDir, { recursive: true, force: true });
+                } catch {
+                    // Best-effort cleanup
                 }
             }
         }

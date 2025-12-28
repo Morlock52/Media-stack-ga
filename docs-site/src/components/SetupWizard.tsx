@@ -45,7 +45,7 @@ const steps = [
 
 export function SetupWizard() {
     const {
-        currentStep, mode, selectedServices, config, savedProfiles,
+        currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,
         setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,
         updateStoragePath,
         nextStep, prevStep,
@@ -170,7 +170,7 @@ export function SetupWizard() {
     }
 
     const handleTemplateSelect = (template: Template) => {
-        loadTemplate(template.services, template.config)
+        loadTemplate(template.id, template.services, template.config)
         setShowTemplates(false)
     }
 
@@ -695,6 +695,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                         config={config}
                                         mode={mode}
                                         selectedServices={selectedServices}
+                                        appliedTemplateId={appliedTemplateId}
                                         generateEnvFile={generateEnvFile}
                                         generateAutheliaYaml={generateAutheliaYaml}
                                         generateCloudflareYaml={generateCloudflareYaml}

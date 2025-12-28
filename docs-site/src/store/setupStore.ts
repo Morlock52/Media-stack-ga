@@ -16,6 +16,11 @@ import {
 // Comments here are intentionally user-facing (for future devs and power
 // users reading the code) and match the guidance in the docs + wizard UI.
 export interface SetupConfig {
+    // DEPLOYMENT MODE: 'local' uses just Traefik, 'cloud' adds Cloudflare + Authelia
+    // Local mode: Access via LAN IP/hostname, no external dependencies
+    // Cloud mode: Access via Cloudflare Tunnel with Authelia SSO
+    deploymentMode: 'local' | 'cloud'
+
     // MAIN DOMAIN for your stack (no protocol), e.g. "media.example.com".
     // Used by reverse proxy examples and any generated URLs.
     domain: string
@@ -75,6 +80,9 @@ export interface SetupStore {
     // Cached advanced plan so we can restore expert overrides after switching back from simple mode.
     advancedPlanCache?: StoragePlan
 
+    // Track which template was applied (null if none or reset).
+    appliedTemplateId: string | null
+
     // ------ Actions for navigation & selection ------
     setCurrentStep: (step: number) => void
     setMode: (mode: 'newbie' | 'expert') => void
@@ -101,7 +109,7 @@ export interface SetupStore {
 
     // ------ Template & Export/Import ------
     // Load a pre-defined template (sets services + maybe config overrides).
-    loadTemplate: (services: string[], config?: Partial<SetupConfig>) => void
+    loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void
 
     // Export current config (including selected services) as JSON string.
     exportConfig: () => string
@@ -140,6 +148,7 @@ const mergeStoragePlan = (plan?: StoragePlan, rootOverride?: string): StoragePla
 
 // Initial defaults shown on first load.
 export const initialConfig: SetupConfig = {
+    deploymentMode: 'cloud', // Default to cloud for backwards compatibility
     domain: 'example.com',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Etc/UTC',
     puid: '1000',
@@ -165,6 +174,7 @@ export const useSetupStore = create<SetupStore>()(
             config: initialConfig,
             savedProfiles: {},
             advancedPlanCache: undefined,
+            appliedTemplateId: null,
 
             setCurrentStep: (step) => set({ currentStep: step }),
 
@@ -313,6 +323,7 @@ export const useSetupStore = create<SetupStore>()(
                     selectedServices: [],
                     config: initialConfig,
                     advancedPlanCache: undefined,
+                    appliedTemplateId: null,
                 }),
 
             // Move to the next wizard step (max index 5).
@@ -328,7 +339,7 @@ export const useSetupStore = create<SetupStore>()(
                 })),
 
             // Template & Export/Import
-            loadTemplate: (services, templateConfig) =>
+            loadTemplate: (templateId, services, templateConfig) =>
                 set((state) => {
                     const mergedConfig = templateConfig
                         ? {
@@ -344,6 +355,7 @@ export const useSetupStore = create<SetupStore>()(
                         selectedServices: services,
                         config: mergedConfig,
                         mode: 'expert',
+                        appliedTemplateId: templateId,
                     }
                 }),
 
@@ -382,6 +394,7 @@ export const useSetupStore = create<SetupStore>()(
                     storageMode: 'advanced',
                     advancedPlanCache: mergeStoragePlan(data.config.storagePlan),
                     currentStep: 0,
+                    appliedTemplateId: null,
                 }),
 
             // Profile Management
@@ -445,6 +458,7 @@ export const useSetupStore = create<SetupStore>()(
                     ])
                 ),
                 advancedPlanCache: state.advancedPlanCache,
+                appliedTemplateId: state.appliedTemplateId,
             })
         }
     )

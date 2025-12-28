@@ -1,0 +1,109 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /etc/promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+
+scrape_configs:
+  # Docker container logs via Docker socket discovery
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: status
+            values: ["running"]
+    relabel_configs:
+      # Add job label
+      - target_label: 'job'
+        replacement: 'docker'
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Extract container ID
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+      # Extract Docker Compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      # Extract Docker Compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+      # Extract image name
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+      # Drop internal containers (optional)
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(promtail|loki)'
+        action: drop
+    pipeline_stages:
+      # Parse Docker JSON logs
+      - docker: {}
+
+      # Add log level detection for common patterns
+      - regex:
+          expression: '(?i)(?P<level>error|warn|info|debug|trace|fatal|panic)'
+      - labels:
+          level:
+
+      # Detect errors and add label
+      - match:
+          selector: '{container=~".+"}'
+          stages:
+            - regex:
+                expression: '(?i)(error|exception|failed|failure|fatal|panic)'
+            - labels:
+                has_error:
+
+      # Timestamp extraction for *arr services
+      - match:
+          selector: '{container=~"sonarr|radarr|prowlarr|bazarr|lidarr|readarr"}'
+          stages:
+            - regex:
+                expression: '\\[(?P<level>\\w+)\\]'
+            - labels:
+                level:
+
+      # Plex log parsing
+      - match:
+          selector: '{container="plex"}'
+          stages:
+            - regex:
+                expression: '(?P<timestamp>\\w+ \\d+ \\d+:\\d+:\\d+) \\[(?P<level>\\w+)\\]'
+            - labels:
+                level:
+
+      # qBittorrent log parsing
+      - match:
+          selector: '{container="qbittorrent"}'
+          stages:
+            - regex:
+                expression: '\\((?P<level>[DIWECN])\\)'
+            - template:
+                source: level
+                template: '{{ if eq .level "D" }}debug{{ else if eq .level "I" }}info{{ else if eq .level "W" }}warn{{ else if eq .level "E" }}error{{ else if eq .level "C" }}critical{{ else if eq .level "N" }}notice{{ else }}{{ .level }}{{ end }}'
+            - labels:
+                level:
+
+  # System log files (optional - for host-level logging)
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+    pipeline_stages:
+      - regex:
+          expression: '(?i)(?P<level>error|warn|info|debug)'
+      - labels:
+          level:

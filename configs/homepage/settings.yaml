@@ -1,0 +1,63 @@
+---
+# Homepage Settings - Modern Media Stack Theme
+# https://gethomepage.dev/configs/settings/
+
+title: Media Stack
+
+# Dark theme with modern slate colors
+theme: dark
+color: slate
+
+# Background with blur effect
+background:
+  image: https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920
+  blur: md
+  saturate: 100
+  brightness: 50
+  opacity: 80
+
+# Card styling with glassmorphism
+cardBlur: md
+
+# Clean header without underline
+headerStyle: clean
+
+# Favicon
+favicon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png
+
+# Disable API check (we handle it in widgets)
+disableCollapse: false
+hideVersion: true
+
+# Layout configuration for service groups
+layout:
+  Media:
+    style: row
+    columns: 2
+    icon: mdi-play-circle
+  Downloads:
+    style: row
+    columns: 1
+    icon: mdi-download
+  Arr Stack:
+    style: row
+    columns: 4
+    icon: mdi-television-classic
+  Monitoring:
+    style: row
+    columns: 2
+    icon: mdi-chart-line
+  System:
+    style: row
+    columns: 1
+    icon: mdi-cog
+
+# Quick launch for keyboard navigation
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: false
+  showSearchSuggestions: true
+  hideVisitURL: false
+
+# Status indicator styling
+statusStyle: dot

@@ -16,7 +16,9 @@ export interface StorageCategoryDefinition {
   alwaysVisible?: boolean
 }
 
-export const DEFAULT_DATA_ROOT = '/srv/mediastack'
+// Detect if running on macOS - Docker Desktop requires paths under /Users
+const isMacOS = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+export const DEFAULT_DATA_ROOT = isMacOS ? '/Users/Shared/mediastack' : '/srv/mediastack'
 
 export const STORAGE_CATEGORIES: StorageCategoryDefinition[] = [
   {

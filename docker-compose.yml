@@ -88,23 +88,29 @@ services:
   # WATCHTOWER - Auto-update Containers
   # ===========================================
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      - TZ=${TIMEZONE}
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_SCHEDULE=0 0 4 * * * # Run at 4am daily
+      - WATCHTOWER_POLL_INTERVAL=86400
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      - DOCKER_API_VERSION=1.44
     networks:
       - mediastack
     labels:
-      - "homepage.group=Core"
+      - "homepage.group=Monitoring"
       - "homepage.name=Watchtower"
       - "homepage.icon=watchtower.png"
       - "homepage.description=Auto-updater"
       - "homepage.widget.type=watchtower"
       - "homepage.widget.url=http://watchtower:8080"
+      - "com.centurylinklabs.watchtower.enable=true"
 
   # ===========================================
   # DOZZLE - Log Viewer
@@ -133,6 +139,11 @@ services:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
     restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - HOMEPAGE_VAR_DOMAIN=${DOMAIN}
+      - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN:-}
     volumes:
       - ${CONFIG_ROOT}/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -760,3 +771,84 @@ services:
       - "homepage.icon=notifiarr.png"
       - "homepage.href=http://notifiarr.${DOMAIN}"
       - "homepage.description=Notifications"
+
+  # ===========================================
+  # LOKI - Log Aggregation
+  # ===========================================
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG_ROOT}/loki:/etc/loki
+      - ${CONFIG_ROOT}/loki/data:/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - mediastack
+    labels:
+      - "homepage.group=Monitoring"
+      - "homepage.name=Loki"
+      - "homepage.icon=loki.png"
+      - "homepage.description=Log Aggregation"
+    expose:
+      - 3100
+
+  # ===========================================
+  # PROMTAIL - Log Collector
+  # ===========================================
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG_ROOT}/promtail:/etc/promtail
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      - mediastack
+    depends_on:
+      - loki
+
+  # ===========================================
+  # GRAFANA - Monitoring Dashboard
+  # ===========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-mediastack}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://grafana.${DOMAIN}
+    volumes:
+      - ${CONFIG_ROOT}/grafana:/var/lib/grafana
+      - ${CONFIG_ROOT}/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - mediastack
+    depends_on:
+      - loki
+    labels:
+      - "homepage.group=Monitoring"
+      - "homepage.name=Grafana"
+      - "homepage.icon=grafana.png"
+      - "homepage.href=http://grafana.${DOMAIN}"
+      - "homepage.description=Logs & Metrics"
+      - "homepage.widget.type=grafana"
+      - "homepage.widget.url=http://grafana:3000"
+      - "homepage.widget.username=${GRAFANA_USER:-admin}"
+      - "homepage.widget.password=${GRAFANA_PASSWORD:-mediastack}"
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK}"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.rule=HostRegexp(`grafana.{domain:.+}`)"
+      - "traefik.http.routers.grafana.priority=10"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    expose:
+      - 3000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
