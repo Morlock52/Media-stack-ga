@@ -14,8 +14,11 @@ import {
     RadarrGuide,
     ProwlarrGuide,
     BazarrGuide,
+    LidarrGuide,
+    ReadarrGuide,
     QBittorrentGuide,
     GluetunGuide,
+    SABnzbdGuide,
     HomepageGuide,
     AutheliaGuide,
     PortainerGuide,
@@ -27,6 +30,13 @@ import {
     RedisGuide,
     WatchtowerGuide,
     PostDeployChecksGuide,
+    GrafanaGuide,
+    LokiGuide,
+    PromtailGuide,
+    OmbiGuide,
+    PetioGuide,
+    KavitaGuide,
+    FileBrowserGuide,
 } from '../components/docs'
 import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
@@ -165,6 +175,17 @@ export function DocsPage() {
                     {selectedAppId === 'redis' && <RedisGuide />}
                     {selectedAppId === 'watchtower' && <WatchtowerGuide />}
                     {selectedAppId === 'post-deploy' && <PostDeployChecksGuide />}
+
+                    {selectedAppId === 'grafana' && <GrafanaGuide />}
+                    {selectedAppId === 'loki' && <LokiGuide />}
+                    {selectedAppId === 'promtail' && <PromtailGuide />}
+                    {selectedAppId === 'lidarr' && <LidarrGuide />}
+                    {selectedAppId === 'readarr' && <ReadarrGuide />}
+                    {selectedAppId === 'sabnzbd' && <SABnzbdGuide />}
+                    {selectedAppId === 'ombi' && <OmbiGuide />}
+                    {selectedAppId === 'petio' && <PetioGuide />}
+                    {selectedAppId === 'kavita' && <KavitaGuide />}
+                    {selectedAppId === 'filebrowser' && <FileBrowserGuide />}
                 </GuideModal>
 
                 {/* AI Assistant - Multi-Agent System */}
