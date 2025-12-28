@@ -39,14 +39,14 @@
     "name": "50's scifi Movies",
     "enabled": true,
     "type": "movie",
-    "lastScan": 1766940301174
+    "lastScan": 1766940601628
    },
    {
     "id": "9",
     "name": "Abbott and Costello",
     "enabled": true,
     "type": "movie",
-    "lastScan": 1766940301274
+    "lastScan": 1766940601672
    },
    {
     "id": "14",
@@ -65,7 +65,7 @@
     "name": "John Wayne",
     "enabled": true,
     "type": "movie",
-    "lastScan": 1766940301426
+    "lastScan": 1766940601972
    },
    {
     "id": "1",
