@@ -39,17 +39,29 @@ export const isContainerRunning = async (containerName: string): Promise<boolean
 };
 
 /**
- * Check if an *arr container has initialized (config.xml exists)
+ * Check if an *arr container has initialized (config file exists)
+ * Bazarr uses YAML config, others use XML
  */
 export const isArrReady = async (containerName: string): Promise<boolean> => {
     try {
-        await runCommand('docker', [
-            'exec',
-            containerName,
-            'test',
-            '-f',
-            '/config/config.xml'
-        ]);
+        // Bazarr uses a different config structure
+        if (containerName === 'bazarr') {
+            await runCommand('docker', [
+                'exec',
+                containerName,
+                'test',
+                '-f',
+                '/config/config/config.yaml'
+            ]);
+        } else {
+            await runCommand('docker', [
+                'exec',
+                containerName,
+                'test',
+                '-f',
+                '/config/config.xml'
+            ]);
+        }
         return true;
     } catch {
         return false;
@@ -109,24 +121,41 @@ export const waitForArrServices = async (
 };
 
 /**
- * Extracts the API key from an *arr container by reading its config.xml
+ * Extracts the API key from an *arr container by reading its config
+ * Bazarr uses YAML format, others use XML
  */
 export const extractArrApiKey = async (containerName: string): Promise<string | null> => {
     try {
-        // Use the robust sed command to extract the key from config.xml
-        const result = await runCommand('docker', [
-            'exec',
-            containerName,
-            'sed',
-            '-n',
-            's:.*<ApiKey>\\(.*\\)</ApiKey>.*:\\1:p',
-            '/config/config.xml'
-        ]);
+        let result: string;
 
-        const key = result.trim();
-        return key || null;
+        if (containerName === 'bazarr') {
+            // Bazarr stores API key in YAML format at auth.apikey
+            result = await runCommand('docker', [
+                'exec',
+                containerName,
+                'grep',
+                '-A1',
+                'auth:',
+                '/config/config/config.yaml'
+            ]);
+            // Parse "  apikey: <value>" from grep output
+            const match = result.match(/apikey:\s*([a-f0-9]+)/i);
+            return match ? match[1] : null;
+        } else {
+            // Standard *arr apps use XML config
+            result = await runCommand('docker', [
+                'exec',
+                containerName,
+                'sed',
+                '-n',
+                's:.*<ApiKey>\\(.*\\)</ApiKey>.*:\\1:p',
+                '/config/config.xml'
+            ]);
+            const key = result.trim();
+            return key || null;
+        }
     } catch {
-        // Container might not be running or config.xml not yet initialized
+        // Container might not be running or config not yet initialized
         return null;
     }
 };

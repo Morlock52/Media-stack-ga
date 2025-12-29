@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -108,9 +108,44 @@ export function SetupWizard() {
         }
     }, [])
 
-    // Scroll to top when step changes
+    // Ref for the main content area
+    const mainContentRef = useRef<HTMLDivElement>(null)
+
+    // Scroll to element and focus
+    const scrollToElement = useCallback((selector: string, shouldFocus = true) => {
+        setTimeout(() => {
+            const element = document.querySelector(selector) as HTMLElement
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                if (shouldFocus && element instanceof HTMLInputElement) {
+                    element.focus()
+                }
+            }
+        }, 100)
+    }, [])
+
+    // Scroll to first error field
+    const scrollToFirstError = useCallback((errors: Record<string, unknown>) => {
+        const firstErrorField = Object.keys(errors)[0]
+        if (firstErrorField) {
+            scrollToElement(`[name="${firstErrorField}"]`, true)
+        }
+    }, [scrollToElement])
+
+    // Scroll to content area when step changes, then focus first input
     useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Scroll main content into view
+        if (mainContentRef.current) {
+            mainContentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+
+        // Focus first input after animation completes
+        setTimeout(() => {
+            const firstInput = document.querySelector('input:not([type="hidden"]), select, textarea') as HTMLElement
+            if (firstInput && firstInput instanceof HTMLInputElement) {
+                firstInput.focus()
+            }
+        }, 400) // Wait for framer-motion animation
     }, [currentStep])
 
     // Step 1 form (Basic Config)
@@ -140,31 +175,44 @@ export function SetupWizard() {
             const isValid = await step1Form.trigger()
             if (!isValid) {
                 const errors = step1Form.formState.errors
-                Object.keys(errors).forEach(field => {
-                    setShakeField(field)
+                const firstErrorField = Object.keys(errors)[0]
+                if (firstErrorField) {
+                    setShakeField(firstErrorField)
                     setTimeout(() => setShakeField(null), 500)
-                })
+                    // Scroll to error field and focus
+                    scrollToFirstError(errors)
+                    toast.error(`Please fix the ${firstErrorField} field`)
+                }
                 return
             }
             updateConfig(step1Form.getValues())
             nextStep()
         } else if (currentStep === 2) {
-            if (selectedServices.length === 0) return
+            if (selectedServices.length === 0) {
+                toast.error('Please select at least one service')
+                // Scroll to service selection area
+                scrollToElement('.grid.grid-cols-1.sm\\:grid-cols-2', false)
+                return
+            }
             nextStep()
         } else if (currentStep === 3) {
             // Service Config step
             nextStep()
         } else if (currentStep === 4) {
             const isValid = await step4Form.trigger()
-            if (isValid) {
-                const values = step4Form.getValues()
-                updateConfig({
-                    cloudflareToken: values.cloudflareToken,
-                    plexClaim: values.plexClaim,
-                    wireguardPrivateKey: values.wireguardPrivateKey,
-                    wireguardAddresses: values.wireguardAddresses,
-                })
+            if (!isValid) {
+                const errors = step4Form.formState.errors
+                scrollToFirstError(errors)
+                toast.error('Please check the form fields')
+                return
             }
+            const values = step4Form.getValues()
+            updateConfig({
+                cloudflareToken: values.cloudflareToken,
+                plexClaim: values.plexClaim,
+                wireguardPrivateKey: values.wireguardPrivateKey,
+                wireguardAddresses: values.wireguardAddresses,
+            })
             nextStep()
         }
     }
@@ -638,23 +686,24 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                     </div>
 
                     {/* Main Content */}
-                    {showTemplates ? (
-                        <GlassCard
-                            blur="lg"
-                            variant="accent"
-                            className="p-8 min-h-[500px] transition-all duration-300"
-                        >
-                            <TemplateSelector
-                                onSelectTemplate={handleTemplateSelect}
-                                onSkip={() => setShowTemplates(false)}
-                            />
-                        </GlassCard>
-                    ) : (
-                        <GlassCard
-                            blur="lg" 
-                            variant="default"
-                            className="p-8 min-h-[500px] transition-all duration-300 hover:bg-white/20"
-                        >
+                    <div ref={mainContentRef} className="scroll-mt-24">
+                        {showTemplates ? (
+                            <GlassCard
+                                blur="lg"
+                                variant="accent"
+                                className="p-8 min-h-[500px] transition-all duration-300"
+                            >
+                                <TemplateSelector
+                                    onSelectTemplate={handleTemplateSelect}
+                                    onSkip={() => setShowTemplates(false)}
+                                />
+                            </GlassCard>
+                        ) : (
+                            <GlassCard
+                                blur="lg"
+                                variant="default"
+                                className="p-8 min-h-[500px] transition-all duration-300 hover:bg-white/20"
+                            >
                             <AnimatePresence mode="wait">
                                 {/* Step 0: Welcome */}
                                 {currentStep === 0 && <WelcomeStep />}
@@ -708,7 +757,8 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                 )}
                             </AnimatePresence>
                         </GlassCard>
-                    )}
+                        )}
+                    </div>
 
                     {/* Navigation Buttons */}
                     {currentStep > 0 && (

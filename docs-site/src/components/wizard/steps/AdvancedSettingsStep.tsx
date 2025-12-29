@@ -3,6 +3,7 @@ import { HelpCircle, Shield, Home, Cloud } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 import { AdvancedSettingsFormData } from '../../../schemas/setupSchema'
 import { useSetupStore } from '../../../store/setupStore'
+import { useRef, useEffect } from 'react'
 
 interface AdvancedSettingsStepProps {
     form: UseFormReturn<AdvancedSettingsFormData>
@@ -13,6 +14,21 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
     const { register, formState: { errors } } = form
     const { config } = useSetupStore()
     const isLocalMode = config.deploymentMode === 'local'
+    const firstInputRef = useRef<HTMLInputElement>(null)
+
+    // Register cloudflare token with merged ref
+    const cloudflareRegister = register('cloudflareToken')
+    const plexClaimRegister = register('plexClaim')
+
+    // Auto-focus first visible input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (firstInputRef.current) {
+                firstInputRef.current.focus()
+            }
+        }, 100)
+        return () => clearTimeout(timer)
+    }, [])
 
     return (
         <motion.div
@@ -64,7 +80,11 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                             </a>
                         </label>
                         <input
-                            {...register('cloudflareToken')}
+                            {...cloudflareRegister}
+                            ref={(e) => {
+                                cloudflareRegister.ref(e)
+                                if (e) firstInputRef.current = e
+                            }}
                             type="password"
                             className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                             placeholder="ey..."
@@ -89,7 +109,12 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                             </a>
                         </label>
                         <input
-                            {...register('plexClaim')}
+                            {...plexClaimRegister}
+                            ref={(e) => {
+                                plexClaimRegister.ref(e)
+                                // Focus this if cloudflare is not shown (local mode)
+                                if (e && isLocalMode && !firstInputRef.current) firstInputRef.current = e
+                            }}
                             className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                             placeholder="claim-..."
                         />

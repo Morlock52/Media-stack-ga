@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket, Home, ExternalLink, Key, Loader2 } from 'lucide-react'
 import { PostInstallChecklist } from '../../PostInstallChecklist'
@@ -39,6 +39,8 @@ export function ReviewGenerateStep({
     const [bootstrapStatus, setBootstrapStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
     const [bootstrapMessage, setBootstrapMessage] = useState('')
     const [bootstrapKeys, setBootstrapKeys] = useState<Record<string, string>>({})
+    const [bootstrapProgress, setBootstrapProgress] = useState<{ ready: number; running: number; total: number }>({ ready: 0, running: 0, total: 0 })
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const handleDeploy = async () => {
         setDeployStatus('deploying')
@@ -95,22 +97,66 @@ export function ReviewGenerateStep({
         }
     }
 
+    // Cleanup polling on unmount
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current)
+            }
+        }
+    }, [])
+
     const handleBootstrapKeys = async () => {
         setBootstrapStatus('loading')
-        setBootstrapMessage('Waiting for *arr services to initialize...')
+        setBootstrapProgress({ ready: 0, running: 0, total: 0 })
+        setBootstrapMessage('Checking *arr services...')
+
+        // Start polling for status updates
+        const pollStatus = async () => {
+            try {
+                const status = await controlServer.getArrStatus()
+                if (status.success && status.services) {
+                    const running = status.services.filter(s => s.running).length
+                    const ready = status.services.filter(s => s.ready).length
+                    setBootstrapProgress({ ready, running, total: status.services.length })
+                    setBootstrapMessage(`Services ready: ${ready}/${running} running (${status.services.length} total)`)
+                }
+            } catch {
+                // Ignore polling errors, the main request will handle failure
+            }
+        }
+
+        // Initial poll
+        await pollStatus()
+
+        // Continue polling every 3 seconds
+        pollingRef.current = setInterval(pollStatus, 3000)
 
         try {
             const result = await controlServer.autoBootstrapArr({ timeout: 120000, pollInterval: 5000 })
 
+            // Stop polling
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current)
+                pollingRef.current = null
+            }
+
             if (result.success) {
                 setBootstrapStatus('success')
                 setBootstrapKeys(result.keys)
+                const readyCount = result.services?.filter(s => s.ready).length || 0
+                setBootstrapProgress({ ready: readyCount, running: readyCount, total: result.services?.length || 0 })
                 setBootstrapMessage(`Successfully extracted ${Object.keys(result.keys).length} API keys and wrote to .env`)
             } else {
                 setBootstrapStatus('error')
                 setBootstrapMessage(result.error || `Failed at step: ${result.step}`)
             }
         } catch (err) {
+            // Stop polling on error
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current)
+                pollingRef.current = null
+            }
             setBootstrapStatus('error')
             setBootstrapMessage(err instanceof Error ? err.message : 'Failed to bootstrap API keys')
         }
@@ -395,7 +441,9 @@ export function ReviewGenerateStep({
                                                     {bootstrapStatus === 'loading' ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                                            Waiting for services...
+                                                            {bootstrapProgress.running > 0
+                                                                ? `${bootstrapProgress.ready}/${bootstrapProgress.running} ready...`
+                                                                : 'Checking services...'}
                                                         </>
                                                     ) : bootstrapStatus === 'success' ? (
                                                         <>
@@ -415,6 +463,17 @@ export function ReviewGenerateStep({
                                                         bootstrapStatus === 'success' ? 'bg-green-500/10 text-green-300' :
                                                         'bg-red-500/10 text-red-300'
                                                     }`}>
+                                                        {/* Progress bar during loading */}
+                                                        {bootstrapStatus === 'loading' && bootstrapProgress.running > 0 && (
+                                                            <div className="mb-2">
+                                                                <div className="h-1.5 bg-purple-900/30 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-purple-500 transition-all duration-500 ease-out"
+                                                                        style={{ width: `${(bootstrapProgress.ready / bootstrapProgress.running) * 100}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                         {bootstrapMessage}
                                                         {bootstrapStatus === 'success' && Object.keys(bootstrapKeys).length > 0 && (
                                                             <div className="mt-2 space-y-1 font-mono">
