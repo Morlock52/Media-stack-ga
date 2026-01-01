@@ -48,39 +48,49 @@ python docs/scripts/render_diagrams.py
 KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ```
 
-> **Last updated:** December 27, 2025
+> **Last updated:** January 1, 2026
 
 ## ✨ Screenshots (Matrix HUD)
 
 <table align="center">
   <tr>
     <td align="center">
-      <img src="docs/images/app/03-wizard-tools-desktop.png" alt="Wizard tools dialog" width="520" />
-      <br /><sub><b>Tools</b> — templates, import/export</sub>
+      <img src="docs/images/app/01-home-desktop.png" alt="Dashboard home overview" width="520" />
+      <br /><sub><b>Dashboard</b> — zero-trust landing with app tiles</sub>
     </td>
     <td align="center">
       <img src="docs/images/app/06-service-config-desktop.png" alt="Service configuration + storage planner" width="520" />
-      <br /><sub><b>Service Config</b> — storage planner + per-app settings</sub>
+      <br /><sub><b>Service Config</b> — storage planner + per-app presets</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="docs/images/app/07-wizard-review-desktop.png" alt="Review and generate outputs" width="520" />
-      <br /><sub><b>Review</b> — download configs, share, deploy</sub>
+      <br /><sub><b>Review</b> — download configs, profiles ready to deploy</sub>
     </td>
     <td align="center">
-      <img src="docs/images/app/12-settings-desktop.png" alt="Settings page (API and integrations)" width="520" />
-      <br /><sub><b>Settings</b> — API key + Arr automation</sub>
+      <img src="docs/images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="520" />
+      <br /><sub><b>Remote Deploy</b> — SSH push with health + retries</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/app/05-voice-companion-desktop.png" alt="Voice companion controls" width="520" />
+      <br /><sub><b>Voice Companion</b> — realtime mic + OpenAI/ElevenLabs output</sub>
+    </td>
+    <td align="center">
+      <img src="docs/images/app/08-ai-assistant-desktop.png" alt="AI assistant chat" width="520" />
+      <br /><sub><b>AI Assistant</b> — run ops, validate configs</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="docs/images/app/10-docs-desktop.png" alt="Docs app guides" width="520" />
-      <br /><sub><b>Docs</b> — click-by-click guides</sub>
+      <br /><sub><b>Docs</b> — click-by-click guides + ops checklists</sub>
     </td>
     <td align="center">
-      <img src="docs/images/app/09-remote-deploy-desktop.png" alt="Remote deploy modal" width="520" />
-      <br /><sub><b>Remote Deploy</b> — SSH-based deploy flow</sub>
+      <img src="docs/images/app/12-settings-desktop.png" alt="Settings page (API and integrations)" width="520" />
+      <br /><sub><b>Settings</b> — control server URL, API keys, automation</sub>
     </td>
   </tr>
 </table>
@@ -88,7 +98,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ## 🔎 Table of contents
 
 - [**Start Here — Pick Your Setup Path**](docs/getting-started/START_HERE.md) ⬅️ New? Start here!
-- [Screenshots](#-screenshots-current)
+- [Screenshots](#-screenshots-matrix-hud)
 - [TL;DR](#-tldr)
 - [Stack modes (quick map)](#-stack-modes-quick-map)
 - [Docker-first install (recommended)](#-docker-first-install-recommended)
@@ -113,9 +123,10 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 
 ## ⚡ TL;DR
 
-1. Run the wizard (`./setup.sh` or Docker Wizard).
-2. Pick access mode: **LAN** (`docker compose up -d`) or **Remote** (`docker compose --profile auth --profile cloudflared up -d`).
-3. Use `http://<server-ip>` for LAN, or `https://<service>.${DOMAIN}` for remote access.
+1. Copy `.env.example` → `.env`, set absolute paths plus **Postgres user/password** and Authelia/Cloudflare secrets.
+2. Run the wizard (`./setup.sh` or Docker Wizard) to pick services and download the generated Compose + `.env`.
+3. Choose access: **LAN** (`docker compose up -d`) or **Remote** (`docker compose --profile auth --profile cloudflared up -d`).
+4. Validate: `bash ./scripts/post_deploy_check.sh`, then open `http://<server-ip>` (LAN) or `https://<service>.${DOMAIN}` (remote).
 
 ## 🧭 Stack modes (quick map)
 
@@ -137,7 +148,10 @@ cd Media-stack-ga
 cp .env.example .env
 ```
 
-> If you run the wizard in Docker, use **absolute paths** in `.env` (for example `DATA_ROOT=/srv/mediastack`). Relative paths will resolve inside the container instead of your host.
+> Notes:
+> - Use **absolute paths** in `.env` when running the wizard in Docker (for example `DATA_ROOT=/srv/mediastack`). Relative paths resolve inside the container instead of your host.
+> - Set `POSTGRES_USER`/`POSTGRES_PASSWORD` (required for Sonarr/Radarr/Prowlarr) and trim `COMPOSE_PROFILES` if you want to skip optional services (`transcode`, `notify`, `stats`, `mealie`, `kavita`, `audiobookshelf`, `photoprism`).
+> - The observability trio (Loki/Promtail/Grafana) ships enabled; comment those services out in `docker-compose.yml` if you want a leaner stack.
 
 ### 2) Start the Wizard (Docker)
 
@@ -201,6 +215,8 @@ cp .env.example .env
 # then edit .env with your paths + secrets
 ```
 
+> Minimum edits: set `POSTGRES_USER`/`POSTGRES_PASSWORD`, Authelia secrets, and (if remote) `CLOUDFLARE_TUNNEL_TOKEN`. Use absolute `DATA_ROOT`/`CONFIG_ROOT` paths when containers will manage Docker for you.
+
 ### 3) Run the setup wizard
 
 ```bash
@@ -215,6 +231,7 @@ docker compose up -d
 ```
 
 > **Best defaults (recommended)**
+> - Set a strong `POSTGRES_PASSWORD` and Authelia secrets before exposing anything remotely.
 > - Use `DOMAIN=local` for LAN-only installs; use a real domain only when enabling Cloudflare Tunnel.
 > - Keep `vpn` + `torrent` together so downloads never leak.
 > - On Linux, start with `DATA_ROOT=/srv/mediastack` on fast storage.
@@ -339,11 +356,12 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 
 ## ✅ Highlights
 
-- **Interactive Setup Wizard**: Configure your entire media stack through a step-by-step Matrix HUD flow.
-- **Intelligent Documentation**: Automatically generated guides tailored to your specific service selection.
-- **Premium UI & Animations**: Matrix glass panels, scanlines, and exportable diagrams.
-- **Production-Ready Output**: Generates optimized `.env` and `docker-compose.yml` configurations.
-- **Control Plane Safety**: Docker calls are project-scoped with timeouts/concurrency limits; `/api/system/status` shows compose context and cache age, `/api/system/reload` restarts when managed by PM2/systemd.
+- **Matrix Wizard + Storage Planner**: Step-by-step flow with NAS-aware paths, simple/advanced storage modes, and per-service presets.
+- **Postgres + Backups**: *Arr stack runs on Postgres by default with bundled `postgres-backup`; Gluetun keeps qBittorrent VPN-bound.
+- **Zero-Trust Edge**: Cloudflare Tunnel + Authelia SSO/MFA sit in front of Traefik routes; LAN or internet-ready with profile toggles.
+- **Observability & Recovery**: Loki/Promtail + Grafana dashboards, Dozzle/Portainer, Autoheal/Watchtower, and `scripts/post_deploy_check.sh` for VPN/Auth/Tunnel sanity.
+- **AI + Voice Control**: Control server defaults to OpenAI `gpt-4o` + `gpt-4o-mini-tts` (with ElevenLabs `eleven_flash_v2_5` option), rate-limited and tokenizable via `/api/settings/*`.
+- **Interactive Docs**: Regenerable screenshots (Playwright), click-by-click guides, and exportable diagrams keep docs aligned with the shipped UI.
 
 <details>
 <summary><strong>More UI screenshots</strong></summary>
@@ -362,18 +380,18 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 
 Media Stack GA features a powerful Agentic System that allows you to manage your stack through natural language and automated tools:
 
-- **AI-Powered Operations**: Inspect container health, analyze logs, and run common stack commands (when the control server has Docker access).
-- **Config Validation**: Quick checks for `.env`, YAML, and JSON config issues before you deploy.
-- **Smart Configuration**: Get AI-driven recommendations for environment variables and service settings.
-- **Voice Companion**: Control and configure your stack using voice commands; high-quality TTS uses OpenAI voices by default with an optional ElevenLabs provider, configurable via **Settings → Voice output**.
-- **Arr-Stack Bootstrapping**: Automatically extract and sync API keys from running Sonarr, Radarr, Prowlarr, and other services.
-- **Hardened Control Server**: Docker calls are project-scoped, concurrency-limited, and cached; use `/api/system/status` for compose context/cache age and `/api/system/reload` when managed by PM2/systemd.
+- **AI-powered operations**: Inspect container health, analyze logs, and run common stack commands through the control server (Docker-scoped, cached, and rate-limited).
+- **Config validation**: Quick checks for `.env`, YAML, and JSON issues before you deploy, surfaced in the wizard + Settings.
+- **Voice companion**: Toggle Off/Browser/OpenAI HQ output; defaults to OpenAI `gpt-4o-mini-tts` with fallback `tts-1-hd`, or switch to ElevenLabs `eleven_flash_v2_5` for ultra-low latency.
+- **Realtime voice**: Backed by `gpt-4o-realtime-preview-2024-12-17` with server-side VAD and error handling for smoother turn-taking.
+- **Arr-stack bootstrapping**: Automatically extract and sync API keys from running Sonarr/Radarr/Prowlarr and populate the wizard.
+- **Key management + guardrails**: `/settings` UI + `/api/settings/openai-key` let you persist/revoke API keys; Docker calls stay project-scoped with concurrency limits, caching, and a circuit breaker (`/api/system/status` exposes compose context + cache age, `/api/system/reload` restarts when managed by PM2/systemd).
 
 ### Remote deploy + voice quality
 
 - **Remote Deploy** uses the control server (`/api/remote-deploy/*`) and works automatically when the UI is running behind a proxy that forwards `/api` (Docker Wizard mode does this). For static-hosted UIs, set `VITE_CONTROL_SERVER_URL` (or use Settings → “Control Server Connection”).
-- If the control server is started with `CONTROL_SERVER_TOKEN`, also set `VITE_CONTROL_SERVER_TOKEN` (or enter the token in Settings) so the UI can authenticate.
-- High-quality voice output defaults to OpenAI TTS (`gpt-5.2-mini-tts` with fallback) when an OpenAI API key is present; ElevenLabs is optional via `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` (both are configurable from the Settings page).
+- If the control server is started with `CONTROL_SERVER_TOKEN`, also set `VITE_CONTROL_SERVER_TOKEN` (or enter the token in Settings) so the UI can authenticate; `/api/settings/openai-key/status` reports whether a key is stored server-side.
+- Voice output defaults to OpenAI `gpt-4o-mini-tts` (fallback `tts-1-hd`, voice `coral` by default); ElevenLabs is optional via `ELEVENLABS_API_KEY` + `ELEVENLABS_TTS_MODEL=eleven_flash_v2_5` and `ELEVENLABS_VOICE_ID` for faster responses.
 
 <p align="center">
   <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />
@@ -417,16 +435,18 @@ Media Stack includes a comprehensive documentation system that goes beyond stati
 
 ### Core stack
 
-| Layer             | What it does                                | Key services                          |
-| ----------------- | ------------------------------------------- | ------------------------------------- |
-| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`)     |
-| Identity          | Single sign‑on + MFA in front of routes     | Authelia + Redis                      |
-| UI / Requests     | Dashboard + content requests                | Homepage + Overseerr                  |
-| Media servers     | Streaming to TVs / phones                   | Plex + Jellyfin                       |
-| Automation        | Finds/organizes content                     | Sonarr + Radarr + Prowlarr + Bazarr   |
-| Downloads         | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr  |
+| Layer             | What it does                                | Key services                              |
+| ----------------- | ------------------------------------------- | ----------------------------------------- |
+| Edge / Zero‑Trust | Publishes apps without opening router ports | Cloudflare Tunnel (`cloudflared`)         |
+| Identity          | Single sign‑on + MFA in front of routes     | Authelia + Redis                          |
+| Data              | Durable state + backups for automation      | Postgres + `postgres-backup`              |
+| UI / Requests     | Dashboard + content requests                | Homepage + Overseerr                      |
+| Media servers     | Streaming to TVs / phones                   | Plex + Jellyfin                           |
+| Automation        | Finds/organizes content                     | Sonarr + Radarr + Prowlarr + Bazarr       |
+| Downloads         | VPN‑isolated downloads + challenge handling | Gluetun + qBittorrent + FlareSolverr      |
+| Observability     | Logs/metrics dashboards                     | Loki + Promtail + Grafana (ships enabled) |
 
-### Optional ops add-ons (safe to skip for a lean stack)
+### Optional add-ons (profiles / removable)
 
 | Add-on | Use | Notes |
 | --- | --- | --- |
@@ -435,8 +455,15 @@ Media Stack includes a comprehensive documentation system that goes beyond stati
 | Watchtower | Auto updates | Keep off if you want full control |
 | Autoheal | Auto-restart unhealthy containers | Lightweight watchdog |
 | Notifiarr | Notifications | Alerts for Plex + *Arr |
+| Grafana + Loki/Promtail | Observability | Bundled by default; comment out to slim down |
+| Tautulli | Plex stats | `stats` profile |
+| Tdarr | Transcoding | `transcode` profile; set temp/library paths |
+| Mealie | Recipes | `mealie` profile |
+| Kavita | Comics/books | `kavita` profile |
+| Audiobookshelf | Audiobooks/podcasts | `audiobookshelf` profile |
+| PhotoPrism | Photos | `photoprism` profile |
 
-> Tip: keep the table short; the deep dives live in the architecture + security sections.
+> Trim `COMPOSE_PROFILES` (and comment out Grafana/Loki/Promtail) to keep deployments lean. Deep dives live in the architecture + security sections.
 
 ---
 
@@ -466,6 +493,12 @@ flowchart TB
     A["Authelia<br/>SSO + MFA"]
     R[("Redis<br/>Sessions / storage")]
     A -->|sessions| R
+  end
+
+  %% ========== Data ==========
+  subgraph Data["Data & Backups"]
+    DB[("Postgres<br/>*Arr state")]
+    PB["Postgres Backup<br/>scheduled dumps"]
   end
 
   %% ========== Routing ==========
@@ -498,6 +531,9 @@ flowchart TB
     DZ[Dozzle]
     WT[Watchtower]
     N[Notifiarr]
+    LK["Loki<br/>Logs store"]
+    PM["Promtail<br/>Log shipper"]
+    GF["Grafana<br/>Dashboards"]
   end
 
   %% ==== Wiring ====
@@ -511,6 +547,11 @@ flowchart TB
   RP --> PR
   RP --> B
 
+  S --> DB
+  RA --> DB
+  PR --> DB
+  DB --> PB
+
   O -->|requests| S
   O -->|requests| RA
   S -->|indexers| PR
@@ -518,6 +559,8 @@ flowchart TB
   PR --> F
   S -->|send to DL| Q
   RA -->|send to DL| Q
+
+  PM --> LK --> GF
 
   Q -->|routed| G
   G --> Internet[("Internet<br/>VPN exit")]
@@ -587,6 +630,8 @@ flowchart LR
 
 ![Storage planning chart](docs/images/storage_planning.jpg)
 
+The wizard’s storage planner offers **Simple (single root)** and **Advanced (per-service)** modes, NAS/share detection, absolute-path validation, and one-click resets so your Compose paths stay coherent.
+
 ### How to use the chart
 
 1. Pick your typical bitrate bucket (e.g., 10–20 Mbps average).
@@ -622,8 +667,9 @@ docker compose logs -f authelia
 ### Update
 
 ```bash
-docker compose pull
-docker compose up -d
+./scripts/update.sh
+# or, include a sanity sweep after redeploy:
+RUN_POST_DEPLOY_CHECK=1 ./scripts/update.sh
 ```
 
 ---
@@ -643,18 +689,20 @@ npm run stress
 
 ### Backup priorities
 
-- **Critical**: `.env`, `config/authelia/`, `config/cloudflared/`
-- **Important**: `config/*/` (app DBs / metadata)
+- **Critical**: `.env`, `config/authelia/`, `config/cloudflared/`, `config/postgres/`, `config/backups/postgres/` (daily dumps)
+- **Important**: `config/*/` (app DBs / metadata, including Grafana/Loki/Promtail if you keep observability)
 - **Optional**: `media/` (depends on your source of truth)
 
 ### First places to check when something breaks
 
 - `docker compose ps`
+- `docker compose logs -f postgres`
+- `docker compose logs -f postgres-backup`
 - `docker compose logs -f cloudflared`
 - `docker compose logs -f authelia`
 - `docker compose logs -f gluetun`
 - `curl http://127.0.0.1:3001/api/system/status` (compose context, cache age, restart hints)
-- `./scripts/doctor.sh` (local diagnostics)
+- `./scripts/doctor.sh` (local diagnostics; add `--post-deploy` to chain checks)
 - `./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel sanity — see `docs/operations/POST_DEPLOY_CHECKS.md`)
 
 ---
