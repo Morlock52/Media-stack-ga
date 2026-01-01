@@ -40,11 +40,14 @@ interface VoiceCompanionProps {
 export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: VoiceCompanionProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [transcriptItems, setTranscriptItems] = useState<TranscriptItem[]>([])
-  const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'loading_audio' | 'speaking'>('idle')
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'thinking' | 'loading_audio' | 'speaking'>('idle')
   const [plan, setPlan] = useState<VoicePlanSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const speechRecognitionRef = useRef<any>(null)
+  // Live "what I'm hearing" transcript (user speech + short status strings like "Transcribing…")
   const [partialTranscript, setPartialTranscript] = useState('')
+  // Live assistant response (Realtime mode streams deltas)
+  const [partialAssistantResponse, setPartialAssistantResponse] = useState('')
   const historyRef = useRef<{ role: 'user' | 'assistant'; content: string }[]>([])
   // Initialize speech support detection immediately
   const [isSpeechSupported, setIsSpeechSupported] = useState(() => {
@@ -67,6 +70,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const transcriptIdRef = useRef(0)
   const currentAudioItemIdRef = useRef<number | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement>(null)
+  const hasShownAiFallbackNoticeRef = useRef(false)
 
   // Server-side STT
   const [sttStatus, setSttStatus] = useState<SttStatus | null>(null)
@@ -75,11 +79,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const audioChunksRef = useRef<Blob[]>([])
   const hasUserSetVoiceInputRef = useRef(false)
 
-  // Ref to hold partialTranscript for use in callbacks (avoids stale closure)
-  const partialTranscriptRef = useRef(partialTranscript)
+  // Ref to hold partialAssistantResponse for use in callbacks (avoids stale closure)
+  const partialAssistantResponseRef = useRef(partialAssistantResponse)
   useEffect(() => {
-    partialTranscriptRef.current = partialTranscript
-  }, [partialTranscript])
+    partialAssistantResponseRef.current = partialAssistantResponse
+  }, [partialAssistantResponse])
 
   // Helper to add a transcript item (defined early for use in hooks)
   const addTranscriptItemInternal = useCallback((type: TranscriptItem['type'], content: string, audioStatus?: TranscriptItem['audioStatus']) => {
@@ -95,6 +99,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     voice: 'cedar',
     onTranscript: (text, isFinal) => {
       if (isFinal) {
+        setPartialTranscript('')
         addTranscriptItemInternal('user', text)
         historyRef.current = [...historyRef.current, { role: 'user', content: text }]
       } else {
@@ -103,18 +108,19 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     },
     onResponse: (text) => {
       // Streaming response from assistant
-      setPartialTranscript(prev => prev + text)
+      setPartialAssistantResponse(prev => prev + text)
     },
     onAudioStart: () => {
       setStatus('speaking')
     },
     onAudioEnd: () => {
-      // Finalize the streamed response using ref to get latest value
-      const currentPartial = partialTranscriptRef.current
+      // Finalize the streamed response using ref to get latest value.
+      // Keep this separate from the live user transcript so we don't mix roles.
+      const currentPartial = partialAssistantResponseRef.current
       if (currentPartial) {
         addTranscriptItemInternal('assistant', currentPartial, 'done')
         historyRef.current = [...historyRef.current, { role: 'assistant', content: currentPartial }]
-        setPartialTranscript('')
+        setPartialAssistantResponse('')
       }
       setStatus('listening')
     },
@@ -122,10 +128,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       setError(err)
     },
     onStatusChange: (newStatus) => {
-      if (newStatus === 'listening') setStatus('listening')
+      if (newStatus === 'connecting') setStatus('connecting')
+      else if (newStatus === 'listening') setStatus('listening')
       else if (newStatus === 'processing') setStatus('thinking')
       else if (newStatus === 'speaking') setStatus('speaking')
       else if (newStatus === 'connected') setStatus('idle')
+      else if (newStatus === 'disconnected') setStatus('idle')
+      else if (newStatus === 'error') setStatus('idle')
     },
   })
 
@@ -179,7 +188,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
     // If switching to realtime, connect immediately
     if (value === 'realtime' && realtimeVoice.isAvailable && !realtimeVoice.isConnected) {
-      realtimeVoice.connect()
+      void realtimeVoice.connect()
     }
     // If switching away from realtime, disconnect
     if (value !== 'realtime' && realtimeVoice.isConnected) {
@@ -191,7 +200,20 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const transcribeWithServer = useCallback(async (audioBlob: Blob): Promise<{ text: string | null; error?: string }> => {
     try {
       const formData = new FormData()
-      formData.append('file', audioBlob, 'audio.webm')
+      const mimeType = (audioBlob.type || '').toLowerCase()
+      const extension =
+        mimeType.includes('mp4') || mimeType.includes('m4a') ? 'mp4'
+          : mimeType.includes('mpeg') || mimeType.includes('mp3') ? 'mp3'
+            : mimeType.includes('wav') ? 'wav'
+              : mimeType.includes('ogg') ? 'ogg'
+                : mimeType.includes('webm') ? 'webm'
+                  : 'webm'
+
+      // IMPORTANT: match the filename extension to the recorded mime type.
+      // The control server uses the filename extension to set the upstream OpenAI
+      // `file` content-type. A mismatch (e.g. Safari `audio/mp4` uploaded as
+      // `audio.webm`) can cause OpenAI STT to reject the file as an invalid format.
+      formData.append('file', audioBlob, `audio.${extension}`)
 
       const response = await fetch(buildControlServerUrl('/api/transcribe'), {
         method: 'POST',
@@ -350,6 +372,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
   const statusMessages: Record<typeof status, string> = {
     idle: 'Ready to help',
+    connecting: 'Connecting...',
     listening: 'Listening... speak now',
     thinking: 'Thinking...',
     loading_audio: 'Preparing voice response...',
@@ -808,9 +831,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak])
 
   const stopRecording = useCallback(() => {
-    if (voiceInput === 'realtime' && realtimeVoice.isConnected) {
-      // In realtime mode, we don't stop - it's continuous
-      // User can disconnect via settings or close modal
+    if (voiceInput === 'realtime') {
+      realtimeVoice.disconnect()
+      isRecordingRef.current = false
+      setIsRecording(false)
+      setPartialTranscript('')
+      setPartialAssistantResponse('')
+      setStatus('idle')
       return
     }
     if (voiceInput === 'server' && sttStatus?.hasKey) {
@@ -818,7 +845,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     } else {
       stopRecognition()
     }
-  }, [voiceInput, sttStatus?.hasKey, stopServerRecording, stopRecognition, realtimeVoice.isConnected])
+  }, [realtimeVoice, setPartialTranscript, stopRecognition, stopServerRecording, sttStatus?.hasKey, voiceInput])
 
   const startRecordingUnified = useCallback(async () => {
     setHasUserInteracted(true)
@@ -827,15 +854,17 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     // Realtime mode - connect via WebRTC (lowest latency)
     if (voiceInput === 'realtime' && realtimeVoice.isAvailable) {
       if (!realtimeVoice.isConnected) {
-        try {
-          await realtimeVoice.connect()
-          setIsRecording(true)
-          isRecordingRef.current = true
+        setStatus('connecting')
+        setIsRecording(true)
+        isRecordingRef.current = true
+        const connected = await realtimeVoice.connect()
+        if (connected) {
           return
-        } catch (err) {
-          console.warn('Realtime voice connection failed, falling back:', err)
-          // Fall through to other methods
         }
+        isRecordingRef.current = false
+        setIsRecording(false)
+        console.warn('Realtime voice connection failed, falling back to other input modes')
+        // Fall through to other methods
       } else {
         setIsRecording(true)
         isRecordingRef.current = true
@@ -890,6 +919,27 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       }
 
       const data = await response.json()
+
+      // Surface why the assistant may feel "dumber" than expected.
+      // The control server returns a fallback response when OpenAI isn't configured
+      // or is erroring; show a one-time, non-blocking notice in the transcript.
+      const meta = data?.meta as { usedFallback?: boolean; reason?: string; openaiStatus?: number } | undefined
+      if (meta?.usedFallback && !hasShownAiFallbackNoticeRef.current) {
+        const reason = meta.reason || 'unknown'
+        const statusSuffix = typeof meta.openaiStatus === 'number' ? ` (HTTP ${meta.openaiStatus})` : ''
+
+        if (reason === 'missing_api_key') {
+          addTranscriptItem('system', 'Heads up: OpenAI isn’t configured on the control server, so I’m using fallback responses. Open Settings → OpenAI Key to enable full AI + high-accuracy STT/TTS.', 'skipped')
+          hasShownAiFallbackNoticeRef.current = true
+        } else if (reason === 'invalid_api_key') {
+          addTranscriptItem('system', `Heads up: the OpenAI key on the control server appears invalid${statusSuffix}. Update it in Settings → OpenAI Key.`, 'skipped')
+          hasShownAiFallbackNoticeRef.current = true
+        } else if (reason === 'rate_limited') {
+          addTranscriptItem('system', `Heads up: OpenAI is rate limiting requests${statusSuffix}. Wait a moment or switch to browser voice.`, 'skipped')
+          hasShownAiFallbackNoticeRef.current = true
+        }
+      }
+
       if (data.agentResponse) {
         // Add assistant message with loading audio status
         const itemId = addTranscriptItem('assistant', data.agentResponse, voiceOutput === 'off' ? 'skipped' : 'loading')
@@ -989,6 +1039,15 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                         <Mic className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
+                    {status === 'connecting' && (
+                      <motion.div
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-500/30"
+                      >
+                        <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                      </motion.div>
+                    )}
                     {status === 'listening' && (
                       <motion.div
                         animate={{ scale: [1, 1.1, 1], boxShadow: ['0 0 0 0 rgba(16, 185, 129, 0)', '0 0 0 8px rgba(16, 185, 129, 0.2)', '0 0 0 0 rgba(16, 185, 129, 0)'] }}
@@ -1023,6 +1082,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                     )}
                     <div className="flex-1">
                       <p className={`text-lg font-semibold ${
+                        status === 'connecting' ? 'text-purple-400' :
                         status === 'listening' ? 'text-emerald-400' :
                         status === 'thinking' ? 'text-cyan-400' :
                         status === 'loading_audio' ? 'text-purple-400' :
@@ -1032,7 +1092,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                         {statusMessages[status]}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {status === 'listening' ? 'Your words appear in the chat' :
+                        {status === 'connecting' ? 'Establishing a voice session...' :
+                         status === 'listening' ? 'Your words appear in the chat' :
                          status === 'thinking' ? 'Processing your request...' :
                          status === 'loading_audio' ? 'Preparing audio response...' :
                          status === 'speaking' ? 'Playing response...' :
@@ -1080,7 +1141,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                             variant="gradient"
                             size="lg"
                             onClick={startRecordingUnified}
-                            disabled={!isAnyVoiceInputAvailable()}
+                            disabled={!isAnyVoiceInputAvailable() || status === 'connecting'}
                             className="flex-1 rounded-xl h-12"
                           >
                             <Mic className="w-5 h-5" />
@@ -1164,8 +1225,15 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                     {voiceInput === 'realtime' && realtimeVoice.isAvailable && (
                       <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/10 text-purple-400">
                         <Radio className="w-3.5 h-3.5" />
-                        <span className="text-xs">{realtimeVoice.isConnected ? 'Connected' : 'Ready'}</span>
-                        {realtimeVoice.isConnected && <Zap className="w-3 h-3 ml-auto" />}
+                        <span className="text-xs">
+                          {realtimeVoice.status === 'connecting'
+                            ? 'Connecting...'
+                            : realtimeVoice.isConnected
+                              ? 'Connected'
+                              : 'Ready'}
+                        </span>
+                        {realtimeVoice.status === 'connecting' && <Loader2 className="w-3 h-3 ml-auto animate-spin" />}
+                        {realtimeVoice.isConnected && realtimeVoice.status !== 'connecting' && <Zap className="w-3 h-3 ml-auto" />}
                       </div>
                     )}
                     {voiceInput === 'server' && sttStatus?.hasKey && (
@@ -1248,6 +1316,38 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       </motion.div>
                     ))}
 
+                    {/* Live assistant response (Realtime mode) */}
+                    {partialAssistantResponse && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 mr-6"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <motion.div
+                            animate={{ opacity: [0.6, 1, 0.6] }}
+                            transition={{ duration: 0.9, repeat: Infinity }}
+                            className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                          </motion.div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground leading-relaxed">
+                              {partialAssistantResponse}
+                              <motion.span
+                                animate={{ opacity: [1, 0] }}
+                                transition={{ duration: 0.5, repeat: Infinity }}
+                                className="text-cyan-400 ml-0.5"
+                              >
+                                |
+                              </motion.span>
+                            </p>
+                            <p className="text-[11px] text-cyan-400/70 mt-1">Responding...</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
                     {/* Live transcription indicator - what user is saying */}
                     {partialTranscript && (
                       <motion.div
@@ -1294,16 +1394,17 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       onChange={(e) => setManualInput(e.target.value)}
                       placeholder={
                         isRecording ? "Listening..." :
+                        status === 'connecting' ? "Connecting..." :
                         status === 'thinking' ? "Processing..." :
                         status === 'loading_audio' || status === 'speaking' ? "Playing..." :
                         "Type a message..."
                       }
-                      disabled={isRecording || status === 'thinking' || status === 'speaking' || status === 'loading_audio'}
+                      disabled={isRecording || status === 'connecting' || status === 'thinking' || status === 'speaking' || status === 'loading_audio'}
                       className="flex-1 bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition disabled:opacity-50"
                     />
                     <button
                       type="submit"
-                      disabled={!manualInput.trim() || status === 'thinking' || status === 'loading_audio'}
+                      disabled={!manualInput.trim() || status === 'connecting' || status === 'thinking' || status === 'loading_audio'}
                       aria-label="Send message"
                       title="Send message"
                       className="bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"

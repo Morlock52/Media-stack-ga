@@ -384,6 +384,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 return {
                     agentResponse: response,
                     plan,
+                    meta: { usedFallback: true, reason: 'missing_api_key' as const },
                 };
             }
 
@@ -411,6 +412,15 @@ export async function aiRoutes(fastify: FastifyInstance) {
                     return {
                         agentResponse: getFallbackResponse(agent.id, transcript),
                         plan,
+                        meta: {
+                            usedFallback: true,
+                            reason: (response.status === 401 || response.status === 403)
+                                ? ('invalid_api_key' as const)
+                                : response.status === 429
+                                    ? ('rate_limited' as const)
+                                    : ('upstream_error' as const),
+                            openaiStatus: response.status,
+                        },
                     };
                 }
 
@@ -420,12 +430,14 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 return {
                     agentResponse,
                     plan,
+                    meta: { usedFallback: false },
                 };
             } catch (error) {
                 fastify.log.warn({ err: error }, 'Voice agent failed; returning fallback response');
                 return {
                     agentResponse: getFallbackResponse('setup', transcript),
                     plan,
+                    meta: { usedFallback: true, reason: 'server_error' as const },
                 };
             }
         }
@@ -1797,6 +1809,7 @@ Return ONLY a JSON object with the following structure:
                     headers: {
                         'Authorization': `Bearer ${openaiKey}`,
                         'Content-Type': 'application/json',
+                        'OpenAI-Beta': `realtime=${config.apiVersion}`,
                     },
                     body: JSON.stringify({
                         model: request.body.model || config.model,
@@ -1828,8 +1841,9 @@ Return ONLY a JSON object with the following structure:
                     sessionId: data.id,
                     model: data.model,
                     voice: data.voice,
+                    apiVersion: config.apiVersion,
                     // Client needs this URL for WebRTC SDP exchange
-                    sdpUrl: 'https://api.openai.com/v1/realtime/sdp',
+                    sdpUrl: `https://api.openai.com/v1/realtime/sdp?model=${encodeURIComponent(data.model)}`,
                 });
             } catch (error: any) {
                 fastify.log.error({ err: error }, 'Error generating ephemeral key');

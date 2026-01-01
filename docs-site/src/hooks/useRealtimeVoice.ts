@@ -41,6 +41,7 @@ interface EphemeralKeyResponse {
   model: string
   voice: string
   sdpUrl: string
+  apiVersion?: string
 }
 
 export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
@@ -143,9 +144,24 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
           configRef.current.onAudioEnd?.()
           break
 
+        case 'conversation.item.input_audio_transcription.delta': {
+          const delta = typeof message.delta === 'string' ? message.delta : ''
+          if (delta) configRef.current.onTranscript?.(delta, false)
+          break
+        }
+
         case 'conversation.item.input_audio_transcription.completed':
           // User's speech transcribed
-          configRef.current.onTranscript?.(message.transcript || '', true)
+          configRef.current.onTranscript?.(
+            typeof message.transcript === 'string'
+              ? message.transcript
+              : typeof message.text === 'string'
+                ? message.text
+                : typeof message.transcription?.text === 'string'
+                  ? message.transcription.text
+                  : '',
+            true
+          )
           break
 
         case 'error': {
@@ -161,10 +177,10 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
   }, [status, updateStatus])
 
   // Connect to Realtime API via WebRTC
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (): Promise<boolean> => {
     if (peerConnectionRef.current) {
       console.warn('Already connected')
-      return
+      return true
     }
 
     setError(null)
@@ -175,7 +191,7 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
       const keyData = await getEphemeralKey()
       if (!keyData) {
         updateStatus('error')
-        return
+        return false
       }
 
       // 2. Get microphone access
@@ -192,7 +208,13 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
 
       // 3. Create peer connection
       const pc = new RTCPeerConnection({
-        iceServers: [], // OpenAI handles ICE
+        // Use a small STUN set for better connectivity across NATs.
+        // OpenAI can still negotiate fine when these are present, and it improves
+        // real-world connection rates (especially on mobile/hotel networks).
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+        ],
       })
       peerConnectionRef.current = pc
 
@@ -203,11 +225,20 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
 
       // 5. Handle remote audio
       pc.ontrack = (event) => {
-        if (!remoteAudioRef.current) {
-          remoteAudioRef.current = new Audio()
-          remoteAudioRef.current.autoplay = true
+        const audio = remoteAudioRef.current || new Audio()
+        remoteAudioRef.current = audio
+        audio.autoplay = true
+        audio.srcObject = event.streams[0]
+
+        // Some browsers still require an explicit play() call, even with autoplay,
+        // and will reject it if the user hasn't interacted.
+        const playPromise = audio.play()
+        if (playPromise) {
+          playPromise.catch((err) => {
+            console.warn('Realtime audio playback blocked:', err)
+            configRef.current.onError?.('Audio playback was blocked by the browser. Click Start Speaking again to enable audio.')
+          })
         }
-        remoteAudioRef.current.srcObject = event.streams[0]
       }
 
       // 6. Create data channel for events
@@ -245,15 +276,42 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
 
+      // Ensure ICE candidates are included in the SDP before sending to OpenAI.
+      // Without this, some browsers/network combos will never connect.
+      await new Promise<void>((resolve, reject) => {
+        if (pc.iceGatheringState === 'complete') return resolve()
+
+        const timeout = window.setTimeout(() => {
+          pc.removeEventListener('icegatheringstatechange', onStateChange)
+          reject(new Error('ICE gathering timed out'))
+        }, 8000)
+
+        const onStateChange = () => {
+          if (pc.iceGatheringState === 'complete') {
+            window.clearTimeout(timeout)
+            pc.removeEventListener('icegatheringstatechange', onStateChange)
+            resolve()
+          }
+        }
+
+        pc.addEventListener('icegatheringstatechange', onStateChange)
+      })
+
       // 8. Send offer to OpenAI and get answer
+      const abortController = new AbortController()
+      const abortTimeout = window.setTimeout(() => abortController.abort(), 20000)
+
       const sdpResponse = await fetch(keyData.sdpUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${keyData.ephemeralKey}`,
           'Content-Type': 'application/sdp',
+          ...(keyData.apiVersion ? { 'OpenAI-Beta': `realtime=${keyData.apiVersion}` } : {}),
         },
-        body: offer.sdp,
+        body: pc.localDescription?.sdp || offer.sdp,
+        signal: abortController.signal,
       })
+      window.clearTimeout(abortTimeout)
 
       if (!sdpResponse.ok) {
         throw new Error('Failed to exchange SDP with OpenAI')
@@ -281,6 +339,36 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
         }
       }
 
+      // Best-effort: treat "connected" as success; otherwise allow fallbacks.
+      const connected = await new Promise<boolean>((resolve) => {
+        if (pc.connectionState === 'connected') return resolve(true)
+
+        const timeout = window.setTimeout(() => {
+          pc.removeEventListener('connectionstatechange', onStateChange)
+          resolve(false)
+        }, 8000)
+
+        const onStateChange = () => {
+          if (pc.connectionState === 'connected') {
+            window.clearTimeout(timeout)
+            pc.removeEventListener('connectionstatechange', onStateChange)
+            resolve(true)
+          }
+          if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+            window.clearTimeout(timeout)
+            pc.removeEventListener('connectionstatechange', onStateChange)
+            resolve(false)
+          }
+        }
+
+        pc.addEventListener('connectionstatechange', onStateChange)
+      })
+
+      if (!connected) {
+        throw new Error('Realtime voice connection timed out')
+      }
+
+      return true
     } catch (err) {
       console.error('WebRTC connection error:', err)
       const message = err instanceof Error ? err.message : 'Connection failed'
@@ -288,6 +376,7 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
       configRef.current.onError?.(message)
       updateStatus('error')
       disconnect()
+      return false
     }
   }, [getEphemeralKey, handleDataChannelMessage, updateStatus])
 
