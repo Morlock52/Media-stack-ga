@@ -46,7 +46,12 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const speechRecognitionRef = useRef<any>(null)
   const [partialTranscript, setPartialTranscript] = useState('')
   const historyRef = useRef<{ role: 'user' | 'assistant'; content: string }[]>([])
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false)
+  // Initialize speech support detection immediately
+  const [isSpeechSupported, setIsSpeechSupported] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const recognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    return Boolean(recognitionConstructor)
+  })
   const isRecordingRef = useRef(false)
   const processTranscriptRef = useRef<(text: string) => void>(() => { })
   const [manualInput, setManualInput] = useState('')
@@ -326,6 +331,22 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
     return null
   }, [])
+
+  // Check if any voice input method is available (browser, server, or realtime)
+  const isAnyVoiceInputAvailable = useCallback((): boolean => {
+    // Server STT is available if we have an API key
+    if (sttStatus?.hasKey) return true
+    // Realtime voice is available
+    if (realtimeVoice.isAvailable) return true
+    // Browser speech recognition is available
+    if (isSpeechSupported) return true
+    // Check if browser speech could work (constructor exists)
+    if (typeof window !== 'undefined') {
+      const recognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (recognitionConstructor) return true
+    }
+    return false
+  }, [sttStatus?.hasKey, realtimeVoice.isAvailable, isSpeechSupported])
 
   const statusMessages: Record<typeof status, string> = {
     idle: 'Ready to help',
@@ -613,6 +634,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     recognition.onresult = (event: any) => {
       // Reset retry count on successful speech detection
       noSpeechRetryCountRef.current = 0
+      console.log('[VoiceCompanion] Speech result received, processing...')
 
       let interim = ''
       let finalText = ''
@@ -620,12 +642,14 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         const transcriptPiece = event.results[i][0].transcript
         if (event.results[i].isFinal) {
           finalText += transcriptPiece + ' '
+          console.log('[VoiceCompanion] Final transcript:', transcriptPiece)
         } else {
           interim += transcriptPiece
         }
       }
       setPartialTranscript(interim)
       if (finalText.trim()) {
+        console.log('[VoiceCompanion] Processing final text:', finalText.trim())
         processTranscriptRef.current(finalText.trim())
       }
     }
@@ -733,7 +757,9 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       setIsRecording(true)
       isRecordingRef.current = true
       noSpeechRetryCountRef.current = 0  // Reset retry count
+      console.log('[VoiceCompanion] Starting browser speech recognition...')
       speechRecognitionRef.current.start()
+      console.log('[VoiceCompanion] Browser speech recognition started successfully')
     } catch (err: any) {
       console.error('Failed to start speech recognition:', err)
       isRecordingRef.current = false
@@ -798,26 +824,58 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     setHasUserInteracted(true)
     setError(null)
 
+    // Realtime mode - connect via WebRTC (lowest latency)
     if (voiceInput === 'realtime' && realtimeVoice.isAvailable) {
-      // Realtime mode - connect via WebRTC
       if (!realtimeVoice.isConnected) {
-        await realtimeVoice.connect()
+        try {
+          await realtimeVoice.connect()
+          setIsRecording(true)
+          isRecordingRef.current = true
+          return
+        } catch (err) {
+          console.warn('Realtime voice connection failed, falling back:', err)
+          // Fall through to other methods
+        }
+      } else {
+        setIsRecording(true)
+        isRecordingRef.current = true
+        return
       }
-      setIsRecording(true)
-      isRecordingRef.current = true
-      return
     }
+
+    // Server STT mode - OpenAI Whisper (high accuracy)
     if (voiceInput === 'server' && sttStatus?.hasKey) {
-      await startServerRecording()
-    } else {
-      await startRecognition()
+      try {
+        await startServerRecording()
+        return
+      } catch (err) {
+        console.warn('Server recording failed, falling back to browser:', err)
+        // Fall through to browser speech
+      }
     }
-  }, [voiceInput, sttStatus?.hasKey, startServerRecording, startRecognition, realtimeVoice])
+
+    // Browser speech recognition (fallback, works in Chrome)
+    // Initialize if not already done
+    if (!speechRecognitionRef.current) {
+      initializeSpeechRecognition()
+    }
+
+    // Try browser speech recognition
+    try {
+      await startRecognition()
+    } catch (err) {
+      console.error('All voice input methods failed:', err)
+      setError('Voice input unavailable. Please type your message below.')
+    }
+  }, [voiceInput, sttStatus?.hasKey, startServerRecording, startRecognition, realtimeVoice, initializeSpeechRecognition])
 
   const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
     try {
+      console.log('[VoiceCompanion] Sending transcript to server:', content)
       setStatus('thinking')
-      const response = await fetch(buildControlServerUrl('/api/voice-agent'), {
+      const url = buildControlServerUrl('/api/voice-agent')
+      console.log('[VoiceCompanion] API URL:', url)
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
         body: JSON.stringify({
@@ -825,6 +883,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
           history: updatedHistory,
         }),
       })
+      console.log('[VoiceCompanion] Server response status:', response.status)
 
       if (!response.ok) {
         throw new Error('Voice agent failed to respond')
@@ -1007,10 +1066,10 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 mb-4">
-                  {!isSpeechSupported && voiceInput === 'browser' && (
+                  {!isAnyVoiceInputAvailable() && (
                     <p className="text-xs text-yellow-400 mb-2 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
-                      {sttStatus?.hasKey ? 'Switch to OpenAI input' : 'Use Chrome or type below'}
+                      Voice unavailable - use Chrome or type below
                     </p>
                   )}
                   <TooltipProvider>
@@ -1021,7 +1080,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                             variant="gradient"
                             size="lg"
                             onClick={startRecordingUnified}
-                            disabled={voiceInput === 'browser' ? !isSpeechSupported : !sttStatus?.hasKey}
+                            disabled={!isAnyVoiceInputAvailable()}
                             className="flex-1 rounded-xl h-12"
                           >
                             <Mic className="w-5 h-5" />
@@ -1029,7 +1088,11 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{voiceInput === 'server' ? 'OpenAI transcription' : 'Browser speech'}</p>
+                          <p>
+                            {voiceInput === 'realtime' ? 'Realtime voice (WebRTC)' :
+                             voiceInput === 'server' ? 'OpenAI Whisper transcription' :
+                             'Browser speech recognition'}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     ) : (
