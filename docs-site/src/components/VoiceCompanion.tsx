@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send, Volume2, VolumeX, Settings2, Headphones } from 'lucide-react'
+import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send, Volume2, VolumeX, Settings2, Headphones, Zap, Radio, X } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
+import { useRealtimeVoice } from '../hooks/useRealtimeVoice'
+import { useStreamingTts } from '../hooks/useStreamingTts'
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
@@ -63,10 +65,71 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
   // Server-side STT
   const [sttStatus, setSttStatus] = useState<SttStatus | null>(null)
-  const [voiceInput, setVoiceInput] = useState<'server' | 'browser'>('browser')
+  const [voiceInput, setVoiceInput] = useState<'server' | 'browser' | 'realtime'>('browser')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const hasUserSetVoiceInputRef = useRef(false)
+
+  // Ref to hold partialTranscript for use in callbacks (avoids stale closure)
+  const partialTranscriptRef = useRef(partialTranscript)
+  useEffect(() => {
+    partialTranscriptRef.current = partialTranscript
+  }, [partialTranscript])
+
+  // Helper to add a transcript item (defined early for use in hooks)
+  const addTranscriptItemInternal = useCallback((type: TranscriptItem['type'], content: string, audioStatus?: TranscriptItem['audioStatus']) => {
+    const id = ++transcriptIdRef.current
+    setTranscriptItems(prev => [...prev, { id, type, content, audioStatus }])
+    // Auto-scroll to bottom
+    setTimeout(() => transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    return id
+  }, [])
+
+  // WebRTC Realtime Voice (lowest latency ~200ms voice-to-voice)
+  const realtimeVoice = useRealtimeVoice({
+    voice: 'cedar',
+    onTranscript: (text, isFinal) => {
+      if (isFinal) {
+        addTranscriptItemInternal('user', text)
+        historyRef.current = [...historyRef.current, { role: 'user', content: text }]
+      } else {
+        setPartialTranscript(text)
+      }
+    },
+    onResponse: (text) => {
+      // Streaming response from assistant
+      setPartialTranscript(prev => prev + text)
+    },
+    onAudioStart: () => {
+      setStatus('speaking')
+    },
+    onAudioEnd: () => {
+      // Finalize the streamed response using ref to get latest value
+      const currentPartial = partialTranscriptRef.current
+      if (currentPartial) {
+        addTranscriptItemInternal('assistant', currentPartial, 'done')
+        historyRef.current = [...historyRef.current, { role: 'assistant', content: currentPartial }]
+        setPartialTranscript('')
+      }
+      setStatus('listening')
+    },
+    onError: (err) => {
+      setError(err)
+    },
+    onStatusChange: (newStatus) => {
+      if (newStatus === 'listening') setStatus('listening')
+      else if (newStatus === 'processing') setStatus('thinking')
+      else if (newStatus === 'speaking') setStatus('speaking')
+      else if (newStatus === 'connected') setStatus('idle')
+    },
+  })
+
+  // Streaming TTS with ElevenLabs (75ms TTFB)
+  const streamingTts = useStreamingTts({
+    onStart: () => setStatus('speaking'),
+    onEnd: () => setStatus('idle'),
+    onError: (err) => console.warn('Streaming TTS error:', err),
+  })
 
   // Fetch STT status on mount
   useEffect(() => {
@@ -105,13 +168,22 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     setVoiceOutput(value)
   }, [])
 
-  const handleVoiceInputChange = useCallback((value: 'server' | 'browser') => {
+  const handleVoiceInputChange = useCallback((value: 'server' | 'browser' | 'realtime') => {
     hasUserSetVoiceInputRef.current = true
     setVoiceInput(value)
-  }, [])
 
-  // Server-side transcription function
-  const transcribeWithServer = useCallback(async (audioBlob: Blob): Promise<string | null> => {
+    // If switching to realtime, connect immediately
+    if (value === 'realtime' && realtimeVoice.isAvailable && !realtimeVoice.isConnected) {
+      realtimeVoice.connect()
+    }
+    // If switching away from realtime, disconnect
+    if (value !== 'realtime' && realtimeVoice.isConnected) {
+      realtimeVoice.disconnect()
+    }
+  }, [realtimeVoice])
+
+  // Server-side transcription function - returns { text, error } for better error handling
+  const transcribeWithServer = useCallback(async (audioBlob: Blob): Promise<{ text: string | null; error?: string }> => {
     try {
       const formData = new FormData()
       formData.append('file', audioBlob, 'audio.webm')
@@ -123,15 +195,30 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       })
 
       if (!response.ok) {
-        console.warn('Server transcription failed:', response.status)
-        return null
+        const errorData = await response.json().catch(() => ({}))
+        console.warn('Server transcription failed:', response.status, errorData)
+
+        // Return user-friendly error messages based on reason
+        if (errorData.reason === 'invalid_api_key') {
+          return { text: null, error: 'OpenAI API key is invalid. Please check Settings.' }
+        }
+        if (errorData.reason === 'rate_limited') {
+          return { text: null, error: 'Rate limit reached. Please wait a moment and try again.' }
+        }
+        if (errorData.reason === 'audio_too_short') {
+          return { text: null, error: 'Recording was too short. Please speak for at least 1 second.' }
+        }
+        if (errorData.reason === 'invalid_format') {
+          return { text: null, error: 'Audio format not supported. Try using browser voice input.' }
+        }
+        return { text: null, error: errorData.error || 'Transcription failed. Try again or switch to browser voice input.' }
       }
 
       const data = await response.json()
-      return data.text || null
+      return { text: data.text || null }
     } catch (err) {
       console.error('Server transcription error:', err)
-      return null
+      return { text: null, error: 'Network error. Check your connection and try again.' }
     }
   }, [])
 
@@ -185,13 +272,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         setStatus('thinking')
         setPartialTranscript('Transcribing...')
 
-        const transcription = await transcribeWithServer(audioBlob)
+        const result = await transcribeWithServer(audioBlob)
         setPartialTranscript('')
 
-        if (transcription) {
-          processTranscriptRef.current(transcription)
+        if (result.text) {
+          processTranscriptRef.current(result.text)
         } else {
-          setError('Transcription failed. Try again or switch to browser voice input.')
+          setError(result.error || 'Transcription failed. Try again or switch to browser voice input.')
           setStatus('idle')
         }
       }
@@ -248,14 +335,8 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     speaking: 'Speaking...',
   }
 
-  // Helper to add a transcript item
-  const addTranscriptItem = useCallback((type: TranscriptItem['type'], content: string, audioStatus?: TranscriptItem['audioStatus']) => {
-    const id = ++transcriptIdRef.current
-    setTranscriptItems(prev => [...prev, { id, type, content, audioStatus }])
-    // Auto-scroll to bottom
-    setTimeout(() => transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-    return id
-  }, [])
+  // Alias for addTranscriptItemInternal (defined earlier for use in hooks)
+  const addTranscriptItem = addTranscriptItemInternal
 
   // Helper to update audio status of a transcript item
   const updateTranscriptAudioStatus = useCallback((id: number, audioStatus: TranscriptItem['audioStatus']) => {
@@ -318,6 +399,26 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         if (itemId) updateTranscriptAudioStatus(itemId, 'skipped')
         setStatus('idle')
         return
+      }
+
+      // Try streaming TTS first for ElevenLabs (75ms latency vs 300ms+)
+      if (voiceOutput === 'elevenlabs' && streamingTts.isAvailable && hasUserInteracted) {
+        try {
+          if (itemId) {
+            updateTranscriptAudioStatus(itemId, 'loading')
+            currentAudioItemIdRef.current = itemId
+          }
+
+          await streamingTts.speak(trimmed)
+
+          // Update status when done (hook handles speaking status)
+          if (itemId) updateTranscriptAudioStatus(itemId, 'done')
+          currentAudioItemIdRef.current = null
+          return
+        } catch (err) {
+          console.warn('Streaming TTS failed, falling back:', err)
+          // Fall through to regular TTS
+        }
       }
 
       const useRemoteTts =
@@ -681,20 +782,37 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak])
 
   const stopRecording = useCallback(() => {
+    if (voiceInput === 'realtime' && realtimeVoice.isConnected) {
+      // In realtime mode, we don't stop - it's continuous
+      // User can disconnect via settings or close modal
+      return
+    }
     if (voiceInput === 'server' && sttStatus?.hasKey) {
       stopServerRecording()
     } else {
       stopRecognition()
     }
-  }, [voiceInput, sttStatus?.hasKey, stopServerRecording, stopRecognition])
+  }, [voiceInput, sttStatus?.hasKey, stopServerRecording, stopRecognition, realtimeVoice.isConnected])
 
   const startRecordingUnified = useCallback(async () => {
+    setHasUserInteracted(true)
+    setError(null)
+
+    if (voiceInput === 'realtime' && realtimeVoice.isAvailable) {
+      // Realtime mode - connect via WebRTC
+      if (!realtimeVoice.isConnected) {
+        await realtimeVoice.connect()
+      }
+      setIsRecording(true)
+      isRecordingRef.current = true
+      return
+    }
     if (voiceInput === 'server' && sttStatus?.hasKey) {
       await startServerRecording()
     } else {
       await startRecognition()
     }
-  }, [voiceInput, sttStatus?.hasKey, startServerRecording, startRecognition])
+  }, [voiceInput, sttStatus?.hasKey, startServerRecording, startRecognition, realtimeVoice])
 
   const sendTranscriptToServer = useCallback(async (content: string, updatedHistory: { role: 'user' | 'assistant'; content: string }[]) => {
     try {
@@ -777,154 +895,75 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-4xl max-h-[85vh] bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-4xl h-[85vh] bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
           >
-            <div className="flex flex-col md:flex-row h-full min-h-0 overflow-hidden">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close voice companion"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
               {/* Left Panel - Status & Controls */}
-              <div className="md:w-1/2 p-6 md:p-8 bg-gradient-to-br from-emerald-500/10 via-cyan-500/10 to-lime-500/10 border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 max-h-[35vh] md:max-h-full overflow-y-auto flex-shrink-0 md:flex-shrink">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center">
-                    <Mic className="w-6 h-6 text-foreground" />
+              <div className="md:w-[45%] p-5 md:p-6 bg-gradient-to-br from-emerald-500/5 via-cyan-500/5 to-lime-500/5 border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 max-h-[45vh] md:max-h-full overflow-y-auto shrink-0 md:shrink">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
+                    <Mic className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground">Voice Companion</p>
-                    <h3 className="text-2xl font-bold text-foreground">Newbie Onboarding</h3>
+                    <h3 className="text-lg font-bold text-foreground">Voice Setup Guide</h3>
+                    <p className="text-xs text-muted-foreground">Speak or type to configure your media stack</p>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-muted-foreground flex-1 min-h-0">
-                  <p>
-                    I'll ask a few questions about your goals and build a tailored setup plan. You can pause any time, and I'll provide a summary before applying changes.
-                  </p>
-                  <ul className="space-y-1 text-muted-foreground text-xs mt-4">
-                    <li>• Mention any services you need (Plex, Sonarr, Overseerr, etc.).</li>
-                    <li>• Tell me where you plan to host (NAS, VPS, Raspberry Pi…)</li>
-                    <li>• You can speak or type your answers below.</li>
-                  </ul>
-                </div>
-
-                <div className="mt-4 p-3 rounded-2xl bg-muted/30 border border-border flex-shrink-0 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Settings2 className="w-4 h-4 text-muted-foreground" />
-                    <p className="text-xs font-medium text-muted-foreground">Voice Settings</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Mic className="w-3 h-3 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Input</p>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <select
-                            value={voiceInput}
-                            onChange={(e) => handleVoiceInputChange(e.target.value as 'server' | 'browser')}
-                            className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-primary/50 cursor-pointer"
-                            aria-label="Voice input mode"
-                          >
-                            <option value="browser">Browser</option>
-                            <option value="server" disabled={!sttStatus?.hasKey}>OpenAI gpt-4o-transcribe</option>
-                          </select>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">
-                          <p className="text-xs max-w-48">
-                            {voiceInput === 'server'
-                              ? 'Using OpenAI gpt-4o-transcribe - lowest word error rate, best accuracy'
-                              : 'Browser speech recognition - works offline but less accurate'}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Headphones className="w-3 h-3 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Output</p>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <select
-                            value={voiceOutput}
-                            onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'elevenlabs' | 'browser' | 'off')}
-                            className="text-xs bg-background/60 border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-primary/50 cursor-pointer"
-                            aria-label="Voice output mode"
-                          >
-                            <option value="off">Off</option>
-                            <option value="browser">Browser</option>
-                            <option value="openai" disabled={!hasOpenAiTts}>OpenAI gpt-4o-mini-tts</option>
-                            <option value="elevenlabs" disabled={!hasElevenLabsTts}>ElevenLabs</option>
-                          </select>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">
-                          <p className="text-xs max-w-48">
-                            {voiceOutput === 'openai' ? 'Premium OpenAI voices with natural speech' :
-                             voiceOutput === 'elevenlabs' ? 'Ultra-realistic ElevenLabs voices' :
-                             voiceOutput === 'browser' ? 'Built-in browser text-to-speech' :
-                             'Voice output disabled'}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  {voiceInput === 'server' && sttStatus?.hasKey && (
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <p className="text-[11px] text-emerald-400">
-                        Using highest accuracy transcription model
-                      </p>
-                    </div>
-                  )}
-                  {!hasOpenAiTts && !hasElevenLabsTts && !sttStatus?.hasKey && (
-                    <p className="mt-2 text-[11px] text-muted-foreground">
-                      Add an OpenAI key in Settings to enable higher quality voice input/output.
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-6 p-4 rounded-2xl bg-muted/40 border border-border flex-shrink-0">
-                  <p className="text-xs text-muted-foreground mb-2">Status</p>
-                  <div className="flex items-center gap-3">
+                {/* Status Card - Primary Focus */}
+                <div className="p-4 rounded-xl bg-card/50 border border-border mb-4">
+                  <div className="flex items-center gap-4">
                     {/* Animated status indicator */}
                     {status === 'idle' && (
-                      <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center">
-                        <Mic className="w-5 h-5 text-muted-foreground" />
+                      <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center border-2 border-muted">
+                        <Mic className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
                     {status === 'listening' && (
                       <motion.div
-                        animate={{ scale: [1, 1.15, 1], boxShadow: ['0 0 0 0 rgba(16, 185, 129, 0)', '0 0 0 10px rgba(16, 185, 129, 0.3)', '0 0 0 0 rgba(16, 185, 129, 0)'] }}
+                        animate={{ scale: [1, 1.1, 1], boxShadow: ['0 0 0 0 rgba(16, 185, 129, 0)', '0 0 0 8px rgba(16, 185, 129, 0.2)', '0 0 0 0 rgba(16, 185, 129, 0)'] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center"
+                        className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center"
                       >
-                        <Mic className="w-5 h-5 text-white" />
+                        <Mic className="w-6 h-6 text-white" />
                       </motion.div>
                     )}
                     {status === 'thinking' && (
-                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+                      <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center border-2 border-cyan-500/30">
+                        <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
                       </div>
                     )}
                     {status === 'loading_audio' && (
                       <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center"
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-500/30"
                       >
-                        <Volume2 className="w-5 h-5 text-purple-400" />
+                        <Volume2 className="w-6 h-6 text-purple-400" />
                       </motion.div>
                     )}
                     {status === 'speaking' && (
                       <motion.div
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 0.3, repeat: Infinity }}
-                        className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 0.4, repeat: Infinity }}
+                        className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center"
                       >
-                        <Volume2 className="w-5 h-5 text-white" />
+                        <Volume2 className="w-6 h-6 text-white" />
                       </motion.div>
                     )}
-                    <div>
-                      <p className={`text-base font-semibold ${
+                    <div className="flex-1">
+                      <p className={`text-lg font-semibold ${
                         status === 'listening' ? 'text-emerald-400' :
                         status === 'thinking' ? 'text-cyan-400' :
                         status === 'loading_audio' ? 'text-purple-400' :
@@ -933,159 +972,215 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       }`}>
                         {statusMessages[status]}
                       </p>
-                      {status === 'listening' && (
-                        <p className="text-xs text-muted-foreground">Your words appear in the chat as you speak</p>
-                      )}
-                      {status === 'loading_audio' && (
-                        <p className="text-xs text-muted-foreground">Generating voice response...</p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {status === 'listening' ? 'Your words appear in the chat' :
+                         status === 'thinking' ? 'Processing your request...' :
+                         status === 'loading_audio' ? 'Preparing audio response...' :
+                         status === 'speaking' ? 'Playing response...' :
+                         'Click Start Speaking or type below'}
+                      </p>
                     </div>
                   </div>
-                  {error && (
-                    <div className="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
-                      <p className="text-xs text-red-400 flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>{error}</span>
-                      </p>
-                      <button
-                        onClick={() => {
-                          setError(null)
-                          initializeSpeechRecognition()
-                        }}
-                        className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
-                      >
-                        Retry voice setup
-                      </button>
-                    </div>
-                  )}
                 </div>
 
-                <div className="mt-6 flex flex-col gap-3 flex-shrink-0">
+                {/* Error display */}
+                {error && (
+                  <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-red-400">{error}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError(null)
+                            initializeSpeechRecognition()
+                          }}
+                          className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mb-4">
                   {!isSpeechSupported && voiceInput === 'browser' && (
-                    <p className="text-sm text-yellow-200 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" /> Voice recognition is not supported in this browser. {sttStatus?.hasKey ? 'Switch to OpenAI input or type below.' : 'Please use Chrome desktop or type below.'}
+                    <p className="text-xs text-yellow-400 mb-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {sttStatus?.hasKey ? 'Switch to OpenAI input' : 'Use Chrome or type below'}
                     </p>
                   )}
-                  <div className="flex gap-3">
-                    <TooltipProvider>
-                      {!isRecording ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="gradient"
-                              size="lg"
-                              onClick={startRecordingUnified}
-                              disabled={voiceInput === 'browser' ? !isSpeechSupported : !sttStatus?.hasKey}
-                              className="flex-1 rounded-2xl py-6"
-                            >
-                              <Mic className="w-5 h-5" />
-                              Start Speaking
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p>{voiceInput === 'server' ? 'Using OpenAI gpt-4o-transcribe (highest accuracy)' : 'Using browser speech recognition'}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="lg"
-                              onClick={stopRecording}
-                              className="flex-1 rounded-2xl py-6 shadow-lg shadow-red-500/40"
-                            >
-                              <StopCircle className="w-5 h-5" />
-                              Stop Recording
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p>Click to stop recording and transcribe</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-
+                  <TooltipProvider>
+                    {!isRecording ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            variant="outline"
+                            variant="gradient"
                             size="lg"
-                            onClick={onClose}
-                            className="rounded-2xl py-6"
+                            onClick={startRecordingUnified}
+                            disabled={voiceInput === 'browser' ? !isSpeechSupported : !sttStatus?.hasKey}
+                            className="flex-1 rounded-xl h-12"
                           >
-                            Cancel
+                            <Mic className="w-5 h-5" />
+                            Start Speaking
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p>Close voice companion</p>
+                        <TooltipContent>
+                          <p>{voiceInput === 'server' ? 'OpenAI transcription' : 'Browser speech'}</p>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="lg"
+                            onClick={stopRecording}
+                            className="flex-1 rounded-xl h-12"
+                          >
+                            <StopCircle className="w-5 h-5" />
+                            Stop
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Stop recording</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </TooltipProvider>
+                </div>
+
+                {/* Voice Settings - Compact */}
+                <details className="group rounded-xl bg-muted/20 border border-border overflow-hidden">
+                  <summary className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/30 transition-colors list-none">
+                    <Settings2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Voice Settings</span>
+                    <span className="ml-auto text-xs text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="p-3 pt-0 space-y-3 border-t border-border/50">
+                    {/* Input selector */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Mic className="w-3.5 h-3.5" /> Input
+                      </label>
+                      <select
+                        value={voiceInput}
+                        onChange={(e) => handleVoiceInputChange(e.target.value as 'server' | 'browser' | 'realtime')}
+                        className="text-xs bg-background border border-border rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        aria-label="Voice input mode"
+                      >
+                        <option value="browser">Browser</option>
+                        <option value="server" disabled={!sttStatus?.hasKey}>OpenAI</option>
+                        <option value="realtime" disabled={!realtimeVoice.isAvailable}>Realtime</option>
+                      </select>
+                    </div>
+
+                    {/* Output selector */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Headphones className="w-3.5 h-3.5" /> Output
+                      </label>
+                      <select
+                        value={voiceOutput}
+                        onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'elevenlabs' | 'browser' | 'off')}
+                        className="text-xs bg-background border border-border rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        aria-label="Voice output mode"
+                        disabled={voiceInput === 'realtime'}
+                      >
+                        <option value="off">Off</option>
+                        <option value="browser">Browser</option>
+                        <option value="openai" disabled={!hasOpenAiTts}>OpenAI</option>
+                        <option value="elevenlabs" disabled={!hasElevenLabsTts}>ElevenLabs</option>
+                      </select>
+                    </div>
+
+                    {/* Status indicators */}
+                    {voiceInput === 'realtime' && realtimeVoice.isAvailable && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                        <Radio className="w-3.5 h-3.5" />
+                        <span className="text-xs">{realtimeVoice.isConnected ? 'Connected' : 'Ready'}</span>
+                        {realtimeVoice.isConnected && <Zap className="w-3 h-3 ml-auto" />}
+                      </div>
+                    )}
+                    {voiceInput === 'server' && sttStatus?.hasKey && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span className="text-xs">High accuracy mode</span>
+                      </div>
+                    )}
                   </div>
+                </details>
+
+                {/* Quick tips - only on desktop */}
+                <div className="hidden md:block mt-auto pt-4">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    <strong>Tips:</strong> Mention services like Plex, Sonarr, or Radarr. Tell me your hosting preference (NAS, VPS, etc).
+                  </p>
                 </div>
               </div>
 
               {/* Right Panel - Transcript & Input */}
-              <div className="md:w-1/2 flex flex-col bg-card min-h-0 flex-1 overflow-hidden">
+              <div className="md:w-[55%] flex flex-col bg-card min-h-0 flex-1 overflow-hidden">
                 {/* Transcript Area - scrollable */}
-                <div className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 min-h-0 p-4 md:p-5 space-y-3 overflow-y-auto overflow-x-hidden">
                   <p className="text-xs uppercase tracking-widest text-muted-foreground sticky top-0 bg-card pb-2 z-10">Conversation</p>
                   <div className="space-y-3 text-sm">
                     {transcriptItems.map((item) => (
                       <motion.div
                         key={item.id}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`p-3 rounded-2xl border ${
+                        transition={{ duration: 0.2 }}
+                        className={`p-3 rounded-xl ${
                           item.type === 'assistant' || item.type === 'system'
-                            ? 'bg-primary/10 border-primary/30 mr-8'
-                            : 'bg-muted/60 border-border ml-8'
+                            ? 'bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 mr-6'
+                            : 'bg-muted/50 border border-border ml-6'
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          {/* Type indicator */}
-                          <span className="text-xs mt-0.5">
-                            {item.type === 'user' ? '🗣️' : item.type === 'assistant' ? '🤖' : '👋'}
-                          </span>
-                          <div className="flex-1 text-foreground">
-                            {item.content}
+                        <div className="flex items-start gap-2.5">
+                          {/* Avatar */}
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                            item.type === 'user'
+                              ? 'bg-muted text-muted-foreground'
+                              : 'bg-emerald-500/20 text-emerald-400'
+                          }`}>
+                            {item.type === 'user' ? (
+                              <Mic className="w-3.5 h-3.5" />
+                            ) : (
+                              <Sparkles className="w-3.5 h-3.5" />
+                            )}
                           </div>
-                          {/* Audio status indicator for assistant/system messages */}
-                          {(item.type === 'assistant' || item.type === 'system') && item.audioStatus && (
-                            <div className="flex-shrink-0 ml-2">
-                              {item.audioStatus === 'loading' && (
-                                <motion.div
-                                  animate={{ opacity: [0.5, 1, 0.5] }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                  className="flex items-center gap-1 text-xs text-muted-foreground"
-                                >
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                  <span>Loading audio...</span>
-                                </motion.div>
-                              )}
-                              {item.audioStatus === 'playing' && (
-                                <motion.div
-                                  animate={{ scale: [1, 1.1, 1] }}
-                                  transition={{ duration: 0.5, repeat: Infinity }}
-                                  className="flex items-center gap-1 text-xs text-emerald-400"
-                                >
-                                  <Volume2 className="w-4 h-4" />
-                                </motion.div>
-                              )}
-                              {item.audioStatus === 'done' && (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              )}
-                              {item.audioStatus === 'failed' && (
-                                <div className="flex items-center gap-1 text-xs text-red-400">
-                                  <VolumeX className="w-4 h-4" />
-                                  <span>Audio failed</span>
-                                </div>
-                              )}
-                              {item.audioStatus === 'skipped' && voiceOutput === 'off' && (
-                                <VolumeX className="w-3 h-3 text-muted-foreground" />
-                              )}
-                            </div>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground leading-relaxed">{item.content}</p>
+                            {/* Audio status - compact inline display */}
+                            {(item.type === 'assistant' || item.type === 'system') && item.audioStatus && item.audioStatus !== 'done' && item.audioStatus !== 'skipped' && (
+                              <div className="mt-1.5 flex items-center gap-1.5">
+                                {item.audioStatus === 'loading' && (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                                    <span className="text-[11px] text-muted-foreground">Loading audio...</span>
+                                  </>
+                                )}
+                                {item.audioStatus === 'playing' && (
+                                  <>
+                                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity }}>
+                                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                                    </motion.div>
+                                    <span className="text-[11px] text-emerald-400">Playing...</span>
+                                  </>
+                                )}
+                                {item.audioStatus === 'failed' && (
+                                  <>
+                                    <VolumeX className="w-3 h-3 text-amber-400" />
+                                    <span className="text-[11px] text-amber-400">Audio unavailable</span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -1093,25 +1188,31 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                     {/* Live transcription indicator - what user is saying */}
                     {partialTranscript && (
                       <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="p-3 rounded-2xl bg-emerald-500/10 border-2 border-dashed border-emerald-500/50 ml-8"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-3 rounded-xl bg-emerald-500/5 border border-dashed border-emerald-500/40 ml-6"
                       >
-                        <div className="flex items-start gap-2">
-                          <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 0.5, repeat: Infinity }}
-                            className="text-xs mt-0.5"
+                        <div className="flex items-start gap-2.5">
+                          <motion.div
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 0.8, repeat: Infinity }}
+                            className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0"
                           >
-                            🎙️
-                          </motion.span>
-                          <span className="text-foreground">{partialTranscript}</span>
-                          <motion.span
-                            animate={{ opacity: [1, 0] }}
-                            transition={{ duration: 0.5, repeat: Infinity }}
-                          >
-                            |
-                          </motion.span>
+                            <Mic className="w-3.5 h-3.5 text-emerald-400" />
+                          </motion.div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground leading-relaxed">
+                              {partialTranscript}
+                              <motion.span
+                                animate={{ opacity: [1, 0] }}
+                                transition={{ duration: 0.5, repeat: Infinity }}
+                                className="text-emerald-400 ml-0.5"
+                              >
+                                |
+                              </motion.span>
+                            </p>
+                            <p className="text-[11px] text-emerald-400/70 mt-1">Listening...</p>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -1122,70 +1223,71 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                 </div>
 
                 {/* Input Area - fixed at bottom */}
-                <div className="p-4 border-t border-border bg-muted/30 flex-shrink-0">
-                  <form onSubmit={handleManualSubmit} className="relative flex gap-2">
+                <div className="p-3 border-t border-border bg-muted/20 flex-shrink-0">
+                  <form onSubmit={handleManualSubmit} className="flex gap-2">
                     <input
                       type="text"
                       value={manualInput}
                       onChange={(e) => setManualInput(e.target.value)}
                       placeholder={
-                        isRecording ? "Listening... speak now" :
-                        status === 'thinking' ? "Waiting for response..." :
-                        status === 'loading_audio' ? "Preparing audio..." :
-                        status === 'speaking' ? "Playing response..." :
-                        "Type your message here..."
+                        isRecording ? "Listening..." :
+                        status === 'thinking' ? "Processing..." :
+                        status === 'loading_audio' || status === 'speaking' ? "Playing..." :
+                        "Type a message..."
                       }
                       disabled={isRecording || status === 'thinking' || status === 'speaking' || status === 'loading_audio'}
-                      className="w-full bg-background/60 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition"
+                      className="flex-1 bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition disabled:opacity-50"
                     />
                     <button
                       type="submit"
                       disabled={!manualInput.trim() || status === 'thinking' || status === 'loading_audio'}
                       aria-label="Send message"
                       title="Send message"
-                      className="bg-muted/60 hover:bg-muted/80 text-foreground p-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     >
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4" />
                     </button>
                   </form>
                 </div>
 
-                {/* Plan Area - fixed height, scrollable if needed */}
-                <div className="border-t border-border flex-shrink-0 max-h-[150px] overflow-y-auto">
-                  {plan ? (
-                    <div className="p-4 space-y-3 bg-green-500/5">
-                      <div className="flex items-center gap-2 text-green-400">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <p className="text-sm font-semibold">Plan ready!</p>
+                {/* Plan Area - shows when plan is ready */}
+                {plan ? (
+                  <div className="p-3 border-t border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 flex-shrink-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        <div>
+                          <p className="text-sm font-medium text-emerald-400">Plan Ready</p>
+                          <p className="text-[11px] text-muted-foreground">{plan.services.length} services selected</p>
+                        </div>
                       </div>
-                      <div className="space-y-3 text-sm text-muted-foreground">
-                        {/* Plan details rendering */}
-                        <p className="text-xs text-muted-foreground">Services: {plan.services.join(', ')}</p>
-                        <p className="text-xs text-muted-foreground">Domain: {plan.domain}</p>
-                      </div>
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <Button
-                          onClick={handleApplyPlan}
-                          className="flex-1 rounded-2xl bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/40"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Apply Plan
-                        </Button>
-                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => setPlan(null)}
-                          className="rounded-2xl"
+                          className="rounded-lg text-xs"
                         >
-                          Ask More
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleApplyPlan}
+                          className="rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
+                        >
+                          Apply Plan
                         </Button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="p-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
-                      <Sparkles className="w-3 h-3" /> AI will verify requirements before finalizing.
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="py-2 px-3 border-t border-border/50 flex-shrink-0">
+                    <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-3 h-3" />
+                      Tell me what services you need, and I'll create a setup plan
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

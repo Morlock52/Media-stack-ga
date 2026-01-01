@@ -14,7 +14,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
     const { register, formState: { errors } } = form
     const { config } = useSetupStore()
     const isLocalMode = config.deploymentMode === 'local'
-    const firstInputRef = useRef<HTMLInputElement>(null)
+    const firstInputRef = useRef<HTMLInputElement | null>(null) as React.MutableRefObject<HTMLInputElement | null>
 
     // Register cloudflare token with merged ref
     const cloudflareRegister = register('cloudflareToken')

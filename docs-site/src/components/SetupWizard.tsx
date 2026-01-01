@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { toast } from 'sonner'
 import {
     ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw,
@@ -60,6 +61,22 @@ export function SetupWizard() {
     const [showVoiceCompanion, setShowVoiceCompanion] = useState(false)
     const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)
     const [toolsOpen, setToolsOpen] = useState(false)
+
+    // Accessibility: Respect user's reduced motion preference
+    const prefersReducedMotion = useReducedMotion()
+
+    // Animation variants that respect reduced motion
+    const fadeInUp = useMemo(() => prefersReducedMotion
+        ? { initial: {}, animate: {}, transition: { duration: 0 } }
+        : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },
+        [prefersReducedMotion]
+    )
+
+    const scaleIn = useMemo(() => prefersReducedMotion
+        ? { initial: {}, animate: {}, exit: {}, transition: { duration: 0 } }
+        : { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 } },
+        [prefersReducedMotion]
+    )
 
     // Auto-open voice companion for newbie mode
     useEffect(() => {
@@ -420,9 +437,7 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
             {/* Floating Voice Companion Trigger */}
             {mode === 'newbie' && !showVoiceCompanion && (
                 <motion.button
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
+                    {...scaleIn}
                     onClick={() => setShowVoiceCompanion(true)}
                     className="fixed bottom-24 right-6 z-40 p-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-2xl shadow-emerald-500/30 hover:scale-105 transition-transform"
                     title="Talk through my setup with AI"
@@ -436,25 +451,22 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                     {/* Header */}
                     <div className="text-center mb-12">
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            {...fadeInUp}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6"
                         >
                             <Sparkles className="w-4 h-4 text-primary" />
                             <span className="text-sm text-primary">Interactive Setup Wizard</span>
                         </motion.div>
                         <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
+                            {...fadeInUp}
+                            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
                             className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-cyan-400 to-lime-400 mb-4"
                         >
                             Setup Wizard
                         </motion.h1>
                         <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
+                            {...fadeInUp}
+                            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
                             className="text-lg text-muted-foreground max-w-2xl mx-auto"
                         >
                             Step-by-step guidance to generate your <code className="px-2 py-1 bg-muted/40 rounded text-primary">.env</code> and configuration files
@@ -462,9 +474,9 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
 
                         {/* Action Buttons */}
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.3 }}
+                            initial={prefersReducedMotion ? {} : { opacity: 0 }}
+                            animate={prefersReducedMotion ? {} : { opacity: 1 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3 }}
                             className="flex flex-wrap items-center justify-center gap-3 mt-6"
                         >
                             <Button

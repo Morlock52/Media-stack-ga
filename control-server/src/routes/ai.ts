@@ -97,7 +97,9 @@ function recordCircuitBreakerFailure() {
     }
 }
 const TTS_PROVIDER = process.env.TTS_PROVIDER || 'openai';
-const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_multilingual_v2';
+// ElevenLabs Flash v2.5 provides ~75ms latency vs ~300ms for multilingual_v2
+// This is 4x faster and ideal for real-time voice applications
+const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_flash_v2_5';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
 
 // Claude/Anthropic settings (December 2025: Claude Sonnet 4.5)
@@ -572,7 +574,22 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 audioBuffer.byteOffset,
                 audioBuffer.byteOffset + audioBuffer.byteLength
             ) as ArrayBuffer;
-            formData.append('file', new Blob([arrayBuffer]), filename);
+
+            // Determine MIME type from filename extension
+            const ext = filename.split('.').pop()?.toLowerCase() || 'webm';
+            const mimeTypes: Record<string, string> = {
+                'mp3': 'audio/mpeg',
+                'mp4': 'audio/mp4',
+                'mpeg': 'audio/mpeg',
+                'mpga': 'audio/mpeg',
+                'm4a': 'audio/mp4',
+                'wav': 'audio/wav',
+                'webm': 'audio/webm',
+                'ogg': 'audio/ogg',
+            };
+            const mimeType = mimeTypes[ext] || 'audio/webm';
+
+            formData.append('file', new Blob([arrayBuffer], { type: mimeType }), filename);
             formData.append('model', model);
             formData.append('language', 'en');
 
@@ -597,30 +614,55 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 const audioBuffer: Buffer = await data.toBuffer();
                 const filename = data.filename || 'audio.webm';
 
+                // Validate audio buffer size
+                if (audioBuffer.length < 100) {
+                    fastify.log.warn({ size: audioBuffer.length }, 'Audio buffer too small');
+                    return reply.status(400).send({ error: 'Audio recording too short', reason: 'audio_too_short' });
+                }
+
+                fastify.log.info({ filename, size: audioBuffer.length, model: OPENAI_STT_MODEL }, 'Transcribing audio');
+
                 let response = await transcribeWithOpenAI(audioBuffer, filename, OPENAI_STT_MODEL);
 
-                // Fallback to whisper-1 if gpt-4o-transcribe fails
-                if (!response.ok && (response.status === 400 || response.status === 404)) {
+                // Fallback to whisper-1 if gpt-4o-transcribe fails (any 4xx or 5xx error)
+                if (!response.ok) {
                     const errorText = await response.text();
-                    fastify.log.warn({ status: response.status, error: errorText }, 'Primary STT model failed, trying fallback');
+                    fastify.log.warn({ status: response.status, error: errorText, model: OPENAI_STT_MODEL }, 'Primary STT model failed, trying fallback');
+
                     response = await transcribeWithOpenAI(audioBuffer, filename, 'whisper-1');
                     if (response.ok) {
                         const result = await response.json() as { text: string };
+                        fastify.log.info({ model: 'whisper-1', textLength: result.text?.length }, 'Transcription succeeded with fallback');
                         return { text: result.text, model: 'whisper-1', fallback: true };
                     }
-                }
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    fastify.log.warn({ status: response.status, error: errorText }, 'Transcription failed');
-                    return reply.status(response.status).send({ error: 'Transcription failed', reason: 'upstream_error' });
+                    // Both models failed
+                    const fallbackError = await response.text();
+                    fastify.log.error({ status: response.status, error: fallbackError }, 'Both STT models failed');
+
+                    // Parse error for user-friendly message
+                    let reason = 'upstream_error';
+                    let userMessage = 'Transcription failed';
+                    if (response.status === 401) {
+                        reason = 'invalid_api_key';
+                        userMessage = 'Invalid OpenAI API key';
+                    } else if (response.status === 429) {
+                        reason = 'rate_limited';
+                        userMessage = 'Rate limit exceeded, try again shortly';
+                    } else if (response.status === 400 && fallbackError.includes('format')) {
+                        reason = 'invalid_format';
+                        userMessage = 'Audio format not supported';
+                    }
+
+                    return reply.status(response.status).send({ error: userMessage, reason });
                 }
 
                 const result = await response.json() as { text: string };
+                fastify.log.info({ model: OPENAI_STT_MODEL, textLength: result.text?.length }, 'Transcription succeeded');
                 return { text: result.text, model: OPENAI_STT_MODEL };
             } catch (error: any) {
                 fastify.log.error({ err: error }, 'Transcription error');
-                return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error' });
+                return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error', details: error.message });
             }
         }
 
@@ -1709,8 +1751,133 @@ Return ONLY a JSON object with the following structure:
             return reply.send({
                 websocketUrl: config.url,
                 model: config.model,
+                apiVersion: config.apiVersion,
                 sessionConfig
             });
         }
     );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WebRTC Ephemeral Key API (for browser-based Realtime connections)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Generate ephemeral API key for WebRTC Realtime connections
+     *
+     * OpenAI recommends WebRTC for browser apps for lower latency.
+     * Ephemeral keys are valid for ~1 minute and used only to establish connection.
+     *
+     * Client flow:
+     * 1. Call this endpoint to get ephemeral key
+     * 2. Create RTCPeerConnection
+     * 3. Get user media (microphone)
+     * 4. Create SDP offer
+     * 5. Send offer to OpenAI with ephemeral key
+     * 6. Set answer as remote description
+     * 7. Connect and stream audio
+     */
+    fastify.post<{ Body: { voice?: string; model?: string } }>(
+        '/api/ai/realtime/ephemeral-key',
+        async (request, reply) => {
+            const openaiKey = getOpenAIKey();
+            if (!openaiKey) {
+                return reply.status(400).send({ error: 'OpenAI API key not configured' });
+            }
+
+            const { getRealtimeConfig } = await import('../services/realtimeVoice.js');
+            const config = getRealtimeConfig();
+            if (!config) {
+                return reply.status(400).send({ error: 'Realtime API not available' });
+            }
+
+            try {
+                // Request ephemeral token from OpenAI
+                const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openaiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: request.body.model || config.model,
+                        voice: request.body.voice || 'cedar',
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    fastify.log.error({ status: response.status, error: errorText }, 'Failed to get ephemeral key');
+                    return reply.status(response.status).send({
+                        error: 'Failed to generate ephemeral key',
+                        reason: response.status === 401 ? 'invalid_api_key' : 'upstream_error'
+                    });
+                }
+
+                const data = await response.json() as {
+                    id: string;
+                    client_secret: { value: string; expires_at: number };
+                    model: string;
+                    voice: string;
+                };
+
+                fastify.log.info({ sessionId: data.id, model: data.model, voice: data.voice }, 'Generated ephemeral key for WebRTC');
+
+                return reply.send({
+                    ephemeralKey: data.client_secret.value,
+                    expiresAt: data.client_secret.expires_at,
+                    sessionId: data.id,
+                    model: data.model,
+                    voice: data.voice,
+                    // Client needs this URL for WebRTC SDP exchange
+                    sdpUrl: 'https://api.openai.com/v1/realtime/sdp',
+                });
+            } catch (error: any) {
+                fastify.log.error({ err: error }, 'Error generating ephemeral key');
+                return reply.status(500).send({
+                    error: 'Failed to generate ephemeral key',
+                    reason: 'server_error'
+                });
+            }
+        }
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Streaming TTS API (ElevenLabs WebSocket proxy info)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Get ElevenLabs WebSocket streaming configuration
+     *
+     * Returns the WebSocket URL and configuration for client-side streaming TTS.
+     * Client connects directly to ElevenLabs for lowest latency (~75ms with Flash v2.5).
+     */
+    fastify.get('/api/tts/streaming/config', async (_request, reply) => {
+        const elevenLabsKey = getElevenLabsKey();
+        if (!elevenLabsKey) {
+            return reply.status(400).send({
+                error: 'ElevenLabs API key not configured',
+                available: false
+            });
+        }
+
+        const voiceId = ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Default: Sarah
+
+        return reply.send({
+            available: true,
+            websocketUrl: `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input`,
+            model: ELEVENLABS_TTS_MODEL,
+            voiceId,
+            // Recommended chunk schedule for optimal latency/quality balance
+            chunkLengthSchedule: [120, 160, 250, 290],
+            // Client must include this in the initial WebSocket message
+            authHeader: `xi-api-key: ${elevenLabsKey}`,
+            // Best practices
+            recommendations: {
+                model: 'eleven_flash_v2_5',
+                latency: '~75ms TTFB',
+                format: 'mp3_44100_128',
+                flush: 'Use flush:true at end of sentences',
+            }
+        });
+    });
 }

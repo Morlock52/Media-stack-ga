@@ -15,8 +15,9 @@ services:
     container_name: postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      # REQUIRED: Set POSTGRES_USER and POSTGRES_PASSWORD in .env
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - POSTGRES_DB=postgres
     volumes:
       - ${CONFIG_ROOT}/postgres:/var/lib/postgresql/data
@@ -24,10 +25,47 @@ services:
       - mediastack
     profiles: ["arr", "db", "sonarr", "radarr", "prowlarr"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ===========================================
+  # POSTGRES BACKUP - Automated Daily Backups
+  # ===========================================
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local:latest
+    container_name: postgres-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=postgres,sonarr,radarr,prowlarr
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=8080
+    volumes:
+      - ${CONFIG_ROOT}/backups/postgres:/backups
+    networks:
+      - mediastack
+    profiles: ["arr", "db", "backup"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "homepage.group=Core"
+      - "homepage.name=PostgreSQL Backup"
+      - "homepage.icon=postgres.png"
+      - "homepage.description=Daily DB Backups"
 
   # ===========================================
   # AUTOHEAL - Container Auto-healing
@@ -71,7 +109,14 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: ${CLOUDFLARED_COMMAND}
+    # Security: Use array form to prevent shell injection
+    # Set CLOUDFLARE_TUNNEL_TOKEN in .env or use config file mode
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN:-}
     volumes:
       - ${CONFIG_ROOT}/cloudflared:/home/nonroot/.cloudflared
     networks:
@@ -270,6 +315,12 @@ services:
       - ${TV_SHOWS_PATH}:/data/tvshows
       - ${MUSIC_PATH}:/data/music
       - ${TRANSCODE_PATH}:/cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["jellyfin"]
@@ -305,6 +356,12 @@ services:
       - ${TV_SHOWS_PATH}:/tv
       - ${MUSIC_PATH}:/music
       - ${TRANSCODE_PATH}:/transcode
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:32400/identity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     networks:
       - mediastack
     profiles: ["plex"]
@@ -335,13 +392,19 @@ services:
       - TZ=${TIMEZONE}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_MAIN_DB=sonarr
     volumes:
       - ${CONFIG_ROOT}/sonarr:/config
       - ${TV_SHOWS_PATH}:/tv
       - ${DOWNLOADS_PATH}:/downloads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["arr", "sonarr"]
@@ -372,13 +435,19 @@ services:
       - TZ=${TIMEZONE}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_MAIN_DB=radarr
     volumes:
       - ${CONFIG_ROOT}/radarr:/config
       - ${MOVIES_PATH}:/movies
       - ${DOWNLOADS_PATH}:/downloads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7878/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["arr", "radarr"]
@@ -410,12 +479,18 @@ services:
       - TZ=${TIMEZONE}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_MAIN_DB=prowlarr
       - FLARESOLVERR_URL=http://flaresolverr:8191
     volumes:
       - ${CONFIG_ROOT}/prowlarr:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["arr", "prowlarr"]
@@ -464,8 +539,10 @@ services:
       - ${CONFIG_ROOT}/qbittorrent:/config
       - ${CONFIG_ROOT}/qbittorrent_init:/init_data
       - ${DOWNLOADS_PATH}:/downloads
+    # VPN Kill Switch: Only start when Gluetun is healthy
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
     profiles: ["torrent"]
     labels:
       - "homepage.group=Downloads"
@@ -506,9 +583,16 @@ services:
       - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
       - WIREGUARD_ENDPOINT_IP=${WIREGUARD_ENDPOINT_IP}
       - WIREGUARD_ENDPOINT_PORT=${WIREGUARD_ENDPOINT_PORT}
+    # VPN Kill Switch: Healthcheck ensures VPN is connected
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/v1/openvpn/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - mediastack
-    profiles: ["vpn"]
+    profiles: ["vpn", "torrent"]
     labels:
       - "homepage.group=Downloads"
       - "homepage.name=Gluetun VPN"
@@ -530,6 +614,12 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - ${CONFIG_ROOT}/overseerr:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5055/api/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["arr", "overseerr"]
@@ -560,6 +650,12 @@ services:
       - ${CONFIG_ROOT}/bazarr:/config
       - ${MOVIES_PATH}:/movies
       - ${TV_SHOWS_PATH}:/tv
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6767/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["arr", "bazarr"]
@@ -588,6 +684,12 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - ${CONFIG_ROOT}/tautulli:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - mediastack
     profiles: ["stats"]
@@ -819,7 +921,7 @@ services:
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-mediastack}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://grafana.${DOMAIN}
     volumes:
@@ -838,7 +940,7 @@ services:
       - "homepage.widget.type=grafana"
       - "homepage.widget.url=http://grafana:3000"
       - "homepage.widget.username=${GRAFANA_USER:-admin}"
-      - "homepage.widget.password=${GRAFANA_PASSWORD:-mediastack}"
+      - "homepage.widget.password=${GRAFANA_PASSWORD}"
       - "traefik.enable=true"
       - "traefik.docker.network=${DOCKER_NETWORK}"
       - "traefik.http.routers.grafana.entrypoints=web"

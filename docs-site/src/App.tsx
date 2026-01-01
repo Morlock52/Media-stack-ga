@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { HeroSection } from './components/modern/HeroSection'
 import { ModernNavigation } from './components/modern/ModernNavigation'
 import { SetupWizard } from './components/SetupWizard'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { useSetupStore } from './store/setupStore'
 import { BookOpen, Server, Menu, Loader2 } from 'lucide-react'
 import { Button } from './components/ui/button'
@@ -74,7 +75,15 @@ function App() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative selection:bg-primary/30 selection:text-primary">
+    <ErrorBoundary>
+    <main id="main-content" className="min-h-screen bg-background text-foreground overflow-x-hidden bg-noise relative selection:bg-primary/30 selection:text-primary">
+      {/* Skip to main content link for keyboard accessibility */}
+      <a
+        href="#builder"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:-translate-x-1/2 focus:z-[100] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
+      >
+        Skip to Setup Wizard
+      </a>
       {/* Background grid effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 matrix-grid opacity-15 pointer-events-none" />
@@ -319,6 +328,7 @@ function App() {
         </>
       )}
     </main>
+    </ErrorBoundary>
   )
 }
 

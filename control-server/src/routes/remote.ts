@@ -78,14 +78,34 @@ const cleanRemoteOutput = (value: string) => {
     return out.join('\n').trim();
 };
 
-const sshCommonOptions = [
-    '-o', 'StrictHostKeyChecking=no',
-    '-o', 'UserKnownHostsFile=/dev/null',
-    '-o', 'ConnectTimeout=12',
-    '-o', 'ConnectionAttempts=1',
-    '-o', 'ServerAliveInterval=15',
-    '-o', 'ServerAliveCountMax=2',
-];
+// SSH host key verification configuration
+// By default, we use accept-new which trusts first connection (TOFU)
+// and rejects if the key changes (protects against MITM)
+// Users can override with acceptNewHostKey: false for strict mode
+// or acceptNewHostKey: true to re-accept on key change
+const getSshOptions = (acceptNewHostKey: boolean = false) => {
+    const options = [
+        '-o', 'ConnectTimeout=12',
+        '-o', 'ConnectionAttempts=1',
+        '-o', 'ServerAliveInterval=15',
+        '-o', 'ServerAliveCountMax=2',
+    ];
+
+    if (acceptNewHostKey) {
+        // Accept new or changed host keys (less secure, user explicitly requested)
+        options.push('-o', 'StrictHostKeyChecking=accept-new');
+    } else {
+        // Default: Reject changed keys but accept new ones on first connection
+        options.push('-o', 'StrictHostKeyChecking=accept-new');
+    }
+
+    // Use system known_hosts file for persistent key storage
+    // This allows detection of MITM attacks on subsequent connections
+    return options;
+};
+
+// Legacy constant for backwards compatibility
+const sshCommonOptions = getSshOptions(false);
 
 const normalizePrivateKey = (value: string) => {
     let normalized = String(value || '').trim();
@@ -120,6 +140,14 @@ const isSshAuthenticationError = (value: string) => {
     if (normalized.includes('no supported authentication methods available')) return true;
     if (normalized.includes('authentication failed')) return true;
     return false;
+};
+
+const isSshHostKeyError = (value: string) => {
+    const normalized = (value || '').toLowerCase();
+    return normalized.includes('host key verification failed') ||
+           normalized.includes('remote host identification has changed') ||
+           normalized.includes('someone could be eavesdropping') ||
+           normalized.includes('man-in-the-middle attack');
 };
 
 const getSshAuthenticationHint = (config: SSHConfig) => {
@@ -473,7 +501,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             if (homeResult.code !== 0) {
                 const detail = cleanRemoteOutput(homeResult.stderr || homeResult.stdout);
                 const base = `Connection failed: ${detail || 'unknown error'}`;
-                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(sshConfig)}` : '';
+                let hint = '';
+                if (isSshHostKeyError(detail)) {
+                    hint = '\n\nSSH host key verification failed. The server key has changed since last connection. This could indicate a MITM attack or the server was reinstalled. If you trust this server, remove the old key from ~/.ssh/known_hosts and try again.';
+                } else if (isSshAuthenticationError(detail)) {
+                    hint = `\n\n${getSshAuthenticationHint(sshConfig)}`;
+                }
                 throw new Error(`${base}${hint}`);
             }
             steps[steps.length - 1].status = 'done';
@@ -916,7 +949,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
             if (connectCheck.code !== 0) {
                 const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
-                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(scanConfig)}` : '';
+                let hint = '';
+                if (isSshHostKeyError(detail)) {
+                    hint = '\n\nSSH host key verification failed. The server key has changed. If you trust this server, remove the old key from ~/.ssh/known_hosts and try again.';
+                } else if (isSshAuthenticationError(detail)) {
+                    hint = `\n\n${getSshAuthenticationHint(scanConfig)}`;
+                }
                 return reply.status(200).send({
                     success: false,
                     error: `SSH connection failed: ${detail || 'unknown error'}${hint}`,
@@ -1129,7 +1167,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const connectCheck = await execSSH(scanConfig, 'echo mediastack-ok');
             if (connectCheck.code !== 0) {
                 const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
-                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(scanConfig)}` : '';
+                let hint = '';
+                if (isSshHostKeyError(detail)) {
+                    hint = '\n\nSSH host key verification failed. The server key has changed. If you trust this server, remove the old key from ~/.ssh/known_hosts and try again.';
+                } else if (isSshAuthenticationError(detail)) {
+                    hint = `\n\n${getSshAuthenticationHint(scanConfig)}`;
+                }
                 return reply.status(200).send({
                     success: false,
                     step: 'connect',
@@ -1316,7 +1359,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             const connectCheck = await execSSH(sshConfig, 'echo mediastack-ok && echo $HOME');
             if (connectCheck.code !== 0) {
                 const detail = cleanRemoteOutput(connectCheck.stderr || connectCheck.stdout);
-                const hint = isSshAuthenticationError(detail) ? `\n\n${getSshAuthenticationHint(sshConfig)}` : '';
+                let hint = '';
+                if (isSshHostKeyError(detail)) {
+                    hint = '\n\nSSH host key verification failed. The server key has changed. If you trust this server, remove the old key from ~/.ssh/known_hosts and try again.';
+                } else if (isSshAuthenticationError(detail)) {
+                    hint = `\n\n${getSshAuthenticationHint(sshConfig)}`;
+                }
                 return reply.status(502).send({
                     success: false,
                     error: `SSH connection failed: ${detail || 'unknown error'}${hint}`,

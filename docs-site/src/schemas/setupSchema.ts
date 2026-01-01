@@ -69,6 +69,21 @@ export type StackSelectionFormData = z.infer<typeof stackSelectionSchema>
 export const serviceConfigSchema = z.record(z.string(), z.record(z.string(), z.string()))
 
 // ---------------------------------------------------------------------------
+// WIREGUARD KEY VALIDATION
+// ---------------------------------------------------------------------------
+// WireGuard keys are 32 bytes encoded as base64, resulting in 44 characters
+// (43 base64 chars + 1 padding '=' or 44 chars with '=').
+const isValidWireGuardKey = (key: string): boolean => {
+    if (!key) return true // Empty is ok (optional)
+    // Base64 encoded 32-byte key should be 44 chars (43 + padding)
+    // Allow with or without trailing =
+    const trimmed = key.trim()
+    if (trimmed.length < 43 || trimmed.length > 44) return false
+    // Check valid base64 characters
+    return /^[A-Za-z0-9+/]+=*$/.test(trimmed)
+}
+
+// ---------------------------------------------------------------------------
 // STEP 4: ADVANCED SETTINGS (all optional)
 // ---------------------------------------------------------------------------
 // These are power-user / integration fields:
@@ -82,8 +97,15 @@ export const advancedSettingsSchema = z.object({
     // Plex claim token, e.g. "claim-xxxxx" from https://plex.tv/claim
     plexClaim: z.string().optional(),
 
-    // WireGuard private key for Gluetun.
-    wireguardPrivateKey: z.string().optional(),
+    // WireGuard private key for Gluetun (base64 encoded, 44 chars).
+    // Generate with: wg genkey
+    wireguardPrivateKey: z
+        .string()
+        .refine(
+            isValidWireGuardKey,
+            'Invalid WireGuard key format (expected 44-char base64 string from "wg genkey")'
+        )
+        .optional(),
 
     // WireGuard address block, e.g. "10.0.0.2/32".
     wireguardAddresses: z

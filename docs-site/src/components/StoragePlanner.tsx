@@ -191,7 +191,7 @@ export function StoragePlanner() {
                         className="text-xs text-primary hover:text-primary/80 underline"
                         href="https://trash-guides.info/Sonarr/Sonarr-Quality-Settings-File-Size/"
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                     >
                         View TRaSH size limits →
                     </a>

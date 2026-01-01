@@ -69,10 +69,9 @@ TRAEFIK_URL=http://traefik.local
 # =============================================================================
 # Cloud setup with Cloudflare Tunnel and Authelia SSO
 DEPLOYMENT_MODE=cloud
+# Cloudflare Tunnel token (get from Zero Trust dashboard)
+# Generate at: https://one.dash.cloudflare.com → Networks → Tunnels → Create
 CLOUDFLARE_TUNNEL_TOKEN=${config.cloudflareToken || 'changeme'}
-# Cloudflare Tunnel run command. Example:
-# - tunnel run --token <CLOUDFLARE_TUNNEL_TOKEN>
-CLOUDFLARED_COMMAND=
 
 # Authelia Secrets (Generate strictly random strings for production)
 AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=changeme_random_string

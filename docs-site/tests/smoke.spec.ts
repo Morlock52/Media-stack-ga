@@ -106,7 +106,11 @@ test.describe('Docs Site Smoke Tests', () => {
 
   test('wizard can generate and download configs', async ({ page }) => {
     test.setTimeout(120000)
+
+    // Clear persisted wizard state to ensure fresh start
     await page.goto('/')
+    await page.evaluate(() => localStorage.clear())
+    await page.reload()
 
     // Start wizard
     await page.getByRole('button', { name: /start configuration/i }).first().click()
@@ -116,11 +120,15 @@ test.describe('Docs Site Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
 
     const domainInput = page.locator('input[name="domain"]:visible')
-    await domainInput.fill(domain, { force: true })
+    await domainInput.click()
+    await domainInput.clear()
+    await domainInput.pressSequentially(domain, { delay: 10 })
     await expect(domainInput).toHaveValue(domain)
 
     const passwordInput = page.locator('input[name="password"]:visible')
-    await passwordInput.fill('TestPassword123!', { force: true })
+    await passwordInput.click()
+    await passwordInput.clear()
+    await passwordInput.pressSequentially('TestPassword123!', { delay: 10 })
     await expect(passwordInput).toHaveValue('TestPassword123!')
     await page.getByRole('button', { name: /^next$/i }).click()
 
@@ -186,14 +194,28 @@ test.describe('Docs Site Smoke Tests', () => {
 
   test('storage planner accepts Tdarr library paths', async ({ page }) => {
     test.setTimeout(120000)
+
+    // Clear persisted wizard state to ensure fresh start
     await page.goto('/')
+    await page.evaluate(() => localStorage.clear())
+    await page.reload()
 
     await page.getByRole('button', { name: /start configuration/i }).first().click()
 
     await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
 
-    await page.locator('input[name="domain"]:visible').fill('mydomain.net', { force: true })
-    await page.locator('input[name="password"]:visible').fill('TestPassword123!', { force: true })
+    const domainInput = page.locator('input[name="domain"]:visible')
+    await domainInput.click()
+    await domainInput.clear()
+    await domainInput.pressSequentially('mydomain.net', { delay: 10 })
+    await expect(domainInput).toHaveValue('mydomain.net')
+
+    const passwordInput = page.locator('input[name="password"]:visible')
+    await passwordInput.click()
+    await passwordInput.clear()
+    await passwordInput.pressSequentially('TestPassword123!', { delay: 10 })
+    await expect(passwordInput).toHaveValue('TestPassword123!')
+
     await page.getByRole('button', { name: /^next$/i }).click()
 
     await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })

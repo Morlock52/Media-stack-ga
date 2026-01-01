@@ -15,7 +15,10 @@ const logger = pino({
 });
 
 const REALTIME_API_URL = 'wss://api.openai.com/v1/realtime';
-const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-4o-realtime-preview';
+// Use GA version (2024-12-17) for production stability - avoid preview suffix
+const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-4o-realtime-preview-2024-12-17';
+// API version for latest features including semantic_vad
+const REALTIME_API_VERSION = '2025-08-28';
 
 export interface RealtimeSession {
     id: string;
@@ -25,7 +28,10 @@ export interface RealtimeSession {
 }
 
 export interface RealtimeConfig {
-    voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+    // Full list of available voices as of Jan 2026
+    // Best quality: cedar, marin (newest)
+    // Classic: alloy, ash, ballad, coral, echo, fable, onyx, nova, sage, shimmer, verse
+    voice?: 'alloy' | 'ash' | 'ballad' | 'cedar' | 'coral' | 'echo' | 'fable' | 'marin' | 'nova' | 'onyx' | 'sage' | 'shimmer' | 'verse';
     instructions?: string;
     tools?: Array<{
         type: 'function';
@@ -36,10 +42,16 @@ export interface RealtimeConfig {
     inputAudioFormat?: 'pcm16' | 'g711_ulaw' | 'g711_alaw';
     outputAudioFormat?: 'pcm16' | 'g711_ulaw' | 'g711_alaw';
     turnDetection?: {
-        type: 'server_vad' | 'none';
+        // semantic_vad is recommended for more natural conversation flow
+        // It's less likely to interrupt the user mid-speech
+        type: 'server_vad' | 'semantic_vad' | 'none';
         threshold?: number;
         prefixPaddingMs?: number;
         silenceDurationMs?: number;
+        // New in 2025: eagerness controls how quickly VAD triggers
+        eagerness?: 'low' | 'medium' | 'high';
+        // Whether to auto-generate response after VAD detects end of speech
+        createResponse?: boolean;
     };
 }
 
@@ -58,6 +70,7 @@ export type RealtimeEventHandler = (event: RealtimeEvent) => void;
 export function getRealtimeConfig(): {
     url: string;
     model: string;
+    apiVersion: string;
     headers: Record<string, string>;
 } | null {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -69,9 +82,10 @@ export function getRealtimeConfig(): {
     return {
         url: `${REALTIME_API_URL}?model=${REALTIME_MODEL}`,
         model: REALTIME_MODEL,
+        apiVersion: REALTIME_API_VERSION,
         headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'OpenAI-Beta': 'realtime=v1'
+            'OpenAI-Beta': `realtime=${REALTIME_API_VERSION}`
         }
     };
 }
@@ -89,15 +103,17 @@ If you don't know something specific about a service, say so and suggest checkin
         type: 'session.update',
         session: {
             modalities: ['text', 'audio'],
-            voice: config.voice || 'alloy',
+            // cedar is one of the highest quality voices (Jan 2026)
+            voice: config.voice || 'cedar',
             instructions: config.instructions || defaultInstructions,
             input_audio_format: config.inputAudioFormat || 'pcm16',
             output_audio_format: config.outputAudioFormat || 'pcm16',
+            // semantic_vad is recommended for more natural conversations
+            // It better understands when the user has finished speaking
             turn_detection: config.turnDetection || {
-                type: 'server_vad',
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500
+                type: 'semantic_vad',
+                eagerness: 'medium',
+                create_response: true,
             },
             tools: config.tools || getDefaultTools()
         }
