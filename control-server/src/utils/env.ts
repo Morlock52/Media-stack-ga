@@ -49,3 +49,32 @@ export const removeEnvKey = (key: string): void => {
         .filter((line) => line.length > 0 && !line.startsWith(`${key}=`));
     writeEnvFile(lines.join('\n') + (lines.length ? '\n' : ''));
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API Key Getters - Centralized functions to get API keys from env or .env file
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get a value from environment variable or .env file
+ * Checks process.env first, then falls back to parsing .env file
+ */
+export const getEnvValue = (key: string): string | null => {
+    // Check process.env first (runtime override)
+    if (process.env[key]) return process.env[key]!;
+    // Fall back to .env file
+    const envContent = readEnvFile();
+    const match = envContent.match(new RegExp(`^${key}=(.+)$`, 'm'));
+    return match ? match[1].trim() : null;
+};
+
+/** Get OpenAI API key from env or .env file */
+export const getOpenAIKey = (): string | null => getEnvValue('OPENAI_API_KEY');
+
+/** Get ElevenLabs API key from env or .env file */
+export const getElevenLabsKey = (): string | null => getEnvValue('ELEVENLABS_API_KEY');
+
+/** Get Anthropic/Claude API key from env or .env file */
+export const getAnthropicKey = (): string | null => getEnvValue('ANTHROPIC_API_KEY');
+
+/** Get ElevenLabs Voice ID from env or .env file */
+export const getElevenLabsVoiceId = (): string | null => getEnvValue('ELEVENLABS_VOICE_ID');

@@ -1,16 +1,8 @@
 import { spawn } from 'child_process';
 import { PROJECT_ROOT } from './env.js';
-import pino from 'pino';
+import { createLogger } from './logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: {
-        target: 'pino-pretty',
-        options: {
-            colorize: true
-        }
-    }
-});
+const logger = createLogger('docker');
 
 type RunCommandOptions = {
     cwd?: string;

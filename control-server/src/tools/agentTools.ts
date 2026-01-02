@@ -12,12 +12,9 @@ import { runCommand } from '../utils/docker.js';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
-import pino from 'pino';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('agentTools');
 
 // Security: Allowlist of valid service names to prevent injection
 const ALLOWED_SERVICES = new Set([

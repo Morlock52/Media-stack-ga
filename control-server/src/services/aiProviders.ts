@@ -9,12 +9,9 @@
  * - GPT-4o-mini: Cost-effective for simple queries
  */
 
-import pino from 'pino';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('aiProviders');
 
 // Retry configuration with exponential backoff
 const MAX_RETRIES = 3;

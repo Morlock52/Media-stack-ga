@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges } from '../agents.js';
-import { readEnvFile, setEnvValue, removeEnvKey, PROJECT_ROOT } from '../utils/env.js';
+import { setEnvValue, removeEnvKey, PROJECT_ROOT, getOpenAIKey, getElevenLabsKey, getAnthropicKey } from '../utils/env.js';
 import { runCommand } from '../utils/docker.js';
 import { selectModelForQuery, estimateComplexity } from '../services/aiProviders.js';
 import { recordRequest } from '../services/metricsService.js';
@@ -115,26 +115,7 @@ type VoicePlanSummary = {
     notes?: string;
 };
 
-const getOpenAIKey = () => {
-    if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-    const envContent = readEnvFile();
-    const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
-    return match ? match[1].trim() : null;
-};
-
-const getElevenLabsKey = () => {
-    if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY;
-    const envContent = readEnvFile();
-    const match = envContent.match(/^ELEVENLABS_API_KEY=(.+)$/m);
-    return match ? match[1].trim() : null;
-};
-
-const getAnthropicKey = () => {
-    if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-    const envContent = readEnvFile();
-    const match = envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m);
-    return match ? match[1].trim() : null;
-};
+// API key getters are now imported from ../utils/env.js
 
 const assertValidTtsFormat = (format: unknown): 'mp3' | 'wav' | 'opus' => {
     if (format === 'wav' || format === 'opus' || format === 'mp3') return format;

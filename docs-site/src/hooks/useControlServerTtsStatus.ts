@@ -1,59 +1,51 @@
-import { useCallback, useEffect, useState } from 'react'
-import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
+import { useMemo } from 'react'
+import { useControlServerStatus, BaseControlServerStatus } from './useControlServerStatus'
 
-export type ControlServerTtsStatus = {
-  serverOnline: boolean | null
-  lastCheckedAt: string | null
+export interface ControlServerTtsStatus extends BaseControlServerStatus {
   defaultProvider?: string
   openai?: { hasKey: boolean; ttsModel?: string; ttsVoice?: string }
   elevenlabs?: { hasKey: boolean; ttsModel?: string; voiceId?: string }
 }
 
 export function useControlServerTtsStatus() {
-  const [status, setStatus] = useState<ControlServerTtsStatus>({
-    serverOnline: null,
-    lastCheckedAt: null,
+  const transform = useMemo(
+    () => (data: unknown) => {
+      const d = data as Record<string, unknown>
+      return {
+        defaultProvider: typeof d?.defaultProvider === 'string' ? d.defaultProvider : undefined,
+        openai: d?.openai
+          ? {
+              hasKey: Boolean((d.openai as Record<string, unknown>)?.hasKey),
+              ttsModel:
+                typeof (d.openai as Record<string, unknown>)?.ttsModel === 'string'
+                  ? ((d.openai as Record<string, unknown>).ttsModel as string)
+                  : undefined,
+              ttsVoice:
+                typeof (d.openai as Record<string, unknown>)?.ttsVoice === 'string'
+                  ? ((d.openai as Record<string, unknown>).ttsVoice as string)
+                  : undefined,
+            }
+          : undefined,
+        elevenlabs: d?.elevenlabs
+          ? {
+              hasKey: Boolean((d.elevenlabs as Record<string, unknown>)?.hasKey),
+              ttsModel:
+                typeof (d.elevenlabs as Record<string, unknown>)?.ttsModel === 'string'
+                  ? ((d.elevenlabs as Record<string, unknown>).ttsModel as string)
+                  : undefined,
+              voiceId:
+                typeof (d.elevenlabs as Record<string, unknown>)?.voiceId === 'string'
+                  ? ((d.elevenlabs as Record<string, unknown>).voiceId as string)
+                  : undefined,
+            }
+          : undefined,
+      }
+    },
+    []
+  )
+
+  return useControlServerStatus<ControlServerTtsStatus>({
+    endpoint: '/api/settings/tts',
+    transform,
   })
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/tts'), {
-        headers: { ...controlServerAuthHeaders() },
-      })
-      if (!res.ok) throw new Error('Control server unreachable')
-      const data = await res.json()
-      setStatus({
-        serverOnline: true,
-        lastCheckedAt: new Date().toISOString(),
-        defaultProvider: typeof data?.defaultProvider === 'string' ? data.defaultProvider : undefined,
-        openai: data?.openai
-          ? {
-              hasKey: Boolean(data.openai.hasKey),
-              ttsModel: typeof data.openai.ttsModel === 'string' ? data.openai.ttsModel : undefined,
-              ttsVoice: typeof data.openai.ttsVoice === 'string' ? data.openai.ttsVoice : undefined,
-            }
-          : undefined,
-        elevenlabs: data?.elevenlabs
-          ? {
-              hasKey: Boolean(data.elevenlabs.hasKey),
-              ttsModel: typeof data.elevenlabs.ttsModel === 'string' ? data.elevenlabs.ttsModel : undefined,
-              voiceId: typeof data.elevenlabs.voiceId === 'string' ? data.elevenlabs.voiceId : undefined,
-            }
-          : undefined,
-      })
-    } catch {
-      setStatus((prev) => ({
-        ...prev,
-        serverOnline: false,
-        lastCheckedAt: new Date().toISOString(),
-      }))
-    }
-  }, [])
-
-  useEffect(() => {
-    refresh()
-  }, [refresh])
-
-  return { ...status, refresh }
 }
-

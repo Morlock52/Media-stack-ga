@@ -277,46 +277,63 @@ export function buildAgentMessages(agent: any, userMessage: string, history: any
     return messages;
 }
 
-// Fallback responses when no API key
+// Fallback responses when no API key - optimized for voice (shorter, conversational)
 export const FALLBACK_RESPONSES: Record<string, { patterns: { match: string[], response: string }[], default: string }> = {
     setup: {
         patterns: [
-            { match: ['start', 'begin', 'first'], response: "Let's get started! First, make sure you have Docker installed. Run `docker --version` to check. Then we'll set up your .env file with your settings." },
-            { match: ['env', 'environment'], response: "The .env file contains all your configuration. Key settings:\n- PUID/PGID: Your user IDs (run `id` to find)\n- TIMEZONE: Your timezone (e.g., America/New_York)\n- CONFIG_ROOT: Where configs are stored\n- DOMAIN: Your domain name" },
-            { match: ['docker', 'compose'], response: "To start your stack:\n1. `cd` to your media-stack folder\n2. Run `docker compose up -d`\n3. Check status with `docker ps`\n\nTo stop: `docker compose down`" },
-            { match: ['puid', 'pgid', 'user id'], response: "**PUID (User ID)** and **PGID (Group ID)** ensure your containers can read/write your files.\n\nTo find yours:\n- **Linux/macOS**: Run `id` in terminal.\n- **Windows**: Use `1000` for both usually works." },
-            { match: ['update', 'upgrade'], response: "To update your stack:\n1. `docker compose pull`\n2. `docker compose up -d`\n3. `docker image prune -f` (optional, cleans up old images)" },
+            { match: ['start', 'begin', 'first', 'hello', 'hi', 'hey'], response: "Welcome! I'll help you set up your media stack. First, let's make sure Docker is installed. Type docker version in your terminal to check. Then we can configure your settings using this wizard." },
+            { match: ['env', 'environment'], response: "Your configuration lives in the dot-env file. The key settings are your timezone, user IDs for file permissions, and your domain name. The wizard will help you set all of these." },
+            { match: ['docker', 'compose'], response: "To start your stack, navigate to your media stack folder and run docker compose up dash-d. Check if containers are running with docker ps. To stop everything, use docker compose down." },
+            { match: ['puid', 'pgid', 'user id', 'permission'], response: "User and group IDs ensure containers can access your files. On Linux or Mac, run the id command to find yours. On Windows, using 1000 for both usually works fine." },
+            { match: ['update', 'upgrade'], response: "Updating is easy! Run docker compose pull to get new images, then docker compose up dash-d to restart with the updates." },
+            { match: ['plex'], response: "I can help you set up Plex! It's a popular media server that streams your content anywhere. Select it in the wizard and I'll walk you through the configuration." },
+            { match: ['jellyfin'], response: "Jellyfin is a great free alternative to Plex. No account required, fully open source. Select it in the wizard to add it to your stack." },
+            { match: ['sonarr', 'tv', 'shows'], response: "Sonarr automates TV show downloads. It monitors for new episodes and grabs them automatically. Pair it with Prowlarr for indexers and a download client like qBittorrent." },
+            { match: ['radarr', 'movie', 'movies'], response: "Radarr is like Sonarr but for movies. Add movies to your watchlist and it handles the rest. Works great with Prowlarr and qBittorrent." },
+            { match: ['vpn', 'gluetun', 'privacy'], response: "For privacy, I recommend Gluetun VPN. It routes your download traffic through a VPN. You'll need credentials from a VPN provider like Mullvad or ProtonVPN." },
         ],
-        default: "I'm the Setup Guide! I help with initial configuration. Ask me about:\n- Getting started with Docker\n- Configuring your .env file\n- Setting up directories and permissions"
+        default: "I'm here to help you set up your media stack! Tell me what services you want like Plex, Sonarr, or Jellyfin, and I'll configure them for you. You can also describe your goal and I'll suggest the right setup."
     },
     troubleshoot: {
         patterns: [
-            { match: ['log', 'error'], response: "To check logs:\n```\ndocker logs <container_name>\n```\n\nFor live logs: `docker logs -f <container_name>`\n\nCommon errors:\n- 'Permission denied' → Check PUID/PGID\n- 'Port in use' → Another service using that port\n- 'Network error' → Container networking issue" },
-            { match: ['restart', 'crash', 'loop'], response: "Container keeps restarting? Let's diagnose:\n1. Check logs: `docker logs <container>`\n2. Look for the FIRST error (scroll up)\n3. Common causes: bad config, missing env vars, permission issues\n\nQuick fix: `docker compose down && docker compose up -d`" },
-            { match: ['permission', 'denied', 'puid', 'pgid'], response: "Permission issues are common! Fix:\n1. Find your IDs: `id` (shows uid and gid)\n2. Update .env: PUID=1000, PGID=1000\n3. Fix ownership: `sudo chown -R 1000:1000 /path/to/config`\n4. Restart: `docker compose restart`" },
+            { match: ['log', 'error', 'logs'], response: "To check logs, run docker logs followed by the container name. For example, docker logs sonarr. Add dash-f to follow the logs in real time. Look for error messages, especially permission denied or connection refused." },
+            { match: ['restart', 'crash', 'loop', 'restarting'], response: "If a container keeps restarting, check its logs first with docker logs. Look at the very first error message. Common causes are missing environment variables, bad config files, or permission issues. Try docker compose down then docker compose up dash-d." },
+            { match: ['permission', 'denied', 'puid', 'pgid', 'access'], response: "Permission denied errors usually mean your user IDs are wrong. Run the id command to get your user and group IDs. Update PUID and PGID in your dot-env file to match. Then restart the container." },
+            { match: ['port', 'conflict', 'address already in use'], response: "Port conflict means something else is using that port. Run docker ps to see what's running. You can change the port mapping in your compose file, or stop the conflicting service." },
+            { match: ['network', 'connection', 'refused', 'timeout'], response: "Connection issues between containers often mean they're not on the same Docker network. Check that all services use the same network in your compose file. Also verify the container names are correct in your configuration." },
         ],
-        default: "I'm Dr. Debug! Describe your issue and I'll help diagnose it. Include:\n- Which container/service\n- Any error messages you see\n- What you were trying to do"
+        default: "I can help troubleshoot issues! Tell me which service is having problems and what error you're seeing. Common fixes involve checking logs, verifying permissions, and ensuring containers are on the same network."
     },
     apps: {
         patterns: [
-            { match: ['sonarr', 'tv'], response: "**Sonarr** (port 8989) manages TV shows.\n\nSetup:\n1. Add root folder (/tv)\n2. Connect to Prowlarr for indexers\n3. Add download client\n4. Search and add shows!\n\nPro tip: Use quality profiles to control file sizes." },
-            { match: ['radarr', 'movie'], response: "**Radarr** (port 7878) manages movies.\n\nSetup:\n1. Add root folder (/movies)\n2. Connect to Prowlarr\n3. Add download client\n4. Search and add movies!\n\nPro tip: Enable 'Upgrade Until' for automatic quality upgrades." },
-            { match: ['plex'], response: "**Plex** (port 32400) is your media server.\n\nSetup:\n1. Go to http://localhost:32400/web\n2. Sign in to Plex\n3. Add libraries (Movies, TV, Music)\n4. Enable Remote Access in settings\n\nPro tip: Use Plex Pass for hardware transcoding!" },
-            { match: ['prowlarr', 'indexer'], response: "**Prowlarr** (port 9696) manages indexers for all *arr apps.\n\nSetup:\n1. Add your indexers\n2. Go to Settings → Apps\n3. Add Sonarr, Radarr\n4. Sync will happen automatically!\n\nThis saves you from adding indexers to each app separately." },
+            { match: ['sonarr', 'tv show'], response: "Sonarr runs on port 8989 and automates TV show management. First add your media folder, then connect to Prowlarr for indexers, add your download client, and start adding shows. It'll grab new episodes automatically." },
+            { match: ['radarr', 'movie'], response: "Radarr runs on port 7878 and manages your movie collection. Add your movies folder, connect Prowlarr for indexers, set up your download client, then add movies to your wanted list. It'll find and download them for you." },
+            { match: ['plex'], response: "Plex runs on port 32400. Open localhost:32400/web in your browser, sign in with your Plex account, then add your media libraries. You can stream anywhere once remote access is enabled." },
+            { match: ['jellyfin'], response: "Jellyfin runs on port 8096. It's completely free with no account required. Access it at localhost:8096, create an admin user, then add your media libraries. Great privacy-focused alternative to Plex." },
+            { match: ['prowlarr', 'indexer'], response: "Prowlarr runs on port 9696 and manages indexers for all your arr apps. Add your indexers here, then connect Sonarr and Radarr in settings. Indexers will sync automatically to all connected apps." },
+            { match: ['overseerr', 'request'], response: "Overseerr runs on port 5055 and lets users request movies and shows. Connect it to Plex, then Sonarr and Radarr. Users can browse and request content which gets added to your arr apps automatically." },
+            { match: ['qbittorrent', 'torrent', 'download'], response: "qBittorrent runs on port 8080. Default login is admin with password adminadmin. Change this immediately! Set your download path and connect it to Sonarr and Radarr as your download client." },
+            { match: ['bazarr', 'subtitle'], response: "Bazarr handles subtitles automatically. Connect it to Sonarr and Radarr, add subtitle providers like OpenSubtitles, and it will download subtitles for your media automatically." },
         ],
-        default: "I'm the App Expert! Ask me about any app:\n- Plex, Jellyfin, Emby (media servers)\n- Sonarr, Radarr, Prowlarr (*arr stack)\n- Overseerr (requests)\n- qBittorrent, Gluetun (downloads + VPN)"
+        default: "I know all about the apps in your media stack! Ask me about Plex, Jellyfin, Sonarr, Radarr, Prowlarr, Overseerr, qBittorrent, or any other service. I'll explain how to set it up and configure it."
     },
     deploy: {
         patterns: [
-            { match: ['server', 'vps', 'cloud'], response: "**Server Requirements:**\n- Minimum: 2GB RAM, 2 CPU cores\n- Recommended: 4GB+ RAM, 4 cores\n- Storage: 20GB for configs + your media\n\nGood VPS providers:\n- Hetzner (great value)\n- DigitalOcean ($5-10/mo droplets)\n- Linode, Vultr" },
-            { match: ['ssh', 'connect'], response: "**SSH to your server:**\n```\nssh username@your-server-ip\n```\n\nWith key: `ssh -i ~/.ssh/key username@server`\n\nFirst time? Run:\n1. `apt update && apt upgrade`\n2. Install Docker\n3. Upload your configs via SCP" },
-            { match: ['cloudflare', 'tunnel', 'domain'], response: "**Cloudflare Tunnel** provides secure access without opening ports!\n\n1. Create tunnel in Cloudflare dashboard\n2. Copy tunnel token to .env\n3. Configure public hostnames:\n   - plex.yourdomain.com → localhost:32400\n   - request.yourdomain.com → localhost:5055\n\nNo firewall ports needed!" },
+            { match: ['server', 'vps', 'cloud', 'host'], response: "For a media stack, I recommend at least 2GB RAM and 2 CPU cores. 4GB RAM is better if you plan to transcode. Hetzner offers great value, DigitalOcean is beginner-friendly, and Linode is also solid. Storage depends on your media collection." },
+            { match: ['ssh', 'connect', 'remote'], response: "Connect to your server with SSH. Type ssh followed by your username, an at sign, and your server IP. First time connecting, update the system, install Docker, then upload your configuration files." },
+            { match: ['cloudflare', 'tunnel', 'domain', 'access'], response: "Cloudflare Tunnels let you access services securely without opening ports. Create a tunnel in the Cloudflare dashboard, copy the token to your dot-env file, then set up hostnames like plex.yourdomain.com pointing to localhost:32400." },
+            { match: ['secure', 'security', 'firewall', 'safe'], response: "For security, never expose Docker socket to the internet. Use strong passwords everywhere, enable two-factor authentication where possible, and keep your system updated. Cloudflare Tunnels with Authelia provide secure authenticated access." },
         ],
-        default: "I'm the Deploy Captain! I help get your stack running on real servers.\n\nAsk me about:\n- Server requirements and recommendations\n- SSH and remote access\n- Cloudflare tunnels for secure access\n- Security best practices"
+        default: "I can help deploy your stack to a real server! Ask about server requirements, SSH access, Cloudflare Tunnels for secure remote access, or security best practices. I'll guide you through the whole process."
     },
     general: {
-        patterns: [],
-        default: "Hi! I'm the Media Stack Assistant. I can help with:\n\n🚀 **Setup** - Initial configuration\n🔍 **Troubleshooting** - Fix problems\n📱 **App Help** - Learn about each app\n🚢 **Deployment** - Get running on a server\n\nWhat would you like help with?"
+        patterns: [
+            { match: ['hello', 'hi', 'hey', 'help'], response: "Hi there! I'm your media stack assistant. I can help you set up services like Plex, Sonarr, and Radarr, troubleshoot issues, or deploy to a server. What would you like to work on?" },
+            { match: ['what', 'can you', 'able'], response: "I can help with setting up your media stack, configuring services, troubleshooting problems, and deploying to servers. Tell me what you want to accomplish and I'll guide you through it." },
+            { match: ['recommend', 'suggest', 'should'], response: "For a typical setup, I recommend Plex or Jellyfin for streaming, Sonarr for TV shows, Radarr for movies, Prowlarr for indexers, and qBittorrent with Gluetun VPN for downloads. Overseerr is great if you want users to request content." },
+            { match: ['thank', 'thanks'], response: "You're welcome! Let me know if you need help with anything else. I'm here to make your media stack setup as smooth as possible." },
+        ],
+        default: "Hi! I'm your media stack assistant. I can help with setup, troubleshooting, app configuration, or deployment. Tell me what you'd like to work on, or describe your goal and I'll suggest the right approach."
     }
 };
 

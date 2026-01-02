@@ -64,20 +64,25 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const { openai, elevenlabs, defaultProvider } = useControlServerTtsStatus()
   const hasOpenAiTts = Boolean(openai?.hasKey)
   const hasElevenLabsTts = Boolean(elevenlabs?.hasKey)
-  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'elevenlabs' | 'browser' | 'off'>(() => 'browser')
+  // Default to browser TTS - works without any API keys
+  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'elevenlabs' | 'browser' | 'off'>('browser')
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const hasUserSetVoiceOutputRef = useRef(false)
+  // Track if we've shown the "no API key" welcome message
+  const hasShownNoApiKeyWelcomeRef = useRef(false)
   const transcriptIdRef = useRef(0)
   const currentAudioItemIdRef = useRef<number | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement>(null)
   const hasShownAiFallbackNoticeRef = useRef(false)
 
-  // Server-side STT
+  // Server-side STT - default to browser (works without API keys)
   const [sttStatus, setSttStatus] = useState<SttStatus | null>(null)
   const [voiceInput, setVoiceInput] = useState<'server' | 'browser' | 'realtime'>('browser')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const hasUserSetVoiceInputRef = useRef(false)
+  // Track if we should auto-upgrade to server STT when available
+  const hasCheckedSttRef = useRef(false)
 
   // Ref to hold partialAssistantResponse for use in callbacks (avoids stale closure)
   const partialAssistantResponseRef = useRef(partialAssistantResponse)
@@ -145,9 +150,12 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     onError: (err) => console.warn('Streaming TTS error:', err),
   })
 
-  // Fetch STT status on mount
+  // Fetch STT status on mount - but don't auto-upgrade away from browser
   useEffect(() => {
     const fetchSttStatus = async () => {
+      if (hasCheckedSttRef.current) return
+      hasCheckedSttRef.current = true
+
       try {
         const response = await fetch(buildControlServerUrl('/api/settings/stt'), {
           headers: controlServerAuthHeaders(),
@@ -155,17 +163,21 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         if (response.ok) {
           const data = await response.json()
           setSttStatus(data)
-          // Auto-select server STT if available and user hasn't chosen
-          if (data.hasKey && !hasUserSetVoiceInputRef.current) {
-            setVoiceInput('server')
+          // Only auto-select server STT if user explicitly hasn't chosen browser
+          // and server has a valid key - this keeps browser as the reliable default
+          if (data.hasKey && !hasUserSetVoiceInputRef.current && voiceInput === 'browser') {
+            // Optionally upgrade to server for better accuracy
+            // But don't force it - browser works without API keys
+            // setVoiceInput('server')
           }
         }
       } catch {
-        // Server STT not available
+        // Server STT not available - browser mode will work fine
+        setSttStatus(null)
       }
     }
     fetchSttStatus()
-  }, [])
+  }, [voiceInput])
 
   useEffect(() => {
     if (!hasOpenAiTts && voiceOutput === 'openai') setVoiceOutput('browser')
@@ -823,12 +835,24 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   }, [initializeSpeechRecognition])
 
   useEffect(() => {
-    if (isOpen && templateMode === 'newbie' && transcriptItems.length === 0) {
-      const greeting = "Hi! I'm your voice guide. Tell me about your media setup goals."
+    if (isOpen && transcriptItems.length === 0) {
+      // Show different greeting based on whether API keys are configured
+      const hasAnyApiKey = hasOpenAiTts || hasElevenLabsTts || sttStatus?.hasKey
+      let greeting: string
+
+      if (!hasAnyApiKey && !hasShownNoApiKeyWelcomeRef.current) {
+        greeting = "Hi! I'm your media stack assistant. I'm running in offline mode with browser voice, which works great for setup help. Ask me about Plex, Sonarr, or any service you want to configure!"
+        hasShownNoApiKeyWelcomeRef.current = true
+      } else if (templateMode === 'newbie') {
+        greeting = "Hi! I'm your voice guide. Tell me about your media setup goals."
+      } else {
+        greeting = "Voice assistant ready. How can I help with your media stack?"
+      }
+
       const itemId = addTranscriptItem('system', greeting, 'loading')
       speak(greeting, itemId)
     }
-  }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak])
+  }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak, hasOpenAiTts, hasElevenLabsTts, sttStatus?.hasKey])
 
   const stopRecording = useCallback(() => {
     if (voiceInput === 'realtime') {

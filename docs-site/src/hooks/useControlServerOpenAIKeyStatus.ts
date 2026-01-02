@@ -1,50 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
-import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
+import { useMemo } from 'react'
+import { useControlServerStatus, BaseControlServerStatus } from './useControlServerStatus'
 
-export type ControlServerOpenAIKeyStatus = {
-  serverOnline: boolean | null
+export interface ControlServerOpenAIKeyStatus extends BaseControlServerStatus {
   hasKey: boolean | null
-  lastCheckedAt: string | null
   model?: string
   ttsModel?: string
   ttsVoice?: string
 }
 
 export function useControlServerOpenAIKeyStatus() {
-  const [status, setStatus] = useState<ControlServerOpenAIKeyStatus>({
-    serverOnline: null,
-    hasKey: null,
-    lastCheckedAt: null,
+  const transform = useMemo(
+    () => (data: unknown) => {
+      const d = data as Record<string, unknown>
+      return {
+        hasKey: Boolean(d?.hasKey),
+        model: typeof d?.model === 'string' ? d.model : undefined,
+        ttsModel: typeof d?.ttsModel === 'string' ? d.ttsModel : undefined,
+        ttsVoice: typeof d?.ttsVoice === 'string' ? d.ttsVoice : undefined,
+      }
+    },
+    []
+  )
+
+  return useControlServerStatus<ControlServerOpenAIKeyStatus>({
+    endpoint: '/api/settings/openai-key',
+    transform,
+    initialState: { hasKey: null },
   })
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
-        headers: { ...controlServerAuthHeaders() },
-      })
-      if (!res.ok) throw new Error('Control server unreachable')
-      const data = await res.json()
-      setStatus({
-        serverOnline: true,
-        hasKey: Boolean(data?.hasKey),
-        lastCheckedAt: new Date().toISOString(),
-        model: typeof data?.model === 'string' ? data.model : undefined,
-        ttsModel: typeof data?.ttsModel === 'string' ? data.ttsModel : undefined,
-        ttsVoice: typeof data?.ttsVoice === 'string' ? data.ttsVoice : undefined,
-      })
-    } catch {
-      setStatus((prev) => ({
-        ...prev,
-        serverOnline: false,
-        hasKey: null,
-        lastCheckedAt: new Date().toISOString(),
-      }))
-    }
-  }, [])
-
-  useEffect(() => {
-    refresh()
-  }, [refresh])
-
-  return { ...status, refresh }
 }

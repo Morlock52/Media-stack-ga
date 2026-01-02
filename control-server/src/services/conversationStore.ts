@@ -8,12 +8,9 @@ import { readFile, writeFile, mkdir, readdir, unlink, stat } from 'fs/promises';
 import { join } from 'path';
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
 import { PROJECT_ROOT } from '../utils/env.js';
-import pino from 'pino';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('conversationStore');
 
 const CONVERSATIONS_DIR = join(PROJECT_ROOT, 'data', 'conversations');
 const INDEX_FILE = join(CONVERSATIONS_DIR, '_index.json');

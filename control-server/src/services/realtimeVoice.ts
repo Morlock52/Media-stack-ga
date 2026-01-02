@@ -7,23 +7,12 @@
  * The Realtime API provides sub-200ms latency for voice interactions.
  */
 
-import pino from 'pino';
-import { readEnvFile } from '../utils/env.js';
+import { getOpenAIKey } from '../utils/env.js';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('realtimeVoice');
 
 const REALTIME_API_URL = 'wss://api.openai.com/v1/realtime';
-
-// Helper to get OpenAI key from env var or .env file (same as ai.ts)
-const getOpenAIKey = (): string | null => {
-    if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-    const envContent = readEnvFile();
-    const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
-    return match ? match[1].trim() : null;
-};
 // Use GA version (2024-12-17) for production stability - avoid preview suffix
 const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-4o-realtime-preview-2024-12-17';
 // API version for latest features including semantic_vad

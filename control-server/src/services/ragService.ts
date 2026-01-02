@@ -8,12 +8,9 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
-import pino from 'pino';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('ragService');
 
 const DOCS_DIR = join(PROJECT_ROOT, 'docs');
 const KNOWLEDGE_BASE_ID = process.env.OPENAI_VECTOR_STORE_ID || '';

@@ -7,12 +7,9 @@
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
-import pino from 'pino';
+import { createLogger } from '../utils/logger.js';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-    transport: { target: 'pino-pretty', options: { colorize: true } }
-});
+const logger = createLogger('metrics');
 
 const METRICS_DIR = join(PROJECT_ROOT, 'data', 'metrics');
 const METRICS_FILE = join(METRICS_DIR, 'agent_metrics.json');
