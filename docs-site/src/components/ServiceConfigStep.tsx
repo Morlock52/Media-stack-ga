@@ -89,7 +89,7 @@ const preInstallConfigs: Record<string, {
     },
     notify: {
         fields: {},
-        postInstallNote: 'After install: Create a Notifiarr account and add the API key to each *Arr app'
+        postInstallNote: 'After install: 1) Create free account at notifiarr.com 2) Add your API key to .env 3) Configure Discord webhooks in Notifiarr web UI - auto-syncs with *Arr apps!'
     },
     
     // Utility Apps

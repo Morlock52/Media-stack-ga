@@ -22,12 +22,12 @@ interface ReviewGenerateStepProps {
 }
 
 export function ReviewGenerateStep({
-    config, mode, selectedServices, appliedTemplateId,
+    config, mode, selectedServices, appliedTemplateId: _appliedTemplateId,
     generateEnvFile, generateAutheliaYaml: _generateAutheliaYaml, generateCloudflareYaml: _generateCloudflareYaml,
     copyToClipboard, downloadFile, downloadAllFiles, handleShare, copied
 }: ReviewGenerateStepProps) {
     const [showDeployModal, setShowDeployModal] = useState(false)
-    const isLocalInstallTemplate = appliedTemplateId === 'local-install'
+    const isLocalMode = config.deploymentMode === 'local'
 
     // Deploy state
     const [deployStatus, setDeployStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle')
@@ -168,7 +168,7 @@ export function ReviewGenerateStep({
 
     // Generate hosts file entry for local deployment
     const serverIP = '127.0.0.1' // User should replace with their server IP
-    const localDomains = ['home.local', 'plex.local', 'sonarr.local', 'radarr.local', 'prowlarr.local', 'bazarr.local', 'overseerr.local', 'qbit.local', 'tautulli.local', 'traefik.local', 'jellyfin.local']
+    const localDomains = ['home.local', 'plex.local', 'sonarr.local', 'radarr.local', 'prowlarr.local', 'bazarr.local', 'overseerr.local', 'qbit.local', 'tautulli.local', 'notifiarr.local', 'traefik.local', 'jellyfin.local']
     const hostsEntry = `${serverIP} ${localDomains.join(' ')}`
 
     const storageEntries = STORAGE_CATEGORIES.filter((category) => {
@@ -199,6 +199,16 @@ export function ReviewGenerateStep({
                 <div className="p-4 rounded-xl bg-muted/40 border border-border">
                     <h3 className="text-sm font-semibold text-foreground/80 mb-4">Configuration Summary</h3>
                     <dl className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                            <dt className="text-muted-foreground">Deployment</dt>
+                            <dd className={`flex items-center gap-1.5 font-medium ${config.deploymentMode === 'local' ? 'text-emerald-400' : 'text-blue-400'}`}>
+                                {config.deploymentMode === 'local' ? (
+                                    <><Home className="w-3.5 h-3.5" /> Local Network</>
+                                ) : (
+                                    <><Globe className="w-3.5 h-3.5" /> Cloud / Remote</>
+                                )}
+                            </dd>
+                        </div>
                         <div className="flex justify-between">
                             <dt className="text-muted-foreground">Domain</dt>
                             <dd className="text-foreground font-mono">{config.domain}</dd>
@@ -349,7 +359,7 @@ export function ReviewGenerateStep({
                     <Package className="w-5 h-5" />
                     Download All Files
                 </button>
-                {isLocalInstallTemplate && (
+                {isLocalMode && (
                     <button
                         onClick={() => setShowDeployModal(true)}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20 transition-all btn-lift"

@@ -853,11 +853,13 @@ services:
       - 2342
 
   # ===========================================
-  # NOTIFIARR - Notifications
+  # NOTIFIARR - Unified Notifications & Monitoring
+  # https://notifiarr.com - Integrates with Discord, Plex, *Arr apps
   # ===========================================
   notifiarr:
     container_name: notifiarr
-    image: golift/notifiarr
+    hostname: notifiarr
+    image: golift/notifiarr:latest
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -866,17 +868,34 @@ services:
     volumes:
       - ${CONFIG_ROOT}/notifiarr:/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/utmp:/var/run/utmp:ro
     environment:
       - TZ=${TIMEZONE}
+      - DN_API_KEY=${NOTIFIARR_API_KEY:-}
+      - DN_PLEX_URL=http://plex:32400
+      - DN_PLEX_TOKEN=${PLEX_TOKEN:-}
+      - DN_SONARR_0_URL=http://sonarr:8989
+      - DN_SONARR_0_API_KEY=${SONARR_API_KEY:-}
+      - DN_RADARR_0_URL=http://radarr:7878
+      - DN_RADARR_0_API_KEY=${RADARR_API_KEY:-}
+      - DN_PROWLARR_0_URL=http://prowlarr:9696
+      - DN_PROWLARR_0_API_KEY=${PROWLARR_API_KEY:-}
+      - DN_BAZARR_0_URL=http://bazarr:6767
+      - DN_BAZARR_0_API_KEY=${BAZARR_API_KEY:-}
     networks:
       - mediastack
     profiles: ["notify"]
     labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notifiarr.entrypoints=web"
+      - "traefik.http.routers.notifiarr.rule=HostRegexp(`notifiarr.{domain:.+}`)"
+      - "traefik.http.routers.notifiarr.priority=10"
+      - "traefik.http.services.notifiarr.loadbalancer.server.port=5454"
       - "homepage.group=Monitoring"
       - "homepage.name=Notifiarr"
       - "homepage.icon=notifiarr.png"
       - "homepage.href=http://notifiarr.${DOMAIN}"
-      - "homepage.description=Notifications"
+      - "homepage.description=Unified notifications & monitoring"
 
   # ===========================================
   # LOKI - Log Aggregation

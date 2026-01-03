@@ -50,12 +50,12 @@ export const templates: Template[] = [
         detailedDescription: 'Perfect for home networks where you only need local access. Uses Traefik as a simple reverse proxy without Cloudflare tunnels or Authelia authentication. Access your services via *.local domains (e.g., plex.local, sonarr.local). Just set a password and deploy!',
         icon: '🏠',
         difficulty: 'beginner',
-        services: ['plex', 'arr', 'torrent'],
+        services: ['plex', 'arr', 'torrent', 'notify'],
         highlights: [
             'Access via *.local domains (plex.local, sonarr.local)',
             'No Cloudflare or external services needed',
             'Simple Traefik reverse proxy included',
-            'Just needs a password to get started',
+            'Notifiarr for Discord notifications',
             'One-click deploy ready'
         ],
         config: {
@@ -80,7 +80,8 @@ export const templates: Template[] = [
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'cloud'
         }
     },
     {
@@ -90,16 +91,17 @@ export const templates: Template[] = [
         detailedDescription: 'A completely free and open-source media stack. Jellyfin requires no account and has no premium tiers—all features are free. Combined with the *Arr automation suite and VPN-protected downloads, this gives you a powerful media setup without any subscription costs.',
         icon: '🆓',
         difficulty: 'beginner',
-        services: ['jellyfin', 'arr', 'torrent', 'vpn'],
+        services: ['jellyfin', 'arr', 'torrent', 'vpn', 'notify'],
         highlights: [
             '100% free, no subscriptions needed',
             'No account required for Jellyfin',
             'Full automation with *Arr stack',
-            'Privacy-focused with VPN'
+            'Notifiarr notifications included'
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'cloud'
         }
     },
     {
@@ -118,26 +120,28 @@ export const templates: Template[] = [
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'cloud'
         }
     },
     {
         id: 'minimal',
         name: 'Minimal Setup',
-        description: 'Just the basics - media server without automation',
-        detailedDescription: 'A simple, lightweight setup for users who just want to stream their existing media collection. Perfect if you already have media files and just need a way to access them from any device. No automation, no complexity—just Plex serving your content beautifully.',
+        description: 'Just the basics - media server with notifications',
+        detailedDescription: 'A simple, lightweight setup for users who just want to stream their existing media collection. Perfect if you already have media files and just need a way to access them from any device. Includes Notifiarr for Discord notifications about playback and server status.',
         icon: '🔹',
         difficulty: 'beginner',
-        services: ['plex'],
+        services: ['plex', 'notify'],
         highlights: [
-            'Simple one-service setup',
+            'Simple two-service setup',
             'Stream existing media library',
-            'Low resource usage',
+            'Discord notifications via Notifiarr',
             'Easy to maintain'
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'local'
         }
     },
     {
@@ -147,16 +151,17 @@ export const templates: Template[] = [
         detailedDescription: 'Built for households with multiple simultaneous viewers or users who need to stream to devices that require transcoding. Includes Tdarr for pre-transcoding your library to optimal formats, reducing real-time CPU load. Perfect for sharing with family members on various devices.',
         icon: '🚀',
         difficulty: 'intermediate',
-        services: ['plex', 'transcode', 'arr', 'stats'],
+        services: ['plex', 'transcode', 'arr', 'stats', 'notify'],
         highlights: [
             'Pre-transcode library for smooth playback',
             'Handle multiple simultaneous streams',
             'Monitor performance with Tautulli',
-            'Automated content acquisition'
+            'Notifiarr notifications included'
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'cloud'
         }
     },
     {
@@ -166,16 +171,17 @@ export const templates: Template[] = [
         detailedDescription: 'Security and privacy are the priority with this stack. All download traffic is routed through a VPN container, and Jellyfin requires no external account or telemetry. Your ISP and anyone else watching your network will only see encrypted VPN traffic.',
         icon: '🔒',
         difficulty: 'intermediate',
-        services: ['jellyfin', 'torrent', 'vpn', 'arr'],
+        services: ['jellyfin', 'torrent', 'vpn', 'arr', 'notify'],
         highlights: [
             'All downloads through VPN tunnel',
             'No external accounts required',
-            'No telemetry or tracking',
+            'Notifiarr for download alerts',
             'ISP cannot see your activity'
         ],
         config: {
             puid: '1000',
-            pgid: '1000'
+            pgid: '1000',
+            deploymentMode: 'local'
         }
     }
 ]

@@ -73,6 +73,7 @@ BAZARR_URL=http://bazarr.local
 OVERSEERR_URL=http://overseerr.local
 QBITTORRENT_URL=http://qbit.local
 TAUTULLI_URL=http://tautulli.local
+NOTIFIARR_URL=http://notifiarr.local
 TRAEFIK_URL=http://traefik.local
 `
         : `# =============================================================================
@@ -144,6 +145,10 @@ BAZARR_API_KEY=
 OVERSEERR_API_KEY=
 TAUTULLI_API_KEY=
 PORTAINER_TOKEN=
+
+# Notifiarr - Unified Notifications (https://notifiarr.com)
+# Get your API key from: https://notifiarr.com/profile (requires free account)
+NOTIFIARR_API_KEY=
 
 # Plex Claim Token (https://www.plex.tv/claim)
 PLEX_CLAIM=${config.plexClaim || ''}

@@ -112,8 +112,8 @@ test.describe('Docs Site Smoke Tests', () => {
     await page.evaluate(() => localStorage.clear())
     await page.reload()
 
-    // Start wizard
-    await page.getByRole('button', { name: /start configuration/i }).first().click()
+    // Start wizard (button text varies by deployment mode selected)
+    await page.getByRole('button', { name: /continue with.*(local|cloud).*setup/i }).first().click()
 
     // Step 2: Basic config (domain + password required)
     const domain = 'mydomain.net'
@@ -200,7 +200,7 @@ test.describe('Docs Site Smoke Tests', () => {
     await page.evaluate(() => localStorage.clear())
     await page.reload()
 
-    await page.getByRole('button', { name: /start configuration/i }).first().click()
+    await page.getByRole('button', { name: /continue with.*(local|cloud).*setup/i }).first().click()
 
     await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
 
