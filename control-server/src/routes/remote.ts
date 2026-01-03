@@ -7,6 +7,7 @@ import { PROJECT_ROOT } from '../utils/env.js';
 import { RemoteArrBootstrapRequest, RemoteDeployRequest } from '../types/index.js';
 import { ARR_SERVICES } from '../services/arrService.js';
 import { z } from 'zod';
+import { getErrorMessage } from '../utils/errors.js';
 
 const COMPOSE_FILE = path.join(PROJECT_ROOT, 'docker-compose.yml');
 
@@ -23,7 +24,7 @@ const getRemoteDeployLockMs = () => {
 const getDeployLockKey = (host: string, port: number, username: string) => `${username}@${host}:${port}`;
 
 // Basic guard to prevent remote-command injection via deployPath
-const sanitizeRemotePath = (input: any) => {
+const sanitizeRemotePath = (input: unknown) => {
     const fallbackPath = '~/media-stack';
     const candidate = typeof input === 'string' && input.trim().length ? input.trim() : fallbackPath;
     if (!/^[-@./A-Za-z0-9_~]+$/.test(candidate)) {
@@ -34,7 +35,7 @@ const sanitizeRemotePath = (input: any) => {
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const sanitizeRemoteFilePath = (input: any) => {
+const sanitizeRemoteFilePath = (input: unknown) => {
     const fallbackPath = '~/media-stack/.env';
     const candidate = typeof input === 'string' && input.trim().length ? input.trim() : fallbackPath;
     if (!/^[-@./A-Za-z0-9_~]+$/.test(candidate)) {
@@ -93,9 +94,12 @@ const getSshOptions = (acceptNewHostKey: boolean = false) => {
 
     if (acceptNewHostKey) {
         // Accept new or changed host keys (less secure, user explicitly requested)
-        options.push('-o', 'StrictHostKeyChecking=accept-new');
+        // Use 'no' to bypass host key checking entirely when user confirms trust
+        options.push('-o', 'StrictHostKeyChecking=no');
+        options.push('-o', 'UserKnownHostsFile=/dev/null');
     } else {
-        // Default: Reject changed keys but accept new ones on first connection
+        // Default: Trust-On-First-Use (TOFU) - accept new keys, reject changed keys
+        // This protects against MITM attacks on subsequent connections
         options.push('-o', 'StrictHostKeyChecking=accept-new');
     }
 
@@ -437,9 +441,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         let safeDeployPath;
         try {
             safeDeployPath = sanitizeRemotePath(deployPath);
-        } catch (error: any) {
-            fastify.log.warn({ host, username, error: error?.message }, '[remote-deploy] validation failed: invalid deploy path');
-            return reply.status(400).send({ error: error.message });
+        } catch (error: unknown) {
+            fastify.log.warn({ host, username, error: getErrorMessage(error) }, '[remote-deploy] validation failed: invalid deploy path');
+            return reply.status(400).send({ error: getErrorMessage(error) });
         }
 
         const sshConfig: SSHConfig = {
@@ -638,7 +642,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 }
 
                 steps[steps.length - 1].status = 'done';
-            } catch (configErr: any) {
+            } catch (configErr: unknown) {
                 fastify.log.warn({ err: configErr }, '[remote-deploy] Config upload partially failed');
                 steps[steps.length - 1].status = 'done'; // Continue anyway, not critical
             }
@@ -820,7 +824,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 serverInfo: { host, deployPath: remoteDeployPath }
             };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (steps.length > 0) {
                 steps[steps.length - 1].status = 'error';
             }
@@ -830,7 +834,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             );
             return reply.status(200).send({
                 success: false,
-                error: cleanRemoteOutput(error?.message || '') || 'Remote deployment failed',
+                error: cleanRemoteOutput(getErrorMessage(error)) || 'Remote deployment failed',
                 steps,
                 remoteContainers
             });
@@ -902,8 +906,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         let safeEnvPath: string;
         try {
             safeEnvPath = sanitizeRemoteFilePath(envPath);
-        } catch (error: any) {
-            return reply.status(400).send({ success: false, error: error.message });
+        } catch (error: unknown) {
+            return reply.status(400).send({ success: false, error: getErrorMessage(error) });
         }
 
         const scanConfig: SSHConfig = {
@@ -916,7 +920,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         };
 
         const resolvedEnvHost = (envHost || '').trim() || scanConfig.host;
-        const resolvedEnvPort = typeof (envPort as any) === 'string' ? parseInt(envPort as any) : (envPort || scanConfig.port);
+        const resolvedEnvPort = typeof envPort === 'string' ? parseInt(envPort) : (envPort || scanConfig.port);
         const resolvedEnvUsername = (envUsername || '').trim() || scanConfig.username;
         const resolvedEnvAuthType: 'key' | 'password' = envAuthType || scanConfig.authType;
         const resolvedEnvPrivateKey = typeof envPrivateKey === 'string' && envPrivateKey.trim() ? envPrivateKey : scanConfig.privateKey;
@@ -1074,11 +1078,11 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 env: { host: envConfig.host, path: safeEnvPath },
                 scan: { host: scanConfig.host },
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error, host, username }, '[arr/bootstrap-remote] failed');
             return reply.status(200).send({
                 success: false,
-                error: cleanRemoteOutput(error?.message || '') || 'Remote bootstrap failed',
+                error: cleanRemoteOutput(getErrorMessage(error)) || 'Remote bootstrap failed',
                 keys: extractedKeys,
                 env: { host: envConfig.host, path: safeEnvPath },
                 scan: { host: scanConfig.host },
@@ -1129,8 +1133,8 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         let safeEnvPath: string;
         try {
             safeEnvPath = sanitizeRemoteFilePath(envPath);
-        } catch (error: any) {
-            return reply.status(400).send({ success: false, error: error.message });
+        } catch (error: unknown) {
+            return reply.status(400).send({ success: false, error: getErrorMessage(error) });
         }
 
         const scanConfig: SSHConfig = {
@@ -1143,7 +1147,7 @@ export async function remoteRoutes(fastify: FastifyInstance) {
         };
 
         const resolvedEnvHost = (envHost || '').trim() || scanConfig.host;
-        const resolvedEnvPort = typeof (envPort as any) === 'string' ? parseInt(envPort as any) : (envPort || scanConfig.port);
+        const resolvedEnvPort = typeof envPort === 'string' ? parseInt(envPort) : (envPort || scanConfig.port);
         const resolvedEnvUsername = (envUsername || '').trim() || scanConfig.username;
         const resolvedEnvAuthType: 'key' | 'password' = envAuthType || scanConfig.authType;
         const resolvedEnvPrivateKey = typeof envPrivateKey === 'string' && envPrivateKey.trim() ? envPrivateKey : scanConfig.privateKey;
@@ -1299,12 +1303,12 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 env: { host: envConfig.host, path: safeEnvPath },
             });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error, host, username }, '[arr/auto-bootstrap-remote] failed');
             return reply.status(200).send({
                 success: false,
                 step: 'error',
-                error: cleanRemoteOutput(error?.message || '') || 'Auto-bootstrap failed',
+                error: cleanRemoteOutput(getErrorMessage(error)) || 'Auto-bootstrap failed',
                 keys: extractedKeys,
                 services: serviceStatuses,
             });
@@ -1412,11 +1416,11 @@ export async function remoteRoutes(fastify: FastifyInstance) {
                 message
             };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error, host, username }, '[remote-deploy/test] failed');
             return reply.status(500).send({
                 success: false,
-                error: error.message
+                error: getErrorMessage(error)
             });
         }
     });

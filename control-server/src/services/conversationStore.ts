@@ -33,7 +33,7 @@ export interface ConversationMessage {
     content: string;
     timestamp: string;
     agent?: string;
-    toolCall?: { name: string; result?: any };
+    toolCall?: { name: string; result?: unknown };
     tokens?: number;
 }
 
@@ -44,7 +44,7 @@ export interface Conversation {
     messages: ConversationMessage[];
     metadata?: {
         agent?: string;
-        plan?: any;
+        plan?: unknown;
         userAgent?: string;
         totalTokens?: number;
         lastModel?: string;

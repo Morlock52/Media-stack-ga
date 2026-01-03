@@ -1,6 +1,17 @@
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT } from '../data/storagePlan'
 import type { SetupConfig } from '../store/setupStore'
 
+/**
+ * Generate a cryptographically secure random string for secrets
+ * Uses Web Crypto API for secure random generation
+ */
+function generateSecureSecret(length: number = 32): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const array = new Uint8Array(length)
+    crypto.getRandomValues(array)
+    return Array.from(array, (byte) => chars[byte % chars.length]).join('')
+}
+
 export function generateEnvFile(config: SetupConfig, selectedServices: string[]): string {
     const profiles = Array.from(new Set(selectedServices)).join(',')
     const storagePlan = config.storagePlan || createDefaultStoragePlan(DEFAULT_DATA_ROOT)
@@ -71,12 +82,13 @@ TRAEFIK_URL=http://traefik.local
 DEPLOYMENT_MODE=cloud
 # Cloudflare Tunnel token (get from Zero Trust dashboard)
 # Generate at: https://one.dash.cloudflare.com → Networks → Tunnels → Create
-CLOUDFLARE_TUNNEL_TOKEN=${config.cloudflareToken || 'changeme'}
+CLOUDFLARE_TUNNEL_TOKEN=${config.cloudflareToken || ''}
 
-# Authelia Secrets (Generate strictly random strings for production)
-AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=changeme_random_string
-AUTHELIA_SESSION_SECRET=changeme_random_string
-AUTHELIA_STORAGE_ENCRYPTION_KEY=changeme_random_string
+# Authelia Secrets (Auto-generated secure random strings)
+# IMPORTANT: Keep these secrets safe and do not share them
+AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${generateSecureSecret(64)}
+AUTHELIA_SESSION_SECRET=${generateSecureSecret(64)}
+AUTHELIA_STORAGE_ENCRYPTION_KEY=${generateSecureSecret(64)}
 `
 
     return `# .env configuration for mediastack
@@ -109,13 +121,20 @@ DOWNLOADS_PATH=${downloadsPath}
 
 ${deploymentSection}
 # =============================================================================
+# DATABASE CREDENTIALS
+# =============================================================================
+# PostgreSQL (required for *Arr apps - auto-generated secure credentials)
+POSTGRES_USER=mediastack
+POSTGRES_PASSWORD=${generateSecureSecret(32)}
+
+# =============================================================================
 # SERVICE CREDENTIALS & SECRETS
 # =============================================================================
-# Passwords
-REDIS_PASSWORD=${config.password}
-PHOTOPRISM_ADMIN_PASSWORD=changeme
+# Passwords (auto-generated if not provided)
+REDIS_PASSWORD=${config.password || generateSecureSecret(32)}
+PHOTOPRISM_ADMIN_PASSWORD=${config.password || generateSecureSecret(24)}
 
-# API Keys (Fill these in after setting up services)
+# API Keys (auto-populated after service initialization via bootstrap)
 PLEX_TOKEN=
 JELLYFIN_API_KEY=
 SONARR_API_KEY=

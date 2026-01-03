@@ -13,6 +13,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { createLogger } from '../utils/logger.js';
+import { getErrorMessage } from '../utils/errors.js';
 
 const logger = createLogger('agentTools');
 
@@ -76,10 +77,16 @@ function validateFilePath(filePath: string | undefined): { valid: boolean; sanit
     return { valid: true, sanitized };
 }
 
-export interface ToolResult {
+export interface ToolResult<T = unknown> {
     success: boolean;
-    data?: any;
+    data?: T;
     error?: string;
+}
+
+// Specific result type for checkServiceHealth
+interface HealthCheckData {
+    services: ServiceHealth[];
+    message?: string;
 }
 
 export interface ServiceHealth {
@@ -97,7 +104,7 @@ export interface EnvDiff {
     different: string[];
 }
 
-export async function checkServiceHealth(serviceName?: string): Promise<ToolResult> {
+export async function checkServiceHealth(serviceName?: string): Promise<ToolResult<HealthCheckData>> {
     try {
         // Validate service name if provided
         if (serviceName) {
@@ -116,10 +123,10 @@ export async function checkServiceHealth(serviceName?: string): Promise<ToolResu
       const output = await runCommand('docker', args, { timeoutMs: 10000 });
 
       if (!output.trim()) {
-              return { 
-                        success: true, 
-                        data: serviceName 
-                          ? { message: `Service "${serviceName}" not found` }
+              return {
+                        success: true,
+                        data: serviceName
+                          ? { services: [], message: `Service "${serviceName}" not found` }
                                     : { services: [], message: 'No services running' }
               };
       }
@@ -155,9 +162,9 @@ export async function checkServiceHealth(serviceName?: string): Promise<ToolResu
       }
 
       return { success: true, data: { services } };
-    } catch (err: any) {
+    } catch (err: unknown) {
           logger.error({ err, serviceName }, 'check_service_health failed');
-          return { success: false, error: err.message };
+          return { success: false, error: getErrorMessage(err) };
     }
 }
 
@@ -180,13 +187,13 @@ export async function restartService(serviceName: string, mode: 'graceful' | 'ha
         }
 
       const health = await checkServiceHealth(serviceName);
-          return { 
-                  success: true, 
+          return {
+                  success: true,
                   data: { message: `Service "${serviceName}" restarted (${mode})`, currentStatus: health.data }
           };
-    } catch (err: any) {
+    } catch (err: unknown) {
           logger.error({ err, serviceName, mode }, 'restart_service failed');
-          return { success: false, error: err.message };
+          return { success: false, error: getErrorMessage(err) };
     }
 }
 
@@ -214,13 +221,13 @@ export async function restartService(serviceName: string, mode: 'graceful' | 'ha
                                                 if (!(key in exampleVars)) diff.extra.push(key);
                                         }
 
-                                    return { 
-                                            success: true, 
+                                    return {
+                                            success: true,
                                             data: { diff, summary: { missingCount: diff.missing.length, extraCount: diff.extra.length, isComplete: diff.missing.length === 0 } }
                                     };
-                                  } catch (err: any) {
+                                  } catch (err: unknown) {
                                         logger.error({ err }, 'generate_env_diff failed');
-                                        return { success: false, error: err.message };
+                                        return { success: false, error: getErrorMessage(err) };
                                   }
                               }
 
@@ -230,39 +237,41 @@ export async function runPostDeployCheck(): Promise<ToolResult> {
   try {
         await runCommand('docker', ['info'], { timeoutMs: 5000 });
         checks.push({ name: 'Docker Daemon', status: 'pass' });
-  } catch (err: any) {
-        checks.push({ name: 'Docker Daemon', status: 'fail', message: err.message });
+  } catch (err: unknown) {
+        checks.push({ name: 'Docker Daemon', status: 'fail', message: getErrorMessage(err) });
   }
 
   const coreServices = ['plex', 'sonarr', 'radarr', 'prowlarr'];
     for (const service of coreServices) {
           try {
                   const result = await checkServiceHealth(service);
-                  if (result.success && result.data?.services?.length > 0) {
-                            const svc = result.data.services[0];
-                            checks.push({ 
-                                                  name: `Service: ${service}`, 
+                  const services = result.data?.services ?? [];
+                  if (result.success && services.length > 0) {
+                            const svc = services[0];
+                            checks.push({
+                                                  name: `Service: ${service}`,
                                         status: svc.status === 'running' ? 'pass' : 'fail',
                                         message: svc.status !== 'running' ? `Status: ${svc.status}` : undefined
                             });
                   } else {
                             checks.push({ name: `Service: ${service}`, status: 'skip', message: 'Not deployed' });
                   }
-          } catch (err: any) {
-                  checks.push({ name: `Service: ${service}`, status: 'fail', message: err.message });
+          } catch (err: unknown) {
+                  checks.push({ name: `Service: ${service}`, status: 'fail', message: getErrorMessage(err) });
           }
     }
 
   try {
         const vpnHealth = await checkServiceHealth('gluetun');
-        if (vpnHealth.success && vpnHealth.data?.services?.length > 0 && vpnHealth.data.services[0].status === 'running') {
+        const vpnServices = vpnHealth.data?.services ?? [];
+        if (vpnHealth.success && vpnServices.length > 0 && vpnServices[0].status === 'running') {
                 const vpnIp = await runCommand('docker', ['exec', 'gluetun', 'wget', '-qO-', 'ifconfig.me'], { timeoutMs: 10000 });
                 checks.push({ name: 'VPN Connectivity', status: 'pass', message: `External IP: ${vpnIp.trim()}` });
         } else {
                 checks.push({ name: 'VPN Connectivity', status: 'skip', message: 'Gluetun not deployed or not running' });
         }
-  } catch (err: any) {
-        checks.push({ name: 'VPN Connectivity', status: 'fail', message: err.message });
+  } catch (err: unknown) {
+        checks.push({ name: 'VPN Connectivity', status: 'fail', message: getErrorMessage(err) });
   }
 
   const passed = checks.filter(c => c.status === 'pass').length;
@@ -285,9 +294,9 @@ export async function listRunningServices(): Promise<ToolResult> {
       });
 
       return { success: true, data: { services, count: services.length, categories: categorizeServices(services) } };
-    } catch (err: any) {
+    } catch (err: unknown) {
           logger.error({ err }, 'list_running_services failed');
-          return { success: false, error: err.message };
+          return { success: false, error: getErrorMessage(err) };
     }
 }
 
@@ -400,9 +409,9 @@ export async function analyzeLogs(
                 service: validatedName
             }
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
         logger.error({ err, serviceName: validatedName }, 'analyze_logs failed');
-        return { success: false, error: err.message };
+        return { success: false, error: getErrorMessage(err) };
     }
 }
 
@@ -414,7 +423,7 @@ export async function networkDiagnostics(options: {
     checkInternet?: boolean;
 } = {}): Promise<ToolResult> {
     const { checkDns = true, checkPorts = [], checkVpn = true, checkInternet = true } = options;
-    const results: Array<{ check: string; status: 'pass' | 'fail' | 'skip'; message?: string; data?: any }> = [];
+    const results: Array<{ check: string; status: 'pass' | 'fail' | 'skip'; message?: string; data?: unknown }> = [];
 
     try {
         // Check internet connectivity
@@ -427,8 +436,8 @@ export async function networkDiagnostics(options: {
                 } else {
                     results.push({ check: 'Internet Connectivity', status: 'fail', message: 'Cannot reach external services' });
                 }
-            } catch (err: any) {
-                results.push({ check: 'Internet Connectivity', status: 'fail', message: err.message });
+            } catch (err: unknown) {
+                results.push({ check: 'Internet Connectivity', status: 'fail', message: getErrorMessage(err) });
             }
         }
 
@@ -449,14 +458,15 @@ export async function networkDiagnostics(options: {
         if (checkVpn) {
             try {
                 const vpnHealth = await checkServiceHealth('gluetun');
-                if (vpnHealth.success && vpnHealth.data?.services?.length > 0 && vpnHealth.data.services[0].status === 'running') {
+                const vpnServices = vpnHealth.data?.services ?? [];
+                if (vpnHealth.success && vpnServices.length > 0 && vpnServices[0].status === 'running') {
                     const vpnIp = await runCommand('docker', ['exec', 'gluetun', 'wget', '-qO-', 'ifconfig.me'], { timeoutMs: 10000 });
                     results.push({ check: 'VPN Connectivity', status: 'pass', message: `VPN IP: ${vpnIp.trim()}`, data: { vpnIp: vpnIp.trim() } });
                 } else {
                     results.push({ check: 'VPN Connectivity', status: 'skip', message: 'Gluetun not running' });
                 }
-            } catch (err: any) {
-                results.push({ check: 'VPN Connectivity', status: 'fail', message: err.message });
+            } catch (err: unknown) {
+                results.push({ check: 'VPN Connectivity', status: 'fail', message: getErrorMessage(err) });
             }
         }
 
@@ -482,9 +492,9 @@ export async function networkDiagnostics(options: {
                 healthy: failed === 0
             }
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
         logger.error({ err }, 'network_diagnostics failed');
-        return { success: false, error: err.message };
+        return { success: false, error: getErrorMessage(err) };
     }
 }
 
@@ -502,11 +512,12 @@ export async function optimizeConfig(
     try {
         // Get current resource usage
         const health = await checkServiceHealth(validatedName);
-        if (!health.success || !health.data?.services?.length) {
+        const healthServices = health.data?.services ?? [];
+        if (!health.success || healthServices.length === 0) {
             return { success: false, error: `Service ${validatedName} not found or not running` };
         }
 
-        const service = health.data.services[0];
+        const service = healthServices[0];
         const suggestions: Array<{ category: string; suggestion: string; priority: 'high' | 'medium' | 'low' }> = [];
 
         // Service-specific optimization suggestions
@@ -568,9 +579,9 @@ export async function optimizeConfig(
                 recommendedActions: suggestions.filter(s => s.priority === 'high').map(s => s.suggestion)
             }
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
         logger.error({ err, serviceName: validatedName }, 'optimize_config failed');
-        return { success: false, error: err.message };
+        return { success: false, error: getErrorMessage(err) };
     }
 }
 

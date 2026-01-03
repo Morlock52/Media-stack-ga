@@ -10,6 +10,7 @@
  */
 
 import { createLogger } from '../utils/logger.js';
+import { getErrorMessage } from '../utils/errors.js';
 
 const logger = createLogger('aiProviders');
 
@@ -30,17 +31,18 @@ async function withRetry<T>(
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await fn();
-        } catch (err: any) {
-            lastError = err;
-            const isRetryable = err.message?.includes('429') ||
-                               err.message?.includes('rate') ||
-                               err.message?.includes('timeout') ||
-                               err.message?.includes('503');
+        } catch (err: unknown) {
+            lastError = err instanceof Error ? err : new Error(getErrorMessage(err));
+            const errMsg = getErrorMessage(err);
+            const isRetryable = errMsg.includes('429') ||
+                               errMsg.includes('rate') ||
+                               errMsg.includes('timeout') ||
+                               errMsg.includes('503');
             if (!isRetryable || attempt === maxRetries - 1) {
                 throw err;
             }
             const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-            logger.warn({ attempt, delay, error: err.message }, 'Retrying AI request');
+            logger.warn({ attempt, delay, error: errMsg }, 'Retrying AI request');
             await sleep(delay);
         }
     }
@@ -141,8 +143,9 @@ export async function getCompletion(messages: Message[], options: CompletionOpti
             tokens: result.usage?.totalTokens
         }, 'AI completion successful');
         return result;
-    } catch (primaryError: any) {
-        logger.warn({ provider: primaryProvider, error: primaryError.message }, 'Primary AI provider failed, attempting fallback');
+    } catch (primaryError: unknown) {
+        const primaryErrorMsg = getErrorMessage(primaryError);
+        logger.warn({ provider: primaryProvider, error: primaryErrorMsg }, 'Primary AI provider failed, attempting fallback');
 
         try {
             const fallbackProvider = primaryProvider === 'openai' ? 'claude' : 'openai';
@@ -157,13 +160,14 @@ export async function getCompletion(messages: Message[], options: CompletionOpti
                 fallbackUsed: true
             }, 'Fallback AI completion successful');
             return result;
-        } catch (fallbackError: any) {
+        } catch (fallbackError: unknown) {
+            const fallbackErrorMsg = getErrorMessage(fallbackError);
             logger.error({
-                primaryError: primaryError.message,
-                fallbackError: fallbackError.message,
+                primaryError: primaryErrorMsg,
+                fallbackError: fallbackErrorMsg,
                 latencyMs: Date.now() - startTime
             }, 'Both AI providers failed');
-            throw new Error(`AI providers unavailable. Primary (${primaryProvider}): ${primaryError.message}. Fallback: ${fallbackError.message}`);
+            throw new Error(`AI providers unavailable. Primary (${primaryProvider}): ${primaryErrorMsg}. Fallback: ${fallbackErrorMsg}`);
         }
     }
 }

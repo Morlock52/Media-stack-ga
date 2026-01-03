@@ -1,13 +1,59 @@
-import { FastifyInstance } from 'fastify';
-import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges } from '../agents.js';
+import { FastifyInstance, FastifyReply } from 'fastify';
+import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges, ExtendedAgent } from '../agents.js';
 import { setEnvValue, removeEnvKey, PROJECT_ROOT, getOpenAIKey, getElevenLabsKey, getAnthropicKey } from '../utils/env.js';
 import { runCommand } from '../utils/docker.js';
 import { selectModelForQuery, estimateComplexity } from '../services/aiProviders.js';
 import { recordRequest } from '../services/metricsService.js';
 import fs from 'fs';
 import path from 'path';
-import { AiChatRequest } from '../types/index.js';
+import { AiChatRequest, ChatMessage } from '../types/index.js';
 import * as arrService from '../services/arrService.js';
+import { getErrorMessage } from '../utils/errors.js';
+
+// OpenAI API response types
+interface OpenAIMessage {
+    content: string | null;
+    role: 'system' | 'user' | 'assistant' | 'tool';
+    tool_calls?: Array<{
+        id: string;
+        type: string;
+        function: { name: string; arguments: string };
+    }>;
+}
+
+interface OpenAIChoice {
+    message: OpenAIMessage;
+    finish_reason: string;
+}
+
+interface OpenAIResponse {
+    id: string;
+    choices: OpenAIChoice[];
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+}
+
+// Voice types
+type RealtimeVoice = 'alloy' | 'ash' | 'ballad' | 'cedar' | 'coral' | 'echo' | 'fable' | 'marin' | 'nova' | 'onyx' | 'sage' | 'shimmer' | 'verse';
+
+// Suggestion types
+interface AppSuggestion {
+    text: string;
+    agent: string;
+}
+
+interface ConversationMetadata {
+    agentId?: string;
+    source?: string;
+    agent?: string;
+    plan?: unknown;
+    userAgent?: string;
+    totalTokens?: number;
+    lastModel?: string;
+}
 
 // Model configuration - Updated December 2025 for production-ready models
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -64,7 +110,7 @@ function checkRateLimit(ip: string): RateLimitResult {
     return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count, resetAt: record.resetAt };
 }
 
-function addRateLimitHeaders(reply: any, rateLimit: RateLimitResult): void {
+function addRateLimitHeaders(reply: FastifyReply, rateLimit: RateLimitResult): void {
     reply.header('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
     reply.header('X-RateLimit-Remaining', rateLimit.remaining);
     reply.header('X-RateLimit-Reset', Math.ceil(rateLimit.resetAt / 1000));
@@ -244,7 +290,7 @@ const requestElevenLabsTts = async (options: {
 };
 
 const sendTtsUpstreamError = async (
-    reply: any,
+    reply: FastifyReply,
     response: Response,
     fallbackMessage: string,
     providerLabel: string
@@ -302,7 +348,7 @@ const openAiErrorPayload = (status: number, fallbackMessage: string) => {
 export async function aiRoutes(fastify: FastifyInstance) {
     // Get list of available agents
     fastify.get('/api/agents', async (_request, _reply) => {
-        const agentList = Object.values(AGENTS).map((a: any) => ({
+        const agentList = Object.values(AGENTS).map((a: ExtendedAgent) => ({
             id: a.id,
             name: a.name,
             icon: a.icon,
@@ -371,7 +417,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
             try {
                 const agent = detectAgent(transcript);
-                const messages: any[] = buildAgentMessages(agent, transcript, history, { voice: true });
+                const messages: ChatMessage[] = buildAgentMessages(agent, transcript, history as ChatMessage[], { voice: true });
 
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
@@ -405,7 +451,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                     };
                 }
 
-                const data: any = await response.json();
+                const data = await response.json() as OpenAIResponse;
                 const agentResponse = data.choices?.[0]?.message?.content || getFallbackResponse(agent.id, transcript);
 
                 return {
@@ -493,7 +539,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 reply.header('X-TTS-Provider', 'elevenlabs');
                 reply.header('X-TTS-Model', ELEVENLABS_TTS_MODEL);
                 return reply.send(audioBuffer);
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.warn({ err: error }, 'ElevenLabs TTS failed');
                 return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
             }
@@ -542,7 +588,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
             reply.header('X-TTS-Provider', 'openai');
             reply.header('X-TTS-Model', response === primary ? OPENAI_TTS_MODEL : OPENAI_TTS_FALLBACK_MODEL);
             return reply.send(audioBuffer);
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.warn({ err: error }, 'TTS failed');
             return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
         }
@@ -653,9 +699,9 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 const result = await response.json() as { text: string };
                 fastify.log.info({ model: OPENAI_STT_MODEL, textLength: result.text?.length }, 'Transcription succeeded');
                 return { text: result.text, model: OPENAI_STT_MODEL };
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.error({ err: error }, 'Transcription error');
-                return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error', details: error.message });
+                return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error', details: getErrorMessage(error) });
             }
         }
 
@@ -682,7 +728,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
             const result = await response.json() as { text: string };
             return { text: result.text, model: OPENAI_STT_MODEL };
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, 'Transcription error');
             return reply.status(500).send({ error: 'Transcription failed', reason: 'server_error' });
         }
@@ -942,7 +988,7 @@ Return ONLY a JSON object with the following structure:
                 return reply.status(httpStatus).send(payload);
             }
 
-            const data: any = await response.json();
+            const data = await response.json() as OpenAIResponse;
             const content = data?.choices?.[0]?.message?.content;
             if (!content || typeof content !== 'string') {
                 throw new Error('OpenAI response missing content');
@@ -950,7 +996,7 @@ Return ONLY a JSON object with the following structure:
 
             const parsed = JSON.parse(content);
             return parsed;
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.warn({ err: error, serviceId }, 'Service config AI generation failed');
             return reply.status(502).send({
                 error: 'AI request failed',
@@ -992,7 +1038,7 @@ Return ONLY a JSON object with the following structure:
             return reply.status(400).send({ error: 'Message is required' });
         }
 
-        let agent = agentId ? (AGENTS as any)[agentId] : undefined;
+        let agent: ExtendedAgent | undefined = agentId ? AGENTS[agentId] : undefined;
         if (!agent) {
             agent = detectAgent(message);
         }
@@ -1008,7 +1054,7 @@ Return ONLY a JSON object with the following structure:
 
         if (effectiveApiKey) {
             try {
-                const messages: any[] = buildAgentMessages(agent, message, history, context);
+                const messages: ChatMessage[] = buildAgentMessages(agent, message, history as ChatMessage[], context);
                 const tools = [
                     {
                         type: "function",
@@ -1090,7 +1136,7 @@ Return ONLY a JSON object with the following structure:
                     return reply.status(httpStatus).send(payload);
                 }
 
-                const data: any = await response.json();
+                const data = await response.json() as OpenAIResponse;
                 const choice = data.choices?.[0];
                 const messageData = choice?.message;
 
@@ -1102,7 +1148,7 @@ Return ONLY a JSON object with the following structure:
                 let totalPromptTokens = data.usage?.prompt_tokens || 0;
                 let totalCompletionTokens = data.usage?.completion_tokens || 0;
 
-                if (messageData?.tool_calls?.length > 0) {
+                if (messageData?.tool_calls && messageData.tool_calls.length > 0) {
                     const toolCall = messageData.tool_calls[0];
                     if (toolCall.function.name === 'analyze_logs') {
                         const args = JSON.parse(toolCall.function.arguments);
@@ -1117,9 +1163,9 @@ Return ONLY a JSON object with the following structure:
                         try {
                             const output = await runCommand('docker', ['logs', '--tail', lines.toString(), service]);
 
-                            messages.push(messageData);
+                            messages.push({ role: messageData.role, content: messageData.content || '' });
                             messages.push({
-                                role: "tool",
+                                role: "tool" as const,
                                 tool_call_id: toolCall.id,
                                 content: output || "(No logs found)"
                             });
@@ -1139,14 +1185,14 @@ Return ONLY a JSON object with the following structure:
                                 })
                             });
 
-                            const secondData: any = await secondResponse.json();
+                            const secondData = await secondResponse.json() as OpenAIResponse;
                             answer = secondData.choices?.[0]?.message?.content;
                             // Accumulate tokens from follow-up call
                             totalPromptTokens += secondData.usage?.prompt_tokens || 0;
                             totalCompletionTokens += secondData.usage?.completion_tokens || 0;
 
                         } catch (err: unknown) {
-                            const errMsg = err instanceof Error ? err.message : 'Unknown error';
+                            const errMsg = getErrorMessage(err);
                             answer = `I tried to check logs for ${service} but failed: ${errMsg}`;
                         }
                     } else if (toolCall.function.name === 'validate_config') {
@@ -1183,9 +1229,9 @@ Return ONLY a JSON object with the following structure:
                                 }
                             }
 
-                            messages.push(messageData);
+                            messages.push({ role: messageData.role, content: messageData.content || '' });
                             messages.push({
-                                role: "tool",
+                                role: "tool" as const,
                                 tool_call_id: toolCall.id,
                                 content: result
                             });
@@ -1205,7 +1251,7 @@ Return ONLY a JSON object with the following structure:
                                 })
                             });
 
-                            const secondData: any = await secondResponse.json();
+                            const secondData = await secondResponse.json() as OpenAIResponse;
                             answer = secondData.choices?.[0]?.message?.content;
                             // Accumulate tokens from follow-up call
                             totalPromptTokens += secondData.usage?.prompt_tokens || 0;
@@ -1227,9 +1273,9 @@ Return ONLY a JSON object with the following structure:
                                 ? `Successfully extracted ${count} keys: ${Object.keys(results).join(', ')}`
                                 : "No API keys could be extracted. Make sure the containers are running and initialized (config.xml must exist).";
 
-                            messages.push(messageData);
+                            messages.push({ role: messageData.role, content: messageData.content || '' });
                             messages.push({
-                                role: "tool",
+                                role: "tool" as const,
                                 tool_call_id: toolCall.id,
                                 content: resultContent
                             });
@@ -1249,7 +1295,7 @@ Return ONLY a JSON object with the following structure:
                                 })
                             });
 
-                            const secondData: any = await secondResponse.json();
+                            const secondData = await secondResponse.json() as OpenAIResponse;
                             answer = secondData.choices?.[0]?.message?.content;
                             // Accumulate tokens from follow-up call
                             totalPromptTokens += secondData.usage?.prompt_tokens || 0;
@@ -1357,9 +1403,9 @@ Return ONLY a JSON object with the following structure:
     // Suggestions endpoint for docs site
     fastify.post<{ Body: { currentApp: string } }>('/api/agent/suggestions', async (request, _reply) => {
         const { currentApp } = request.body;
-        const suggestions: any[] = [];
+        const suggestions: AppSuggestion[] = [];
 
-        const appSuggestions: any = {
+        const appSuggestions: Record<string, string[]> = {
             plex: ['How do I add libraries?', 'Enable remote access', 'Set up users'],
             jellyfin: ['Create admin user', 'Add media libraries', 'Configure transcoding'],
             sonarr: ['Connect to Prowlarr', 'Add download client', 'Set quality profiles'],
@@ -1412,7 +1458,7 @@ Return ONLY a JSON object with the following structure:
                 return reply.status(400).send({ error: 'OpenAI API key not configured' });
             }
 
-            let agent = agentId ? (AGENTS as any)[agentId] : undefined;
+            let agent: ExtendedAgent | undefined = agentId ? AGENTS[agentId] : undefined;
             if (!agent) {
                 agent = detectAgent(message);
             }
@@ -1498,10 +1544,10 @@ Return ONLY a JSON object with the following structure:
                 recordCircuitBreakerSuccess();
                 reply.raw.write('data: [DONE]\n\n');
                 reply.raw.end();
-            } catch (error: any) {
+            } catch (error: unknown) {
                 recordCircuitBreakerFailure();
                 fastify.log.error({ err: error }, 'Streaming chat error');
-                reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+                reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: getErrorMessage(error) })}\n\n`);
                 reply.raw.end();
             }
         }
@@ -1535,9 +1581,22 @@ Return ONLY a JSON object with the following structure:
     });
 
     // Execute a tool
-    fastify.post<{ Params: { toolName: string }; Body: Record<string, any> }>('/api/ai/tools/:toolName', async (request, reply) => {
+    interface ToolParams {
+        serviceName?: string;
+        mode?: 'graceful' | 'hard';
+        pattern?: string;
+        severity?: 'error' | 'warning' | 'info';
+        lines?: number;
+        checkDns?: boolean;
+        checkPorts?: number[];
+        checkVpn?: boolean;
+        checkInternet?: boolean;
+        focus?: 'memory' | 'cpu' | 'network' | 'storage' | 'general';
+    }
+
+    fastify.post<{ Params: { toolName: string }; Body: ToolParams }>('/api/ai/tools/:toolName', async (request, reply) => {
         const { toolName } = request.params;
-        const params = request.body || {};
+        const params: ToolParams = request.body || {};
         const { agentTools } = await import('../tools/agentTools.js');
 
         const tool = agentTools[toolName as keyof typeof agentTools];
@@ -1549,10 +1608,10 @@ Return ONLY a JSON object with the following structure:
             let result;
             switch (toolName) {
                 case 'check_service_health':
-                    result = await agentTools.check_service_health(params?.serviceName);
+                    result = await agentTools.check_service_health(params.serviceName);
                     break;
                 case 'restart_service':
-                    result = await agentTools.restart_service(params?.serviceName, params?.mode);
+                    result = await agentTools.restart_service(params.serviceName || '', params.mode);
                     break;
                 case 'generate_env_diff':
                     result = await agentTools.generate_env_diff();
@@ -1564,29 +1623,29 @@ Return ONLY a JSON object with the following structure:
                     result = await agentTools.list_running_services();
                     break;
                 case 'analyze_logs':
-                    result = await agentTools.analyze_logs(params?.serviceName, {
-                        pattern: params?.pattern,
-                        severity: params?.severity,
-                        lines: params?.lines
+                    result = await agentTools.analyze_logs(params.serviceName || '', {
+                        pattern: params.pattern,
+                        severity: params.severity,
+                        lines: params.lines
                     });
                     break;
                 case 'network_diagnostics':
                     result = await agentTools.network_diagnostics({
-                        checkDns: params?.checkDns,
-                        checkPorts: params?.checkPorts,
-                        checkVpn: params?.checkVpn,
-                        checkInternet: params?.checkInternet
+                        checkDns: params.checkDns,
+                        checkPorts: params.checkPorts,
+                        checkVpn: params.checkVpn,
+                        checkInternet: params.checkInternet
                     });
                     break;
                 case 'optimize_config':
-                    result = await agentTools.optimize_config(params?.serviceName, params?.focus);
+                    result = await agentTools.optimize_config(params.serviceName || '', params.focus);
                     break;
                 default:
                     return reply.code(404).send({ error: `Tool "${toolName}" not implemented` });
             }
             return reply.send(result);
-        } catch (err: any) {
-            return reply.code(500).send({ error: err.message });
+        } catch (err: unknown) {
+            return reply.code(500).send({ error: getErrorMessage(err) });
         }
     });
 
@@ -1610,7 +1669,7 @@ Return ONLY a JSON object with the following structure:
 
           fastify.post('/api/ai/conversations', async (request, reply) => {
                   const conversationStore = await import('../services/conversationStore.js');
-                  const { message, metadata } = request.body as { message?: string; metadata?: any };
+                  const { message, metadata } = request.body as { message?: string; metadata?: ConversationMetadata };
                   const initialMessage = message ? { role: 'user' as const, content: message, timestamp: new Date().toISOString() } : undefined;
                   const conversation = await conversationStore.createConversation(initialMessage, metadata);
                   return reply.send(conversation);
@@ -1737,7 +1796,7 @@ Return ONLY a JSON object with the following structure:
             }
 
             const sessionConfig = createSessionConfig({
-                voice: request.body.voice as any,
+                voice: request.body.voice as RealtimeVoice,
                 instructions: request.body.instructions
             });
 
@@ -1826,7 +1885,7 @@ Return ONLY a JSON object with the following structure:
                     // Client needs this URL for WebRTC SDP exchange
                     sdpUrl: `https://api.openai.com/v1/realtime/sdp?model=${encodeURIComponent(data.model)}`,
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.error({ err: error }, 'Error generating ephemeral key');
                 return reply.status(500).send({
                     error: 'Failed to generate ephemeral key',

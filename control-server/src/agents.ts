@@ -1,12 +1,32 @@
-import { Agent, AiChatRequest } from './types/index.js';
+import { Agent, ChatMessage } from './types/index.js';
 
 /**
  * Multi-Agent AI System for Media Stack
  * Specialized agents that work together to guide users
  */
 
+/** Context for proactive nudges */
+export interface NudgeContext {
+    currentApp?: string;
+    recentTopics?: string[];
+    userProgress?: {
+        step?: string;
+        envComplete?: boolean;
+    };
+    config?: {
+        profile?: string;
+        vpnEnabled?: boolean;
+    };
+}
+
+/** Agent with extended properties */
+export interface ExtendedAgent extends Agent {
+    expertise: string[];
+    systemPrompt: string;
+}
+
 // Agent Definitions with personalities and expertise
-export const AGENTS: Record<string, Agent & { expertise: string[], systemPrompt: string }> = {
+export const AGENTS: Record<string, ExtendedAgent> = {
     setup: {
         id: 'setup',
         name: 'Setup Guide',
@@ -206,7 +226,7 @@ export function detectAgent(message: string) {
 }
 
 // Get proactive nudges based on context
-export function getProactiveNudges(context: any) {
+export function getProactiveNudges(context: NudgeContext) {
     const { currentApp, recentTopics, userProgress, config } = context;
     const nudges = [];
 
@@ -251,9 +271,20 @@ export function getProactiveNudges(context: any) {
     return nudges;
 }
 
+/** Context for agent messages */
+export interface AgentMessageContext {
+    currentApp?: string;
+    voice?: boolean;
+}
+
 // Build messages for OpenAI API
-export function buildAgentMessages(agent: any, userMessage: string, history: any[] = [], context: any = {}) {
-    const messages = [
+export function buildAgentMessages(
+    agent: ExtendedAgent,
+    userMessage: string,
+    history: ChatMessage[] = [],
+    context: AgentMessageContext = {}
+): ChatMessage[] {
+    const messages: ChatMessage[] = [
         { role: 'system', content: agent.systemPrompt }
     ];
 

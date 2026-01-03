@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import * as arrService from '../services/arrService.js';
+import { getErrorMessage } from '../utils/errors.js';
 
 export async function arrRoutes(fastify: FastifyInstance) {
     // Get status of all *arr services
@@ -7,32 +8,32 @@ export async function arrRoutes(fastify: FastifyInstance) {
         try {
             const services = await arrService.getArrServicesStatus();
             return reply.status(200).send({ success: true, services });
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[arr/status] failed');
             return reply.status(200).send({
                 success: false,
                 services: [],
-                error: error?.message || 'Failed to get status',
+                error: getErrorMessage(error),
             });
         }
     });
 
     // Wait for *arr services to be ready
-    fastify.post('/api/arr/wait-ready', async (request, reply) => {
-        const { timeout = 120000, pollInterval = 5000 } = (request.body as any) || {};
+    fastify.post<{ Body: { timeout?: number; pollInterval?: number } }>('/api/arr/wait-ready', async (request, reply) => {
+        const { timeout = 120000, pollInterval = 5000 } = request.body || {};
         try {
             const result = await arrService.waitForArrServices(timeout, pollInterval);
             return reply.status(200).send({
                 success: result.ready,
                 ...result,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[arr/wait-ready] failed');
             return reply.status(200).send({
                 success: false,
                 ready: false,
                 services: [],
-                error: error?.message || 'Wait failed',
+                error: getErrorMessage(error),
             });
         }
     });
@@ -54,26 +55,26 @@ export async function arrRoutes(fastify: FastifyInstance) {
             try {
                 arrService.writeArrKeysToEnv(keys);
                 return reply.status(200).send({ success: true, keys });
-            } catch (error: any) {
+            } catch (error: unknown) {
                 return reply.status(200).send({
                     success: false,
                     keys,
-                    error: error?.message || 'Failed to write keys to .env',
+                    error: getErrorMessage(error),
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[arr/bootstrap] failed');
             return reply.status(200).send({
                 success: false,
                 keys,
-                error: error?.message || 'Bootstrap failed',
+                error: getErrorMessage(error),
             });
         }
     });
 
     // Full bootstrap: wait for services, extract keys, write to .env
-    fastify.post('/api/arr/auto-bootstrap', async (request, reply) => {
-        const { timeout = 120000, pollInterval = 5000 } = (request.body as any) || {};
+    fastify.post<{ Body: { timeout?: number; pollInterval?: number } }>('/api/arr/auto-bootstrap', async (request, reply) => {
+        const { timeout = 120000, pollInterval = 5000 } = request.body || {};
 
         try {
             // Step 1: Wait for services to be ready
@@ -109,13 +110,13 @@ export async function arrRoutes(fastify: FastifyInstance) {
             fastify.log.info('[arr/auto-bootstrap] Writing keys to .env...');
             try {
                 arrService.writeArrKeysToEnv(keys);
-            } catch (error: any) {
+            } catch (error: unknown) {
                 return reply.status(200).send({
                     success: false,
                     step: 'write',
                     keys,
                     services: waitResult.services,
-                    error: error?.message || 'Failed to write keys to .env',
+                    error: getErrorMessage(error),
                 });
             }
 
@@ -126,14 +127,14 @@ export async function arrRoutes(fastify: FastifyInstance) {
                 keys,
                 services: waitResult.services,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[arr/auto-bootstrap] failed');
             return reply.status(200).send({
                 success: false,
                 step: 'error',
                 keys: {},
                 services: [],
-                error: error?.message || 'Auto-bootstrap failed',
+                error: getErrorMessage(error),
             });
         }
     });

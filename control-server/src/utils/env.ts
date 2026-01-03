@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getErrorMessage } from './errors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,16 +15,16 @@ export const readEnvFile = (): string => {
     if (!fs.existsSync(ENV_FILE_PATH)) return '';
     try {
         return fs.readFileSync(ENV_FILE_PATH, 'utf-8');
-    } catch (error: any) {
-        throw new Error(`Failed to read .env at ${ENV_FILE_PATH}: ${error?.message || String(error)}`);
+    } catch (error: unknown) {
+        throw new Error(`Failed to read .env at ${ENV_FILE_PATH}: ${getErrorMessage(error)}`);
     }
 };
 
 export const writeEnvFile = (content: string): void => {
     try {
         fs.writeFileSync(ENV_FILE_PATH, content.replace(/\r\n/g, '\n'));
-    } catch (error: any) {
-        throw new Error(`Failed to write .env at ${ENV_FILE_PATH}: ${error?.message || String(error)}`);
+    } catch (error: unknown) {
+        throw new Error(`Failed to write .env at ${ENV_FILE_PATH}: ${getErrorMessage(error)}`);
     }
 };
 

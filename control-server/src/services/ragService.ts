@@ -360,10 +360,17 @@ export async function searchWithOpenAI(query: string, limit = 5): Promise<Search
             return searchLocalKnowledge(query, limit);
         }
 
-        const data = await response.json();
+        const data = await response.json() as {
+            results?: Array<{
+                file_id: string;
+                filename?: string;
+                content?: Array<{ text?: string }>;
+                score?: number;
+            }>;
+        };
 
         // Transform OpenAI results to our format
-        return data.results?.map((r: any) => ({
+        return data.results?.map((r) => ({
             document: {
                 id: r.file_id,
                 title: r.filename || 'Unknown',

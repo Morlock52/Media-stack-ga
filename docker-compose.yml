@@ -87,7 +87,7 @@ services:
       - "homepage.description=Container Health Monitor"
 
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
     command:
@@ -164,8 +164,10 @@ services:
     image: amir20/dozzle:latest
     container_name: dozzle
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - mediastack
     labels:
@@ -857,11 +859,13 @@ services:
     container_name: notifiarr
     image: golift/notifiarr
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - 5454:5454
     volumes:
       - ${CONFIG_ROOT}/notifiarr:/config
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - TZ=${TIMEZONE}
     networks:

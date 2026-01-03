@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import { PROJECT_ROOT } from './env.js';
 import { createLogger } from './logger.js';
+import { getErrorMessage } from './errors.js';
 
 const logger = createLogger('docker');
 
@@ -33,9 +34,9 @@ const release = () => {
     if (next) next();
 };
 
-const friendlyDockerError = (command: string, err: any) => {
-    const raw = err?.message ?? err;
-    const msg = String(raw || '').toLowerCase();
+const friendlyDockerError = (command: string, err: unknown) => {
+    const raw = getErrorMessage(err);
+    const msg = raw.toLowerCase();
     if (msg.includes('enoent') || msg.includes('not found')) {
         return `Required CLI "${command}" is not available. Install Docker Desktop/Engine or ensure "${command}" is on PATH.`;
     }
@@ -45,10 +46,10 @@ const friendlyDockerError = (command: string, err: any) => {
     if (msg.includes('timed out')) {
         return `${command} timed out. Docker may be hung; verify the daemon is healthy.`;
     }
-    if (typeof raw === 'string' && raw.trim()) {
+    if (raw.trim()) {
         return raw.trim();
     }
-    return err?.message || `Failed to run ${command}`;
+    return `Failed to run ${command}`;
 };
 
 export const runCommand = (command: string, args: string[], options: RunCommandOptions = {}): Promise<string> => {

@@ -3,6 +3,7 @@ import { runCommand } from '../utils/docker.js';
 import { Container, ServiceIssue } from '../types/index.js';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { z } from 'zod';
+import { getErrorMessage } from '../utils/errors.js';
 
 export async function dockerRoutes(fastify: FastifyInstance) {
     const cacheMs = Math.max(0, parseInt(process.env.DOCKER_STATUS_CACHE_MS || '1500', 10) || 0);
@@ -14,8 +15,8 @@ export async function dockerRoutes(fastify: FastifyInstance) {
     let composeServicesCacheAt = 0;
     let composeServicesInFlight: Promise<string[]> | null = null;
 
-    const isDockerUnavailable = (error: any) => {
-        const msg = String(error?.message || '').toLowerCase();
+    const isDockerUnavailable = (error: unknown) => {
+        const msg = getErrorMessage(error).toLowerCase();
         return msg.includes('docker daemon is not running')
             || msg.includes('docker: command not found')
             || msg.includes('required cli')
@@ -105,16 +106,16 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             } finally {
                 containersInFlight = null;
             }
-        } catch (error: any) {
-            fastify.log.error('Error fetching containers:', error);
+        } catch (error: unknown) {
+            fastify.log.error({ err: error }, 'Error fetching containers');
             if (isDockerUnavailable(error)) {
                 return reply.status(503).send({
                     error: 'docker_unavailable',
-                    message: error?.message || 'Docker is not running or not installed',
+                    message: getErrorMessage(error),
                     containers: []
                 });
             }
-            reply.status(500).send({ error: error?.message || 'Failed to fetch container status' });
+            reply.status(500).send({ error: getErrorMessage(error) });
         }
     });
 
@@ -154,9 +155,9 @@ export async function dockerRoutes(fastify: FastifyInstance) {
 
                 await runCommand('docker', cmdArgs, { timeoutMs: 20_000, label: `compose:${action}:${serviceName}` });
                 return { success: true, message: `Service ${serviceName} ${action}ed successfully` };
-            } catch (error: any) {
-                fastify.log.error(`Error performing ${action} on ${serviceName}:`, error);
-                reply.status(500).send({ error: error.message });
+            } catch (error: unknown) {
+                fastify.log.error({ err: error, action, serviceName }, 'Error performing action on service');
+                reply.status(500).send({ error: getErrorMessage(error) });
             }
         },
     );
@@ -171,8 +172,8 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             });
             await runCommand('docker', ['image', 'prune', '-f'], { timeoutMs: 30_000, label: 'docker:image-prune' });
             return { success: true, message: 'System updated successfully' };
-        } catch (error: any) {
-            reply.status(500).send({ error: error.message });
+        } catch (error: unknown) {
+            reply.status(500).send({ error: getErrorMessage(error) });
         }
     });
 
@@ -180,8 +181,8 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         try {
             await runCommand('docker', composeActionArgs(['restart']), { timeoutMs: 30_000, label: 'compose:restart' });
             return { success: true, message: 'System restarted successfully' };
-        } catch (error: any) {
-            reply.status(500).send({ error: error.message });
+        } catch (error: unknown) {
+            reply.status(500).send({ error: getErrorMessage(error) });
         }
     });
 
@@ -250,7 +251,7 @@ export async function dockerRoutes(fastify: FastifyInstance) {
                 containerCount: containers.length,
                 runningCount: containers.filter(c => c.state === 'running').length
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[health-snapshot] Failed to gather docker status');
             const unavailable = isDockerUnavailable(error);
             const statusCode = unavailable ? 503 : 500;
@@ -261,7 +262,7 @@ export async function dockerRoutes(fastify: FastifyInstance) {
                 suggestions: [],
                 containerCount: 0,
                 runningCount: 0,
-                error: error?.message || 'unknown'
+                error: getErrorMessage(error)
             });
         }
     });
@@ -271,12 +272,12 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         try {
             const services = await getComposeServices();
             return { services };
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[compose-services] Failed to list compose services');
             const unavailable = isDockerUnavailable(error);
             reply
                 .status(unavailable ? 503 : 500)
-                .send({ error: unavailable ? 'Docker is not running or not installed' : error?.message || 'Failed to list compose services' });
+                .send({ error: unavailable ? 'Docker is not running or not installed' : getErrorMessage(error) });
         }
     });
 
@@ -454,13 +455,14 @@ export async function dockerRoutes(fastify: FastifyInstance) {
                 containers,
                 message: `Deployed ${profiles.length} service profiles`,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             fastify.log.error({ err: error }, '[local-deploy] failed');
-            steps.push({ step: error?.message || 'Deployment failed', status: 'error' });
+            const errMsg = getErrorMessage(error);
+            steps.push({ step: errMsg, status: 'error' });
             return reply.status(200).send({
                 success: false,
                 steps,
-                error: error?.message || 'Local deployment failed',
+                error: errMsg,
             });
         }
     });
