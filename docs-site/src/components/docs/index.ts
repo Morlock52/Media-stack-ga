@@ -47,3 +47,4 @@ export { PetioGuide } from './PetioGuide'
 // Media & Utility Guides
 export { KavitaGuide } from './KavitaGuide'
 export { FileBrowserGuide } from './FileBrowserGuide'
+export { DocsReader } from './DocsReader'

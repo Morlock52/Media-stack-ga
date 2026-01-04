@@ -37,6 +37,7 @@ import {
     PetioGuide,
     KavitaGuide,
     FileBrowserGuide,
+    DocsReader,
 } from '../components/docs'
 import { appCards, type AppId } from '../components/docs/appData'
 import { GuideModal } from '../components/ui/GuideModal'
@@ -125,6 +126,8 @@ export function DocsPage() {
                         </p>
                     </div>
                 </section>
+
+                <DocsReader />
 
                 <AppsOverview onSelectApp={handleSelectApp} />
 
