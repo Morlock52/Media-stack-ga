@@ -298,26 +298,41 @@ export function useRealtimeVoice(config: RealtimeVoiceConfig = {}) {
       })
 
       // 8. Send offer to OpenAI and get answer
-      const abortController = new AbortController()
-      const abortTimeout = window.setTimeout(() => abortController.abort(), 20000)
-
-      const sdpResponse = await fetch(keyData.sdpUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${keyData.ephemeralKey}`,
-          'Content-Type': 'application/sdp',
-          ...(keyData.apiVersion ? { 'OpenAI-Beta': `realtime=${keyData.apiVersion}` } : {}),
-        },
-        body: pc.localDescription?.sdp || offer.sdp,
-        signal: abortController.signal,
-      })
-      window.clearTimeout(abortTimeout)
-
-      if (!sdpResponse.ok) {
-        throw new Error('Failed to exchange SDP with OpenAI')
+      const postSdp = async (key: EphemeralKeyResponse) => {
+        const abortController = new AbortController()
+        const abortTimeout = window.setTimeout(() => abortController.abort(), 20000)
+        try {
+          const response = await fetch(key.sdpUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${key.ephemeralKey}`,
+              'Content-Type': 'application/sdp',
+              ...(key.apiVersion ? { 'OpenAI-Beta': `realtime=${key.apiVersion}` } : {}),
+            },
+            body: pc.localDescription?.sdp || offer.sdp,
+            signal: abortController.signal,
+          })
+          const body = await response.text().catch(() => '')
+          return { response, body }
+        } finally {
+          window.clearTimeout(abortTimeout)
+        }
       }
 
-      const answerSdp = await sdpResponse.text()
+      let sdpResult = await postSdp(keyData)
+      if (!sdpResult.response.ok && [401, 403].includes(sdpResult.response.status)) {
+        const refreshedKey = await getEphemeralKey()
+        if (refreshedKey) {
+          sdpResult = await postSdp(refreshedKey)
+        }
+      }
+
+      if (!sdpResult.response.ok) {
+        const detail = sdpResult.body ? `: ${sdpResult.body}` : ''
+        throw new Error(`Failed to exchange SDP with OpenAI (HTTP ${sdpResult.response.status}${detail})`)
+      }
+
+      const answerSdp = sdpResult.body
 
       // 9. Set remote description
       await pc.setRemoteDescription({

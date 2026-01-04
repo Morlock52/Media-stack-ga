@@ -110,6 +110,17 @@ def match_section(service: str, sections: List[str]) -> Optional[str]:
 
 
 def main() -> int:
+    args = sys.argv[1:]
+    strict = '--strict' in args
+    if '--help' in args or '-h' in args:
+        print('Usage: python scripts/check_app_docs.py [--strict]')
+        print('  --strict  Fail if docs/app.md has sections with no matching compose service.')
+        return 0
+    unknown_args = [arg for arg in args if arg not in ('--strict', '--help', '-h')]
+    if unknown_args:
+        print(f"Unknown arguments: {', '.join(unknown_args)}", file=sys.stderr)
+        return 2
+
     if not DOCS_FILE.exists():
         print(f"Missing {DOCS_FILE}.", file=sys.stderr)
         return 1
@@ -154,7 +165,11 @@ def main() -> int:
         for title in orphan_sections:
             print(f" - {title}")
 
-    return 1 if missing else 0
+    if missing:
+        return 1
+    if strict and orphan_sections:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

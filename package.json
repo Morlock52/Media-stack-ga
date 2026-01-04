@@ -12,7 +12,7 @@
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces",
     "lint": "npm run lint --workspaces",
-    "check": "npm run lint && npm test -w control-server && npm run test -w docs-site -- tests/smoke.spec.ts",
+    "check": "npm run lint && python scripts/check_app_docs.py --strict && npm test -w control-server && npm run test -w docs-site -- tests/smoke.spec.ts",
     "pm2:start": "pm2 start scripts/pm2.control-server.config.cjs",
     "pm2:stop": "pm2 delete media-stack-control-server || true",
     "stress:api": "START_CONTROL_SERVER=1 npm run stress -w control-server",

@@ -706,7 +706,7 @@ RUN_POST_DEPLOY_CHECK=1 ./scripts/update.sh
 
 ```bash
 npm run check        # lint + control-server tests + docs-site smoke
-python scripts/check_app_docs.py  # verify docs/app.md covers compose services
+python scripts/check_app_docs.py --strict  # verify docs/app.md covers compose services
 npm run lint
 npm test
 npm run stress
