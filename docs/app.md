@@ -4,6 +4,26 @@ Quick how-to notes for every app in the stack. URLs assume the **reverse-proxy s
 
 > Credentials come from `.env` unless noted. Keep volumes persistent so settings survive updates.
 
+## Wizard & Control Plane
+
+### Wizard Web — setup UI  
+Project: https://github.com/Morlock52/Media-stack-ga/tree/main/docs-site  
+URL: `http://localhost:3002`
+- Launch with `docker compose -f docker-compose.wizard.yml up --build -d`.
+- Walk through the steps, then use **Review & Generate** to download compose + `.env`.
+
+### Wizard API — control server  
+Project: https://github.com/Morlock52/Media-stack-ga/tree/main/control-server  
+URL: `http://localhost:3001` (API; the UI proxies `/api` in Docker wizard mode)
+- Handles AI assistance, validation, and orchestration tasks for the wizard.
+- If the UI cannot connect, check `docker compose -f docker-compose.wizard.yml logs -f wizard-api`.
+
+### Docker Socket Proxy — wizard hardening  
+Project: https://github.com/Tecnativa/docker-socket-proxy  
+URL: n/a (internal)
+- Only used by `docker-compose.wizard.secure.yml` to restrict Docker API access.
+- If deploy actions fail in secure mode, check `docker compose -f docker-compose.wizard.secure.yml logs -f socket-proxy`.
+
 ## Access & Operations
 
 ### Homepage — dashboard  
@@ -11,12 +31,19 @@ Project: https://gethomepage.dev
 URL: `https://hub.${DOMAIN}` (LAN: `http://<server-ip>:3000`)
 - Central launcher; tiles pull API keys/tokens from `.env` or `config/homepage/services.yaml`.
 - Edit `config/homepage/services.yaml` (reverse-proxy) or `config/homepage/services.local.yaml` (LAN) to reorder tiles, add links, and wire widgets.
+- Populate `.env` (`PLEX_TOKEN`, `JELLYFIN_API_KEY`, `SONARR_API_KEY`, etc.) so widgets and Grafana tiles show data; restart homepage after updates.
 
 ### Authelia — SSO/MFA  
 Project: https://www.authelia.com  
 URL: `https://auth.${DOMAIN}` (not used in LAN stack)
 - Default seed user: `demo` / `ChangeMe123!` from `config/authelia/users_database.yml`; change immediately and add TOTP in the UI.
 - Add users/groups by editing `config/authelia/users_database.yml` then restart; protect routes is handled by Traefik labels.
+
+### Redis — Authelia sessions  
+Project: https://redis.io  
+URL: n/a (internal)
+- Authelia stores sessions here; set `REDIS_PASSWORD` in `.env` and keep the volume persistent.
+- Check `docker compose logs -f redis` if SSO logins fail or sessions appear to reset.
 
 ### Traefik & Cloudflare Tunnel  
 Projects: https://traefik.io • https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/  
@@ -156,10 +183,6 @@ Project: https://notifiarr.com
 URL: `https://notifiarr.${DOMAIN}` (LAN: `http://<server-ip>:5454`)
 - Sign in with your Notifiarr account; URLs/API keys for Plex/*Arr are pre-seeded from env vars.
 - Add Discord/Slack/Push targets for alerts; toggle which events each app sends.
-
-### Homepage widgets & tokens  
-- Populate `.env` (`PLEX_TOKEN`, `JELLYFIN_API_KEY`, `SONARR_API_KEY`, etc.) so homepage widgets and Grafana tiles light up.
-- Restart homepage after updating tokens to refresh widget data.
 
 ### Watchtower & Autoheal  
 Projects: https://containrrr.dev/watchtower • https://github.com/willfarrell/docker-autoheal  
