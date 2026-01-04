@@ -554,4 +554,165 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             });
         }
     });
+
+    // Health Dashboard - Aggregated view of all container health statuses
+    fastify.get('/api/health-dashboard', async (request, reply) => {
+        try {
+            // Get all containers with detailed health info
+            const output = await runCommand(
+                'docker',
+                ['ps', '-a', '--format', '{{json .}}'],
+                { timeoutMs: 15_000, label: 'health-dashboard' }
+            );
+
+            const containers = output
+                .split('\n')
+                .filter(Boolean)
+                .map((line) => {
+                    try {
+                        const data = JSON.parse(line);
+                        return {
+                            id: data.ID,
+                            name: data.Names,
+                            image: data.Image,
+                            status: data.Status,
+                            state: data.State,
+                            ports: data.Ports,
+                            createdAt: data.CreatedAt,
+                            // Parse health from status (e.g., "Up 2 hours (healthy)")
+                            health: data.Status?.includes('(healthy)')
+                                ? 'healthy'
+                                : data.Status?.includes('(unhealthy)')
+                                ? 'unhealthy'
+                                : data.Status?.includes('(starting)')
+                                ? 'starting'
+                                : data.State === 'running'
+                                ? 'running'
+                                : 'stopped',
+                        };
+                    } catch {
+                        return null;
+                    }
+                })
+                .filter(Boolean);
+
+            // Calculate summary stats
+            const summary = {
+                total: containers.length,
+                healthy: containers.filter((c: any) => c.health === 'healthy').length,
+                unhealthy: containers.filter((c: any) => c.health === 'unhealthy').length,
+                running: containers.filter((c: any) => c.state === 'running').length,
+                stopped: containers.filter((c: any) => c.state !== 'running').length,
+                starting: containers.filter((c: any) => c.health === 'starting').length,
+            };
+
+            // Get system resource usage
+            let systemStats = null;
+            try {
+                const statsOutput = await runCommand(
+                    'docker',
+                    ['system', 'df', '--format', '{{json .}}'],
+                    { timeoutMs: 10_000, label: 'docker-system-df' }
+                );
+
+                const lines = statsOutput.split('\n').filter(Boolean);
+                systemStats = lines.map((line) => {
+                    try {
+                        return JSON.parse(line);
+                    } catch {
+                        return null;
+                    }
+                }).filter(Boolean);
+            } catch {
+                // System stats optional
+            }
+
+            return {
+                timestamp: new Date().toISOString(),
+                summary,
+                containers,
+                systemStats,
+                // Quick actions available
+                actions: {
+                    restart: '/api/containers/restart/:name',
+                    logs: '/api/logs/:name',
+                    start: '/api/containers/start/:name',
+                    stop: '/api/containers/stop/:name',
+                },
+            };
+        } catch (error: unknown) {
+            if (isDockerUnavailable(error)) {
+                return reply.status(503).send({
+                    error: 'Docker is not available',
+                    message: 'Ensure Docker is installed and the daemon is running.',
+                });
+            }
+            fastify.log.error({ err: error }, '[health-dashboard] failed');
+            return reply.status(500).send({
+                error: 'Failed to fetch health dashboard',
+                message: getErrorMessage(error),
+            });
+        }
+    });
+
+    // Restart a container by name
+    fastify.post<{ Params: { name: string } }>('/api/containers/restart/:name', async (request, reply) => {
+        const { name } = request.params;
+
+        // Validate container name (prevent injection)
+        if (!name || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(name)) {
+            return reply.status(400).send({ error: 'Invalid container name' });
+        }
+
+        try {
+            await runCommand('docker', ['restart', name], { timeoutMs: 60_000, label: `restart:${name}` });
+            return { success: true, message: `Container ${name} restarted successfully` };
+        } catch (error: unknown) {
+            fastify.log.error({ err: error, container: name }, '[container:restart] failed');
+            return reply.status(500).send({
+                error: 'Failed to restart container',
+                message: getErrorMessage(error),
+            });
+        }
+    });
+
+    // Start a container by name
+    fastify.post<{ Params: { name: string } }>('/api/containers/start/:name', async (request, reply) => {
+        const { name } = request.params;
+
+        if (!name || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(name)) {
+            return reply.status(400).send({ error: 'Invalid container name' });
+        }
+
+        try {
+            await runCommand('docker', ['start', name], { timeoutMs: 60_000, label: `start:${name}` });
+            return { success: true, message: `Container ${name} started successfully` };
+        } catch (error: unknown) {
+            fastify.log.error({ err: error, container: name }, '[container:start] failed');
+            return reply.status(500).send({
+                error: 'Failed to start container',
+                message: getErrorMessage(error),
+            });
+        }
+    });
+
+    // Stop a container by name
+    fastify.post<{ Params: { name: string } }>('/api/containers/stop/:name', async (request, reply) => {
+        const { name } = request.params;
+
+        if (!name || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(name)) {
+            return reply.status(400).send({ error: 'Invalid container name' });
+        }
+
+        try {
+            await runCommand('docker', ['stop', name], { timeoutMs: 60_000, label: `stop:${name}` });
+            return { success: true, message: `Container ${name} stopped successfully` };
+        } catch (error: unknown) {
+            fastify.log.error({ err: error, container: name }, '[container:stop] failed');
+            return reply.status(500).send({
+                error: 'Failed to stop container',
+                message: getErrorMessage(error),
+            });
+        }
+    });
 }

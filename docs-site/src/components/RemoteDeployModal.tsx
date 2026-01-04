@@ -776,6 +776,36 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                             id="privateKey"
                                             aria-label="Private Key"
                                         />
+                                        {/* SSH Key Generation Guidance */}
+                                        <details className="mt-2 group">
+                                            <summary className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-1">
+                                                <Key className="w-3 h-3" />
+                                                Don't have an SSH key? Generate one
+                                            </summary>
+                                            <div className="mt-2 p-3 bg-muted/30 border border-border rounded-lg text-xs space-y-2">
+                                                <p className="text-muted-foreground">
+                                                    <strong className="text-foreground">1. Generate a secure Ed25519 key</strong> (recommended for 2025):
+                                                </p>
+                                                <code className="block bg-background/80 px-2 py-1.5 rounded font-mono text-[11px] select-all">
+                                                    ssh-keygen -t ed25519 -C "media-stack-deploy"
+                                                </code>
+                                                <p className="text-muted-foreground">
+                                                    <strong className="text-foreground">2. Copy your public key to the server:</strong>
+                                                </p>
+                                                <code className="block bg-background/80 px-2 py-1.5 rounded font-mono text-[11px] select-all">
+                                                    ssh-copy-id -i ~/.ssh/id_ed25519.pub {username || 'user'}@{host || 'server'}
+                                                </code>
+                                                <p className="text-muted-foreground">
+                                                    <strong className="text-foreground">3. View and copy your private key:</strong>
+                                                </p>
+                                                <code className="block bg-background/80 px-2 py-1.5 rounded font-mono text-[11px] select-all">
+                                                    cat ~/.ssh/id_ed25519
+                                                </code>
+                                                <p className="text-muted-foreground mt-2 text-[11px]">
+                                                    Paste the entire output (including BEGIN/END lines) in the field above.
+                                                </p>
+                                            </div>
+                                        </details>
                                     </div>
                                 )}
                                     </>

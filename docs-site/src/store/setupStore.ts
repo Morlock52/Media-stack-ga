@@ -7,6 +7,10 @@ import {
     type StoragePlan,
 } from '../data/storagePlan'
 
+// Auto-save configuration
+const AUTO_SAVE_KEY = 'setup-wizard-autosave'
+const AUTO_SAVE_DEBOUNCE_MS = 2000 // Save after 2 seconds of inactivity
+
 // ---------------------------------------------------------------------------
 // SHAPE OF THE WIZARD CONFIGURATION
 // ---------------------------------------------------------------------------
@@ -127,6 +131,18 @@ export interface SetupStore {
     saveProfile: (name: string) => void
     deleteProfile: (name: string) => void
     loadProfile: (name: string) => void
+
+    // ------ Auto-Save Draft ------
+    // Track last auto-save timestamp
+    lastAutoSaveAt: number | null
+    // Check if there's a recoverable draft
+    hasRecoverableDraft: () => boolean
+    // Get the recoverable draft data
+    getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null
+    // Dismiss/clear the auto-saved draft
+    dismissDraft: () => void
+    // Restore from auto-saved draft
+    restoreDraft: () => void
 }
 
 const scrubSecrets = (config: SetupConfig): SetupConfig => {
@@ -139,6 +155,81 @@ const scrubSecrets = (config: SetupConfig): SetupConfig => {
     wireguardPrivateKey: '',
     wireguardAddresses: '',
     } as SetupConfig
+}
+
+// Auto-save helper functions
+interface AutoSaveDraft {
+    config: SetupConfig
+    selectedServices: string[]
+    mode: string | null
+    currentStep: number
+    savedAt: number
+}
+
+let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
+
+const saveAutoSaveDraft = (state: Pick<SetupStore, 'config' | 'selectedServices' | 'mode' | 'currentStep'>) => {
+    // Don't save if on welcome step with no meaningful data
+    if (state.currentStep === 0 && state.selectedServices.length === 0) {
+        return
+    }
+
+    const draft: AutoSaveDraft = {
+        config: scrubSecrets(state.config),
+        selectedServices: state.selectedServices,
+        mode: state.mode,
+        currentStep: state.currentStep,
+        savedAt: Date.now(),
+    }
+
+    try {
+        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft))
+    } catch (e) {
+        // localStorage might be full or unavailable
+        console.warn('Failed to auto-save draft:', e)
+    }
+}
+
+const getAutoSaveDraft = (): AutoSaveDraft | null => {
+    try {
+        const saved = localStorage.getItem(AUTO_SAVE_KEY)
+        if (!saved) return null
+
+        const draft = JSON.parse(saved) as AutoSaveDraft
+
+        // Draft is valid for 7 days
+        const DRAFT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
+        if (Date.now() - draft.savedAt > DRAFT_EXPIRY_MS) {
+            localStorage.removeItem(AUTO_SAVE_KEY)
+            return null
+        }
+
+        // Only return if there's meaningful data (at least one service selected or past welcome step)
+        if (draft.selectedServices.length > 0 || draft.currentStep > 0) {
+            return draft
+        }
+
+        return null
+    } catch {
+        return null
+    }
+}
+
+const clearAutoSaveDraft = () => {
+    try {
+        localStorage.removeItem(AUTO_SAVE_KEY)
+    } catch {
+        // Ignore
+    }
+}
+
+const debouncedAutoSave = (state: Pick<SetupStore, 'config' | 'selectedServices' | 'mode' | 'currentStep'>) => {
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout)
+    }
+    autoSaveTimeout = setTimeout(() => {
+        saveAutoSaveDraft(state)
+    }, AUTO_SAVE_DEBOUNCE_MS)
 }
 
 const mergeStoragePlan = (plan?: StoragePlan, rootOverride?: string): StoragePlan => {
@@ -447,6 +538,49 @@ export const useSetupStore = create<SetupStore>()(
                         currentStep: 0,
                     }
                 }),
+
+            // ------ Auto-Save Draft ------
+            lastAutoSaveAt: null,
+
+            hasRecoverableDraft: () => {
+                return getAutoSaveDraft() !== null
+            },
+
+            getRecoverableDraft: () => {
+                const draft = getAutoSaveDraft()
+                if (!draft) return null
+                return {
+                    config: draft.config,
+                    selectedServices: draft.selectedServices,
+                    mode: draft.mode,
+                    savedAt: draft.savedAt,
+                }
+            },
+
+            dismissDraft: () => {
+                clearAutoSaveDraft()
+            },
+
+            restoreDraft: () =>
+                set(() => {
+                    const draft = getAutoSaveDraft()
+                    if (!draft) return {}
+
+                    // Clear the draft after restoring
+                    clearAutoSaveDraft()
+
+                    return {
+                        config: {
+                            ...draft.config,
+                            storagePlan: mergeStoragePlan(draft.config.storagePlan),
+                        },
+                        selectedServices: draft.selectedServices,
+                        mode: draft.mode as 'newbie' | 'expert' | null,
+                        currentStep: draft.currentStep,
+                        storageMode: 'advanced',
+                        advancedPlanCache: mergeStoragePlan(draft.config.storagePlan),
+                    }
+                }),
         }),
         {
             name: 'setup-wizard-storage',
@@ -468,7 +602,27 @@ export const useSetupStore = create<SetupStore>()(
                 ),
                 advancedPlanCache: state.advancedPlanCache,
                 appliedTemplateId: state.appliedTemplateId,
+                lastAutoSaveAt: state.lastAutoSaveAt,
             })
         }
     )
 )
+
+// Subscribe to store changes and trigger auto-save
+useSetupStore.subscribe((state, prevState) => {
+    // Only auto-save if meaningful state changed
+    const meaningfulChange =
+        state.currentStep !== prevState.currentStep ||
+        state.selectedServices !== prevState.selectedServices ||
+        state.config !== prevState.config ||
+        state.mode !== prevState.mode
+
+    if (meaningfulChange) {
+        debouncedAutoSave({
+            config: state.config,
+            selectedServices: state.selectedServices,
+            mode: state.mode,
+            currentStep: state.currentStep,
+        })
+    }
+})

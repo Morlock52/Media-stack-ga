@@ -18,10 +18,37 @@ import { remoteRoutes } from './routes/remote.js';
 import { arrRoutes } from './routes/arr.js';
 import { orchestratorRoutes } from './routes/orchestrator.js';
 
+// Secret patterns to redact in logs for security
+const SECRET_REDACT_PATHS = [
+    // API Keys
+    'req.headers.authorization',
+    'req.headers["x-api-key"]',
+    'req.body.apiKey',
+    'req.body.api_key',
+    'req.body.openaiApiKey',
+    'req.body.cloudflareToken',
+    'req.body.plexClaim',
+    // SSH Credentials
+    'req.body.password',
+    'req.body.privateKey',
+    'req.body.sshPassword',
+    // Environment secrets
+    'req.body.wireguardPrivateKey',
+    'req.body.authToken',
+    // Response body secrets (if accidentally included)
+    'res.body.apiKey',
+    'res.body.token',
+    'res.body.password',
+];
+
 export const buildApp = async (): Promise<FastifyInstance> => {
     const app = Fastify({
         logger: {
             level: process.env.LOG_LEVEL || 'info',
+            redact: {
+                paths: SECRET_REDACT_PATHS,
+                censor: '[REDACTED]'
+            },
             transport: {
                 target: 'pino-pretty',
                 options: {

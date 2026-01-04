@@ -1024,6 +1024,67 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                   </div>
                 </div>
 
+                {/* Active Provider Badges - Voice Fallback Status */}
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${
+                          voiceInput === 'realtime' && realtimeVoice.isAvailable
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            : voiceInput === 'server' && sttStatus?.hasKey
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                            : 'bg-muted/40 text-muted-foreground border border-border'
+                        }`}>
+                          <Mic className="w-3 h-3" />
+                          {voiceInput === 'realtime' && realtimeVoice.isAvailable
+                            ? 'WebRTC Realtime'
+                            : voiceInput === 'server' && sttStatus?.hasKey
+                            ? 'OpenAI Whisper'
+                            : 'Browser STT'}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs max-w-48">
+                        {voiceInput === 'realtime'
+                          ? 'Using WebRTC for ultra-low latency (~200ms)'
+                          : voiceInput === 'server'
+                          ? 'Using OpenAI Whisper for high accuracy'
+                          : 'Using built-in browser speech recognition (no API key needed)'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <span className="text-muted-foreground/50">→</span>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${
+                          voiceOutput === 'openai' && hasOpenAiTts
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : voiceOutput === 'browser'
+                            ? 'bg-muted/40 text-muted-foreground border border-border'
+                            : 'bg-muted/20 text-muted-foreground/50 border border-border/50'
+                        }`}>
+                          <Headphones className="w-3 h-3" />
+                          {voiceOutput === 'openai' && hasOpenAiTts
+                            ? 'OpenAI TTS'
+                            : voiceOutput === 'browser'
+                            ? 'Browser TTS'
+                            : 'Voice Off'}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs max-w-48">
+                        {voiceOutput === 'openai'
+                          ? 'Using OpenAI text-to-speech for natural voice'
+                          : voiceOutput === 'browser'
+                          ? 'Using built-in browser speech synthesis'
+                          : 'Voice responses are disabled'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
                 {/* Status Card - Primary Focus */}
                 <div className="p-4 rounded-xl bg-card/50 border border-border mb-4">
                   <div className="flex items-center gap-4">

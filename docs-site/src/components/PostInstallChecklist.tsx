@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { 
+import {
     CheckCircle, ExternalLink, Copy, Check, ChevronDown, ChevronRight,
     Server, Key, Shield, Tv, Bell, Activity, Settings,
     Terminal, Clock, Sparkles
 } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
 import { controlServer } from '../utils/controlServer'
+import { HealthDashboard } from './HealthDashboard'
 
 interface ChecklistItem {
     id: string
@@ -275,6 +276,9 @@ export function PostInstallChecklist() {
                     transition={{ duration: 0.5 }}
                 />
             </div>
+
+            {/* Health Dashboard */}
+            <HealthDashboard />
 
             {/* Checklist Items */}
             <div className="space-y-3">

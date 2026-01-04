@@ -198,6 +198,63 @@ function formatUserFriendlyError(context: ErrorContext): string {
     return "I encountered an issue processing your request. Please try again.";
 }
 
+// Source attribution types and helpers
+interface SourceAttribution {
+    type: 'documentation' | 'logs' | 'config' | 'tool' | 'knowledge';
+    name: string;
+    description?: string;
+}
+
+function detectSourcesFromContext(
+    toolsUsed: string[],
+    toolUsed: { command?: string; type?: string } | null,
+    agentId: string
+): SourceAttribution[] {
+    const sources: SourceAttribution[] = [];
+
+    // Add tool-based sources
+    if (toolsUsed.includes('analyze_logs') || toolUsed?.type === 'logs') {
+        sources.push({
+            type: 'logs',
+            name: 'Container Logs',
+            description: `Live logs from ${toolUsed?.command?.replace('docker logs --tail ', '') || 'service'}`
+        });
+    }
+
+    if (toolsUsed.includes('validate_config') || toolUsed?.type === 'validation') {
+        sources.push({
+            type: 'config',
+            name: 'Config Validation',
+            description: 'File syntax check'
+        });
+    }
+
+    if (toolsUsed.includes('bootstrap_arr')) {
+        sources.push({
+            type: 'tool',
+            name: '*Arr Bootstrap',
+            description: 'Extracted API keys from running containers'
+        });
+    }
+
+    // Add agent-specific knowledge sources
+    const agentKnowledge: Record<string, SourceAttribution> = {
+        'setup': { type: 'documentation', name: 'Setup Guide', description: 'Installation & configuration best practices' },
+        'debug': { type: 'knowledge', name: 'Troubleshooting KB', description: 'Error patterns and solutions' },
+        'architect': { type: 'documentation', name: 'Architecture Docs', description: 'Deployment planning guidance' },
+        'apps': { type: 'documentation', name: 'App Guides', description: 'Service-specific configuration' },
+        'security': { type: 'documentation', name: 'Security Guide', description: 'Cloudflare, Authelia, VPN setup' },
+        'deploy': { type: 'knowledge', name: 'Deploy Playbook', description: 'SSH deployment procedures' },
+        'query': { type: 'knowledge', name: 'General KB', description: 'Media stack documentation' },
+    };
+
+    if (agentKnowledge[agentId]) {
+        sources.push(agentKnowledge[agentId]);
+    }
+
+    return sources;
+}
+
 // Parse error into structured context
 function parseErrorContext(err: unknown, provider: string = 'openai'): ErrorContext {
     const error = err instanceof Error ? err : new Error('Unknown error');
@@ -1234,6 +1291,9 @@ Return ONLY a JSON object with the following structure:
                     tokens: totalPromptTokens + totalCompletionTokens
                 });
 
+                // Detect sources used in generating this response
+                const sources = detectSourcesFromContext(toolsUsed, toolUsed, agent.id);
+
                 return {
                     answer: answer || 'Sorry, I could not generate a response.',
                     agent: { id: agent.id, name: agent.name, icon: agent.icon },
@@ -1241,7 +1301,8 @@ Return ONLY a JSON object with the following structure:
                     aiPowered: true,
                     toolUsed,
                     model: modelToUse,
-                    complexity
+                    complexity,
+                    sources // Include source attribution for transparency
                 };
 
             } catch (error: unknown) {

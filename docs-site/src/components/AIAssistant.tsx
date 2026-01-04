@@ -15,6 +15,12 @@ import { useShallow } from 'zustand/react/shallow'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
 import { useStreamingChat } from '../hooks/useStreamingChat'
 
+interface SourceAttribution {
+    type: 'documentation' | 'logs' | 'config' | 'tool' | 'knowledge';
+    name: string;
+    description?: string;
+}
+
 interface Message {
     role: 'user' | 'assistant'
     content: string
@@ -22,6 +28,7 @@ interface Message {
     aiPowered?: boolean
     toolUsed?: { command: string }
     confidence?: ConfidenceLevel
+    sources?: SourceAttribution[]
 }
 
 interface AIAssistantProps {
@@ -705,6 +712,36 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                                 <div className="mt-1 mx-1 p-1.5 rounded bg-muted/60 border border-border text-[10px] font-mono text-primary flex items-center gap-1.5 opacity-80">
                                                     <span className="shrink-0">💻</span>
                                                     <span className="truncate">Executed: {msg.toolUsed.command}</span>
+                                                </div>
+                                            )}
+                                            {/* Source attribution for AI transparency */}
+                                            {msg.sources && msg.sources.length > 0 && (
+                                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                                    {msg.sources.map((source, sIdx) => (
+                                                        <TooltipProvider key={sIdx}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium cursor-help ${
+                                                                        source.type === 'logs' ? 'bg-blue-500/20 text-blue-300' :
+                                                                        source.type === 'config' ? 'bg-amber-500/20 text-amber-300' :
+                                                                        source.type === 'tool' ? 'bg-purple-500/20 text-purple-300' :
+                                                                        source.type === 'documentation' ? 'bg-cyan-500/20 text-cyan-300' :
+                                                                        'bg-muted/60 text-muted-foreground'
+                                                                    }`}>
+                                                                        {source.type === 'logs' && '📋'}
+                                                                        {source.type === 'config' && '⚙️'}
+                                                                        {source.type === 'tool' && '🔧'}
+                                                                        {source.type === 'documentation' && '📖'}
+                                                                        {source.type === 'knowledge' && '🧠'}
+                                                                        {source.name}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="top" className="text-xs">
+                                                                    {source.description || `Source: ${source.name}`}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    ))}
                                                 </div>
                                             )}
                                             {msg.role === 'assistant' && (

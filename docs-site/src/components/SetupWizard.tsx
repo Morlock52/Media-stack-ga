@@ -1,15 +1,18 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { toast } from 'sonner'
 import {
-    ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw,
-    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal
+    ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw, Save,
+    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
 } from 'lucide-react'
 import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
-import { VoiceCompanion, type VoicePlanSummary } from './VoiceCompanion'
+import type { VoicePlanSummary } from './VoiceCompanion'
+
+// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
+const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
 import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'
 import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
 import {
@@ -56,7 +59,8 @@ export function SetupWizard() {
         updateStoragePath, setCurrentStep,
         nextStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
-        saveProfile, deleteProfile, loadProfile
+        saveProfile, deleteProfile, loadProfile,
+        hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
     } = useSetupStore()
     const [copied, setCopied] = useState(false)
     const [shakeField, setShakeField] = useState<string | null>(null)
@@ -318,6 +322,8 @@ export function SetupWizard() {
     }
 
     const [showResetConfirm, setShowResetConfirm] = useState(false)
+    const [showDraftRecovery, setShowDraftRecovery] = useState(false)
+    const [draftInfo, setDraftInfo] = useState<{ savedAt: number; serviceCount: number } | null>(null)
 
     const handleReset = () => {
         if (showResetConfirm) {
@@ -340,6 +346,34 @@ export function SetupWizard() {
         if (!newProfileName.trim()) return
         saveProfile(newProfileName)
         setNewProfileName('')
+    }
+
+    // Check for recoverable draft on initial mount
+    useEffect(() => {
+        const draft = hasRecoverableDraft()
+        if (draft && currentStep === 0 && selectedServices.length === 0) {
+            const draftData = getRecoverableDraft()
+            if (draftData) {
+                setDraftInfo({
+                    savedAt: draftData.savedAt,
+                    serviceCount: draftData.selectedServices.length,
+                })
+                setShowDraftRecovery(true)
+            }
+        }
+    // Only run on mount - intentionally empty deps array
+    }, [])
+
+    const handleRestoreDraft = () => {
+        restoreDraft()
+        setShowDraftRecovery(false)
+        setDraftInfo(null)
+    }
+
+    const handleDismissDraft = () => {
+        dismissDraft()
+        setShowDraftRecovery(false)
+        setDraftInfo(null)
     }
 
     const generateEnvFile = () => buildEnvFile(config, selectedServices)
@@ -490,12 +524,21 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
 
     return (
         <>
-            <VoiceCompanion
-                isOpen={showVoiceCompanion}
-                onClose={() => setShowVoiceCompanion(false)}
-                onApplyPlan={handleApplyVoicePlan}
-                templateMode={mode}
-            />
+            <Suspense fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <div className="bg-card border border-border rounded-xl shadow-2xl px-4 py-3 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Loading voice assistant…</span>
+                    </div>
+                </div>
+            }>
+                <VoiceCompanion
+                    isOpen={showVoiceCompanion}
+                    onClose={() => setShowVoiceCompanion(false)}
+                    onApplyPlan={handleApplyVoicePlan}
+                    templateMode={mode}
+                />
+            </Suspense>
 
             {/* Floating Voice Companion Trigger */}
             {mode === 'newbie' && !showVoiceCompanion && (
@@ -515,6 +558,64 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                 onDismiss={dismissSuggestion}
                 onAction={handleSuggestionAction}
             />
+
+            {/* Draft Recovery Modal */}
+            <AnimatePresence>
+                {showDraftRecovery && draftInfo && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-6"
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <Save className="w-6 h-6 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                                        Resume Your Setup?
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        We found an unsaved configuration from{' '}
+                                        {new Date(draftInfo.savedAt).toLocaleDateString(undefined, {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit'
+                                        })}
+                                        {draftInfo.serviceCount > 0 && (
+                                            <> with <strong>{draftInfo.serviceCount} services</strong> selected</>
+                                        )}.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={handleRestoreDraft}
+                                            className="flex-1"
+                                        >
+                                            <RotateCcw className="w-4 h-4 mr-2" />
+                                            Resume
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleDismissDraft}
+                                            className="flex-1"
+                                        >
+                                            Start Fresh
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="min-h-screen pt-24 pb-28 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
@@ -725,33 +826,44 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                         </p>
                     </div>
 
-                    {/* Progress Steps */}
+                    {/* Progress Steps - Click to navigate to completed steps */}
                     <div className="mb-12">
                         <div className="flex items-center justify-between max-w-3xl mx-auto">
                             {steps.map((step, index) => {
                                 const Icon = step.icon
                                 const isActive = index === currentStep
                                 const isComplete = index < currentStep
+                                const isClickable = isComplete // Can click on completed steps
 
                                 return (
                                     <div key={index} className="flex items-center flex-1">
                                         <div className="flex flex-col items-center flex-1">
-                                            <motion.div
+                                            <motion.button
+                                                type="button"
+                                                onClick={() => isClickable && setCurrentStep(index)}
+                                                disabled={!isClickable}
                                                 className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${isActive
                                                     ? 'bg-primary/20 border-primary text-primary animate-pulse-glow'
                                                     : isComplete
-                                                        ? 'bg-green-500/20 border-green-500 text-green-300'
-                                                        : 'bg-muted/40 border-border text-muted-foreground'
+                                                        ? 'bg-green-500/20 border-green-500 text-green-300 hover:bg-green-500/30 hover:scale-105 cursor-pointer'
+                                                        : 'bg-muted/40 border-border text-muted-foreground cursor-not-allowed'
                                                     }`}
                                                 animate={isComplete ? { scale: [1, 1.1, 1] } : {}}
                                                 transition={{ duration: 0.3 }}
+                                                title={isClickable ? `Go back to ${step.title}` : isActive ? 'Current step' : 'Complete previous steps first'}
+                                                aria-label={isClickable ? `Navigate to ${step.title}` : step.title}
                                             >
                                                 {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
-                                            </motion.div>
-                                            <span className={`mt-2 text-xs font-medium hidden md:block ${isActive ? 'text-primary' : isComplete ? 'text-green-300' : 'text-muted-foreground'
-                                                }`}>
+                                            </motion.button>
+                                            <button
+                                                type="button"
+                                                onClick={() => isClickable && setCurrentStep(index)}
+                                                disabled={!isClickable}
+                                                className={`mt-2 text-xs font-medium hidden md:block transition-colors ${isActive ? 'text-primary' : isComplete ? 'text-green-300 hover:text-green-200 cursor-pointer' : 'text-muted-foreground cursor-not-allowed'
+                                                }`}
+                                            >
                                                 {step.title}
-                                            </span>
+                                            </button>
                                         </div>
                                         {index < steps.length - 1 && (
                                             <motion.div
