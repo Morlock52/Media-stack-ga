@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { toast } from 'sonner'
 import {
@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
 import { VoiceCompanion, type VoicePlanSummary } from './VoiceCompanion'
+import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'
+import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
 import {
     basicConfigSchema,
     advancedSettingsSchema,
@@ -20,6 +22,7 @@ import { TemplateSelector } from './TemplateSelector'
 import { Template } from '../data/templates'
 import { importConfiguration, downloadAsFile } from '../utils/configManager'
 import dockerComposeTemplate from '../../../docker-compose.yml?raw'
+import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'
 import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
@@ -33,6 +36,7 @@ import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'
 import { StackSelectionStep } from './wizard/steps/StackSelectionStep'
 import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'
 import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
+import { QuickStartStep } from './wizard/steps/QuickStartStep'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 
 const steps = [
@@ -47,8 +51,9 @@ const steps = [
 export function SetupWizard() {
     const {
         currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,
+        quickStartMode,
         setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,
-        updateStoragePath,
+        updateStoragePath, setCurrentStep,
         nextStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
         saveProfile, deleteProfile, loadProfile
@@ -64,6 +69,17 @@ export function SetupWizard() {
 
     // Accessibility: Respect user's reduced motion preference
     const prefersReducedMotion = useReducedMotion()
+
+    // Proactive suggestions based on current step and config
+    const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)
+
+    // Handle proactive suggestion actions
+    const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {
+        suggestion.action()
+        toast.success(`Applied: ${suggestion.text.replace('?', '')}`, {
+            description: suggestion.description
+        })
+    }, [])
 
     // Animation variants that respect reduced motion
     const fadeInUp = useMemo(() => prefersReducedMotion
@@ -88,11 +104,17 @@ export function SetupWizard() {
 
     // Apply voice plan to wizard
     const handleApplyVoicePlan = (plan: VoicePlanSummary) => {
+        const appliedChanges: string[] = []
+
         if (plan.services?.length) {
             setSelectedServices(Array.from(new Set(plan.services)))
+            appliedChanges.push(`${plan.services.length} services`)
         }
         const configUpdates: Partial<SetupConfig> = {}
-        if (plan.domain) configUpdates.domain = plan.domain
+        if (plan.domain) {
+            configUpdates.domain = plan.domain
+            appliedChanges.push(`domain: ${plan.domain}`)
+        }
         if (Object.keys(configUpdates).length) {
             updateConfig(configUpdates)
         }
@@ -100,12 +122,33 @@ export function SetupWizard() {
             updateServiceConfig('plex', { mediaPath: plan.storagePaths.media })
             updateStoragePath('movies', { path: plan.storagePaths.media })
             updateStoragePath('tv', { path: plan.storagePaths.media })
+            appliedChanges.push('media paths')
         }
         if (plan.storagePaths?.downloads) {
             updateServiceConfig('torrent', { downloadsPath: plan.storagePaths.downloads })
             updateStoragePath('downloads', { path: plan.storagePaths.downloads })
+            appliedChanges.push('download paths')
         }
         setShowVoiceCompanion(false)
+
+        // Agentic: Show success feedback and navigate to Stack Selection
+        if (appliedChanges.length > 0) {
+            toast.success('Voice plan applied!', {
+                description: `Set up: ${appliedChanges.join(', ')}`,
+                action: {
+                    label: 'Undo',
+                    onClick: () => {
+                        setSelectedServices([])
+                        updateConfig({ domain: '' })
+                        toast.info('Plan changes undone')
+                    }
+                }
+            })
+            // Navigate to Stack Selection step to review services
+            if (plan.services?.length && currentStep < 2) {
+                setCurrentStep(2)
+            }
+        }
     }
 
     // Load config from URL on mount
@@ -166,15 +209,17 @@ export function SetupWizard() {
     }, [currentStep])
 
     // Step 1 form (Basic Config)
+    // Note: Type assertion needed for Zod 4 compatibility with @hookform/resolvers
     const step1Form = useForm<BasicConfigFormData>({
-        resolver: zodResolver(basicConfigSchema),
+        resolver: zodResolver(basicConfigSchema as any),
         defaultValues: config,
         mode: 'onChange'
     })
 
     // Step 4 form (Advanced Settings)
+    // Note: Type assertion needed for Zod 4 compatibility with @hookform/resolvers
     const step4Form = useForm<AdvancedSettingsFormData>({
-        resolver: zodResolver(advancedSettingsSchema),
+        resolver: zodResolver(advancedSettingsSchema as any),
         defaultValues: {
             cloudflareToken: config.cloudflareToken,
             plexClaim: config.plexClaim,
@@ -357,6 +402,12 @@ ingress:
     service: http://authelia:9091
   - hostname: hub.${config.domain}
     service: http://homepage:3000
+  - hostname: portainer.${config.domain}
+    service: http://portainer:9000
+  - hostname: dozzle.${config.domain}
+    service: http://dozzle:8080
+  - hostname: grafana.${config.domain}
+    service: http://grafana:3000
 ${selectedServices.includes('plex') ? `  - hostname: plex.${config.domain}
     service: http://plex:32400` : ''}
 ${selectedServices.includes('jellyfin') ? `  - hostname: jellyfin.${config.domain}
@@ -379,6 +430,14 @@ ${selectedServices.includes('notify') ? `  - hostname: notifiarr.${config.domain
     service: http://notifiarr:5454` : ''}
 ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
     service: http://gluetun:8080` : ''}
+${selectedServices.includes('mealie') ? `  - hostname: mealie.${config.domain}
+    service: http://mealie:9000` : ''}
+${selectedServices.includes('kavita') ? `  - hostname: kavita.${config.domain}
+    service: http://kavita:5000` : ''}
+${selectedServices.includes('audiobookshelf') ? `  - hostname: audiobookshelf.${config.domain}
+    service: http://audiobookshelf:13378` : ''}
+${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.domain}
+    service: http://photoprism:2342` : ''}
   - service: http_status:404
 `
     }
@@ -405,7 +464,11 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
         downloadFile(generateEnvFile(), '.env')
         downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')
         downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')
-        downloadFile(dockerComposeTemplate, 'docker-compose.yml')
+        const compose =
+            config.deploymentMode === 'local'
+                ? dockerComposeLocalTemplate
+                : dockerComposeTemplate
+        downloadFile(compose, 'docker-compose.yml')
     }
 
     const handleShare = () => {
@@ -445,6 +508,13 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                     <Mic className="w-6 h-6" />
                 </motion.button>
             )}
+
+            {/* Proactive Suggestions - Agentic AI assistance */}
+            <ProactiveSuggestionCard
+                suggestions={suggestions}
+                onDismiss={dismissSuggestion}
+                onAction={handleSuggestionAction}
+            />
 
             <div className="min-h-screen pt-24 pb-28 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
@@ -720,8 +790,9 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                                 {/* Step 0: Welcome */}
                                 {currentStep === 0 && <WelcomeStep />}
 
-                                {/* Step 1: Basic Configuration */}
-                                {currentStep === 1 && (
+                                {/* Step 1: Quick Start (if enabled) or Basic Configuration */}
+                                {currentStep === 1 && quickStartMode && <QuickStartStep />}
+                                {currentStep === 1 && !quickStartMode && (
                                     <BasicConfigurationStep
                                         form={step1Form}
                                         shakeField={shakeField}
@@ -772,8 +843,8 @@ ${selectedServices.includes('torrent') ? `  - hostname: qbt.${config.domain}
                         )}
                     </div>
 
-                    {/* Navigation Buttons */}
-                    {currentStep > 0 && (
+                    {/* Navigation Buttons - hidden for QuickStartStep which has its own button */}
+                    {currentStep > 0 && !(quickStartMode && currentStep === 1) && (
                         <div className="sticky bottom-4 z-30 mt-8">
                             <div className="flex justify-between items-center glass-ultra rounded-2xl border border-border/60 px-4 py-3 backdrop-blur">
                                 <Button

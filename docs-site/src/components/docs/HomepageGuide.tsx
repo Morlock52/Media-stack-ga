@@ -33,9 +33,9 @@ export function HomepageGuide() {
                 <div>
                     <h3 className="text-base font-semibold text-white mb-2">Access</h3>
                     <p>
-                        Local: <a href="http://localhost:3000" target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">http://localhost:3000</a>
+                        Local ports (<code>docker-compose.local.yml</code>): <code>http://&lt;server-ip&gt;:3000</code>
                         <br />
-                        Remote: <code>https://hub.yourdomain.com</code> (if Cloudflare Tunnel is set up).
+                        Reverse proxy (<code>docker-compose.yml</code>): <code>http://&lt;server-ip&gt;</code> (LAN) or <code>https://hub.yourdomain.com</code> (tunnel).
                     </p>
                 </div>
             </section>

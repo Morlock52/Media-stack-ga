@@ -74,7 +74,7 @@ fi
 
 TEST_HOST="${TEST_HOST:-}"
 if [[ -z "${TEST_HOST}" && -n "${DOMAIN}" && "${DOMAIN}" != "local" ]]; then
-  TEST_HOST="homepage.${DOMAIN}"
+  TEST_HOST="hub.${DOMAIN}"
 fi
 
 HEALTH_PATH="${HEALTH_PATH:-/healthz}"

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { Mic, StopCircle, Loader2, Sparkles, CheckCircle2, AlertTriangle, Send, Volume2, VolumeX, Settings2, Headphones, Zap, Radio, X } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
 import { useRealtimeVoice } from '../hooks/useRealtimeVoice'
-import { useStreamingTts } from '../hooks/useStreamingTts'
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
@@ -61,11 +60,10 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
-  const { openai, elevenlabs, defaultProvider } = useControlServerTtsStatus()
+  const { openai } = useControlServerTtsStatus()
   const hasOpenAiTts = Boolean(openai?.hasKey)
-  const hasElevenLabsTts = Boolean(elevenlabs?.hasKey)
   // Default to browser TTS - works without any API keys
-  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'elevenlabs' | 'browser' | 'off'>('browser')
+  const [voiceOutput, setVoiceOutput] = useState<'openai' | 'browser' | 'off'>('browser')
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const hasUserSetVoiceOutputRef = useRef(false)
   // Track if we've shown the "no API key" welcome message
@@ -143,13 +141,6 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
     },
   })
 
-  // Streaming TTS with ElevenLabs (75ms TTFB)
-  const streamingTts = useStreamingTts({
-    onStart: () => setStatus('speaking'),
-    onEnd: () => setStatus('idle'),
-    onError: (err) => console.warn('Streaming TTS error:', err),
-  })
-
   // Fetch STT status on mount - but don't auto-upgrade away from browser
   useEffect(() => {
     const fetchSttStatus = async () => {
@@ -181,15 +172,13 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
 
   useEffect(() => {
     if (!hasOpenAiTts && voiceOutput === 'openai') setVoiceOutput('browser')
-    if (!hasElevenLabsTts && voiceOutput === 'elevenlabs') setVoiceOutput('browser')
 
     if (!hasUserSetVoiceOutputRef.current && voiceOutput === 'browser') {
-      if (defaultProvider === 'elevenlabs' && hasElevenLabsTts) setVoiceOutput('elevenlabs')
-      else if (hasOpenAiTts) setVoiceOutput('openai')
+      if (hasOpenAiTts) setVoiceOutput('openai')
     }
-  }, [defaultProvider, hasElevenLabsTts, hasOpenAiTts, voiceOutput])
+  }, [hasOpenAiTts, voiceOutput])
 
-  const handleVoiceOutputChange = useCallback((value: 'openai' | 'elevenlabs' | 'browser' | 'off') => {
+  const handleVoiceOutputChange = useCallback((value: 'openai' | 'browser' | 'off') => {
     hasUserSetVoiceOutputRef.current = true
     setVoiceOutput(value)
   }, [])
@@ -457,28 +446,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         return
       }
 
-      // Try streaming TTS first for ElevenLabs (75ms latency vs 300ms+)
-      if (voiceOutput === 'elevenlabs' && streamingTts.isAvailable && hasUserInteracted) {
-        try {
-          if (itemId) {
-            updateTranscriptAudioStatus(itemId, 'loading')
-            currentAudioItemIdRef.current = itemId
-          }
-
-          await streamingTts.speak(trimmed)
-
-          // Update status when done (hook handles speaking status)
-          if (itemId) updateTranscriptAudioStatus(itemId, 'done')
-          currentAudioItemIdRef.current = null
-          return
-        } catch (err) {
-          console.warn('Streaming TTS failed, falling back:', err)
-          // Fall through to regular TTS
-        }
-      }
-
-      const useRemoteTts =
-        (voiceOutput === 'openai' && hasOpenAiTts) || (voiceOutput === 'elevenlabs' && hasElevenLabsTts)
+      const useRemoteTts = voiceOutput === 'openai' && hasOpenAiTts
 
       if (useRemoteTts && hasUserInteracted) {
         try {
@@ -494,7 +462,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
             headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
             body: JSON.stringify({
               text: trimmed,
-              provider: voiceOutput === 'elevenlabs' ? 'elevenlabs' : 'openai',
+              provider: 'openai',
             }),
           })
 
@@ -508,14 +476,14 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
             }
 
             if (response.status === 401 || reason === 'invalid_api_key') {
-              setError(`${voiceOutput === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'} key invalid; using browser voice.`)
+              setError('OpenAI key invalid; using browser voice.')
               handleVoiceOutputChange('browser')
               if (itemId) updateTranscriptAudioStatus(itemId, 'failed')
               throw new Error('invalid_api_key')
             }
 
             if (response.status === 429 || reason === 'rate_limited') {
-              setError(`${voiceOutput === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'} rate limited; using browser voice.`)
+              setError('OpenAI rate limited; using browser voice.')
               handleVoiceOutputChange('browser')
               if (itemId) updateTranscriptAudioStatus(itemId, 'failed')
               throw new Error('rate_limited')
@@ -605,7 +573,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
         setStatus('idle')
       }
     })()
-  }, [availableVoices, hasElevenLabsTts, hasOpenAiTts, hasUserInteracted, handleVoiceOutputChange, pickBestBrowserVoice, stopSpeaking, updateTranscriptAudioStatus, voiceOutput])
+  }, [availableVoices, hasOpenAiTts, hasUserInteracted, handleVoiceOutputChange, pickBestBrowserVoice, stopSpeaking, updateTranscriptAudioStatus, voiceOutput])
 
   // Pre-load voices (some browsers load them async)
   useEffect(() => {
@@ -837,7 +805,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
   useEffect(() => {
     if (isOpen && transcriptItems.length === 0) {
       // Show different greeting based on whether API keys are configured
-      const hasAnyApiKey = hasOpenAiTts || hasElevenLabsTts || sttStatus?.hasKey
+      const hasAnyApiKey = hasOpenAiTts || sttStatus?.hasKey
       let greeting: string
 
       if (!hasAnyApiKey && !hasShownNoApiKeyWelcomeRef.current) {
@@ -852,7 +820,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
       const itemId = addTranscriptItem('system', greeting, 'loading')
       speak(greeting, itemId)
     }
-  }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak, hasOpenAiTts, hasElevenLabsTts, sttStatus?.hasKey])
+  }, [addTranscriptItem, isOpen, templateMode, transcriptItems.length, speak, hasOpenAiTts, sttStatus?.hasKey])
 
   const stopRecording = useCallback(() => {
     if (voiceInput === 'realtime') {
@@ -1045,12 +1013,14 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
               <div className="md:w-[45%] p-5 md:p-6 bg-gradient-to-br from-emerald-500/5 via-cyan-500/5 to-lime-500/5 border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 max-h-[45vh] md:max-h-full overflow-y-auto shrink-0 md:shrink">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
-                    <Mic className="w-5 h-5 text-emerald-400" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <Mic className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-foreground">Voice Setup Guide</h3>
-                    <p className="text-xs text-muted-foreground">Speak or type to configure your media stack</p>
+                    <p className="text-xs text-muted-foreground">
+                      Speak or type to configure your media stack
+                    </p>
                   </div>
                 </div>
 
@@ -1233,7 +1203,7 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                       </label>
                       <select
                         value={voiceOutput}
-                        onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'elevenlabs' | 'browser' | 'off')}
+                        onChange={(e) => handleVoiceOutputChange(e.target.value as 'openai' | 'browser' | 'off')}
                         className="text-xs bg-background border border-border rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                         aria-label="Voice output mode"
                         disabled={voiceInput === 'realtime'}
@@ -1241,7 +1211,6 @@ export function VoiceCompanion({ isOpen, onClose, onApplyPlan, templateMode }: V
                         <option value="off">Off</option>
                         <option value="browser">Browser</option>
                         <option value="openai" disabled={!hasOpenAiTts}>OpenAI</option>
-                        <option value="elevenlabs" disabled={!hasElevenLabsTts}>ElevenLabs</option>
                       </select>
                     </div>
 

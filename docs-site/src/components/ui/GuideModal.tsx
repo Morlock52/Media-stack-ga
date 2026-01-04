@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Settings, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from './button'

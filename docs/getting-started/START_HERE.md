@@ -24,7 +24,8 @@ Do you want a guided UI experience?
 
 | Mode | Command | Notes |
 | --- | --- | --- |
-| LAN-only | `docker compose up -d` | No SSO, no Tunnel |
+| LAN (direct ports, easiest) | `docker compose -f docker-compose.local.yml up -d` | No SSO, no Tunnel |
+| LAN/Remote (reverse proxy) | `docker compose up -d` | Traefik on port 80 (host/path routes) |
 | Remote (Zero-Trust) | `docker compose --profile auth --profile cloudflared up -d` | Authelia + Cloudflare Tunnel |
 
 ---
@@ -57,7 +58,9 @@ open http://localhost:3002   # macOS
 
 - Visual service selection
 - Storage planner
-- Generated `.env` and `docker-compose.yml`
+- Generated `.env` and compose files:
+  - `docker-compose.local.yml` (Home Network / direct ports)
+  - `docker-compose.yml` (Remote Access / reverse proxy + optional tunnel)
 - One-click download of all configs
 - Optional remote deploy via SSH (requires the Wizard API to be reachable from the UI; Docker Wizard mode proxies `/api` automatically, but static-hosted UIs must set `VITE_CONTROL_SERVER_URL` at build time)
 
@@ -128,18 +131,18 @@ cp .env.example .env
 nano .env  # or your preferred editor
 
 # 3. Start the stack
-docker compose up -d
+# Pick ONE:
+docker compose -f docker-compose.local.yml up -d   # Local ports (easy)
+docker compose up -d                               # Traefik reverse proxy (port 80)
 ```
 
-### Local LAN (no SSO/tunnel)
+### Local LAN (direct ports — easiest)
 
-If you are only on a trusted LAN, you can skip Cloudflare Tunnel and Authelia. VPN-protected downloads still apply.
+If you are only on a trusted LAN, the local compose exposes each app directly on its port (no SSO, no tunnel).
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.local.yml up -d
 ```
-
-Set `DOMAIN=local` and add LAN DNS/hosts entries for subdomains you want to use.
 
 ### Remote/Zero-Trust (SSO + Cloudflare Tunnel)
 
@@ -180,9 +183,9 @@ Requires Authelia secrets + Cloudflare tunnel config in `.env`.
 Once your stack is running, you can:
 
 1. **Access your services**:
-   - **Local/LAN:** `http://<server-ip>` (Homepage dashboard)
+   - **Local ports (`docker-compose.local.yml`):** `http://<server-ip>:3000` (Homepage dashboard)
+   - **Reverse proxy (`docker-compose.yml`):** `http://<server-ip>` (Traefik → Homepage)
    - **Domain/Tunnel:** `https://<service>.${DOMAIN}`
-   - Add local `/etc/hosts` entries if you want subdomains without DNS
 2. **Run health checks:** `./scripts/doctor.sh`
 3. **Run post‑deploy sanity checks (VPN/Auth/Tunnel):** `./scripts/post_deploy_check.sh` (see `docs/operations/POST_DEPLOY_CHECKS.md`)
 4. **Update containers:** `./scripts/update.sh`

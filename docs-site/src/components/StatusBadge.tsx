@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import { usePageVisibility } from '../hooks/usePageVisibility'
+
+/** Polling interval for status checks (10 seconds) */
+const STATUS_POLL_INTERVAL_MS = 10_000
 
 interface Container {
     id: string
@@ -19,56 +23,64 @@ type StatusBadgeProps = {
 export function StatusBadge({ iconClassName, forceFullColor, hideText }: StatusBadgeProps) {
     const [stats, setStats] = useState({ total: 0, running: 0, loading: true, controlServerOnline: true })
     const [lastChecked, setLastChecked] = useState<Date | null>(null)
+    const isVisible = usePageVisibility()
 
-    useEffect(() => {
-        const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
+        try {
+            const headers = { ...controlServerAuthHeaders() }
+
+            // Compose service list (authoritative total)
+            let composeServices: string[] = []
             try {
-                const headers = { ...controlServerAuthHeaders() }
-
-                // Compose service list (authoritative total)
-                let composeServices: string[] = []
-                try {
-                    const svcRes = await fetch(buildControlServerUrl('/api/compose/services'), { headers })
-                    if (svcRes.ok) {
-                        const data = await svcRes.json()
-                        composeServices = Array.isArray(data.services) ? data.services : []
-                    }
-                } catch {
-                    // ignore, fall back to other signals
+                const svcRes = await fetch(buildControlServerUrl('/api/compose/services'), { headers })
+                if (svcRes.ok) {
+                    const data = await svcRes.json()
+                    composeServices = Array.isArray(data.services) ? data.services : []
                 }
-
-                // Current containers
-                const containersRes = await fetch(buildControlServerUrl('/api/containers'), { headers })
-                if (!containersRes.ok) throw new Error('Failed to fetch containers')
-                const containers: Container[] = await containersRes.json()
-
-                const isMatch = (service: string, name: string) =>
-                    name === service || name.endsWith(`-${service}`) || name.endsWith(`_${service}_1`) || name.includes(`_${service}`)
-
-                const total = composeServices.length > 0 ? composeServices.length : containers.length
-                const running = composeServices.length > 0
-                    ? composeServices.reduce((acc, svc) => acc + (containers.some((c) => c.state === 'running' && isMatch(svc, c.name)) ? 1 : 0), 0)
-                    : containers.filter((c) => c.state === 'running').length
-
-                setStats({ total, running, loading: false, controlServerOnline: true })
-                setLastChecked(new Date())
             } catch {
-                try {
-                    const healthRes = await fetch(buildControlServerUrl('/api/health'), {
-                        headers: { ...controlServerAuthHeaders() },
-                    })
-                    setStats((s) => ({ ...s, loading: false, controlServerOnline: healthRes.ok }))
-                } catch {
-                    setStats((s) => ({ ...s, loading: false, controlServerOnline: false }))
-                }
-                setLastChecked(new Date())
+                // ignore, fall back to other signals
             }
-        }
 
-        fetchStats()
-        const interval = setInterval(fetchStats, 10000)
-        return () => clearInterval(interval)
+            // Current containers
+            const containersRes = await fetch(buildControlServerUrl('/api/containers'), { headers })
+            if (!containersRes.ok) throw new Error('Failed to fetch containers')
+            const containers: Container[] = await containersRes.json()
+
+            const isMatch = (service: string, name: string) =>
+                name === service || name.endsWith(`-${service}`) || name.endsWith(`_${service}_1`) || name.includes(`_${service}`)
+
+            const total = composeServices.length > 0 ? composeServices.length : containers.length
+            const running = composeServices.length > 0
+                ? composeServices.reduce((acc, svc) => acc + (containers.some((c) => c.state === 'running' && isMatch(svc, c.name)) ? 1 : 0), 0)
+                : containers.filter((c) => c.state === 'running').length
+
+            setStats({ total, running, loading: false, controlServerOnline: true })
+            setLastChecked(new Date())
+        } catch {
+            try {
+                const healthRes = await fetch(buildControlServerUrl('/api/health'), {
+                    headers: { ...controlServerAuthHeaders() },
+                })
+                setStats((s) => ({ ...s, loading: false, controlServerOnline: healthRes.ok }))
+            } catch {
+                setStats((s) => ({ ...s, loading: false, controlServerOnline: false }))
+            }
+            setLastChecked(new Date())
+        }
     }, [])
+
+    // Initial fetch on mount
+    useEffect(() => {
+        fetchStats()
+    }, [fetchStats])
+
+    // Visibility-aware polling - pauses when tab is inactive
+    useEffect(() => {
+        if (!isVisible) return
+
+        const interval = setInterval(fetchStats, STATUS_POLL_INTERVAL_MS)
+        return () => clearInterval(interval)
+    }, [isVisible, fetchStats])
 
     if (stats.loading) return null
 

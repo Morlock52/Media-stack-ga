@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import { 
     CheckCircle, ExternalLink, Copy, Check, ChevronDown, ChevronRight,
     Server, Key, Shield, Tv, Bell, Activity, Settings,
     Terminal, Clock, Sparkles
 } from 'lucide-react'
 import { useSetupStore } from '../store/setupStore'
+import { controlServer } from '../utils/controlServer'
 
 interface ChecklistItem {
     id: string
@@ -45,7 +46,7 @@ const checklistItems: ChecklistItem[] = [
             'Go to plex.tv/claim and copy your claim token',
             'Add it to your .env file as PLEX_CLAIM=claim-xxxx',
             'Restart the Plex container: docker compose restart plex',
-            'Access Plex at http://your-server:32400/web'
+            'Access Plex at http://your-server:32400/web/'
         ],
         links: [
             { label: 'Get Plex Claim Token', url: 'https://www.plex.tv/claim/' }
@@ -154,11 +155,61 @@ const checklistItems: ChecklistItem[] = [
     }
 ]
 
+const isLoopbackHost = (host: string) => {
+    const normalized = String(host || '').trim().toLowerCase()
+    return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
+}
+
+const ACCESS_HOST_STORAGE_KEY = 'mediastack.accessHost'
+
 export function PostInstallChecklist() {
     const { selectedServices } = useSetupStore()
     const [completed, setCompleted] = useState<Set<string>>(new Set())
     const [expanded, setExpanded] = useState<string | null>('deploy')
     const [copied, setCopied] = useState<string | null>(null)
+    const [accessHost, setAccessHost] = useState(() => {
+        if (typeof window === 'undefined') return 'localhost'
+        try {
+            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
+            if (stored && stored.trim()) return stored.trim()
+        } catch {
+            // ignore storage failures
+        }
+        return window.location.hostname || 'localhost'
+    })
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        let hasOverride = false
+        try {
+            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
+            hasOverride = Boolean(stored && stored.trim())
+        } catch {
+            hasOverride = false
+        }
+        if (hasOverride) return
+
+        const host = window.location.hostname || 'localhost'
+        if (!isLoopbackHost(host)) {
+            setAccessHost(host)
+            return
+        }
+
+        let cancelled = false
+        void (async () => {
+            try {
+                const info = await controlServer.getNetworkInfo()
+                if (cancelled) return
+                if (info?.success && info.lanIpv4) setAccessHost(info.lanIpv4)
+            } catch {
+                // best-effort only
+            }
+        })()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     const filteredItems = checklistItems.filter(
         item => !item.condition || item.condition(selectedServices)
@@ -183,6 +234,18 @@ export function PostInstallChecklist() {
     }
 
     const progress = (completed.size / filteredItems.length) * 100
+    const rewriteUrl = (url: string) => {
+        if (!url) return url
+        if (url.startsWith('http://localhost')) return url.replace('http://localhost', `http://${accessHost}`)
+        if (url.startsWith('http://your-server')) return url.replace('http://your-server', `http://${accessHost}`)
+        return url
+    }
+    const rewriteText = (text: string) => {
+        if (!text) return text
+        return text
+            .replace(/http:\/\/localhost(?=[:/]|$)/g, `http://${accessHost}`)
+            .replace(/http:\/\/your-server(?=[:/]|$)/g, `http://${accessHost}`)
+    }
 
     return (
         <div className="space-y-6">
@@ -301,7 +364,7 @@ export function PostInstallChecklist() {
                                                         <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-medium">
                                                             {i + 1}
                                                         </span>
-                                                        {step}
+                                                        {rewriteText(step)}
                                                     </li>
                                                 ))}
                                             </ol>
@@ -335,13 +398,13 @@ export function PostInstallChecklist() {
                                             {item.links && item.links.length > 0 && (
                                                 <div className="flex flex-wrap gap-2">
                                                     {item.links.map((link, i) => (
-                                                        <a
-                                                            key={i}
-                                                            href={link.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs text-blue-300 transition-colors"
-                                                        >
+                                                            <a
+                                                                key={i}
+                                                                href={rewriteUrl(link.url)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs text-blue-300 transition-colors"
+                                                            >
                                                             {link.label}
                                                             <ExternalLink className="w-3 h-3" />
                                                         </a>

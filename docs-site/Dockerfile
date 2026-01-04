@@ -14,15 +14,19 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Copy package manifests first to leverage cache with BuildKit (npm workspaces)
 COPY package.json package-lock.json ./
+COPY shared/package.json shared/package.json
 COPY control-server/package.json control-server/package.json
 COPY docs-site/package.json docs-site/package.json
-RUN --mount=type=cache,target=/root/.npm npm ci -w docs-site
+RUN --mount=type=cache,target=/root/.npm npm ci
 
+COPY shared/ shared/
 COPY docs-site/ docs-site/
 COPY docker-compose.yml ./docker-compose.yml
+COPY docker-compose.local.yml ./docker-compose.local.yml
 # The UI imports this file via `../../../docker-compose.yml?raw` from under `src/components/`,
 # which resolves to `/docker-compose.yml` inside this build container.
 COPY docker-compose.yml /docker-compose.yml
+COPY docker-compose.local.yml /docker-compose.local.yml
 RUN npm run build -w docs-site
 
 FROM nginx:alpine

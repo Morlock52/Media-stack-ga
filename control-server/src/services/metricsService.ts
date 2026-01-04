@@ -14,13 +14,13 @@ const logger = createLogger('metrics');
 const METRICS_DIR = join(PROJECT_ROOT, 'data', 'metrics');
 const METRICS_FILE = join(METRICS_DIR, 'agent_metrics.json');
 
-// Model pricing (per 1M tokens, as of December 2025)
+// Model pricing (per 1M tokens, as of January 2026) - OpenAI only
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
     'gpt-4o': { input: 2.50, output: 10.00 },
     'gpt-4o-mini': { input: 0.15, output: 0.60 },
-    'claude-sonnet-4-5-20250929': { input: 3.00, output: 15.00 },
     'tts-1': { input: 15.00, output: 0 },
-    'tts-1-hd': { input: 30.00, output: 0 }
+    'tts-1-hd': { input: 30.00, output: 0 },
+    'gpt-4o-mini-tts': { input: 15.00, output: 0 }
 };
 
 export interface RequestMetric {
@@ -28,7 +28,7 @@ export interface RequestMetric {
     requestId: string;
     agent: string;
     model: string;
-    provider: 'openai' | 'claude';
+    provider: 'openai';
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;

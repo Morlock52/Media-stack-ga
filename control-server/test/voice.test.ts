@@ -12,8 +12,6 @@ describe('Voice System', () => {
 
   beforeEach(async () => {
     process.env.OPENAI_API_KEY = 'sk-test-voice';
-    process.env.ELEVENLABS_API_KEY = 'el-test-key';
-    process.env.ELEVENLABS_VOICE_ID = 'test-voice-id';
     app = Fastify({ logger: false });
     await app.register(aiRoutes);
     await app.ready();
@@ -22,8 +20,6 @@ describe('Voice System', () => {
   afterEach(async () => {
     vi.unstubAllGlobals();
     delete process.env.OPENAI_API_KEY;
-    delete process.env.ELEVENLABS_API_KEY;
-    delete process.env.ELEVENLABS_VOICE_ID;
     if (app) await app.close();
   });
 
@@ -166,28 +162,6 @@ describe('Voice System', () => {
       expect(calls[0].url).toContain('api.openai.com');
     });
 
-    it('uses ElevenLabs when specified with voiceId', async () => {
-      const calls: any[] = [];
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: any, init: any) => {
-          calls.push({ url: String(url), init });
-          return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
-        })
-      );
-
-      // Must provide voiceId since module-level ELEVENLABS_VOICE_ID is cached as empty
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/tts',
-        payload: { text: 'Hello world', provider: 'elevenlabs', voiceId: 'test-voice-123' },
-      });
-
-      expect(res.statusCode).toBe(200);
-      expect(res.headers['x-tts-provider']).toBe('elevenlabs');
-      expect(calls[0].url).toContain('api.elevenlabs.io');
-    });
-
     it('handles speed parameter correctly', async () => {
       const calls: any[] = [];
       vi.stubGlobal(
@@ -244,7 +218,7 @@ describe('Voice System', () => {
   });
 
   describe('/api/settings/tts', () => {
-    it('returns TTS status for both providers', async () => {
+    it('returns TTS status for OpenAI', async () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings/tts',
@@ -252,10 +226,10 @@ describe('Voice System', () => {
 
       expect(res.statusCode).toBe(200);
       const data = res.json();
-      expect(data.openai).toBeTruthy();
-      expect(data.openai.hasKey).toBe(true);
-      expect(data.elevenlabs).toBeTruthy();
-      expect(data.elevenlabs.hasKey).toBe(true);
+      expect(data.provider).toBe('openai');
+      expect(data.hasKey).toBe(true);
+      expect(data.ttsModel).toBeTruthy();
+      expect(data.ttsVoice).toBeTruthy();
     });
   });
 
@@ -326,34 +300,6 @@ describe('Voice System', () => {
     });
   });
 
-  describe('/api/tts/streaming/config', () => {
-    it('returns streaming config when ElevenLabs key is set', async () => {
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/tts/streaming/config',
-      });
-
-      expect(res.statusCode).toBe(200);
-      const data = res.json();
-      expect(data.available).toBe(true);
-      expect(data.websocketUrl).toContain('api.elevenlabs.io');
-      // ELEVENLABS_VOICE_ID is cached at module load time, so it uses default
-      expect(data.voiceId).toBeTruthy();
-      expect(data.chunkLengthSchedule).toBeInstanceOf(Array);
-    });
-
-    it('fails without ElevenLabs key', async () => {
-      delete process.env.ELEVENLABS_API_KEY;
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/tts/streaming/config',
-      });
-
-      expect(res.statusCode).toBe(400);
-      expect(res.json().available).toBe(false);
-    });
-  });
 });
 
 describe('Voice System - Error Handling', () => {

@@ -95,12 +95,19 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--api.dashboard=false"
+      - "--ping=true"
     ports:
       - "80:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ===========================================
   # CLOUDFLARE TUNNEL
@@ -122,6 +129,12 @@ services:
     networks:
       - mediastack
     profiles: ["cloudflared"]
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "homepage.group=Core"
       - "homepage.name=Cloudflare Tunnel"
@@ -145,9 +158,17 @@ services:
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_REVIVE_STOPPED=false
       - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      - WATCHTOWER_HTTP_API_METRICS=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_API_TOKEN:-mediastack}
       - DOCKER_API_VERSION=1.44
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "/watchtower", "--health-check"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "homepage.group=Monitoring"
       - "homepage.name=Watchtower"
@@ -170,6 +191,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - "homepage.group=Core"
       - "homepage.name=Dozzle"
@@ -196,6 +223,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     expose:
       - 3000
     labels:
@@ -220,6 +253,12 @@ services:
       - ${CONFIG_ROOT}/portainer:/data
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "homepage.group=Core"
       - "homepage.name=Portainer"
@@ -521,6 +560,12 @@ services:
     networks:
       - mediastack
     profiles: ["arr", "prowlarr", "flaresolverr"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8191/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     expose:
       - 8191
 
@@ -737,6 +782,12 @@ services:
     networks:
       - mediastack
     profiles: ["transcode"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8265"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "homepage.group=Transcoding"
       - "homepage.name=Tdarr"
@@ -763,6 +814,12 @@ services:
     networks:
       - mediastack
     profiles: ["mealie"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/api/app/about"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "homepage.group=Apps"
       - "homepage.name=Mealie"
@@ -789,6 +846,12 @@ services:
     networks:
       - mediastack
     profiles: ["kavita"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "homepage.group=Apps"
       - "homepage.name=Kavita"
@@ -816,6 +879,12 @@ services:
     networks:
       - mediastack
     profiles: ["audiobookshelf"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:13378/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "homepage.group=Media"
       - "homepage.name=Audiobookshelf"
@@ -843,6 +912,12 @@ services:
     networks:
       - mediastack
     profiles: ["photoprism"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2342/api/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     labels:
       - "homepage.group=Apps"
       - "homepage.name=PhotoPrism"
@@ -885,6 +960,12 @@ services:
     networks:
       - mediastack
     profiles: ["notify"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5454/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.notifiarr.entrypoints=web"
@@ -910,6 +991,12 @@ services:
     command: -config.file=/etc/loki/loki-config.yaml
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "homepage.group=Monitoring"
       - "homepage.name=Loki"
@@ -932,6 +1019,12 @@ services:
     command: -config.file=/etc/promtail/promtail-config.yaml
     networks:
       - mediastack
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       - loki
 

@@ -110,9 +110,8 @@ export interface VoiceAgentResponse {
 /** TTS request */
 export interface TtsRequest {
     text: string;
-    provider?: 'openai' | 'elevenlabs';
+    provider?: 'openai';
     voice?: string;
-    voiceId?: string;
     speed?: number;
 }
 
@@ -125,17 +124,10 @@ export interface SttStatus {
 
 /** TTS status */
 export interface TtsStatus {
-    defaultProvider: string;
-    openai: {
-        hasKey: boolean;
-        ttsModel?: string;
-        ttsVoice?: string;
-    };
-    elevenlabs: {
-        hasKey: boolean;
-        ttsModel?: string;
-        voiceId?: string;
-    };
+    provider: 'openai';
+    hasKey: boolean;
+    ttsModel?: string;
+    ttsVoice?: string;
 }
 
 /** Realtime voice status */

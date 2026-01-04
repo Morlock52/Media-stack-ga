@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
@@ -17,6 +18,7 @@ import {
   controlServer,
   controlServerAuthHeaders,
 } from '../utils/controlServer'
+import { log, getErrorMessage } from '../utils/logging'
 import { Button } from '../components/ui/button'
 import {
   Dialog,
@@ -28,11 +30,28 @@ import {
 } from '../components/ui/dialog'
 import { ThemeToggleButton } from '../components/layout/ThemeToggleButton'
 import { useControlServerOpenAIKeyStatus } from '../hooks/useControlServerOpenAIKeyStatus'
-import { useControlServerClaudeKeyStatus } from '../hooks/useControlServerClaudeKeyStatus'
-import { useControlServerTtsStatus } from '../hooks/useControlServerTtsStatus'
 import { StatusBadge } from '../components/StatusBadge'
 
 type ToastState = { type: 'success' | 'error' | 'info'; text: string } | null
+
+// Validate OpenAI API key format
+const validateOpenAIKey = (key: string): { valid: boolean; error?: string } => {
+  const trimmed = key.trim()
+  if (!trimmed) {
+    return { valid: false, error: 'API key is required' }
+  }
+  if (!trimmed.startsWith('sk-')) {
+    return { valid: false, error: 'API key must start with "sk-"' }
+  }
+  if (trimmed.length < 20 || trimmed.length > 200) {
+    return { valid: false, error: 'API key length is invalid (expected 20-200 characters)' }
+  }
+  // Check for valid characters (alphanumeric, dash, underscore)
+  if (!/^sk-[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return { valid: false, error: 'API key contains invalid characters' }
+  }
+  return { valid: true }
+}
 
 const formatTimestamp = (value: string | null) => {
   if (!value) return '—'
@@ -73,16 +92,12 @@ export function SettingsPage() {
   const [remoteEnvPrivateKey, setRemoteEnvPrivateKey] = useState('')
   const [remoteEnvPath, setRemoteEnvPath] = useState('')
   const [toast, setToast] = useState<ToastState>(null)
-  const [elevenLabsKeyInput, setElevenLabsKeyInput] = useState('')
-  const [elevenLabsVoiceIdInput, setElevenLabsVoiceIdInput] = useState('')
-  const [elevenLabsAction, setElevenLabsAction] = useState<'idle' | 'saving' | 'removing' | 'savingVoice'>('idle')
-  const [claudeKeyInput, setClaudeKeyInput] = useState('')
-  const [claudeAction, setClaudeAction] = useState<'idle' | 'saving' | 'removing'>('idle')
   const [isRestarting, setIsRestarting] = useState(false)
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null)
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const bootstrapAbortRef = useRef<AbortController | null>(null)
 
   const { serverOnline, hasKey: hasRemoteKey, lastCheckedAt, refresh } = useControlServerOpenAIKeyStatus()
-  const { hasKey: hasClaudeKey, model: claudeModel, refresh: refreshClaude } = useControlServerClaudeKeyStatus()
-  const { elevenlabs, refresh: refreshTts } = useControlServerTtsStatus()
 
   const setToastMessage = (update: ToastState) => {
     setToast(update)
@@ -95,9 +110,15 @@ export function SettingsPage() {
     setPendingAction('checking')
     await refresh()
     setPendingAction('idle')
-  }, [refresh])
+    // Show toast with connectivity result
+    if (serverOnline) {
+      setToastMessage({ type: 'success', text: 'Control server is connected and responding.' })
+    } else {
+      setToastMessage({ type: 'error', text: 'Control server is offline or unreachable.' })
+    }
+  }, [refresh, serverOnline])
 
-  const handleRestartSystem = useCallback(async () => {
+  const handleRestartConfirm = useCallback(() => {
     if (!serverOnline) {
       setToastMessage({
         type: 'info',
@@ -105,7 +126,11 @@ export function SettingsPage() {
       })
       return
     }
+    setShowRestartConfirm(true)
+  }, [serverOnline])
 
+  const handleRestartSystem = useCallback(async () => {
+    setShowRestartConfirm(false)
     setIsRestarting(true)
     try {
       const data = await controlServer.systemRestart()
@@ -192,27 +217,32 @@ export function SettingsPage() {
   }, [isRemoteArrOpen])
 
   const handleSave = async () => {
-    const trimmed = apiKeyInput.trim()
-    if (!trimmed) {
-      setToastMessage({ type: 'error', text: 'Enter a valid sk- key before saving.' })
+    const validation = validateOpenAIKey(apiKeyInput)
+    if (!validation.valid) {
+      log('warn', 'OpenAI key validation failed', { error: validation.error })
+      setApiKeyError(validation.error || 'Invalid API key')
+      setToastMessage({ type: 'error', text: validation.error || 'Invalid API key format' })
       return
     }
+    setApiKeyError(null)
 
     setPendingAction('saving')
+    log('info', 'Saving OpenAI API key...')
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
-        body: JSON.stringify({ key: trimmed }),
+        body: JSON.stringify({ key: apiKeyInput.trim() }),
       })
       const data = await res.json()
       if (!res.ok || data?.success !== true) {
         throw new Error(data?.error || 'Failed to store key on control server')
       }
+      log('info', 'OpenAI API key saved successfully')
       setApiKeyInput('')
       setToastMessage({ type: 'success', text: 'OpenAI key stored securely.' })
     } catch (error) {
-      console.warn('SettingsPage: save failed', error)
+      log('error', 'Failed to save OpenAI key', { error: getErrorMessage(error) })
       setToastMessage({
         type: 'info',
         text: 'Control server is offline. Start it on http://localhost:3001 to store your key securely.',
@@ -226,6 +256,7 @@ export function SettingsPage() {
   const handleRemove = async () => {
     setPendingAction('removing')
     setApiKeyInput('')
+    log('info', 'Removing OpenAI API key...')
 
     try {
       const res = await fetch(buildControlServerUrl('/api/settings/openai-key'), {
@@ -236,9 +267,10 @@ export function SettingsPage() {
       if (!res.ok || data?.success !== true) {
         throw new Error(data?.error || 'Failed to delete key')
       }
+      log('info', 'OpenAI API key removed successfully')
       setToastMessage({ type: 'success', text: 'OpenAI key removed.' })
     } catch (error) {
-      console.warn('SettingsPage: remove failed', error)
+      log('error', 'Failed to remove OpenAI key', { error: getErrorMessage(error) })
       setToastMessage({
         type: 'info',
         text: 'Control server is offline. Start it on http://localhost:3001 to remove the stored key.',
@@ -249,154 +281,48 @@ export function SettingsPage() {
     }
   }
 
-  const handleSaveElevenLabsKey = async () => {
-    const trimmed = elevenLabsKeyInput.trim()
-    if (!trimmed) {
-      setToastMessage({ type: 'error', text: 'Enter an ElevenLabs API key before saving.' })
-      return
-    }
-
-    setElevenLabsAction('saving')
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-key'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
-        body: JSON.stringify({ key: trimmed }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Failed to store ElevenLabs key')
-      }
-      setElevenLabsKeyInput('')
-      setToastMessage({ type: 'success', text: 'ElevenLabs key stored.' })
-    } catch (error: any) {
-      setToastMessage({ type: 'error', text: error.message || 'Failed to store ElevenLabs key.' })
-    } finally {
-      setElevenLabsAction('idle')
-      await refreshTts()
-    }
-  }
-
-  const handleRemoveElevenLabsKey = async () => {
-    setElevenLabsAction('removing')
-    setElevenLabsKeyInput('')
-
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-key'), {
-        method: 'DELETE',
-        headers: { ...controlServerAuthHeaders() },
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Failed to delete ElevenLabs key')
-      }
-      setToastMessage({ type: 'success', text: 'ElevenLabs key removed.' })
-    } catch (error: any) {
-      setToastMessage({ type: 'error', text: error.message || 'Failed to remove ElevenLabs key.' })
-    } finally {
-      setElevenLabsAction('idle')
-      await refreshTts()
-    }
-  }
-
-  const handleSaveElevenLabsVoice = async () => {
-    const trimmed = elevenLabsVoiceIdInput.trim()
-    if (!trimmed) {
-      setToastMessage({ type: 'error', text: 'Enter a voice ID before saving.' })
-      return
-    }
-
-    setElevenLabsAction('savingVoice')
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/elevenlabs-voice'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
-        body: JSON.stringify({ voiceId: trimmed }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Failed to store voice ID')
-      }
-      setToastMessage({ type: 'success', text: 'ElevenLabs voice ID saved.' })
-    } catch (error: any) {
-      setToastMessage({ type: 'error', text: error.message || 'Failed to save voice ID.' })
-    } finally {
-      setElevenLabsAction('idle')
-      await refreshTts()
-    }
-  }
-
-  const handleSaveClaudeKey = async () => {
-    const trimmed = claudeKeyInput.trim()
-    if (!trimmed) {
-      setToastMessage({ type: 'error', text: 'Enter a Claude API key before saving.' })
-      return
-    }
-
-    setClaudeAction('saving')
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/claude-key'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...controlServerAuthHeaders() },
-        body: JSON.stringify({ key: trimmed }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Failed to store Claude key')
-      }
-      setClaudeKeyInput('')
-      setToastMessage({ type: 'success', text: 'Claude API key stored securely.' })
-    } catch (error: any) {
-      setToastMessage({ type: 'error', text: error.message || 'Failed to store Claude key.' })
-    } finally {
-      setClaudeAction('idle')
-      await refreshClaude()
-    }
-  }
-
-  const handleRemoveClaudeKey = async () => {
-    setClaudeAction('removing')
-    setClaudeKeyInput('')
-
-    try {
-      const res = await fetch(buildControlServerUrl('/api/settings/claude-key'), {
-        method: 'DELETE',
-        headers: { ...controlServerAuthHeaders() },
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Failed to delete Claude key')
-      }
-      setToastMessage({ type: 'success', text: 'Claude API key removed.' })
-    } catch (error: any) {
-      setToastMessage({ type: 'error', text: error.message || 'Failed to remove Claude key.' })
-    } finally {
-      setClaudeAction('idle')
-      await refreshClaude()
-    }
-  }
-
   const handleBootstrapArr = async () => {
     if (!serverOnline) {
+      log('warn', 'Bootstrap attempted while server offline')
       setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
       return
     }
 
+    // Cancel any previous request
+    if (bootstrapAbortRef.current) {
+      log('debug', 'Aborting previous bootstrap request')
+      bootstrapAbortRef.current.abort()
+    }
+    const abortController = new AbortController()
+    bootstrapAbortRef.current = abortController
+
     setIsBootstrapping(true)
     setLocalRetrievedKeys(null)
     setLocalRetrievedError('')
+    log('info', 'Starting local container scan for API keys...')
+
+    // Set a timeout of 30 seconds
+    const timeoutId = setTimeout(() => {
+      log('warn', 'Container scan timeout reached (30s)')
+      abortController.abort()
+    }, 30000)
+
     try {
-      const data = await controlServer.bootstrapArr()
+      const data = await controlServer.bootstrapArr({ signal: abortController.signal })
+      clearTimeout(timeoutId)
+
       setLocalRetrievedKeys(data.keys || {})
 
       if (!data.success) {
         const message = data.error || 'No keys were found. Make sure your containers are running and initialized.'
+        log('warn', 'Bootstrap completed with no keys found', { error: message })
         setLocalRetrievedError(message)
         setToastMessage({ type: 'error', text: message })
         return
       }
 
       const count = Object.keys(data.keys || {}).length
+      log('info', 'Bootstrap completed successfully', { keyCount: count, keys: Object.keys(data.keys || {}) })
       setToastMessage({
         type: 'success',
         text:
@@ -404,17 +330,29 @@ export function SettingsPage() {
             ? `Successfully captured ${count} API keys (${Object.keys(data.keys || {}).join(', ')}).`
             : 'No keys were found. Make sure your containers are running and initialized.',
       })
-    } catch (error: any) {
-      const message = error?.message || 'Bootstrap failed'
-      setLocalRetrievedError(message)
-      setToastMessage({ type: 'error', text: `Bootstrap failed: ${message}` })
+    } catch (error: unknown) {
+      clearTimeout(timeoutId)
+      const errorMessage = getErrorMessage(error)
+      const isAbortError = error instanceof Error && (error.name === 'AbortError' || abortController.signal.aborted)
+
+      if (isAbortError) {
+        log('error', 'Container scan timed out', { timeout: '30s' })
+        setLocalRetrievedError('Container scan timed out. Make sure your containers are running.')
+        setToastMessage({ type: 'error', text: 'Scan timed out after 30 seconds.' })
+      } else {
+        log('error', 'Bootstrap failed', { error: errorMessage })
+        setLocalRetrievedError(errorMessage)
+        setToastMessage({ type: 'error', text: `Bootstrap failed: ${errorMessage}` })
+      }
     } finally {
       setIsBootstrapping(false)
+      bootstrapAbortRef.current = null
     }
   }
 
   const handleBootstrapArrRemote = async () => {
     if (!serverOnline) {
+      log('warn', 'Remote bootstrap attempted while server offline')
       setToastMessage({ type: 'error', text: 'Control server must be online to bootstrap keys.' })
       return
     }
@@ -424,10 +362,12 @@ export function SettingsPage() {
     const scanPort = (remoteScanPort || '22').trim()
 
     if (!scanHost || !scanUsername) {
+      log('warn', 'Remote bootstrap missing required fields', { hasHost: !!scanHost, hasUsername: !!scanUsername })
       setToastMessage({ type: 'error', text: 'Enter a scan host and username.' })
       return
     }
     if (!remoteEnvPath.trim()) {
+      log('warn', 'Remote bootstrap missing .env path')
       setToastMessage({ type: 'error', text: 'Enter the remote .env path to update.' })
       return
     }
@@ -457,6 +397,8 @@ export function SettingsPage() {
     setIsRemoteBootstrapping(true)
     setRemoteRetrievedKeys(null)
     setRemoteRetrievedError('')
+    log('info', 'Starting remote container scan', { host: scanHost, port: scanPort, username: scanUsername, authType: scanAuthType })
+
     try {
       const data = await controlServer.bootstrapArrRemote({
         host: scanHost,
@@ -473,12 +415,14 @@ export function SettingsPage() {
 
       if (!data.success) {
         const message = data.error || 'Remote bootstrap failed'
+        log('warn', 'Remote bootstrap completed with no keys', { error: message, host: scanHost })
         setRemoteRetrievedError(message)
         setToastMessage({ type: 'error', text: message })
         return
       }
 
       const count = Object.keys(data.keys || {}).length
+      log('info', 'Remote bootstrap completed successfully', { keyCount: count, host: scanHost, keys: Object.keys(data.keys || {}) })
       setToastMessage({
         type: 'success',
         text:
@@ -487,10 +431,11 @@ export function SettingsPage() {
             : 'No keys were found. Make sure your containers are running and initialized.',
       })
       setIsRemoteArrOpen(false)
-    } catch (error: any) {
-      const message = error?.message || 'Remote bootstrap failed'
-      setRemoteRetrievedError(message)
-      setToastMessage({ type: 'error', text: `Remote bootstrap failed: ${message}` })
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error)
+      log('error', 'Remote bootstrap failed', { error: errorMessage, host: scanHost })
+      setRemoteRetrievedError(errorMessage)
+      setToastMessage({ type: 'error', text: `Remote bootstrap failed: ${errorMessage}` })
     } finally {
       setIsRemoteBootstrapping(false)
     }
@@ -503,7 +448,7 @@ export function SettingsPage() {
     return { label: 'Control server offline', color: 'bg-amber-500/15 text-amber-300' }
   }, [isRestarting, serverOnline])
 
-  const disableActions = pendingAction !== 'idle' || elevenLabsAction !== 'idle' || claudeAction !== 'idle' || isRestarting
+  const disableActions = pendingAction !== 'idle' || isRestarting
   const healthUrl = buildControlServerUrl('/api/health')
   const lastCheckedLabel = lastCheckedAt ? formatTimestamp(lastCheckedAt) : '—'
 
@@ -568,7 +513,7 @@ export function SettingsPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    onClick={handleRestartSystem}
+                    onClick={handleRestartConfirm}
                     className="gap-2"
                     data-testid="cockpit-restart"
                     disabled={isRestarting || pendingAction === 'checking'}
@@ -623,10 +568,21 @@ export function SettingsPage() {
                 <input
                   type="password"
                   value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  onChange={(e) => {
+                    setApiKeyInput(e.target.value)
+                    setApiKeyError(null)
+                  }}
                   placeholder="sk-..."
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                  maxLength={200}
+                  className={`w-full bg-background/60 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 ${
+                    apiKeyError ? 'border-red-500' : 'border-border'
+                  }`}
                 />
+                {apiKeyError && (
+                  <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {apiKeyError}
+                  </p>
+                )}
                 <p className="text-[10px] text-muted-foreground mt-2">
                   Need a key? Visit{' '}
                   <a
@@ -732,197 +688,6 @@ export function SettingsPage() {
             )}
           </div>
 
-          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Key className="w-6 h-6 text-orange-400" />
-                Claude API Access (Fallback)
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-2xl">
-                Store your Anthropic API key to enable Claude as a fallback AI provider. When OpenAI is unavailable,
-                the system automatically switches to Claude for uninterrupted operation.
-              </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-border p-5 bg-card/80">
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Manage key</h3>
-                <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">
-                  API key
-                </label>
-                <input
-                  type="password"
-                  value={claudeKeyInput}
-                  onChange={(e) => setClaudeKeyInput(e.target.value)}
-                  placeholder="sk-ant-..."
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
-                />
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Need a key? Visit{' '}
-                  <a
-                    href="https://console.anthropic.com/settings/keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    console.anthropic.com/settings/keys
-                  </a>
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    onClick={handleSaveClaudeKey}
-                    disabled={disableActions || !claudeKeyInput.trim()}
-                    className="gap-2 flex-1"
-                  >
-                    {claudeAction === 'saving' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    Save key
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleRemoveClaudeKey}
-                    disabled={disableActions || (!claudeKeyInput && !hasClaudeKey)}
-                    className="gap-2"
-                  >
-                    {claudeAction === 'removing' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                    Remove
-                  </Button>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border p-5 bg-card/80 space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-orange-300" />
-                  Status & diagnostics
-                </h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    {hasClaudeKey ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-amber-400" />
-                    )}
-                    <span>
-                      {hasClaudeKey
-                        ? 'Key stored on control server.'
-                        : 'No key stored on the control server yet.'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground leading-relaxed">
-                    <p>
-                      • Server URL: <code className="bg-muted px-1 py-0.5 rounded text-[11px]">/api/settings/claude-key</code>
-                    </p>
-                    <p>
-                      • Model: <code className="bg-muted px-1 py-0.5 rounded text-[11px]">{claudeModel || 'claude-sonnet-4-5-20250929'}</code>
-                    </p>
-                    <p>• Claude is used as fallback when OpenAI is unavailable.</p>
-                  </div>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={refreshClaude}
-                  disabled={claudeAction !== 'idle'}
-                  className="w-full gap-2"
-                >
-                  {claudeAction !== 'idle' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                  Run connectivity check
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Key className="w-6 h-6 text-primary" />
-                ElevenLabs Voice (Optional)
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-2xl">
-                Enable ElevenLabs for more natural voice output in the Voice Companion. Keys are stored by the control server.
-              </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-border p-5 bg-card/80">
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">API key</h3>
-                <input
-                  type="password"
-                  value={elevenLabsKeyInput}
-                  onChange={(e) => setElevenLabsKeyInput(e.target.value)}
-                  placeholder="xi-... / ElevenLabs API key"
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
-                />
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Stored on the control server as <code className="font-mono">ELEVENLABS_API_KEY</code>.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    onClick={handleSaveElevenLabsKey}
-                    disabled={disableActions || !elevenLabsKeyInput.trim()}
-                    className="gap-2 flex-1"
-                  >
-                    {elevenLabsAction === 'saving' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    Save key
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleRemoveElevenLabsKey}
-                    disabled={disableActions || !elevenlabs?.hasKey}
-                    className="gap-2"
-                  >
-                    {elevenLabsAction === 'removing' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                    Remove
-                  </Button>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border p-5 bg-card/80">
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Voice ID</h3>
-                <input
-                  value={elevenLabsVoiceIdInput}
-                  onChange={(e) => setElevenLabsVoiceIdInput(e.target.value)}
-                  placeholder={elevenlabs?.voiceId || 'e.g. 21m00Tcm4TlvDq8ikWAM'}
-                  className="w-full bg-background/60 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
-                />
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Stored as <code className="font-mono">ELEVENLABS_VOICE_ID</code>. Required to use ElevenLabs TTS.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    onClick={handleSaveElevenLabsVoice}
-                    disabled={disableActions || !elevenLabsVoiceIdInput.trim()}
-                    className="gap-2 flex-1"
-                  >
-                    {elevenLabsAction === 'savingVoice' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    Save voice ID
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
           <div className="glass rounded-3xl border border-border/70 p-6 md:p-8 space-y-6">
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -987,6 +752,32 @@ export function SettingsPage() {
                 )}
               </div>
             )}
+
+            {/* Restart Confirmation Dialog */}
+            <Dialog open={showRestartConfirm} onOpenChange={setShowRestartConfirm}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    Restart Control Server?
+                  </DialogTitle>
+                  <DialogDescription>
+                    This will restart the control server and may temporarily interrupt services. The server should be back online within a minute.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setShowRestartConfirm(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleRestartSystem}
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                  >
+                    Yes, Restart Server
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Dialog open={isRemoteArrOpen} onOpenChange={setIsRemoteArrOpen}>
               <DialogContent className="max-w-2xl">

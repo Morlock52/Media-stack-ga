@@ -24,6 +24,8 @@ services:
       - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN:-}
     volumes:
       - ${CONFIG_ROOT:-./config}/homepage:/app/config
+      # Use the repo's local ports template so links work even when CONFIG_ROOT points elsewhere.
+      - ./config/homepage/services.local.yaml:/app/config/services.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -170,12 +172,13 @@ services:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
       - TZ=${TIMEZONE:-America/New_York}
-      - WEBUI_PORT=8080
+      # Keep host/container ports aligned to satisfy qBittorrent Host Header Validation.
+      - WEBUI_PORT=8081
     volumes:
       - ${CONFIG_ROOT:-./config}/qbittorrent:/config
       - ${DOWNLOADS_PATH:-./downloads}:/downloads
     ports:
-      - "8081:8080"
+      - "8081:8081"
       - "6881:6881"
       - "6881:6881/udp"
     networks:
@@ -264,12 +267,12 @@ services:
     container_name: grafana
     restart: unless-stopped
     ports:
-      - "3002:3000"
+      - "${GRAFANA_PORT:-3003}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-mediastack}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3002
+      - GF_SERVER_ROOT_URL=http://localhost:${GRAFANA_PORT:-3003}
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
     volumes:
       - ${CONFIG_ROOT:-./config}/grafana:/var/lib/grafana

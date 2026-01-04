@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Cloud, Lock, Server, Database, Globe, Shield } from 'lucide-react'
 
 export function TopologyMap() {

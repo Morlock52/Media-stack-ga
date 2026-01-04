@@ -4,6 +4,34 @@ import { getErrorMessage, log } from './logging';
 const getWindowOrigin = () =>
     typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : ''
 
+const isLoopbackHost = (hostname: string) => {
+    const normalized = String(hostname || '').trim().toLowerCase()
+    return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
+}
+
+const isPrivateIpv4Host = (hostname: string) => {
+    const parts = String(hostname || '').trim().split('.')
+    if (parts.length !== 4) return false
+    const nums = parts.map((p) => parseInt(p, 10))
+    if (nums.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) return false
+    const [a, b] = nums
+    if (a === 10) return true
+    if (a === 192 && b === 168) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
+    if (a === 169 && b === 254) return true // link-local
+    return false
+}
+
+const isLocalNetworkHost = (hostname: string) => {
+    const lower = String(hostname || '').trim().toLowerCase()
+    if (isLoopbackHost(lower)) return true
+    if (isPrivateIpv4Host(lower)) return true
+    if (lower.startsWith('fd') || lower.startsWith('fc') || lower.startsWith('fe80:')) return true
+    if (lower.endsWith('.local') || lower.endsWith('.lan')) return true
+    return false
+}
+
 const tryParseJson = (text: string) => {
     if (!text?.trim()) return null
     try {
@@ -17,14 +45,22 @@ const getDefaultControlServerBaseUrl = (): string => {
     if (typeof window === 'undefined') return ''
 
     const isDev = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV)
-    const { hostname, port } = window.location
-    const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+    const { hostname, port, protocol } = window.location
+    const isLoopback = isLoopbackHost(hostname)
     const portNum = parseInt(port || '', 10)
 
     // Dev default: point the SPA to the local API unless explicitly configured.
     if (isDev && isLoopback) return 'http://127.0.0.1:3001'
 
-    if (!isLoopback) return ''
+    // If the UI is accessed via a LAN IP / .local hostname, default the API to the same host on port 3001.
+    // This supports opening the wizard from another device (phone/tablet) while the control-server runs on the host.
+    if (!isLoopback) {
+        if (isLocalNetworkHost(hostname)) {
+            if (Number.isFinite(portNum) && portNum === 3001) return ''
+            return `${protocol}//${hostname}:3001`
+        }
+        return ''
+    }
 
     // For any loopback-hosted UI (including IDE browser preview proxy ports),
     // default API calls to the local control-server.
@@ -49,7 +85,22 @@ const envToken =
         : ''
 
 export const getControlServerBaseUrl = (): string => {
-    if (envUrl) return envUrl
+    if (envUrl) {
+        if (typeof window !== 'undefined') {
+            try {
+                const parsed = new URL(envUrl)
+                const envHost = parsed.hostname
+                const envPort = parsed.port || '3001'
+                const pageHost = window.location.hostname
+                if (isLoopbackHost(envHost) && !isLoopbackHost(pageHost) && isLocalNetworkHost(pageHost)) {
+                    return `${parsed.protocol}//${pageHost}:${envPort}`
+                }
+            } catch {
+                // ignore parse failures and use envUrl as-is
+            }
+        }
+        return envUrl
+    }
     if (typeof window === 'undefined') return ''
     try {
         const stored = window.localStorage.getItem(CONTROL_SERVER_URL_STORAGE_KEY)
@@ -167,6 +218,35 @@ export const controlServer = {
         }
     },
 
+    getNetworkInfo: async (): Promise<{
+        success: boolean
+        inContainer: boolean
+        hostname: string
+        ipv4: string[]
+        ipv6: string[]
+        lanIpv4: string | null
+        error?: string
+    }> => {
+        try {
+            const res = await fetch(buildControlServerUrl('/api/system/network'), {
+                headers: { ...controlServerAuthHeaders() },
+            })
+            const text = await res.text().catch(() => '')
+            const parsed = tryParseJson(text) as any
+
+            if (!res.ok) {
+                const message = parsed?.error || text || res.statusText
+                throw new Error(`Failed to get network info (HTTP ${res.status}): ${message}`)
+            }
+
+            if (parsed && typeof parsed === 'object') return parsed
+            return { success: false, inContainer: false, hostname: '', ipv4: [], ipv6: [], lanIpv4: null, error: 'Invalid response' }
+        } catch (err) {
+            log('error', 'controlServer.getNetworkInfo failed', err)
+            throw new Error(getErrorMessage(err))
+        }
+    },
+
     localDeploy: async (payload: {
         envContent: string
         profiles: string[]
@@ -250,11 +330,12 @@ export const controlServer = {
         }
     },
 
-    bootstrapArr: async (): Promise<{ success: boolean; keys: Record<string, string>; error?: string }> => {
+    bootstrapArr: async (options?: { signal?: AbortSignal }): Promise<{ success: boolean; keys: Record<string, string>; error?: string }> => {
         try {
             const res = await fetch(buildControlServerUrl('/api/arr/bootstrap'), {
                 method: 'POST',
                 headers: { ...controlServerAuthHeaders() },
+                signal: options?.signal,
             });
             const text = await res.text().catch(() => '')
             const parsed = tryParseJson(text) as any
@@ -307,6 +388,7 @@ export const controlServer = {
         step: string;
         keys: Record<string, string>;
         services: Array<{ id: string; running: boolean; ready: boolean }>;
+        validations?: Record<string, { ok: boolean; tested: boolean; status?: number; error?: string }>;
         error?: string;
     }> => {
         try {

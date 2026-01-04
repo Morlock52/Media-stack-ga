@@ -48,7 +48,7 @@ python docs/scripts/render_diagrams.py
 KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ```
 
-> **Last updated:** January 1, 2026
+> **Last updated:** January 4, 2026
 
 ## ✨ Screenshots (Matrix HUD)
 
@@ -76,7 +76,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
   <tr>
     <td align="center">
       <img src="docs/images/app/05-voice-companion-desktop.png" alt="Voice companion controls" width="520" />
-      <br /><sub><b>Voice Companion</b> — realtime mic + OpenAI/ElevenLabs output</sub>
+      <br /><sub><b>Voice Companion</b> — realtime mic + OpenAI TTS output</sub>
     </td>
     <td align="center">
       <img src="docs/images/app/08-ai-assistant-desktop.png" alt="AI assistant chat" width="520" />
@@ -98,6 +98,7 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 ## 🔎 Table of contents
 
 - [**Start Here — Pick Your Setup Path**](docs/getting-started/START_HERE.md) ⬅️ New? Start here!
+- [**Professional Docs (Plan + Training)**](docs/pro/README.md)
 - [Screenshots](#-screenshots-matrix-hud)
 - [TL;DR](#-tldr)
 - [Stack modes (quick map)](#-stack-modes-quick-map)
@@ -121,20 +122,29 @@ KEEP_LOGO=1 python docs/scripts/render_marketing_assets.py
 - [Operations](#-operations)
 - [References](#-references)
 
-## ⚡ TL;DR
+## ⚡ TL;DR (Quick Summary)
 
-1. Copy `.env.example` → `.env`, set absolute paths plus **Postgres user/password** and Authelia/Cloudflare secrets.
-2. Run the wizard (`./setup.sh` or Docker Wizard) to pick services and download the generated Compose + `.env`.
-3. Choose access: **LAN** (`docker compose up -d`) or **Remote** (`docker compose --profile auth --profile cloudflared up -d`).
-4. Validate: `bash ./scripts/post_deploy_check.sh`, then open `http://<server-ip>` (LAN) or `https://<service>.${DOMAIN}` (remote).
+**Just want it running? Here's the fastest path:**
 
-## 🧭 Stack modes (quick map)
+1. **Copy the example config:** `cp .env.example .env`
+2. **Edit `.env`** and set a password for the database (look for `POSTGRES_PASSWORD`)
+3. **Start the wizard:** `docker compose -f docker-compose.wizard.yml up --build -d`
+4. **Open the wizard:** Go to `http://localhost:3002` in your browser
+5. **Pick your apps** and click through the wizard
+6. **Start your stack (pick one):**
+   - **Home Network (direct ports):** `docker compose -f docker-compose.local.yml up -d`
+   - **Remote Access (SSO + Tunnel):** `docker compose --profile auth --profile cloudflared up -d`
+7. **Open the dashboard:**
+   - **Home Network:** `http://YOUR-SERVER-IP:3000`
+   - **Remote Access:** `https://hub.${DOMAIN}`
 
-| Mode | When to use | Command | Includes |
-| --- | --- | --- | --- |
-| LAN-only | Trusted home network | `docker compose up -d` | No SSO, no Tunnel |
-| Remote (Zero-Trust) | Internet-facing access | `docker compose --profile auth --profile cloudflared up -d` | Authelia + Cloudflare Tunnel |
-| Remote Deploy | You want the wizard to deploy to a VPS | Wizard → Deploy to Server | SSH push + `docker compose up -d` |
+## 🧭 Which setup is right for you?
+
+| I want to... | Use this | Difficulty |
+| --- | --- | --- |
+| **Stream at home only** | LAN-only install | Easy ⭐ |
+| **Access from anywhere** | Remote with Cloudflare | Medium ⭐⭐ |
+| **Run on a cloud server** | Remote Deploy via wizard | Medium ⭐⭐ |
 
 ## 🐳 Docker-first install (recommended)
 
@@ -177,19 +187,17 @@ docker compose -f docker-compose.wizard.secure.yml up --build -d
 
 ### 4) Generate configs + run the stack
 
-In the wizard, complete **Service Config** → **Review & Generate**, download the files, then run:
+In the wizard, complete **Service Config** → **Review & Generate**, download the files, then run the command that matches your chosen mode:
 
 ```bash
-docker compose up -d
-```
+# Home Network (direct ports)
+docker compose -f docker-compose.local.yml up -d
 
-For remote access (SSO + Tunnel):
-
-```bash
+# Remote Access (SSO + Tunnel)
 docker compose --profile auth --profile cloudflared up -d
 ```
 
-**After deploy:** run `bash ./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel) and open `http://<server-ip>` (LAN) or `https://<service>.${DOMAIN}` (remote) to confirm routing.
+**After deploy:** run `bash ./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel) and open `http://<server-ip>:3000` (local ports) or `https://<service>.${DOMAIN}` (remote) to confirm routing.
 
 ### 5) Stop the Wizard
 
@@ -227,7 +235,9 @@ chmod +x setup.sh
 ### 4) Start the stack
 
 ```bash
-docker compose up -d
+# Pick ONE:
+docker compose -f docker-compose.local.yml up -d   # Home Network (direct ports)
+docker compose up -d                               # Reverse proxy stack (port 80)
 ```
 
 > **Best defaults (recommended)**
@@ -241,23 +251,41 @@ docker compose up -d
 
 ## 🏠 Local network install (LAN only)
 
-If you are **LAN-only**, you can skip **Cloudflare Tunnel** and **Authelia SSO**. VPN-protected downloads (Gluetun) still apply.
+**This is the simplest setup** — your media stack runs on your home network and you access it from devices in your house.
 
-1. Set `DOMAIN=local` (or your LAN DNS suffix) in `.env`.
-2. Start the stack:
+### Quick start (easiest)
+
+1. Start the stack:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.local.yml up -d
 ```
 
-3. Add local DNS/hosts entries for subdomains (e.g., `plex.local`, `sonarr.local`) or use a LAN DNS server.
+2. Open your browser and go to `http://YOUR-SERVER-IP:3000` (example: `http://192.168.1.100:3000`)
 
-> **Security on LAN still matters**
-> - Use strong admin passwords and rotate default credentials.
-> - Keep Authelia enabled if multiple users access admin apps (Portainer, qBittorrent, *Arr).
-> - Restrict LAN access with firewall rules or VLANs if you share your network.
+3. You'll see the Homepage dashboard with links to all your apps
 
-> You can still enable SSO on LAN by running `docker compose --profile auth up -d`.
+**That's it!** Each app has its own port number. The dashboard shows you where everything is.
+
+> Tip: In local ports mode the Homepage links are built from `DOMAIN`. Set `DOMAIN` to your server IP/hostname (example: `192.168.1.100`) so links work from other devices.
+
+| App | How to access it |
+|-----|------------------|
+| Dashboard | `http://YOUR-SERVER-IP:3000` |
+| Plex | `http://YOUR-SERVER-IP:32400/web/` |
+| Sonarr | `http://YOUR-SERVER-IP:8989` |
+| Radarr | `http://YOUR-SERVER-IP:7878` |
+
+> 💡 **Tip:** Bookmark the dashboard — it has links to everything!
+
+### Optional: Use friendly names (advanced)
+
+Instead of remembering port numbers, you can set up names like `plex.local`. This requires editing your computer's hosts file or setting up a local DNS server. Skip this if you're not comfortable with it — the IP address method works fine!
+
+> **Security reminder**
+> - Change default passwords on all apps.
+> - qBittorrent: default user is `admin`; the first-run password is printed in the container logs (`docker logs qbittorrent | grep -i password`).
+> - If you need SSO/MFA (recommended when sharing access), use **Remote Access**: `docker compose --profile auth --profile cloudflared up -d`.
 
 ---
 
@@ -360,7 +388,7 @@ The deploy does **not** create DNS records or Cloudflare routes. You still need 
 - **Postgres + Backups**: *Arr stack runs on Postgres by default with bundled `postgres-backup`; Gluetun keeps qBittorrent VPN-bound.
 - **Zero-Trust Edge**: Cloudflare Tunnel + Authelia SSO/MFA sit in front of Traefik routes; LAN or internet-ready with profile toggles.
 - **Observability & Recovery**: Loki/Promtail + Grafana dashboards, Dozzle/Portainer, Autoheal/Watchtower, and `scripts/post_deploy_check.sh` for VPN/Auth/Tunnel sanity.
-- **AI + Voice Control**: Control server defaults to OpenAI `gpt-4o` + `gpt-4o-mini-tts` (with ElevenLabs `eleven_flash_v2_5` option), rate-limited and tokenizable via `/api/settings/*`.
+- **AI + Voice Control**: Control server defaults to OpenAI `gpt-4o` + `gpt-4o-mini-tts`, rate-limited and tokenizable via `/api/settings/*`.
 - **Interactive Docs**: Regenerable screenshots (Playwright), click-by-click guides, and exportable diagrams keep docs aligned with the shipped UI.
 
 <details>
@@ -382,7 +410,7 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 
 - **AI-powered operations**: Inspect container health, analyze logs, and run common stack commands through the control server (Docker-scoped, cached, and rate-limited).
 - **Config validation**: Quick checks for `.env`, YAML, and JSON issues before you deploy, surfaced in the wizard + Settings.
-- **Voice companion**: Toggle Off/Browser/OpenAI HQ output; defaults to OpenAI `gpt-4o-mini-tts` with fallback `tts-1-hd`, or switch to ElevenLabs `eleven_flash_v2_5` for ultra-low latency.
+- **Voice companion**: Toggle Off/Browser/OpenAI HQ output; defaults to OpenAI `gpt-4o-mini-tts` with fallback `tts-1-hd`.
 - **Realtime voice**: Backed by `gpt-4o-realtime-preview-2024-12-17` with server-side VAD and error handling for smoother turn-taking.
 - **Arr-stack bootstrapping**: Automatically extract and sync API keys from running Sonarr/Radarr/Prowlarr and populate the wizard.
 - **Key management + guardrails**: `/settings` UI + `/api/settings/openai-key` let you persist/revoke API keys; Docker calls stay project-scoped with concurrency limits, caching, and a circuit breaker (`/api/system/status` exposes compose context + cache age, `/api/system/reload` restarts when managed by PM2/systemd).
@@ -391,7 +419,7 @@ Media Stack GA features a powerful Agentic System that allows you to manage your
 
 - **Remote Deploy** uses the control server (`/api/remote-deploy/*`) and works automatically when the UI is running behind a proxy that forwards `/api` (Docker Wizard mode does this). For static-hosted UIs, set `VITE_CONTROL_SERVER_URL` (or use Settings → “Control Server Connection”).
 - If the control server is started with `CONTROL_SERVER_TOKEN`, also set `VITE_CONTROL_SERVER_TOKEN` (or enter the token in Settings) so the UI can authenticate; `/api/settings/openai-key/status` reports whether a key is stored server-side.
-- Voice output defaults to OpenAI `gpt-4o-mini-tts` (fallback `tts-1-hd`, voice `coral` by default); ElevenLabs is optional via `ELEVENLABS_API_KEY` + `ELEVENLABS_TTS_MODEL=eleven_flash_v2_5` and `ELEVENLABS_VOICE_ID` for faster responses.
+- Voice output defaults to OpenAI `gpt-4o-mini-tts` (fallback `tts-1-hd`, voice `coral` by default).
 
 <p align="center">
   <img src="docs/images/voice_companion_demo.png" alt="Voice companion onboarding" width="1100" />

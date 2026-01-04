@@ -183,6 +183,27 @@ export const templates: Template[] = [
             pgid: '1000',
             deploymentMode: 'local'
         }
+    },
+    {
+        id: 'jellyfin-complete',
+        name: 'Jellyfin Complete',
+        description: 'Full-featured Jellyfin setup with transcoding and automation',
+        detailedDescription: 'The complete Jellyfin experience with all the bells and whistles. Unlike the basic FOSS stack, this template adds hardware-accelerated transcoding via Tdarr for optimal playback on any device, plus Usenet downloads for faster, more reliable media acquisition. Perfect for Jellyfin enthusiasts who want maximum features without paying for Plex Pass.',
+        icon: '🎥',
+        difficulty: 'intermediate',
+        services: ['jellyfin', 'arr', 'torrent', 'usenet', 'vpn', 'transcode', 'notify'],
+        highlights: [
+            'Hardware-accelerated transcoding with Tdarr',
+            'Dual download sources (torrent + Usenet)',
+            'No subscriptions or premium tiers needed',
+            'VPN protection for all downloads',
+            'Full *Arr automation suite'
+        ],
+        config: {
+            puid: '1000',
+            pgid: '1000',
+            deploymentMode: 'cloud'
+        }
     }
 ]
 

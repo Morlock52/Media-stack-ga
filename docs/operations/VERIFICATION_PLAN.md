@@ -176,22 +176,35 @@ Expected output: All containers should be in `Up` state.
 
 ### Manual Verification
 
-#### 1. Core Services
-- **Authelia**: Visit `https://auth.yourdomain.com`. Should see login page.
-- **Cloudflare Tunnel**: Check logs `docker compose logs cloudflared`. Should show "Registered tunnel connection".
-- **Authelia state API**: If `/api/state` returns 403 behind a proxy, ensure forwarded headers are present (`X-Forwarded-Proto`, `X-Forwarded-Host`). You can override via env when running the post-deploy check: `AUTHELIA_HOST=auth.example.com AUTHELIA_PROTO=https`.
+Pick the section that matches how you deployed:
 
-#### 2. Media Applications
-- **Plex**: Visit `http://localhost:32400/web` (tunnel required for remote).
-- **Jellyfin**: Visit `http://localhost:8096`.
-- **Sonarr/Radarr**: Visit `http://localhost:8989` / `http://localhost:7878`.
-- **qBittorrent**: Visit `http://localhost:8080`. Try adding a test torrent (e.g., Ubuntu ISO).
-- **Bazarr**: Visit `http://localhost:6767` and verify it detects your Plex/Jellyfin libraries.
-- **Tautulli**: Visit `http://localhost:8181` and confirm Plex connectivity.
-- **Tdarr**: Visit `http://localhost:8265` and ensure the server and internal node show as `Online`.
-- **Homepage**: Visit `http://localhost:3000` and verify service tiles and health indicators.
-- **Portainer**: Visit `http://localhost:9000` for container management.
-- **Dozzle**: Visit `http://localhost:8080` (or the mapped port) for logs.
+#### A) Local ports (direct LAN) — `docker-compose.local.yml`
+
+- **Homepage**: `http://<server-ip>:3000`
+- **Plex**: `http://<server-ip>:32400/web/`
+- **Jellyfin**: `http://<server-ip>:8096/web/`
+- **Sonarr/Radarr**: `http://<server-ip>:8989` / `http://<server-ip>:7878`
+- **Prowlarr**: `http://<server-ip>:9696`
+- **Bazarr**: `http://<server-ip>:6767`
+- **Overseerr**: `http://<server-ip>:5055`
+- **qBittorrent**: `http://<server-ip>:8081`
+- **Tautulli**: `http://<server-ip>:8181`
+- **Grafana**: `http://<server-ip>:3003` (local compose defaults to `3003` to avoid wizard port conflicts)
+
+Notes:
+- Dozzle, Portainer, Authelia, Cloudflared, and Traefik are not part of the local compose.
+- For logs, use `docker compose -f docker-compose.local.yml logs -f` or Grafana Explore (Loki).
+
+#### B) Reverse proxy / Remote access — `docker-compose.yml`
+
+- **Traefik**: `http://<server-ip>` should load Homepage (catch-all host rule).
+- **Remote/Tunnel hostnames** (example): `https://hub.${DOMAIN}`, `https://plex.${DOMAIN}`, `https://sonarr.${DOMAIN}`, etc.
+
+Core checks:
+- **Authelia** (when profile `auth` enabled): `https://auth.${DOMAIN}` should show a login page.
+- **Cloudflare Tunnel** (when profile `cloudflared` enabled): `docker compose logs cloudflared` should show a registered tunnel connection.
+- **Portainer**: `https://portainer.${DOMAIN}` (or `http://<server-ip>/portainer` if using path routes).
+- **Dozzle**: `https://dozzle.${DOMAIN}` (or `http://<server-ip>/dozzle` if using path routes).
 
 #### 3. Integration Tests
 - **Prowlarr -> Sonarr/Radarr**: Add Prowlarr as an indexer in Sonarr/Radarr. Test connection.

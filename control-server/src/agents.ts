@@ -3,7 +3,24 @@ import { Agent, ChatMessage } from './types/index.js';
 /**
  * Multi-Agent AI System for Media Stack
  * Specialized agents that work together to guide users
+ * Enhanced with Orchestrator for multi-agent coordination
  */
+
+/** Agent capability metadata for orchestration */
+export interface AgentCapability {
+    /** Agent identifier */
+    id: string;
+    /** Areas of expertise */
+    expertise: string[];
+    /** Tools this agent can use effectively */
+    tools: string[];
+    /** Whether agent can handle parallel tasks */
+    canParallelize: boolean;
+    /** Maximum concurrent tasks */
+    maxConcurrentTasks: number;
+    /** Average response time in ms */
+    avgResponseTime: number;
+}
 
 /** Context for proactive nudges */
 export interface NudgeContext {
@@ -204,8 +221,171 @@ Default ports to remember:
 - Sonarr: 8989, Radarr: 7878, Prowlarr: 9696
 - Overseerr: 5055, qBittorrent: 8080
 - Homepage: 3000, Portainer: 9000`
+    },
+
+    orchestrator: {
+        id: 'orchestrator',
+        name: 'Stack Orchestrator',
+        icon: '🎯',
+        color: 'gold',
+        description: 'Coordinates specialist agents for complex multi-step tasks with full stack control',
+        expertise: ['coordinate', 'plan', 'multi-step', 'complex', 'orchestrate', 'automate', 'deploy', 'manage', 'control'],
+        systemPrompt: `You are the Stack Orchestrator - an intelligent coordinator with FULL CONTROL over the Media Stack. You manage specialist agents and directly control Docker containers, services, and deployments.
+
+Your role:
+1. ANALYZE incoming requests to understand user intent and complexity
+2. CREATE execution plans with specific tasks and tool invocations
+3. DELEGATE to specialists OR directly execute using your extensive toolset
+4. COORDINATE parallel execution when tasks are independent
+5. MONITOR service health and proactively fix issues
+6. AGGREGATE results into coherent, helpful responses
+
+Available Specialist Agents:
+- Setup Guide: Docker, compose, environment setup, first-run configuration
+- Dr. Debug: Log analysis, error diagnosis, troubleshooting
+- App Expert: Service-specific knowledge (Plex, Sonarr, Radarr, etc.)
+- Deploy Captain: Server deployment, SSH, security, Cloudflare tunnels
+
+=== DIAGNOSTIC TOOLS ===
+- check_service_health: Check Docker service status and health
+- analyze_logs: Search and analyze container logs with patterns
+- network_diagnostics: Check DNS, connectivity, VPN status
+- list_running_services: List all running containers with stats
+- container_logs: Fetch real-time logs from any container
+- check_dependencies: Verify service dependency chain
+
+=== DOCKER LIFECYCLE TOOLS ===
+- start_container: Start a stopped container
+- stop_container: Stop a running container gracefully
+- restart_service: Restart a service with timeout
+- pull_image: Pull/update a Docker image
+- docker_compose: Run compose commands (up, down, pull, restart, logs)
+- exec_container: Execute commands inside a running container
+
+=== CATEGORY OPERATIONS ===
+- start_category: Start all services in a category (media, pvr, download, network, management)
+- stop_category: Stop all services in a category with dependency ordering
+
+=== DEPLOYMENT & CONFIG ===
+- deploy_stack: Full stack deployment with dependency ordering
+- manage_env: Read/write/delete environment variables
+- generate_env_diff: Compare configuration files
+- optimize_config: Get optimization recommendations
+- backup_config: Backup service configurations
+- run_post_deploy_check: Run comprehensive health checks
+
+=== SYSTEM TOOLS ===
+- system_resources: Get CPU, memory, disk usage
+- cleanup_docker: Remove unused images, containers, volumes
+
+Service Categories:
+- media: plex, jellyfin, emby
+- pvr: sonarr, radarr, lidarr, readarr, whisparr, bazarr, prowlarr
+- download: qbittorrent, transmission, deluge, sabnzbd, nzbget
+- network: gluetun, cloudflared, traefik
+- management: overseerr, tautulli, homepage, homarr, portainer
+
+Service Dependencies (for ordered startup/shutdown):
+- sonarr/radarr → prowlarr
+- bazarr → sonarr, radarr
+- overseerr → plex, sonarr, radarr
+- qbittorrent → gluetun
+- traefik → cloudflared
+
+For each request:
+1. Identify primary intent (setup, troubleshoot, configure, deploy, control)
+2. Determine the optimal approach: delegate to agent OR direct tool execution
+3. Create task list respecting service dependencies
+4. Execute tasks (parallel when independent, sequential when dependent)
+5. Verify results with health checks
+6. Synthesize results into a helpful response
+
+PROACTIVE BEHAVIORS:
+- Automatically check dependencies before starting services
+- Run health checks after any service changes
+- Backup configs before making modifications
+- Suggest cleanup when system resources are low
+
+Always maintain a helpful, encouraging tone while coordinating efficiently.
+Never mention internal coordination to users - present results as a unified response.`
     }
 };
+
+/** Agent capability metadata for orchestrator decision-making */
+export const AGENT_CAPABILITIES: Record<string, AgentCapability> = {
+    setup: {
+        id: 'setup',
+        expertise: ['installation', 'configuration', 'docker', 'compose', 'env'],
+        tools: ['generate_env_diff', 'run_post_deploy_check', 'list_running_services'],
+        canParallelize: true,
+        maxConcurrentTasks: 2,
+        avgResponseTime: 3000,
+    },
+    troubleshoot: {
+        id: 'troubleshoot',
+        expertise: ['error', 'issue', 'problem', 'fix', 'debug', 'logs'],
+        tools: ['check_service_health', 'analyze_logs', 'network_diagnostics', 'restart_service'],
+        canParallelize: true,
+        maxConcurrentTasks: 3,
+        avgResponseTime: 4000,
+    },
+    apps: {
+        id: 'apps',
+        expertise: ['plex', 'jellyfin', 'sonarr', 'radarr', 'prowlarr', 'overseerr'],
+        tools: ['check_service_health', 'optimize_config', 'list_running_services'],
+        canParallelize: true,
+        maxConcurrentTasks: 2,
+        avgResponseTime: 2500,
+    },
+    deploy: {
+        id: 'deploy',
+        expertise: ['deploy', 'server', 'ssh', 'production', 'cloud', 'remote'],
+        tools: ['run_post_deploy_check', 'network_diagnostics', 'check_service_health'],
+        canParallelize: false,
+        maxConcurrentTasks: 1,
+        avgResponseTime: 5000,
+    },
+    general: {
+        id: 'general',
+        expertise: [],
+        tools: ['list_running_services', 'check_service_health'],
+        canParallelize: true,
+        maxConcurrentTasks: 2,
+        avgResponseTime: 2000,
+    },
+    orchestrator: {
+        id: 'orchestrator',
+        expertise: ['coordinate', 'plan', 'multi-step', 'complex', 'deploy', 'manage', 'control'],
+        tools: [
+            // Diagnostic tools
+            'check_service_health', 'analyze_logs', 'network_diagnostics',
+            'list_running_services', 'container_logs', 'check_dependencies',
+            // Docker lifecycle tools
+            'start_container', 'stop_container', 'restart_service',
+            'pull_image', 'docker_compose', 'exec_container',
+            // Category operations
+            'start_category', 'stop_category',
+            // Deployment & config
+            'deploy_stack', 'manage_env', 'generate_env_diff',
+            'optimize_config', 'backup_config', 'run_post_deploy_check',
+            // System tools
+            'system_resources', 'cleanup_docker',
+        ],
+        canParallelize: true,
+        maxConcurrentTasks: 6,
+        avgResponseTime: 10000,
+    },
+};
+
+/** Get capability metadata for an agent */
+export function getAgentCapabilities(agentId: string): AgentCapability | undefined {
+    return AGENT_CAPABILITIES[agentId];
+}
+
+/** Get all agent capabilities */
+export function getAllAgentCapabilities(): Record<string, AgentCapability> {
+    return AGENT_CAPABILITIES;
+}
 
 // Detect which agent should handle a message
 export function detectAgent(message: string) {

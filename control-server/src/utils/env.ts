@@ -70,12 +70,3 @@ export const getEnvValue = (key: string): string | null => {
 
 /** Get OpenAI API key from env or .env file */
 export const getOpenAIKey = (): string | null => getEnvValue('OPENAI_API_KEY');
-
-/** Get ElevenLabs API key from env or .env file */
-export const getElevenLabsKey = (): string | null => getEnvValue('ELEVENLABS_API_KEY');
-
-/** Get Anthropic/Claude API key from env or .env file */
-export const getAnthropicKey = (): string | null => getEnvValue('ANTHROPIC_API_KEY');
-
-/** Get ElevenLabs Voice ID from env or .env file */
-export const getElevenLabsVoiceId = (): string | null => getEnvValue('ELEVENLABS_VOICE_ID');

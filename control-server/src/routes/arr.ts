@@ -3,6 +3,43 @@ import * as arrService from '../services/arrService.js';
 import { getErrorMessage } from '../utils/errors.js';
 
 export async function arrRoutes(fastify: FastifyInstance) {
+    // Get list of all supported services
+    fastify.get('/api/arr/services', async (_request, reply) => {
+        return reply.status(200).send({
+            success: true,
+            services: arrService.ARR_SERVICES.map(s => ({
+                id: s.id,
+                envKey: s.envKey,
+                configType: s.configType,
+                aliases: s.aliases || [],
+            })),
+            count: arrService.ARR_SERVICES.length,
+        });
+    });
+
+    // Get all running Docker containers
+    fastify.get('/api/arr/containers', async (_request, reply) => {
+        try {
+            const containers = await arrService.getRunningContainers();
+            const discovered = await arrService.discoverAdditionalContainers();
+            return reply.status(200).send({
+                success: true,
+                containers,
+                discovered, // Unknown containers that might have API keys
+                count: containers.length,
+            });
+        } catch (error: unknown) {
+            fastify.log.error({ err: error }, '[arr/containers] failed');
+            return reply.status(200).send({
+                success: false,
+                containers: [],
+                discovered: [],
+                count: 0,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
     // Get status of all *arr services
     fastify.get('/api/arr/status', async (_request, reply) => {
         try {
@@ -72,6 +109,26 @@ export async function arrRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // Get detailed extraction results (without writing to .env)
+    fastify.get('/api/arr/extract', async (_request, reply) => {
+        try {
+            const keys = await arrService.extractArrKeysDetailed();
+            return reply.status(200).send({
+                success: true,
+                keys,
+                count: keys.length,
+            });
+        } catch (error: unknown) {
+            fastify.log.error({ err: error }, '[arr/extract] failed');
+            return reply.status(200).send({
+                success: false,
+                keys: [],
+                count: 0,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
     // Full bootstrap: wait for services, extract keys, write to .env
     fastify.post<{ Body: { timeout?: number; pollInterval?: number } }>('/api/arr/auto-bootstrap', async (request, reply) => {
         const { timeout = 120000, pollInterval = 5000 } = request.body || {};
@@ -106,6 +163,10 @@ export async function arrRoutes(fastify: FastifyInstance) {
                 });
             }
 
+            // Step 2b: Validate keys (best-effort) before returning them to the UI
+            fastify.log.info('[arr/auto-bootstrap] Validating extracted keys...');
+            const validations = await arrService.validateArrKeys(keys, waitResult.services);
+
             // Step 3: Write to .env
             fastify.log.info('[arr/auto-bootstrap] Writing keys to .env...');
             try {
@@ -115,6 +176,7 @@ export async function arrRoutes(fastify: FastifyInstance) {
                     success: false,
                     step: 'write',
                     keys,
+                    validations,
                     services: waitResult.services,
                     error: getErrorMessage(error),
                 });
@@ -125,6 +187,7 @@ export async function arrRoutes(fastify: FastifyInstance) {
                 success: true,
                 step: 'complete',
                 keys,
+                validations,
                 services: waitResult.services,
             });
         } catch (error: unknown) {
@@ -139,4 +202,3 @@ export async function arrRoutes(fastify: FastifyInstance) {
         }
     });
 }
-

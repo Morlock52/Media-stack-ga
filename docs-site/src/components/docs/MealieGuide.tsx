@@ -32,11 +32,14 @@ export function MealieGuide() {
                     <h3 className="text-base font-semibold text-foreground mb-2">1. Open Mealie</h3>
                     <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
                         <li>
-                            In your browser, go to the Mealie URL from your stack. Common defaults:
+                            In your browser, go to the Mealie URL from your stack:
                             <ul className="list-disc list-inside ml-5 text-xs text-muted-foreground/80 mt-1">
-                                <li><code>http://localhost:9925</code> if running on your local machine.</li>
-                                <li><code>https://mealie.your-domain.com</code> if you used a subdomain in the wizard.</li>
+                                <li><code>https://mealie.your-domain.com</code> (Cloudflare Tunnel / remote access)</li>
                             </ul>
+                        </li>
+                        <li className="text-xs text-muted-foreground/80">
+                            Note: Mealie is part of the secure stack (<code>docker-compose.yml</code>) and is enabled via the <code>mealie</code> profile.
+                            It is not included in the local ports stack (<code>docker-compose.local.yml</code>).
                         </li>
                         <li>You should see the Mealie welcome / onboarding screen.</li>
                     </ol>

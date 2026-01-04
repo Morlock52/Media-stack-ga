@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Zap, Settings, ChevronRight, Check, AlertCircle } from 'lucide-react'
 import { ServiceOption } from '../../../data/services'
 

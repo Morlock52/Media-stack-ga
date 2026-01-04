@@ -1,10 +1,185 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket, Home, ExternalLink, Key, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket, Home, Key, Loader2, Eye, EyeOff } from 'lucide-react'
 import { PostInstallChecklist } from '../../PostInstallChecklist'
 import { controlServer } from '../../../utils/controlServer'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT, STORAGE_CATEGORIES } from '../../../data/storagePlan'
 import { SetupConfig } from '../../../store/setupStore'
+
+type BootstrapCredentialKind = 'API key' | 'token' | 'password' | 'secret'
+
+const maskSecret = (value: string, head = 6, tail = 4) => {
+    const trimmed = String(value || '').trim()
+    if (!trimmed) return ''
+    if (trimmed.length <= head + tail) return `${trimmed.slice(0, Math.min(head, trimmed.length))}...`
+    return `${trimmed.slice(0, head)}...${trimmed.slice(-tail)}`
+}
+
+const BOOTSTRAP_KEY_META: Record<string, { app: string; kind: BootstrapCredentialKind }> = {
+    SONARR_API_KEY: { app: 'Sonarr', kind: 'API key' },
+    RADARR_API_KEY: { app: 'Radarr', kind: 'API key' },
+    PROWLARR_API_KEY: { app: 'Prowlarr', kind: 'API key' },
+    READARR_API_KEY: { app: 'Readarr', kind: 'API key' },
+    LIDARR_API_KEY: { app: 'Lidarr', kind: 'API key' },
+    WHISPARR_API_KEY: { app: 'Whisparr', kind: 'API key' },
+    BAZARR_API_KEY: { app: 'Bazarr', kind: 'API key' },
+    OVERSEERR_API_KEY: { app: 'Overseerr', kind: 'API key' },
+    JELLYSEERR_API_KEY: { app: 'Jellyseerr', kind: 'API key' },
+    OMBI_API_KEY: { app: 'Ombi', kind: 'API key' },
+    TAUTULLI_API_KEY: { app: 'Tautulli', kind: 'API key' },
+    JACKETT_API_KEY: { app: 'Jackett', kind: 'API key' },
+    SABNZBD_API_KEY: { app: 'SABnzbd', kind: 'API key' },
+    NOTIFIARR_API_KEY: { app: 'Notifiarr', kind: 'API key' },
+    TDARR_API_KEY: { app: 'Tdarr', kind: 'API key' },
+    UNPACKERR_API_KEY: { app: 'Unpackerr', kind: 'API key' },
+    REQUESTRR_API_KEY: { app: 'Requestrr', kind: 'API key' },
+    HOMEPAGE_API_KEY: { app: 'Homepage', kind: 'API key' },
+    ORGANIZR_API_KEY: { app: 'Organizr', kind: 'API key' },
+    PLEX_TOKEN: { app: 'Plex', kind: 'token' },
+    JELLYFIN_API_KEY: { app: 'Jellyfin', kind: 'API key' },
+    QBITTORRENT_API_KEY: { app: 'qBittorrent', kind: 'secret' },
+    DELUGE_PASSWORD: { app: 'Deluge', kind: 'password' },
+    TRANSMISSION_PASSWORD: { app: 'Transmission', kind: 'password' },
+    NZBGET_PASSWORD: { app: 'NZBGet', kind: 'password' },
+}
+
+const titleCase = (value: string) =>
+    value
+        .split(/[\s_]+/g)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ')
+
+const describeBootstrapKey = (envKey: string): { app: string; kind: BootstrapCredentialKind } => {
+    const direct = BOOTSTRAP_KEY_META[envKey]
+    if (direct) return direct
+
+    if (envKey.endsWith('_API_KEY')) return { app: titleCase(envKey.replace(/_API_KEY$/, '')), kind: 'API key' }
+    if (envKey.endsWith('_TOKEN')) return { app: titleCase(envKey.replace(/_TOKEN$/, '')), kind: 'token' }
+    if (envKey.endsWith('_PASSWORD')) return { app: titleCase(envKey.replace(/_PASSWORD$/, '')), kind: 'password' }
+    return { app: titleCase(envKey), kind: 'secret' }
+}
+
+const isLoopbackHost = (host: string) => {
+    const normalized = String(host || '').trim().toLowerCase()
+    return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
+}
+
+const ACCESS_HOST_STORAGE_KEY = 'mediastack.accessHost'
+
+const hostForUrl = (host: string) => {
+    const trimmed = String(host || '').trim()
+    if (!trimmed) return 'localhost'
+    if (trimmed.includes(':') && !trimmed.startsWith('[') && !trimmed.endsWith(']')) return `[${trimmed}]`
+    return trimmed
+}
+
+const buildLocalHttpUrl = (host: string, port: number, path = '') => {
+    const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : ''
+    return `http://${hostForUrl(host)}:${port}${normalizedPath}`
+}
+
+type LocalAccessApp = {
+    id: string
+    label: string
+    description: string
+    port: number
+    path?: string
+    showWhenSelected: (selected: string[]) => boolean
+    containerNames: string[]
+}
+
+const LOCAL_ACCESS_APPS: LocalAccessApp[] = [
+    {
+        id: 'homepage',
+        label: 'Dashboard',
+        description: 'Links to all your apps',
+        port: 3000,
+        showWhenSelected: () => true,
+        containerNames: ['homepage'],
+    },
+    {
+        id: 'plex',
+        label: 'Plex',
+        description: 'Stream your media',
+        port: 32400,
+        path: '/web',
+        showWhenSelected: (s) => s.includes('plex'),
+        containerNames: ['plex'],
+    },
+    {
+        id: 'jellyfin',
+        label: 'Jellyfin',
+        description: 'Stream your media (free)',
+        port: 8096,
+        showWhenSelected: (s) => s.includes('jellyfin'),
+        containerNames: ['jellyfin'],
+    },
+    {
+        id: 'sonarr',
+        label: 'Sonarr',
+        description: 'TV show automation',
+        port: 8989,
+        showWhenSelected: (s) => s.includes('arr') || s.includes('sonarr'),
+        containerNames: ['sonarr'],
+    },
+    {
+        id: 'radarr',
+        label: 'Radarr',
+        description: 'Movie automation',
+        port: 7878,
+        showWhenSelected: (s) => s.includes('arr') || s.includes('radarr'),
+        containerNames: ['radarr'],
+    },
+    {
+        id: 'prowlarr',
+        label: 'Prowlarr',
+        description: 'Indexer management',
+        port: 9696,
+        showWhenSelected: (s) => s.includes('arr') || s.includes('prowlarr'),
+        containerNames: ['prowlarr'],
+    },
+    {
+        id: 'bazarr',
+        label: 'Bazarr',
+        description: 'Subtitle automation',
+        port: 6767,
+        showWhenSelected: (s) => s.includes('arr') || s.includes('bazarr'),
+        containerNames: ['bazarr'],
+    },
+    {
+        id: 'overseerr',
+        label: 'Overseerr',
+        description: 'Requests & discovery',
+        port: 5055,
+        showWhenSelected: (s) => s.includes('arr') || s.includes('overseerr'),
+        containerNames: ['overseerr'],
+    },
+    {
+        id: 'qbittorrent',
+        label: 'qBittorrent',
+        description: 'Download client',
+        port: 8081,
+        showWhenSelected: (s) => s.includes('torrent'),
+        containerNames: ['qbittorrent'],
+    },
+    {
+        id: 'tautulli',
+        label: 'Tautulli',
+        description: 'Plex statistics',
+        port: 8181,
+        showWhenSelected: (s) => s.includes('stats'),
+        containerNames: ['tautulli'],
+    },
+    {
+        id: 'grafana',
+        label: 'Grafana',
+        description: 'Logs & metrics',
+        port: 3003,
+        showWhenSelected: () => false,
+        containerNames: ['grafana'],
+    },
+]
 
 interface ReviewGenerateStepProps {
     config: SetupConfig
@@ -39,8 +214,25 @@ export function ReviewGenerateStep({
     const [bootstrapStatus, setBootstrapStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
     const [bootstrapMessage, setBootstrapMessage] = useState('')
     const [bootstrapKeys, setBootstrapKeys] = useState<Record<string, string>>({})
+    const [bootstrapValidations, setBootstrapValidations] = useState<Record<string, { ok: boolean; tested: boolean; status?: number; error?: string }>>({})
     const [bootstrapProgress, setBootstrapProgress] = useState<{ ready: number; running: number; total: number }>({ ready: 0, running: 0, total: 0 })
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const pollInFlightRef = useRef(false)
+    const [revealedBootstrapKeys, setRevealedBootstrapKeys] = useState<Set<string>>(() => new Set())
+    const [copiedBootstrapKey, setCopiedBootstrapKey] = useState<string | null>(null)
+
+    const [accessHost, setAccessHost] = useState(() => {
+        if (typeof window === 'undefined') return 'localhost'
+        try {
+            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
+            if (stored && stored.trim()) return stored.trim()
+        } catch {
+            // ignore storage failures
+        }
+        return window.location.hostname || 'localhost'
+    })
+    const [lanIpv4, setLanIpv4] = useState<string | null>(null)
+    const hasAccessHostOverride = useRef(false)
 
     const handleDeploy = async () => {
         setDeployStatus('deploying')
@@ -106,23 +298,118 @@ export function ReviewGenerateStep({
         }
     }, [])
 
+    useEffect(() => {
+        if (!isLocalMode) return
+        if (typeof window === 'undefined') return
+
+        try {
+            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
+            hasAccessHostOverride.current = Boolean(stored && stored.trim())
+        } catch {
+            hasAccessHostOverride.current = false
+        }
+
+        const host = window.location.hostname || 'localhost'
+        if (!isLoopbackHost(host)) {
+            if (!hasAccessHostOverride.current) setAccessHost(host)
+            return
+        }
+
+        let cancelled = false
+        void (async () => {
+            try {
+                const info = await controlServer.getNetworkInfo()
+                if (cancelled) return
+
+                if (info?.success && info.lanIpv4) {
+                    setLanIpv4(info.lanIpv4)
+                    if (!hasAccessHostOverride.current) setAccessHost(info.lanIpv4)
+                    return
+                }
+
+                if (info?.success && Array.isArray(info.ipv4) && info.ipv4.length) {
+                    setLanIpv4(info.ipv4[0] || null)
+                }
+            } catch {
+                // best-effort only
+            }
+        })()
+
+        return () => {
+            cancelled = true
+        }
+    }, [isLocalMode])
+
+    const updateAccessHost = (nextHost: string) => {
+        const normalized = String(nextHost || '').trim()
+        setAccessHost(normalized || 'localhost')
+        if (typeof window === 'undefined') return
+        try {
+            if (!normalized) window.localStorage.removeItem(ACCESS_HOST_STORAGE_KEY)
+            else window.localStorage.setItem(ACCESS_HOST_STORAGE_KEY, normalized)
+            hasAccessHostOverride.current = Boolean(normalized)
+        } catch {
+            // ignore storage failures
+        }
+    }
+
+    const toggleRevealBootstrapKey = (envKey: string) => {
+        setRevealedBootstrapKeys((prev) => {
+            const next = new Set(prev)
+            if (next.has(envKey)) next.delete(envKey)
+            else next.add(envKey)
+            return next
+        })
+    }
+
+    const copyBootstrapSecret = async (envKey: string, secret: string) => {
+        const value = String(secret || '')
+        if (!value) return
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value)
+            } else {
+                copyToClipboard(value)
+            }
+            setCopiedBootstrapKey(envKey)
+            setTimeout(() => setCopiedBootstrapKey((current) => (current === envKey ? null : current)), 1500)
+        } catch {
+            copyToClipboard(value)
+            setCopiedBootstrapKey(envKey)
+            setTimeout(() => setCopiedBootstrapKey((current) => (current === envKey ? null : current)), 1500)
+        }
+    }
+
     const handleBootstrapKeys = async () => {
         setBootstrapStatus('loading')
         setBootstrapProgress({ ready: 0, running: 0, total: 0 })
         setBootstrapMessage('Checking *arr services...')
+        setBootstrapKeys({})
+        setBootstrapValidations({})
+        setRevealedBootstrapKeys(new Set())
+        setCopiedBootstrapKey(null)
 
         // Start polling for status updates
         const pollStatus = async () => {
+            if (pollInFlightRef.current) return
+            pollInFlightRef.current = true
             try {
                 const status = await controlServer.getArrStatus()
                 if (status.success && status.services) {
                     const running = status.services.filter(s => s.running).length
                     const ready = status.services.filter(s => s.ready).length
+                    const notReady = status.services.filter(s => s.running && !s.ready).map(s => s.id)
                     setBootstrapProgress({ ready, running, total: status.services.length })
-                    setBootstrapMessage(`Services ready: ${ready}/${running} running (${status.services.length} total)`)
+                    setBootstrapMessage(
+                        notReady.length
+                            ? `Services ready: ${ready}/${running} running (waiting on: ${notReady.join(', ')})`
+                            : `Services ready: ${ready}/${running} running`
+                    )
                 }
             } catch {
                 // Ignore polling errors, the main request will handle failure
+            } finally {
+                pollInFlightRef.current = false
             }
         }
 
@@ -130,7 +417,7 @@ export function ReviewGenerateStep({
         await pollStatus()
 
         // Continue polling every 3 seconds
-        pollingRef.current = setInterval(pollStatus, 3000)
+        pollingRef.current = setInterval(() => { void pollStatus() }, 5000)
 
         try {
             const result = await controlServer.autoBootstrapArr({ timeout: 120000, pollInterval: 5000 })
@@ -144,9 +431,13 @@ export function ReviewGenerateStep({
             if (result.success) {
                 setBootstrapStatus('success')
                 setBootstrapKeys(result.keys)
+                setBootstrapValidations(result.validations || {})
                 const readyCount = result.services?.filter(s => s.ready).length || 0
                 setBootstrapProgress({ ready: readyCount, running: readyCount, total: result.services?.length || 0 })
-                setBootstrapMessage(`Successfully extracted ${Object.keys(result.keys).length} API keys and wrote to .env`)
+                const tested = Object.values(result.validations || {}).filter((v) => v.tested).length
+                const ok = Object.values(result.validations || {}).filter((v) => v.tested && v.ok).length
+                const suffix = tested > 0 ? ` (verified ${ok}/${tested})` : ''
+                setBootstrapMessage(`Successfully extracted ${Object.keys(result.keys).length} keys and wrote to .env${suffix}`)
             } else {
                 setBootstrapStatus('error')
                 setBootstrapMessage(result.error || `Failed at step: ${result.step}`)
@@ -165,11 +456,6 @@ export function ReviewGenerateStep({
     const storagePlan = config.storagePlan || createDefaultStoragePlan(DEFAULT_DATA_ROOT)
     const planRoot = storagePlan.dataRoot?.path || DEFAULT_DATA_ROOT
     const storageDefaults = createDefaultStoragePlan(planRoot)
-
-    // Generate hosts file entry for local deployment
-    const serverIP = '127.0.0.1' // User should replace with their server IP
-    const localDomains = ['home.local', 'plex.local', 'sonarr.local', 'radarr.local', 'prowlarr.local', 'bazarr.local', 'overseerr.local', 'qbit.local', 'tautulli.local', 'notifiarr.local', 'traefik.local', 'jellyfin.local']
-    const hostsEntry = `${serverIP} ${localDomains.join(' ')}`
 
     const storageEntries = STORAGE_CATEGORIES.filter((category) => {
         if (category.alwaysVisible) return true
@@ -192,8 +478,105 @@ export function ReviewGenerateStep({
         >
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Review & Generate</h2>
-                <p className="text-muted-foreground">Verify your settings and generate configuration files</p>
+                <p className="text-muted-foreground">
+                    {isLocalMode
+                        ? "You're almost done! Download your files and start streaming."
+                        : "Verify your settings and generate configuration files"}
+                </p>
             </div>
+
+            {/* Quick Access Guide for Local Mode - Beginner friendly */}
+            {isLocalMode && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 mb-6"
+                >
+                    <div className="flex items-start gap-3 mb-4">
+                        <div className="p-2 bg-emerald-500/20 rounded-lg">
+                            <Home className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-foreground">After Setup: How to Access Your Apps</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Open your browser and go to your server's IP address. Here's what you'll find:
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mb-3 flex flex-col sm:flex-row sm:items-end gap-2">
+                        <div className="flex-1">
+                            <label className="block text-[11px] text-muted-foreground mb-1">Server address for links</label>
+                            <input
+                                value={accessHost}
+                                onChange={(e) => updateAccessHost(e.target.value)}
+                                className="w-full bg-background/60 border border-border rounded-lg py-2 px-3 text-xs font-mono text-foreground placeholder:text-muted-foreground"
+                                placeholder="192.168.1.100"
+                                inputMode="url"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => updateAccessHost('localhost')}
+                                className="px-3 py-2 text-xs rounded-lg bg-muted/60 hover:bg-muted/80 border border-border text-foreground transition-colors"
+                            >
+                                Use localhost
+                            </button>
+                            {lanIpv4 && (
+                                <button
+                                    type="button"
+                                    onClick={() => updateAccessHost(lanIpv4)}
+                                    className="px-3 py-2 text-xs rounded-lg bg-muted/60 hover:bg-muted/80 border border-border text-foreground transition-colors"
+                                >
+                                    Use {lanIpv4}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-background/60 rounded-xl p-4 border border-border">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-muted-foreground border-b border-border">
+                                    <th className="pb-2 font-medium">App</th>
+                                    <th className="pb-2 font-medium">Address</th>
+                                    <th className="pb-2 font-medium hidden sm:table-cell">What it does</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                                {LOCAL_ACCESS_APPS.filter((app) => app.showWhenSelected(selectedServices)).map((app) => {
+                                    const url = buildLocalHttpUrl(accessHost, app.port, app.path)
+                                    return (
+                                        <tr key={app.id}>
+                                            <td className="py-2 font-medium text-foreground">{app.label}</td>
+                                            <td className="py-2 font-mono text-primary text-xs">
+                                                <a
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:underline"
+                                                >
+                                                    {url}
+                                                </a>
+                                            </td>
+                                            <td className="py-2 text-muted-foreground hidden sm:table-cell">{app.description}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                        <span className="text-emerald-400">💡</span>
+                        {isLoopbackHost(accessHost)
+                            ? 'Links use localhost. To access from other devices, use your server LAN IP (like 192.168.1.100).'
+                            : `Links use ${accessHost}${lanIpv4 && lanIpv4 !== accessHost ? ` (LAN: ${lanIpv4})` : ''}.`}
+                    </p>
+                </motion.div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="p-4 rounded-xl bg-muted/40 border border-border">
@@ -486,13 +869,80 @@ export function ReviewGenerateStep({
                                                         )}
                                                         {bootstrapMessage}
                                                         {bootstrapStatus === 'success' && Object.keys(bootstrapKeys).length > 0 && (
-                                                            <div className="mt-2 space-y-1 font-mono">
-                                                                {Object.entries(bootstrapKeys).map(([key, value]) => (
-                                                                    <div key={key} className="flex gap-1">
-                                                                        <span className="text-green-400">{key}:</span>
-                                                                        <span className="text-muted-foreground">{value.slice(0, 6)}...{value.slice(-4)}</span>
-                                                                    </div>
-                                                                ))}
+                                                            <div className="mt-2 space-y-1">
+                                                                {Object.entries(bootstrapKeys).map(([envKey, secret]) => {
+                                                                    const meta = describeBootstrapKey(envKey)
+                                                                    const validation = bootstrapValidations[envKey]
+                                                                    const tested = Boolean(validation?.tested)
+                                                                    const ok = Boolean(validation?.tested && validation?.ok)
+                                                                    const revealed = revealedBootstrapKeys.has(envKey)
+                                                                    const displayed = revealed ? secret : maskSecret(secret)
+                                                                    return (
+                                                                        <div key={envKey} className="rounded bg-background/50 p-2">
+                                                                            <div className="flex items-start justify-between gap-3">
+                                                                                <div className="min-w-0">
+                                                                                    <div className="text-xs font-medium text-green-300 truncate">
+                                                                                        {meta.app}{' '}
+                                                                                        <span className="text-muted-foreground">({meta.kind})</span>
+                                                                                    </div>
+                                                                                    <div className="text-[11px] text-muted-foreground font-mono truncate">{envKey}</div>
+                                                                                </div>
+                                                                                <div className="shrink-0 flex items-center gap-1">
+                                                                                    {tested ? (
+                                                                                        ok ? (
+                                                                                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                                                                        ) : (
+                                                                                            <AlertCircle className="w-4 h-4 text-amber-400" />
+                                                                                        )
+                                                                                    ) : (
+                                                                                        <Key className="w-4 h-4 text-muted-foreground" />
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="mt-2 flex items-start gap-2">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => void copyBootstrapSecret(envKey, secret)}
+                                                                                    className="flex-1 text-left rounded border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-muted-foreground hover:border-primary/40 break-all"
+                                                                                    title="Click to copy"
+                                                                                >
+                                                                                    {displayed}
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => toggleRevealBootstrapKey(envKey)}
+                                                                                    className="p-2 rounded border border-border bg-background/60 hover:bg-background/80 hover:border-primary/40 transition-colors"
+                                                                                    title={revealed ? 'Hide' : 'Reveal'}
+                                                                                    aria-label={revealed ? 'Hide key' : 'Reveal key'}
+                                                                                >
+                                                                                    {revealed ? (
+                                                                                        <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                                    ) : (
+                                                                                        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                                    )}
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => void copyBootstrapSecret(envKey, secret)}
+                                                                                    className="p-2 rounded border border-border bg-background/60 hover:bg-background/80 hover:border-primary/40 transition-colors"
+                                                                                    title={copiedBootstrapKey === envKey ? 'Copied' : 'Copy'}
+                                                                                    aria-label={copiedBootstrapKey === envKey ? 'Copied' : 'Copy key'}
+                                                                                >
+                                                                                    {copiedBootstrapKey === envKey ? (
+                                                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                                                    ) : (
+                                                                                        <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                                    )}
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <div className="mt-1 text-[11px] text-muted-foreground">
+                                                                                {tested ? (ok ? 'Verified' : validation?.error || 'Validation failed') : 'Not tested'}
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })}
                                                             </div>
                                                         )}
                                                     </div>
@@ -500,27 +950,36 @@ export function ReviewGenerateStep({
                                             </div>
                                         )}
 
-                                        {/* Access URLs */}
-                                        <div className="space-y-2">
-                                            <div className="text-sm font-medium text-foreground">Access Your Services</div>
-                                            <div className="grid grid-cols-2 gap-2 text-sm">
-                                                <a href="http://home.local" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/40 rounded-lg hover:bg-muted/60 transition-colors">
-                                                    <Home className="w-4 h-4 text-primary" />
-                                                    <span>home.local</span>
-                                                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
-                                                </a>
-                                                {selectedServices.includes('plex') && (
-                                                    <a href="http://plex.local" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/40 rounded-lg hover:bg-muted/60 transition-colors">
-                                                        <span>plex.local</span>
-                                                        <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
-                                                    </a>
-                                                )}
-                                                {selectedServices.includes('arr') && (
-                                                    <a href="http://sonarr.local" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/40 rounded-lg hover:bg-muted/60 transition-colors">
-                                                        <span>sonarr.local</span>
-                                                        <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
-                                                    </a>
-                                                )}
+                                        {/* Access URLs - Beginner friendly with IP:PORT */}
+                                        <div className="space-y-3">
+                                            <div className="text-sm font-medium text-foreground">What's Next?</div>
+                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                                <p className="text-sm text-foreground mb-2">
+                                                    Open your apps:
+                                                </p>
+                                                <div className="space-y-1.5 text-xs">
+                                                    {LOCAL_ACCESS_APPS.filter((app) => app.showWhenSelected(selectedServices)).map((app) => {
+                                                        const url = buildLocalHttpUrl(accessHost, app.port, app.path)
+                                                        return (
+                                                            <div key={app.id} className="flex items-center justify-between p-2 bg-background/60 rounded gap-3">
+                                                                <span className="font-medium">{app.label}</span>
+                                                                <a
+                                                                    href={url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-primary font-mono text-[11px] hover:underline truncate"
+                                                                >
+                                                                    {url}
+                                                                </a>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    {isLoopbackHost(accessHost)
+                                                        ? '💡 These links use localhost. For other devices, use your LAN IP (like 192.168.1.100).'
+                                                        : `💡 These links use ${accessHost}${lanIpv4 && lanIpv4 !== accessHost ? ` (LAN: ${lanIpv4})` : ''}.`}
+                                                </p>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -555,51 +1014,49 @@ export function ReviewGenerateStep({
                                         )}
                                     </div>
                                 ) : (
-                                    /* Idle State - Deploy Form */
+                                    /* Idle State - Deploy Form - Beginner Friendly */
                                     <>
-                                        {/* Step 1: Hosts File */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">1</span>
-                                                <h3 className="font-semibold text-foreground">Add to /etc/hosts (optional)</h3>
+                                        {/* Simple explanation */}
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 rounded-xl">
+                                                <h3 className="font-semibold text-foreground mb-2">Ready to install?</h3>
+                                                <p className="text-sm text-muted-foreground mb-3">
+                                                    Click "Deploy Now" to start your media stack. This will:
+                                                </p>
+                                                <ul className="text-sm text-muted-foreground space-y-1.5 ml-4">
+                                                    <li className="flex items-center gap-2">
+                                                        <Check className="w-4 h-4 text-emerald-400" />
+                                                        Save your configuration
+                                                    </li>
+                                                    <li className="flex items-center gap-2">
+                                                        <Check className="w-4 h-4 text-emerald-400" />
+                                                        Download and start all your apps
+                                                    </li>
+                                                    <li className="flex items-center gap-2">
+                                                        <Check className="w-4 h-4 text-emerald-400" />
+                                                        Takes 1-2 minutes depending on your internet
+                                                    </li>
+                                                </ul>
                                             </div>
-                                            <p className="text-sm text-muted-foreground ml-8">
-                                                Add this line to access services via .local domains:
-                                            </p>
-                                            <div className="ml-8 relative">
-                                                <pre className="p-3 bg-muted/60 rounded-lg text-xs font-mono text-foreground overflow-x-auto">
-                                                    {hostsEntry}
-                                                </pre>
-                                                <button
-                                                    onClick={() => copyToClipboard(hostsEntry)}
-                                                    className="absolute top-2 right-2 p-1.5 hover:bg-muted rounded-lg transition-colors"
-                                                    title="Copy"
-                                                >
-                                                    <Copy className="w-4 h-4 text-muted-foreground" />
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        {/* Step 2: Deploy */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white text-xs font-bold">2</span>
-                                                <h3 className="font-semibold text-foreground">Deploy</h3>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground ml-8">
-                                                Click below to write your configuration and start all containers:
-                                            </p>
-                                            <div className="ml-8">
-                                                <div className="p-3 bg-muted/40 rounded-lg text-xs text-muted-foreground mb-3">
-                                                    <div>Services: <span className="text-foreground">{selectedServices.join(', ')}</span></div>
+                                            {/* Selected services summary */}
+                                            <div className="p-3 bg-muted/40 rounded-lg">
+                                                <div className="text-xs text-muted-foreground mb-2">Apps to install:</div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {selectedServices.map((s) => (
+                                                        <span key={s} className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded">
+                                                            {s}
+                                                        </span>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Note */}
-                                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                                            <p className="text-sm text-amber-200/80">
-                                                <strong>Note:</strong> This will write your .env file and run <code className="bg-muted px-1 rounded">docker compose up -d</code>. Ensure Docker is running.
+                                        {/* Requirement note */}
+                                        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start gap-2">
+                                            <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                                            <p className="text-sm text-blue-200/80">
+                                                Make sure Docker Desktop is running on your computer before clicking Deploy.
                                             </p>
                                         </div>
 

@@ -1,16 +1,15 @@
 /**
- * AI Provider Abstraction with Claude Fallback
- * Primary: OpenAI GPT-4o | Fallback: Claude Sonnet 4
- * Updated December 2025 for production-ready models
+ * AI Provider - OpenAI Only
+ * Updated January 2026 - Simplified to single provider
  *
  * Model Strategy:
- * - GPT-4o: Best for tool calling and multimodal
- * - Claude Sonnet 4: Better for complex reasoning and long contexts
+ * - GPT-4o: Best for tool calling and multimodal (default)
  * - GPT-4o-mini: Cost-effective for simple queries
  */
 
 import { createLogger } from '../utils/logger.js';
 import { getErrorMessage } from '../utils/errors.js';
+import { getEnvValue, getOpenAIKey } from '../utils/env.js';
 
 const logger = createLogger('aiProviders');
 
@@ -50,8 +49,9 @@ async function withRetry<T>(
 }
 
 export interface Message {
-    role: 'system' | 'user' | 'assistant';
+    role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
+    tool_call_id?: string;
 }
 
 export interface CompletionOptions {
@@ -62,18 +62,18 @@ export interface CompletionOptions {
 
 export interface CompletionResult {
     content: string;
-    provider: 'openai' | 'claude';
+    provider: 'openai';
     model: string;
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number; };
 }
 
 async function callOpenAI(messages: Message[], options: CompletionOptions = {}): Promise<CompletionResult> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = getOpenAIKey();
     if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-  const model = options.model || process.env.OPENAI_MODEL || 'gpt-4o';
+    const model = options.model || getEnvValue('OPENAI_MODEL') || 'gpt-4o';
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({
@@ -83,99 +83,54 @@ async function callOpenAI(messages: Message[], options: CompletionOptions = {}):
             temperature: options.temperature ?? 0.7,
             store: true  // Enable prompt caching for 40-80% cost reduction
         })
-  });
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
         const error = await response.text();
         throw new Error(`OpenAI API error: ${response.status} - ${error}`);
-  }
+    }
 
-  const data = await response.json();
+    const data = await response.json();
     return {
-          content: data.choices[0]?.message?.content || '',
-          provider: 'openai',
-          model,
-          usage: data.usage ? { promptTokens: data.usage.prompt_tokens, completionTokens: data.usage.completion_tokens, totalTokens: data.usage.total_tokens } : undefined
-    };
-}
-
-async function callClaude(messages: Message[], options: CompletionOptions = {}): Promise<CompletionResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
-  const model = options.model || process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
-    const systemMessage = messages.find(m => m.role === 'system')?.content || '';
-    const conversationMessages = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: options.maxTokens || 2048, system: systemMessage, messages: conversationMessages })
-  });
-
-  if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Claude API error: ${response.status} - ${error}`);
-  }
-
-  const data = await response.json();
-    return {
-                                  content: data.content[0]?.text || '',
-          provider: 'claude',
-          model,
-          usage: data.usage ? { promptTokens: data.usage.input_tokens, completionTokens: data.usage.output_tokens, totalTokens: data.usage.input_tokens + data.usage.output_tokens } : undefined
+        content: data.choices[0]?.message?.content || '',
+        provider: 'openai',
+        model,
+        usage: data.usage ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+            totalTokens: data.usage.total_tokens
+        } : undefined
     };
 }
 
 export async function getCompletion(messages: Message[], options: CompletionOptions = {}): Promise<CompletionResult> {
-    const primaryProvider = process.env.PRIMARY_AI_PROVIDER || 'openai';
     const startTime = Date.now();
 
     try {
-        logger.info({ provider: primaryProvider }, 'Attempting primary AI provider');
-        const result = await withRetry(() =>
-            primaryProvider === 'claude' ? callClaude(messages, options) : callOpenAI(messages, options)
-        );
+        logger.info({ provider: 'openai' }, 'Attempting OpenAI completion');
+        const result = await withRetry(() => callOpenAI(messages, options));
         logger.info({
-            provider: primaryProvider,
+            provider: 'openai',
             model: result.model,
             latencyMs: Date.now() - startTime,
             tokens: result.usage?.totalTokens
         }, 'AI completion successful');
         return result;
-    } catch (primaryError: unknown) {
-        const primaryErrorMsg = getErrorMessage(primaryError);
-        logger.warn({ provider: primaryProvider, error: primaryErrorMsg }, 'Primary AI provider failed, attempting fallback');
-
-        try {
-            const fallbackProvider = primaryProvider === 'openai' ? 'claude' : 'openai';
-            logger.info({ provider: fallbackProvider }, 'Using fallback AI provider');
-            const result = await withRetry(() =>
-                fallbackProvider === 'claude' ? callClaude(messages, options) : callOpenAI(messages, options)
-            );
-            logger.info({
-                provider: fallbackProvider,
-                model: result.model,
-                latencyMs: Date.now() - startTime,
-                fallbackUsed: true
-            }, 'Fallback AI completion successful');
-            return result;
-        } catch (fallbackError: unknown) {
-            const fallbackErrorMsg = getErrorMessage(fallbackError);
-            logger.error({
-                primaryError: primaryErrorMsg,
-                fallbackError: fallbackErrorMsg,
-                latencyMs: Date.now() - startTime
-            }, 'Both AI providers failed');
-            throw new Error(`AI providers unavailable. Primary (${primaryProvider}): ${primaryErrorMsg}. Fallback: ${fallbackErrorMsg}`);
-        }
+    } catch (error: unknown) {
+        const errorMsg = getErrorMessage(error);
+        logger.error({
+            provider: 'openai',
+            error: errorMsg,
+            latencyMs: Date.now() - startTime
+        }, 'AI completion failed');
+        throw new Error(`OpenAI unavailable: ${errorMsg}`);
     }
 }
 
 // Select model based on query complexity
 export function selectModelForQuery(query: string, complexity: 'low' | 'medium' | 'high' = 'medium'): string {
     if (complexity === 'low') return 'gpt-4o-mini';
-    if (complexity === 'high') return 'claude-sonnet-4-5-20250929';
+    // For high complexity, still use gpt-4o as our best model
     return 'gpt-4o';
 }
 
@@ -190,6 +145,6 @@ export function estimateComplexity(query: string): 'low' | 'medium' | 'high' {
     return 'medium';
 }
 
-export function getAvailableProviders(): { openai: boolean; claude: boolean } {
-    return { openai: !!process.env.OPENAI_API_KEY, claude: !!process.env.ANTHROPIC_API_KEY };
+export function getAvailableProviders(): { openai: boolean } {
+    return { openai: !!getOpenAIKey() };
 }

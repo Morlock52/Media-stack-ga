@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowRight, BookOpen, Code, Shield, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { StatusBadge } from '../StatusBadge'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../../utils/controlServer'
+import { usePageVisibility } from '../../hooks/usePageVisibility'
+
+/** Polling interval for health checks (10 seconds) */
+const HEALTH_POLL_INTERVAL_MS = 10_000
 
 export function HeroSection() {
   const scrollToWizard = () => {
@@ -28,50 +32,49 @@ export function HeroSection() {
     snapshot: HealthSnapshot | null
   }>(() => ({ status: 'loading', latencyMs: null, lastCheckedAt: null, snapshot: null }))
   const featureCardsRef = useRef<HTMLDivElement>(null)
+  const isVisible = usePageVisibility()
 
-  useEffect(() => {
-    let cancelled = false
-    let interval: number | null = null
+  const fetchSnapshot = useCallback(async () => {
+    const started = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    try {
+      const res = await fetch(buildControlServerUrl('/api/health-snapshot'), {
+        headers: { ...controlServerAuthHeaders() },
+      })
+      const ended = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const latencyMs = Math.max(0, Math.round(ended - started))
 
-    const fetchSnapshot = async () => {
-      const started = typeof performance !== 'undefined' ? performance.now() : Date.now()
-      try {
-        const res = await fetch(buildControlServerUrl('/api/health-snapshot'), {
-          headers: { ...controlServerAuthHeaders() },
-        })
-        const ended = typeof performance !== 'undefined' ? performance.now() : Date.now()
-        const latencyMs = Math.max(0, Math.round(ended - started))
+      if (!res.ok) throw new Error('Control server unreachable')
+      const data = (await res.json()) as HealthSnapshot
 
-        if (!res.ok) throw new Error('Control server unreachable')
-        const data = (await res.json()) as HealthSnapshot
-        if (cancelled) return
-
-        setPulse({
-          status: 'online',
-          latencyMs,
-          lastCheckedAt: new Date(),
-          snapshot: data,
-        })
-      } catch {
-        if (cancelled) return
-        setPulse((prev) => ({
-          ...prev,
-          status: 'offline',
-          latencyMs: null,
-          lastCheckedAt: new Date(),
-          snapshot: null,
-        }))
-      }
-    }
-
-    fetchSnapshot()
-    interval = window.setInterval(fetchSnapshot, 10_000)
-
-    return () => {
-      cancelled = true
-      if (interval) window.clearInterval(interval)
+      setPulse({
+        status: 'online',
+        latencyMs,
+        lastCheckedAt: new Date(),
+        snapshot: data,
+      })
+    } catch {
+      setPulse((prev) => ({
+        ...prev,
+        status: 'offline',
+        latencyMs: null,
+        lastCheckedAt: new Date(),
+        snapshot: null,
+      }))
     }
   }, [])
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchSnapshot()
+  }, [fetchSnapshot])
+
+  // Visibility-aware polling - pauses when tab is inactive
+  useEffect(() => {
+    if (!isVisible) return
+
+    const interval = window.setInterval(fetchSnapshot, HEALTH_POLL_INTERVAL_MS)
+    return () => window.clearInterval(interval)
+  }, [isVisible, fetchSnapshot])
 
   const computed = useMemo(() => {
     const total = pulse.snapshot?.containerCount ?? 0

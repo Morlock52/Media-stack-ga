@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import App from './App'
 import ScrollToTop from './components/ScrollToTop'
+import { VoiceProvider } from './contexts/VoiceContext'
 import { getErrorMessage, redactSecrets, safeStringify } from './utils/logging'
 import './index.css'
 
@@ -92,10 +93,11 @@ if (typeof window !== 'undefined') {
 ReactDOM.createRoot(document.getElementById('root')!).render(
 	<React.StrictMode>
 		<RootErrorBoundary>
-			<SonnerToaster richColors closeButton />
-			<BrowserRouter>
-				<ScrollToTop />
-				<Routes>
+			<VoiceProvider>
+				<SonnerToaster richColors closeButton />
+				<BrowserRouter>
+					<ScrollToTop />
+					<Routes>
 					<Route path="/" element={<App />} />
 					<Route
 						path="/docs"
@@ -132,8 +134,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 						}
 					/>
 					<Route path="*" element={<Navigate to="/" replace />} />
-				</Routes>
-			</BrowserRouter>
+					</Routes>
+				</BrowserRouter>
+			</VoiceProvider>
 		</RootErrorBoundary>
 	</React.StrictMode>,
 )

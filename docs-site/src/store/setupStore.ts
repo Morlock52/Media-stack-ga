@@ -67,6 +67,9 @@ export interface SetupStore {
     // Wizard step index (0–5 for the 6 steps in the UI).
     currentStep: number
 
+    // Quick Start mode: simplified 2-step flow for beginners
+    quickStartMode: boolean
+
     // Mode influences defaults: "newbie" pre-selects a safe stack.
     mode: 'newbie' | 'expert' | null
     // Storage planner mode toggles between single-root (simple) and per-path (advanced).
@@ -85,6 +88,7 @@ export interface SetupStore {
 
     // ------ Actions for navigation & selection ------
     setCurrentStep: (step: number) => void
+    setQuickStartMode: (enabled: boolean) => void
     setMode: (mode: 'newbie' | 'expert') => void
     setSelectedServices: (services: string[]) => void
     toggleService: (service: string) => void
@@ -168,6 +172,7 @@ export const useSetupStore = create<SetupStore>()(
         (set, _get) => ({
             // Start at step 0 (Welcome), no mode, no services selected.
             currentStep: 0,
+            quickStartMode: false,
             mode: null,
             storageMode: 'simple',
             selectedServices: [],
@@ -177,6 +182,8 @@ export const useSetupStore = create<SetupStore>()(
             appliedTemplateId: null,
 
             setCurrentStep: (step) => set({ currentStep: step }),
+
+            setQuickStartMode: (enabled) => set({ quickStartMode: enabled }),
 
             setMode: (mode) => {
                 set({ mode })
@@ -318,6 +325,7 @@ export const useSetupStore = create<SetupStore>()(
             resetWizard: () =>
                 set({
                     currentStep: 0,
+                    quickStartMode: false,
                     mode: null,
                     storageMode: 'simple',
                     selectedServices: [],
@@ -444,6 +452,7 @@ export const useSetupStore = create<SetupStore>()(
             name: 'setup-wizard-storage',
             partialize: (state) => ({
                 currentStep: state.currentStep,
+                quickStartMode: state.quickStartMode,
                 mode: state.mode,
                 storageMode: state.storageMode,
                 selectedServices: state.selectedServices,

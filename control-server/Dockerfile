@@ -7,11 +7,13 @@ WORKDIR /app
 
 # Install dependencies with BuildKit cache (npm workspaces)
 COPY package.json package-lock.json ./
+COPY shared/package.json shared/package.json
 COPY control-server/package.json control-server/package.json
 COPY docs-site/package.json docs-site/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci -w control-server
 
 # Copy source and build
+COPY shared/ shared/
 COPY control-server/ control-server/
 RUN npm run build -w control-server
 
@@ -31,6 +33,7 @@ RUN addgroup -g 1001 -S appgroup && adduser -u 1001 -S appuser -G appgroup
 
 # Install production dependencies only with BuildKit cache (npm workspaces)
 COPY package.json package-lock.json ./
+COPY shared/package.json shared/package.json
 COPY control-server/package.json control-server/package.json
 COPY docs-site/package.json docs-site/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci -w control-server --omit=dev

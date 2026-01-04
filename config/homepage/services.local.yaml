@@ -1,0 +1,83 @@
+---
+# Media Stack Services Configuration (Local LAN / Direct Ports)
+# https://gethomepage.dev/configs/services/
+#
+# This file is used by the local ports stack (`docker-compose.local.yml`).
+# Links point to your server IP/hostname + a port.
+#
+# IMPORTANT: Set `DOMAIN` in your `.env` to your server IP/hostname so links
+# work from other devices on your LAN (example: `DOMAIN=192.168.1.100`).
+
+- Media:
+    - Plex:
+        icon: plex.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:32400/web/
+        description: Stream Movies & TV
+        siteMonitor: http://plex:32400/identity
+        statusStyle: dot
+
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:8096/web/
+        description: Stream Movies & TV (free)
+        siteMonitor: http://jellyfin:8096/health
+        statusStyle: dot
+
+    - Overseerr:
+        icon: overseerr.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:5055
+        description: Request media
+        siteMonitor: http://overseerr:5055/api/v1/status
+        statusStyle: dot
+
+- Downloads:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:8081
+        description: Torrent downloads
+        siteMonitor: http://qbittorrent:8081
+        statusStyle: dot
+
+- Arr Stack:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:8989
+        description: TV series manager
+        siteMonitor: http://sonarr:8989/ping
+        statusStyle: dot
+
+    - Radarr:
+        icon: radarr.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:7878
+        description: Movie manager
+        siteMonitor: http://radarr:7878/ping
+        statusStyle: dot
+
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:9696
+        description: Indexer manager
+        siteMonitor: http://prowlarr:9696/ping
+        statusStyle: dot
+
+    - Bazarr:
+        icon: bazarr.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:6767
+        description: Subtitles
+        siteMonitor: http://bazarr:6767
+        statusStyle: dot
+
+- Monitoring:
+    - Grafana:
+        icon: grafana.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:3003
+        description: Logs & metrics
+        siteMonitor: http://grafana:3000/api/health
+        statusStyle: dot
+
+    - Tautulli:
+        icon: tautulli.png
+        href: http://{{HOMEPAGE_VAR_DOMAIN}}:8181
+        description: Plex stats
+        siteMonitor: http://tautulli:8181/status
+        statusStyle: dot

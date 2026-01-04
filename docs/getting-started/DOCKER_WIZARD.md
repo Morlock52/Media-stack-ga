@@ -73,13 +73,14 @@ Remote deploy works from the wizard UI because the containerized UI proxies `/ap
 ### Access after remote deploy
 
 - **Domain/Tunnel:** `https://<service>.${DOMAIN}`
-- **Local/LAN:** `http://<server-ip>` (Homepage dashboard via Traefik on port 80)
+- **Local ports (`docker-compose.local.yml`):** `http://<server-ip>:3000` (Homepage dashboard)
+- **Reverse proxy (`docker-compose.yml`):** `http://<server-ip>` (Traefik → Homepage)
 - Add `/etc/hosts` entries if you want subdomain access without DNS.
 
 ### Local-only vs Remote access (stack deployment)
 
-- **Local LAN (no SSO/tunnel):** run the generated compose with `docker compose up -d`.
-- **Remote/Zero-Trust:** run with `docker compose --profile auth --profile cloudflared up -d`.
+- **Home Network (direct ports):** run `docker compose -f docker-compose.local.yml up -d`.
+- **Remote/Zero-Trust:** run `docker compose --profile auth --profile cloudflared up -d` (Traefik + Authelia + Cloudflare Tunnel).
 
 VPN-protected downloads (Gluetun) still apply in both modes.
 
@@ -94,6 +95,7 @@ docker compose -f docker-compose.wizard.secure.yml down
 ## Troubleshooting
 
 - **Port Conflicts**: Ensure ports 3002 and 3001 are free on your host.
+- **Grafana conflict (local stack)**: `docker-compose.local.yml` defaults Grafana to `http://localhost:3003` to avoid clashing with the wizard UI (`3002`). Override with `GRAFANA_PORT`.
 - **Docker Socket permissions**: If you see "permission denied" errors regarding the Docker socket, you may need to adjust the user in `docker-compose.wizard.yml` or run with proper privileges.
 - **Health Check Failures**: Both services have healthchecks. Use `docker compose ps` to verify containers are healthy before accessing the UI.
 - **Post‑deploy sanity**: After updates, run `bash ./scripts/post_deploy_check.sh` (VPN/Auth/Tunnel quick checks). See `docs/operations/POST_DEPLOY_CHECKS.md`.

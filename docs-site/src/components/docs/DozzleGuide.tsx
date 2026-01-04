@@ -24,8 +24,8 @@ export function DozzleGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Open the dashboard</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Visit <code>https://dozzle.yourdomain.com</code> (or <code>http://localhost:8080</code> if you are on the same
-                            machine).
+                            Dozzle is included in the secure stack (<code>docker-compose.yml</code>).
+                            Open it at <code>https://dozzle.yourdomain.com</code> (Cloudflare Tunnel).
                         </li>
                         <li>
                             Use the sidebar to pick a container. The search field filters instantly—type <code>sonarr</code>,{' '}
@@ -47,6 +47,10 @@ export function DozzleGuide() {
                         <li>
                             If Dozzle shows an empty list, make sure the Docker socket is mounted (
                             <code>/var/run/docker.sock</code>) and the container is up: <code>docker compose ps dozzle</code>.
+                        </li>
+                        <li>
+                            If you deployed the local ports stack (<code>docker-compose.local.yml</code>), Dozzle is not included—use
+                            <code>docker compose -f docker-compose.local.yml logs -f</code> or Grafana Explore (Loki).
                         </li>
                         <li>
                             Use the filter chips (Errors / Warnings) to zero in on stack traces after a failed download or transcoding job.

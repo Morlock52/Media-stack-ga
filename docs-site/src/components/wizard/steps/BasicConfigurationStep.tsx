@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Globe, Clock, User, Lock, AlertCircle, Home } from 'lucide-react'
 import { ComboboxInput } from '../../ui/ComboboxInput'
 import { UseFormReturn } from 'react-hook-form'
@@ -59,8 +59,26 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
         >
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Basic Configuration</h2>
-                <p className="text-muted-foreground">Set up your core environment settings</p>
+                <p className="text-muted-foreground">
+                    {isLocalMode
+                        ? "Just a few quick settings and you're ready to go!"
+                        : "Set up your core environment settings"}
+                </p>
             </div>
+
+            {/* Beginner-friendly tip for local mode */}
+            {isLocalMode && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl mb-4"
+                >
+                    <p className="text-sm text-muted-foreground">
+                        <span className="text-emerald-400 font-medium">💡 Quick tip:</span> Most settings are already set to good defaults.
+                        Just create a password and click Next!
+                    </p>
+                </motion.div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Domain */}
@@ -96,7 +114,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
                         {isLocalMode
-                            ? 'Services will be accessible at *.local (e.g., plex.local, sonarr.local)'
+                            ? 'Optional: You can leave this as "local" — you\'ll access apps via IP address'
                             : 'Your domain for Cloudflare Tunnel access'}
                     </p>
                 </InteractiveCard>
@@ -118,7 +136,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                     />
                 </div>
 
-                {/* PUID */}
+                {/* PUID - with beginner-friendly description */}
                 <div>
                     <ComboboxInput
                         form={form}
@@ -127,7 +145,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                         icon={User}
                         options={puidOptions}
                         placeholder="1000"
-                        description="Process User ID for Docker containers"
+                        description={isLocalMode ? "Leave as 1000 (works for most computers)" : "Process User ID for Docker containers"}
                         inputIndex={2}
                         registerInput={registerInput}
                         handleKeyDown={handleKeyDown}
@@ -135,7 +153,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                     />
                 </div>
 
-                {/* PGID */}
+                {/* PGID - with beginner-friendly description */}
                 <div>
                     <ComboboxInput
                         form={form}
@@ -144,7 +162,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                         icon={User}
                         options={pgidOptions}
                         placeholder="1000"
-                        description="Group ID for file permissions"
+                        description={isLocalMode ? "Leave as 1000 (works for most computers)" : "Group ID for file permissions"}
                         inputIndex={3}
                         registerInput={registerInput}
                         handleKeyDown={handleKeyDown}
@@ -179,7 +197,11 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                             <AlertCircle className="w-3 h-3" /> {errors.password.message as string}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-muted-foreground">Used for Redis and default service passwords</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {isLocalMode
+                            ? 'This password protects your apps — choose something memorable!'
+                            : 'Used for Redis and default service passwords'}
+                    </p>
                 </InteractiveCard>
             </div>
         </motion.div>

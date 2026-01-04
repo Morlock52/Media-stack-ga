@@ -112,8 +112,8 @@ test.describe('Docs Site Smoke Tests', () => {
     await page.evaluate(() => localStorage.clear())
     await page.reload()
 
-    // Start wizard (button text varies by deployment mode selected)
-    await page.getByRole('button', { name: /continue with.*(local|cloud).*setup/i }).first().click()
+    // Start wizard (button text: "Let's Go!" for local, "Start Setup" for cloud)
+    await page.getByRole('button', { name: /let'?s go|start setup/i }).first().click()
 
     // Step 2: Basic config (domain + password required)
     const domain = 'mydomain.net'
@@ -200,7 +200,8 @@ test.describe('Docs Site Smoke Tests', () => {
     await page.evaluate(() => localStorage.clear())
     await page.reload()
 
-    await page.getByRole('button', { name: /continue with.*(local|cloud).*setup/i }).first().click()
+    // Start wizard (button text: "Let's Go!" for local, "Start Setup" for cloud)
+    await page.getByRole('button', { name: /let'?s go|start setup/i }).first().click()
 
     await expect(page.getByRole('heading', { name: /basic configuration/i }).first()).toBeVisible({ timeout: 15000 })
 
@@ -255,7 +256,8 @@ test.describe('Docs Site Smoke Tests', () => {
   test('AI assistant can chat with control-server', async ({ page }) => {
     await page.goto('/')
     await page.getByTitle('Ask AI Assistant').click()
-    await page.getByPlaceholder('Ask anything...').fill('hello')
+    // Use regex to match any "Ask..." placeholder variant
+    await page.getByPlaceholder(/^(Ask|Listening)/i).fill('hello')
     await page.keyboard.press('Enter')
 
     // Wait for an assistant response bubble

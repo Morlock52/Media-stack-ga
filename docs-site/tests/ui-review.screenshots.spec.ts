@@ -19,10 +19,15 @@ test.describe('UI Review Screenshots (manual)', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/')
     await expect(page.locator('main')).toBeVisible({ timeout: 15000 })
+    // Ensure the wizard is in view (the page has a hero section above it).
+    await page.locator('#builder').scrollIntoViewIfNeeded()
+    await expect(page.getByRole('heading', { name: /welcome to media stack/i })).toBeVisible({ timeout: 15000 })
     await shots(page, '01-home-desktop')
 
     // Wizard: jump into step 1 and step 2 and final review
-    await page.getByRole('button', { name: /start configuration/i }).click()
+    // Pick Remote Access to follow the full wizard flow (no quick-start chooser).
+    await page.getByRole('button', { name: /remote access/i }).click()
+    await page.getByRole('button', { name: /start setup/i }).click()
     await expect(page.getByRole('heading', { name: /basic configuration/i })).toBeVisible({ timeout: 15000 })
     await shots(page, '02-wizard-step1-desktop')
 
@@ -41,9 +46,9 @@ test.describe('UI Review Screenshots (manual)', () => {
     // Voice companion (newbie mode)
     await page.getByRole('button', { name: /newbie mode/i }).click()
     // The voice companion overlay may render multiple headings; key on the header text.
-    await expect(page.getByText(/newbie onboarding/i)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(/voice setup guide/i)).toBeVisible({ timeout: 15000 })
     await shots(page, '05-voice-companion-desktop')
-    await page.getByRole('button', { name: /^cancel$/i }).click()
+    await page.getByRole('button', { name: /close voice companion/i }).click()
 
     // Newbie mode disables selection; switch to customize/expert mode.
     await page.getByRole('button', { name: /customize/i }).click()

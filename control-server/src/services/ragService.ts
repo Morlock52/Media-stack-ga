@@ -7,13 +7,13 @@
 
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
-import { PROJECT_ROOT } from '../utils/env.js';
+import { getEnvValue, getOpenAIKey, PROJECT_ROOT } from '../utils/env.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ragService');
 
 const DOCS_DIR = join(PROJECT_ROOT, 'docs');
-const KNOWLEDGE_BASE_ID = process.env.OPENAI_VECTOR_STORE_ID || '';
+const KNOWLEDGE_BASE_ID = getEnvValue('OPENAI_VECTOR_STORE_ID') || '';
 
 export interface KnowledgeDocument {
     id: string;
@@ -334,7 +334,7 @@ export function getDocumentsByTag(tag: string): KnowledgeDocument[] {
  * Search with OpenAI File Search API (if configured)
  */
 export async function searchWithOpenAI(query: string, limit = 5): Promise<SearchResult[]> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = getOpenAIKey();
     if (!apiKey || !KNOWLEDGE_BASE_ID) {
         logger.debug('OpenAI File Search not configured, using local knowledge');
         return searchLocalKnowledge(query, limit);

@@ -2,6 +2,20 @@ import { buildApp } from './app.js';
 import { PROJECT_ROOT } from './utils/env.js';
 import { FastifyInstance } from 'fastify';
 
+// Some environments (detached terminals, certain process managers) can trigger
+// stdin read errors (EIO) that crash Node if left unhandled. The control-server
+// never needs stdin, so we swallow these to keep the server running.
+try {
+    process.stdin?.on?.('error', (err: any) => {
+        const code = err?.code;
+        if (code === 'EIO' || code === 'EBADF') return;
+        // eslint-disable-next-line no-console
+        console.error('stdin error:', err);
+    });
+} catch {
+    // ignore
+}
+
 const PORT = parseInt(process.env.PORT || '3001');
 const HOST = process.env.CONTROL_SERVER_HOST || '127.0.0.1';
 const TOKEN = (process.env.CONTROL_SERVER_TOKEN || '').trim();

@@ -30,8 +30,8 @@ export QBITTORRENT_CONTAINER=qbittorrent
 # Public Authelia URL (defaults to https://auth.$DOMAIN when DOMAIN is set)
 export AUTHELIA_BASE="https://auth.example.com"
 
-# A hostname that should be reachable (defaults to homepage.$DOMAIN when DOMAIN is set)
-export TEST_HOST="homepage.example.com"
+# A hostname that should be reachable (defaults to hub.$DOMAIN when DOMAIN is set)
+export TEST_HOST="hub.example.com"
 
 # Optional: if you expose a dedicated health endpoint
 export HEALTH_PATH="/healthz"
@@ -55,4 +55,3 @@ bash ./scripts/post_deploy_check.sh
 If you want this to run automatically, use a **self‑hosted runner on the machine that runs your stack** (or on a machine with Docker socket access and network reachability to your hostnames).
 
 - See `.github/workflows/post-deploy-check.yml`
-

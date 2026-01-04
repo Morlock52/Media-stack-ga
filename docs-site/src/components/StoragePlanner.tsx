@@ -22,7 +22,8 @@ import {
     type StoragePathType,
 } from '../data/storagePlan'
 
-import { Download as DownloadIcon } from 'lucide-react'
+// Alias for clarity in export function
+const DownloadIcon = Download
 
 const exportRowAsSvg = (category: any, path: string) => {
     const svgContent = `

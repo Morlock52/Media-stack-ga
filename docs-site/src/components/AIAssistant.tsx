@@ -1,10 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
     MessageCircle, Send, X, Loader2, Bot,
-    Sparkles, Copy, Check, User, HelpCircle, Brain
+    Sparkles, Copy, Check, User, HelpCircle, Brain,
+    Mic, MicOff, Volume2, VolumeX
 } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
+import { ConfidenceBadge, type ConfidenceLevel, calculateConfidence } from './ui/confidence-badge'
+import { useVoice } from '../contexts/VoiceContext'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useSetupStore } from '../store/setupStore'
 import { wizardStepAssistantData, wizardStepNames } from '../data/wizardAssistant'
 import { useShallow } from 'zustand/react/shallow'
@@ -17,6 +21,7 @@ interface Message {
     agent?: { id: string; name: string; icon: string }
     aiPowered?: boolean
     toolUsed?: { command: string }
+    confidence?: ConfidenceLevel
 }
 
 interface AIAssistantProps {
@@ -120,22 +125,58 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
     const [streamingContent, setStreamingContent] = useState<string>('')
     const [streamingAgent, setStreamingAgent] = useState<{ id: string; name: string; icon: string } | null>(null)
     const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null)
+    const [voiceEnabled, setVoiceEnabled] = useState(false) // Auto-speak responses
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const sendMessageRef = useRef<(text: string) => void>(() => {})
+    const spokenTextRef = useRef('') // Track what's been spoken for streaming TTS
 
-    // Streaming chat hook
+    // Voice I/O integration
+    const voice = useVoice()
+
+    // Streaming chat hook with TTS sync
     const { streamChat, isStreaming, cancelStream } = useStreamingChat({
         onToken: (token) => {
-            setStreamingContent(prev => prev + token)
+            setStreamingContent(prev => {
+                const newContent = prev + token
+
+                // Streaming TTS: speak complete sentences as they arrive
+                if (voiceEnabled && !voice.isSpeaking) {
+                    const unspoken = newContent.slice(spokenTextRef.current.length)
+                    // Check for sentence boundaries (., !, ?, or newline followed by more text)
+                    const sentenceMatch = unspoken.match(/^(.+?[.!?\n])\s*/s)
+                    if (sentenceMatch) {
+                        const sentence = sentenceMatch[1].trim()
+                        if (sentence.length > 5) { // Skip very short fragments
+                            spokenTextRef.current = newContent.slice(0, spokenTextRef.current.length + sentenceMatch[0].length)
+                            voice.speak(sentence)
+                        }
+                    }
+                }
+
+                return newContent
+            })
         },
         onAgentInfo: (agent) => {
             setStreamingAgent(agent)
         },
         onComplete: () => {
             setStatus('idle')
+            // Speak any remaining text that wasn't spoken during streaming
+            if (voiceEnabled) {
+                setStreamingContent(prev => {
+                    const unspoken = prev.slice(spokenTextRef.current.length).trim()
+                    if (unspoken.length > 0) {
+                        voice.speak(unspoken)
+                    }
+                    return prev
+                })
+            }
+            spokenTextRef.current = ''
         },
         onError: () => {
             setStatus('error')
+            spokenTextRef.current = ''
         }
     })
     const { currentStep: wizardStep, config, selectedServices } = useSetupStore(
@@ -222,7 +263,44 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         }
     }, [isOpen])
 
-    const sendMessage = async (text?: string) => {
+    // Voice transcript handler - send transcribed speech as messages
+    // Use ref to avoid stale closure issues with sendMessage
+    useEffect(() => {
+        voice.onTranscript((text) => {
+            if (text.trim() && isOpen) {
+                console.log('[Voice] Transcript received:', text)
+                sendMessageRef.current(text)
+            }
+        })
+    }, [isOpen, voice])
+
+    // Sync voice status with component status
+    useEffect(() => {
+        if (voice.isListening) {
+            setStatus('listening')
+        } else if (voice.isSpeaking) {
+            setStatus('speaking')
+        }
+    }, [voice.isListening, voice.isSpeaking])
+
+    // Toggle voice listening
+    const toggleVoiceListening = useCallback(async () => {
+        if (voice.isListening) {
+            voice.stopListening()
+        } else {
+            await voice.startListening()
+        }
+    }, [voice])
+
+    // Toggle voice output (auto-speak responses)
+    const toggleVoiceOutput = useCallback(() => {
+        if (voiceEnabled) {
+            voice.stopSpeaking()
+        }
+        setVoiceEnabled(!voiceEnabled)
+    }, [voiceEnabled, voice])
+
+    const sendMessage = useCallback(async (text?: string) => {
         const messageText = text || input.trim()
         if (!messageText || isLoading || isStreaming) return
 
@@ -234,6 +312,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         setStatus('thinking')
         setProactiveNudge(null)
         setStreamingContent('')
+        spokenTextRef.current = '' // Reset spoken text tracking
         setStreamingAgent(null)
 
         // Try streaming first for real-time feedback
@@ -246,13 +325,23 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                 role: 'assistant',
                 content: response || 'Sorry, I could not respond.',
                 agent: streamingAgent || { id: 'general', name: 'AI Assistant', icon: '🤖' },
-                aiPowered: true
+                aiPowered: true,
+                confidence: calculateConfidence({
+                    isValidated: Boolean(response),
+                    hasExamples: true, // Streaming implies LLM processing
+                    isRecommended: true
+                })
             }
             setMessages(prev => [...prev, assistantMsg])
             setStreamingContent('')
             setStreamingAgent(null)
             setIsLoading(false)
             setStatus('idle')
+
+            // Auto-speak response if voice output is enabled
+            if (voiceEnabled && response) {
+                voice.speak(response)
+            }
             return
         } catch (streamErr) {
             console.warn('Streaming failed, falling back to non-streaming:', streamErr)
@@ -316,9 +405,19 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                 content: data.answer || 'Sorry, I could not respond.',
                 agent: data.agent,
                 aiPowered: data.aiPowered,
-                toolUsed: data.toolUsed
+                toolUsed: data.toolUsed,
+                confidence: calculateConfidence({
+                    isValidated: Boolean(data.answer),
+                    hasExamples: data.aiPowered,
+                    isRecommended: Boolean(data.toolUsed) // Tool usage increases confidence
+                })
             }
             setMessages(prev => [...prev, assistantMsg])
+
+            // Auto-speak response if voice output is enabled
+            if (voiceEnabled && data.answer) {
+                voice.speak(data.answer)
+            }
 
             // Show proactive nudge if available (filter out dismissed ones)
             if (data.nudges?.length > 0) {
@@ -342,7 +441,12 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [input, isLoading, isStreaming, selectedAgent, messages, wizardStep, wizardStepName, selectedServices, hasRemoteKey, config.domain, currentApp, streamChat, streamingAgent, voiceEnabled, voice, dismissedNudges])
+
+    // Keep sendMessageRef updated so voice callbacks can use latest version
+    useEffect(() => {
+        sendMessageRef.current = sendMessage
+    }, [sendMessage])
 
     const retryLastMessage = () => {
         if (lastFailedMessage) {
@@ -437,6 +541,33 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                         </span>
                                     </div>
                                 )}
+
+                                {/* Voice output toggle */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                onClick={toggleVoiceOutput}
+                                                className={`p-1.5 rounded-lg transition-colors ${
+                                                    voiceEnabled
+                                                        ? 'bg-violet-500/20 text-violet-400 hover:bg-violet-500/30'
+                                                        : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground'
+                                                }`}
+                                                title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+                                            >
+                                                {voiceEnabled ? (
+                                                    <Volume2 className="w-4 h-4" />
+                                                ) : (
+                                                    <VolumeX className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">
+                                            <p className="text-xs">{voiceEnabled ? 'Voice responses on' : 'Voice responses off'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+
                                 {messages.length > 0 && (
                                     <button
                                         onClick={clearChat}
@@ -554,10 +685,15 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                         )}
                                         <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-first' : ''}`}>
                                             {msg.role === 'assistant' && msg.agent && (
-                                                <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
-                                                    {msg.agent.name}
-                                                    {msg.aiPowered && <Sparkles className="w-2.5 h-2.5 text-primary" />}
-                                                </p>
+                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                        {msg.agent.name}
+                                                        {msg.aiPowered && <Sparkles className="w-2.5 h-2.5 text-primary" />}
+                                                    </p>
+                                                    {msg.confidence && (
+                                                        <ConfidenceBadge level={msg.confidence} />
+                                                    )}
+                                                </div>
                                             )}
                                             <div className={`px-3 py-2 rounded-2xl text-sm ${msg.role === 'user'
                                                 ? 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white rounded-br-md'
@@ -691,6 +827,15 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
 
                         {/* Input */}
                         <div className="p-3 border-t border-border bg-background/50">
+                            {/* Show partial transcript while listening */}
+                            {voice.partialTranscript && (
+                                <div className="mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                                    <p className="text-xs text-purple-400 flex items-center gap-2">
+                                        <span className="inline-block w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                                        {voice.partialTranscript}
+                                    </p>
+                                </div>
+                            )}
                             <div className="flex items-center gap-2">
                                 <input
                                     ref={inputRef}
@@ -698,13 +843,44 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                                    placeholder={selectedAgent ? `Ask ${agents.find(a => a.id === selectedAgent)?.name}...` : "Ask anything..."}
+                                    placeholder={voice.isListening ? 'Listening...' : selectedAgent ? `Ask ${agents.find(a => a.id === selectedAgent)?.name}...` : "Ask anything..."}
                                     className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/60"
-                                    disabled={isLoading}
+                                    disabled={isLoading || voice.isListening}
                                 />
+
+                                {/* Microphone button */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                onClick={toggleVoiceListening}
+                                                disabled={isLoading}
+                                                className={`p-2.5 rounded-xl transition-all ${
+                                                    voice.isListening
+                                                        ? 'bg-purple-500 text-white animate-pulse hover:bg-purple-600'
+                                                        : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                title={voice.isListening ? 'Stop listening' : 'Start voice input'}
+                                                aria-label={voice.isListening ? 'Stop listening' : 'Start voice input'}
+                                            >
+                                                {voice.isListening ? (
+                                                    <MicOff className="w-4 h-4" />
+                                                ) : (
+                                                    <Mic className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p className="text-xs">
+                                                {voice.isListening ? 'Stop listening' : 'Speak your message'}
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+
                                 <button
                                     onClick={() => sendMessage()}
-                                    disabled={!input.trim() || isLoading}
+                                    disabled={!input.trim() || isLoading || voice.isListening}
                                     className="p-2.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                                     title="Send message"
                                     aria-label="Send message"
@@ -712,9 +888,14 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                     <Send className="w-4 h-4" />
                                 </button>
                             </div>
-                            {!hasRemoteKey && (
+                            {!hasRemoteKey && !voice.isListening && (
                                 <p className="text-[10px] text-muted-foreground mt-2 text-center">
                                     💡 Add an OpenAI key in Settings for smarter responses
+                                </p>
+                            )}
+                            {voice.error && (
+                                <p className="text-[10px] text-red-400 mt-2 text-center">
+                                    {voice.error}
                                 </p>
                             )}
                         </div>

@@ -4,25 +4,23 @@
 # Quick Reference Guide
 </div>
 
-> **Last Updated:** December 27, 2025
+> **Last Updated:** January 4, 2026
 
 Matrix HUD UI note: screenshots and visuals in the docs reflect the current cyber-matrix theme.
 
 ## 🚀 Quick Commands
 
-### Start Services
+### Start Services (Secure / Reverse Proxy)
 ```bash
 docker compose up -d
 ```
 
-### Local LAN (no SSO/tunnel)
+### Local LAN (Direct Ports — simplest)
 ```bash
-docker compose up -d
+docker compose -f docker-compose.local.yml up -d
 ```
 
-Set `DOMAIN=local` and add LAN DNS/hosts entries for subdomains you want to use.
-
-> **Security on LAN still matters:** use strong passwords, keep Authelia enabled for shared admin apps, and segment your LAN when possible.
+This mode exposes each app directly on its port (Plex `32400`, Sonarr `8989`, etc). No SSO and no tunnel.
 
 ### Remote Access (SSO + Cloudflare Tunnel)
 ```bash
@@ -97,46 +95,58 @@ See `docs/operations/POST_DEPLOY_CHECKS.md` for details and overrides.
 
 ## 🔗 Service URLs
 
-After setup, access services using the subdomains defined in `.env`:
+### Wizard (setup UI)
 
-- **Audiobookshelf:** `https://audiobookshelf.${DOMAIN}`
-- **Authelia:** `https://auth.${DOMAIN}`
-- **Bazarr:** `https://bazarr.${DOMAIN}`
-- **Dozzle:** `https://logs.${DOMAIN}`
+- Wizard UI: `http://localhost:3002`
+- Wizard API: `http://localhost:3001/api/health`
+
+### Local LAN (direct ports) — `docker-compose.local.yml`
+
+- Homepage (dashboard): `http://<server-ip>:3000`
+- Plex: `http://<server-ip>:32400/web/`
+- Jellyfin: `http://<server-ip>:8096/web/`
+- Sonarr: `http://<server-ip>:8989`
+- Radarr: `http://<server-ip>:7878`
+- Prowlarr: `http://<server-ip>:9696`
+- Bazarr: `http://<server-ip>:6767`
+- Overseerr: `http://<server-ip>:5055`
+- qBittorrent: `http://<server-ip>:8081`
+- Tautulli: `http://<server-ip>:8181`
+- Grafana (logs/metrics): `http://<server-ip>:3003`
+
+### Secure / Remote (Traefik + optional Authelia + Cloudflare) — `docker-compose.yml`
+
+After setup, access services using the hostnames defined by your domain/tunnel config:
+
 - **Homepage:** `https://hub.${DOMAIN}` (Dashboard)
-- **Jellyfin:** `https://jellyfin.${DOMAIN}`
-- **Kavita:** `https://kavita.${DOMAIN}`
-- **Mealie:** `https://mealie.${DOMAIN}`
-- **Monitor:** `https://monitor.${DOMAIN}`
-- **Notifiarr:** `https://notifiarr.${DOMAIN}`
-- **Overseerr:** `https://request.${DOMAIN}`
-- **PhotoPrism:** `https://photoprism.${DOMAIN}`
-- **Plex:** `https://plex.${DOMAIN}`
+- **Authelia:** `https://auth.${DOMAIN}`
 - **Portainer:** `https://portainer.${DOMAIN}`
-- **Prowlarr:** `https://prowlarr.${DOMAIN}`
-- **qBittorrent:** `https://torrent.${DOMAIN}`
-- **Radarr:** `https://radarr.${DOMAIN}`
+- **Dozzle:** `https://dozzle.${DOMAIN}`
+- **Plex:** `https://plex.${DOMAIN}`
+- **Jellyfin:** `https://jellyfin.${DOMAIN}`
+- **Grafana:** `https://grafana.${DOMAIN}`
 - **Sonarr:** `https://sonarr.${DOMAIN}`
+- **Radarr:** `https://radarr.${DOMAIN}`
+- **Prowlarr:** `https://prowlarr.${DOMAIN}`
+- **Bazarr:** `https://bazarr.${DOMAIN}`
+- **Overseerr:** `https://request.${DOMAIN}`
+- **qBittorrent:** `https://qbt.${DOMAIN}`
 - **Tautulli:** `https://tautulli.${DOMAIN}`
 - **Tdarr:** `https://tdarr.${DOMAIN}`
+- **Notifiarr:** `https://notifiarr.${DOMAIN}`
+- **Mealie:** `https://mealie.${DOMAIN}`
+- **Kavita:** `https://kavita.${DOMAIN}`
+- **Audiobookshelf:** `https://audiobookshelf.${DOMAIN}`
+- **PhotoPrism:** `https://photoprism.${DOMAIN}`
 
-### Local/LAN access without DNS
-
-- **Homepage dashboard:** `http://<server-ip>`
-- Add `/etc/hosts` entries if you want subdomain access without DNS:
-
-```
-<server-ip> plex.local
-<server-ip> sonarr.local
-<server-ip> radarr.local
-```
+> Tip: You can also access apps on a LAN without DNS via Traefik path routes (example: `http://<server-ip>/sonarr`), but the direct-ports local compose is the easiest for most home users.
 
 ## 🎙️ AI Voice Tips
 
 - **Wake Word**: None. Just click the mic button.
 - **Microphone Issues?**: Use the **Text Input** box at the bottom of the specialized modal.
 - **Privacy**: No audio is recorded to disk. Transcripts are sent to OpenAI for processing only.
-- **Audio quality**: With an OpenAI key saved in **Settings**, the wizard uses OpenAI TTS (`gpt-5.2-mini-tts` with fallback); ElevenLabs is optional via API key + voice ID.
+- **Audio quality**: With an OpenAI key saved in **Settings**, the wizard uses OpenAI TTS (`tts-1-hd` with fallback); ElevenLabs is optional via API key + voice ID.
 - **Context**: The AI knows about "Plex", "Arr stack", "NAS", and "VPS". Use these terms for best results.
 
 
@@ -144,21 +154,31 @@ After setup, access services using the subdomains defined in `.env`:
 
 ⚠️ **CHANGE THESE IMMEDIATELY!**
 
-- **Authelia:** `morlock` / *(the master password you set during setup)*
+- **Authelia (template):** `demo` / `ChangeMe123!` (see `config/authelia/users_database.yml`)
 - **qBittorrent:** Default user is `admin`; the first-run password is printed in qBittorrent container logs
 - **Portainer:** Set during first login
+- **Grafana (local compose):** `admin` / `mediastack` (override with `GRAFANA_USER` / `GRAFANA_PASSWORD`)
 
 ## 📋 Configuration Checklist
 
-- [ ] Run `./setup.sh` (Linux/Mac) or `.\setup.ps1` (Windows)
+Pick the checklist that matches how you deployed.
+
+### Local ports (LAN) — `docker-compose.local.yml`
+- [ ] Review `.env` values (set `DOMAIN` to your server IP/hostname so Homepage links work from other devices)
+- [ ] Start services: `docker compose -f docker-compose.local.yml up -d`
+- [ ] Log into each app once and change default passwords
+- [ ] Configure Prowlarr indexers
+- [ ] Connect Sonarr/Radarr to qBittorrent and Prowlarr
+
+### Remote (SSO + Tunnel) — `docker-compose.yml`
 - [ ] Review `.env` values
 - [ ] Set `CLOUDFLARE_TUNNEL_TOKEN` in `.env`
-- [ ] Set `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET` in `.env`
-- [ ] Update `config/cloudflared/config.yml` with your Tunnel ID and hostnames
+- [ ] Set Authelia secrets in `.env`
 - [ ] Configure Gluetun VPN credentials in `.env` (WIREGUARD_PRIVATE_KEY, etc.)
-- [ ] Start services: `docker compose up -d`
+- [ ] Update `config/cloudflared/config.yml` with your tunnel ID + hostnames
+- [ ] Start services: `docker compose --profile auth --profile cloudflared up -d`
 - [ ] Configure Prowlarr indexers + FlareSolverr
-- [ ] Connect Sonarr/Radarr to Prowlarr and qBittorrent
+- [ ] Connect Sonarr/Radarr to qBittorrent and Prowlarr
 
 ## 🛠️ Troubleshooting Quick Fixes
 
@@ -169,6 +189,11 @@ sudo chown -R 1000:1000 /srv/mediastack
 
 ### Clear and Restart
 ```bash
+# Local ports
+docker compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml up -d
+
+# Remote / reverse proxy
 docker compose down
 docker compose up -d
 ```

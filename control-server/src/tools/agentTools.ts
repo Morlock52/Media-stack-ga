@@ -595,3 +595,184 @@ export const agentTools = {
     network_diagnostics: networkDiagnostics,
     optimize_config: optimizeConfig
 };
+
+/**
+ * Tool metadata for orchestrator planning
+ * Used to determine execution strategy, parallelization, and timing
+ */
+export interface ToolMetadata {
+    name: string;
+    description: string;
+    category: 'diagnostic' | 'action' | 'query' | 'analysis';
+    estimatedDurationMs: number;
+    canParallelize: boolean;
+    sideEffects: boolean;
+    requiredParams: string[];
+    optionalParams: string[];
+    relatedTools: string[];
+    riskLevel: 'low' | 'medium' | 'high';
+}
+
+export const TOOL_METADATA: Record<string, ToolMetadata> = {
+    check_service_health: {
+        name: 'check_service_health',
+        description: 'Check the health status of Docker services',
+        category: 'query',
+        estimatedDurationMs: 3000,
+        canParallelize: true,
+        sideEffects: false,
+        requiredParams: [],
+        optionalParams: ['serviceName'],
+        relatedTools: ['list_running_services', 'analyze_logs'],
+        riskLevel: 'low',
+    },
+    restart_service: {
+        name: 'restart_service',
+        description: 'Restart a Docker service with graceful or hard mode',
+        category: 'action',
+        estimatedDurationMs: 30000,
+        canParallelize: false, // Service restarts should be sequential to avoid cascade failures
+        sideEffects: true,
+        requiredParams: ['serviceName'],
+        optionalParams: ['mode'],
+        relatedTools: ['check_service_health'],
+        riskLevel: 'medium',
+    },
+    generate_env_diff: {
+        name: 'generate_env_diff',
+        description: 'Compare .env file with .env.example to find missing variables',
+        category: 'analysis',
+        estimatedDurationMs: 500,
+        canParallelize: true,
+        sideEffects: false,
+        requiredParams: [],
+        optionalParams: [],
+        relatedTools: [],
+        riskLevel: 'low',
+    },
+    run_post_deploy_check: {
+        name: 'run_post_deploy_check',
+        description: 'Run comprehensive post-deployment health checks',
+        category: 'diagnostic',
+        estimatedDurationMs: 45000,
+        canParallelize: false, // Comprehensive check should run as a single unit
+        sideEffects: false,
+        requiredParams: [],
+        optionalParams: [],
+        relatedTools: ['check_service_health', 'network_diagnostics'],
+        riskLevel: 'low',
+    },
+    list_running_services: {
+        name: 'list_running_services',
+        description: 'List all currently running Docker services with categorization',
+        category: 'query',
+        estimatedDurationMs: 2000,
+        canParallelize: true,
+        sideEffects: false,
+        requiredParams: [],
+        optionalParams: [],
+        relatedTools: ['check_service_health'],
+        riskLevel: 'low',
+    },
+    analyze_logs: {
+        name: 'analyze_logs',
+        description: 'Analyze container logs with pattern matching and severity filtering',
+        category: 'analysis',
+        estimatedDurationMs: 5000,
+        canParallelize: true,
+        sideEffects: false,
+        requiredParams: ['serviceName'],
+        optionalParams: ['pattern', 'severity', 'lines'],
+        relatedTools: ['check_service_health'],
+        riskLevel: 'low',
+    },
+    network_diagnostics: {
+        name: 'network_diagnostics',
+        description: 'Run network connectivity tests including DNS, ports, VPN, and internet',
+        category: 'diagnostic',
+        estimatedDurationMs: 20000,
+        canParallelize: false, // Network tests may interfere with each other
+        sideEffects: false,
+        requiredParams: [],
+        optionalParams: ['checkDns', 'checkPorts', 'checkVpn', 'checkInternet'],
+        relatedTools: ['check_service_health'],
+        riskLevel: 'low',
+    },
+    optimize_config: {
+        name: 'optimize_config',
+        description: 'Get optimization suggestions for a service based on resource usage',
+        category: 'analysis',
+        estimatedDurationMs: 5000,
+        canParallelize: true,
+        sideEffects: false,
+        requiredParams: ['serviceName'],
+        optionalParams: ['focus'],
+        relatedTools: ['check_service_health', 'analyze_logs'],
+        riskLevel: 'low',
+    },
+};
+
+/**
+ * Get metadata for a specific tool
+ */
+export function getToolMetadata(toolName: string): ToolMetadata | undefined {
+    return TOOL_METADATA[toolName];
+}
+
+/**
+ * Get all tools that can run in parallel
+ */
+export function getParallelizableTools(): string[] {
+    return Object.entries(TOOL_METADATA)
+        .filter(([, meta]) => meta.canParallelize)
+        .map(([name]) => name);
+}
+
+/**
+ * Get tools by category
+ */
+export function getToolsByCategory(category: ToolMetadata['category']): string[] {
+    return Object.entries(TOOL_METADATA)
+        .filter(([, meta]) => meta.category === category)
+        .map(([name]) => name);
+}
+
+/**
+ * Get tools that have side effects (modify state)
+ */
+export function getToolsWithSideEffects(): string[] {
+    return Object.entries(TOOL_METADATA)
+        .filter(([, meta]) => meta.sideEffects)
+        .map(([name]) => name);
+}
+
+/**
+ * Estimate total execution time for a set of tools
+ * Accounts for parallelization
+ */
+export function estimateExecutionTime(toolNames: string[], allowParallel: boolean = true): number {
+    if (toolNames.length === 0) return 0;
+
+    const toolDurations = toolNames.map(name => ({
+        name,
+        duration: TOOL_METADATA[name]?.estimatedDurationMs || 5000,
+        canParallelize: TOOL_METADATA[name]?.canParallelize ?? false,
+    }));
+
+    if (!allowParallel) {
+        // Sequential execution: sum all durations
+        return toolDurations.reduce((sum, t) => sum + t.duration, 0);
+    }
+
+    // With parallelization: group parallelizable tools
+    const parallelizable = toolDurations.filter(t => t.canParallelize);
+    const sequential = toolDurations.filter(t => !t.canParallelize);
+
+    // Parallel tools run together (max duration), sequential tools add up
+    const parallelTime = parallelizable.length > 0
+        ? Math.max(...parallelizable.map(t => t.duration))
+        : 0;
+    const sequentialTime = sequential.reduce((sum, t) => sum + t.duration, 0);
+
+    return parallelTime + sequentialTime;
+}

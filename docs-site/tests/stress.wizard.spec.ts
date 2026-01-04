@@ -30,7 +30,7 @@ test.describe('Docs Site Stress Tests', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ hasKey: true, model: 'gpt-5.2' }),
+        body: JSON.stringify({ hasKey: true, model: 'gpt-4o' }),
       })
     })
     await page.route('**/api/settings/tts', async (route) => {
@@ -38,9 +38,10 @@ test.describe('Docs Site Stress Tests', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          defaultProvider: 'openai',
-          openai: { hasKey: true, ttsModel: 'tts-1', ttsVoice: 'alloy' },
-          elevenlabs: { hasKey: false, ttsModel: 'eleven_multilingual_v2', voiceId: null },
+          provider: 'openai',
+          hasKey: true,
+          ttsModel: 'tts-1',
+          ttsVoice: 'alloy',
         }),
       })
     })
@@ -102,9 +103,10 @@ test.describe('Docs Site Stress Tests', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          defaultProvider: 'openai',
-          openai: { hasKey: true, ttsModel: 'tts-1', ttsVoice: 'alloy' },
-          elevenlabs: { hasKey: false, ttsModel: 'eleven_multilingual_v2', voiceId: null },
+          provider: 'openai',
+          hasKey: true,
+          ttsModel: 'tts-1',
+          ttsVoice: 'alloy',
         }),
       })
     })
@@ -195,7 +197,9 @@ test.describe('Docs Site Stress Tests', () => {
       await page.reload()
       await expect(page.locator('main')).toBeVisible({ timeout: 15000 })
 
-      await page.getByRole('button', { name: /start configuration/i }).click()
+      await page
+        .getByRole('button', { name: /start setup|start configuration|let's go/i })
+        .click()
 
       // Step 2: Basic config
       await expect(page.getByRole('heading', { name: /basic configuration/i })).toBeVisible({ timeout: 15000 })

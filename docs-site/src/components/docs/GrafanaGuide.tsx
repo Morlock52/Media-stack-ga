@@ -24,7 +24,7 @@ export function GrafanaGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Access Grafana</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Navigate to <code>https://grafana.yourdomain.com</code> or <code>http://localhost:3002</code>.
+                            Navigate to <code>https://grafana.yourdomain.com</code> or <code>http://localhost:3003</code>.
                         </li>
                         <li>
                             Log in with the default credentials: username <code>admin</code>, password <code>mediastack</code>

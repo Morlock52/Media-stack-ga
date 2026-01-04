@@ -1,4 +1,6 @@
 import { FastifyInstance } from 'fastify';
+import fs from 'fs';
+import os from 'os';
 import { runCommand } from '../utils/docker.js';
 import { Container, ServiceIssue } from '../types/index.js';
 import { PROJECT_ROOT } from '../utils/env.js';
@@ -25,6 +27,16 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             || msg.includes('no such file or directory') && msg.includes('docker');
     };
 
+    // Detect compose configuration errors (missing env vars, invalid yaml, etc.)
+    const isComposeConfigError = (error: unknown) => {
+        const msg = getErrorMessage(error).toLowerCase();
+        return msg.includes('required variable')
+            || msg.includes('is missing a value')
+            || msg.includes('error while interpolating')
+            || msg.includes('yaml:')
+            || msg.includes('invalid compose');
+    };
+
     const getComposeServices = async (): Promise<string[]> => {
         const now = Date.now();
         if (cacheMs > 0 && composeServicesCache && now - composeServicesCacheAt < cacheMs) {
@@ -33,19 +45,31 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         if (composeServicesInFlight) return composeServicesInFlight;
 
         composeServicesInFlight = (async () => {
-            const output = await runCommand('docker', ['compose', '--project-directory', PROJECT_ROOT, 'config', '--services'], {
-                timeoutMs: 10_000,
-                label: 'compose:services',
-            });
-            const services = output
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean);
-            if (cacheMs > 0) {
-                composeServicesCache = services;
-                composeServicesCacheAt = Date.now();
+            try {
+                const output = await runCommand('docker', ['compose', '--project-directory', PROJECT_ROOT, 'config', '--services'], {
+                    timeoutMs: 10_000,
+                    label: 'compose:services',
+                });
+                const services = output
+                    .split('\n')
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                if (cacheMs > 0) {
+                    composeServicesCache = services;
+                    composeServicesCacheAt = Date.now();
+                }
+                return services;
+            } catch (err) {
+                // If compose config fails (missing .env, etc.), return empty and cache briefly
+                if (isComposeConfigError(err)) {
+                    if (cacheMs > 0) {
+                        composeServicesCache = [];
+                        composeServicesCacheAt = Date.now();
+                    }
+                    return [];
+                }
+                throw err;
             }
-            return services;
         })();
 
         try {
@@ -273,11 +297,18 @@ export async function dockerRoutes(fastify: FastifyInstance) {
             const services = await getComposeServices();
             return { services };
         } catch (error: unknown) {
-            fastify.log.error({ err: error }, '[compose-services] Failed to list compose services');
+            // Handle compose config errors gracefully (missing .env, etc.)
+            if (isComposeConfigError(error)) {
+                fastify.log.debug({ err: error }, '[compose-services] Compose config incomplete (missing .env?)');
+                return { services: [], configError: true, message: 'Compose configuration incomplete - generate .env first' };
+            }
             const unavailable = isDockerUnavailable(error);
-            reply
-                .status(unavailable ? 503 : 500)
-                .send({ error: unavailable ? 'Docker is not running or not installed' : getErrorMessage(error) });
+            if (unavailable) {
+                fastify.log.debug('[compose-services] Docker not available');
+                return reply.status(503).send({ error: 'Docker is not running or not installed', services: [] });
+            }
+            fastify.log.error({ err: error }, '[compose-services] Failed to list compose services');
+            reply.status(500).send({ error: getErrorMessage(error), services: [] });
         }
     });
 
@@ -314,6 +345,63 @@ export async function dockerRoutes(fastify: FastifyInstance) {
         _reply.send({ success: true, message: 'Reloading control-server process' });
         // Give the response a moment to flush
         setTimeout(() => process.exit(0), 250);
+    });
+
+    // Basic network info for building local UI links (best-effort)
+    fastify.get('/api/system/network', async (_request, reply) => {
+        const isContainer = (() => {
+            try {
+                if (fs.existsSync('/.dockerenv')) return true;
+            } catch {
+                // ignore
+            }
+            try {
+                const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf-8');
+                return /docker|containerd|kubepods/i.test(cgroup);
+            } catch {
+                return false;
+            }
+        })();
+
+        const interfaces = os.networkInterfaces();
+        const ipv4: string[] = [];
+        const ipv6: string[] = [];
+
+        for (const infos of Object.values(interfaces)) {
+            for (const info of infos || []) {
+                if (!info || info.internal) continue;
+                const address = (info.address || '').trim();
+                if (!address) continue;
+                if (info.family === 'IPv4') {
+                    if (address.startsWith('169.254.')) continue;
+                    ipv4.push(address);
+                } else if (info.family === 'IPv6') {
+                    if (address === '::1') continue;
+                    if (address.toLowerCase().startsWith('fe80:')) continue;
+                    ipv6.push(address);
+                }
+            }
+        }
+
+        const pickLanIpv4 = () => {
+            const unique = Array.from(new Set(ipv4));
+            const preferred =
+                unique.find((ip) => ip.startsWith('192.168.')) ||
+                unique.find((ip) => ip.startsWith('10.')) ||
+                unique.find((ip) => ip.startsWith('172.')) ||
+                unique[0] ||
+                null;
+            return preferred;
+        };
+
+        return reply.send({
+            success: true,
+            inContainer: isContainer,
+            hostname: os.hostname(),
+            ipv4: Array.from(new Set(ipv4)),
+            ipv6: Array.from(new Set(ipv6)),
+            lanIpv4: isContainer ? null : pickLanIpv4(),
+        });
     });
 
     // Local Deploy - writes .env and runs docker-compose up

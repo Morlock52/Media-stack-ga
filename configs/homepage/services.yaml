@@ -1,8 +1,40 @@
 ---
-# Media Stack Services Configuration
+# Media Stack Services Configuration (Reverse Proxy / Remote)
 # https://gethomepage.dev/configs/services/
-# Production URLs use subdomains via Cloudflare Tunnel
-# Set HOMEPAGE_VAR_DOMAIN in docker-compose environment
+#
+# This file is intended for the secure stack (`docker-compose.yml`) where
+# apps are reached through Traefik hostnames (and optionally Cloudflare).
+#
+# For local LAN ports mode, see: `config/homepage/services.local.yaml`
+#
+# Set `HOMEPAGE_VAR_DOMAIN` in the compose environment to your domain
+# (example: "example.com"). This template generates URLs like:
+#   https://plex.example.com
+
+- Core:
+    - Dashboard:
+        icon: homepage.png
+        href: https://hub.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Main dashboard (this app)
+
+    - Authelia:
+        icon: authelia.png
+        href: https://auth.{{HOMEPAGE_VAR_DOMAIN}}
+        description: SSO / MFA login portal
+
+    - Portainer:
+        icon: portainer.png
+        href: https://portainer.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Docker management UI
+        siteMonitor: http://portainer:9000/api/system/status
+        statusStyle: dot
+
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Live container logs
+        siteMonitor: http://dozzle:8080/healthcheck
+        statusStyle: dot
 
 - Media:
     - Plex:
@@ -11,108 +43,118 @@
         description: Stream Movies & TV
         siteMonitor: http://plex:32400/identity
         statusStyle: dot
-        # Widget requires Plex token - see https://www.plexopedia.com/plex-media-server/general/plex-token/
-        # widget:
-        #   type: plex
-        #   url: http://plex:32400
-        #   key: {{HOMEPAGE_VAR_PLEX_TOKEN}}
 
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://jellyfin.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Stream Movies & TV (free)
+        siteMonitor: http://jellyfin:8096/health
+        statusStyle: dot
+
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: https://audiobookshelf.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Audiobooks & podcasts
+        siteMonitor: http://audiobookshelf:13378
+        statusStyle: dot
+
+    - Kavita:
+        icon: kavita.png
+        href: https://kavita.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Comics & ebooks
+        siteMonitor: http://kavita:5000
+        statusStyle: dot
+
+    - PhotoPrism:
+        icon: photoprism.png
+        href: https://photoprism.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Photo library
+        siteMonitor: http://photoprism:2342/api/v1/status
+        statusStyle: dot
+
+    - Mealie:
+        icon: mealie.png
+        href: https://mealie.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Recipes
+        siteMonitor: http://mealie:9000/api/app/about
+        statusStyle: dot
+
+- Automation:
     - Overseerr:
         icon: overseerr.png
-        href: https://overseerr.{{HOMEPAGE_VAR_DOMAIN}}
+        href: https://request.{{HOMEPAGE_VAR_DOMAIN}}
         description: Request Media
-        siteMonitor: http://overseerr:5055
+        siteMonitor: http://overseerr:5055/api/v1/status
         statusStyle: dot
-        # Widget requires Overseerr initialization first
-        # widget:
-        #   type: overseerr
-        #   url: http://overseerr:5055
-        #   key: YOUR_OVERSEERR_API_KEY
 
-- Downloads:
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}
-        description: Torrent Downloads
-        siteMonitor: http://qbittorrent:8080
-        statusStyle: dot
-        widget:
-          type: qbittorrent
-          url: http://qbittorrent:8080
-          username: admin
-          password: adminadmin  # Change after first login
-
-- Arr Stack:
     - Sonarr:
         icon: sonarr.png
         href: https://sonarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: TV Series Manager
-        siteMonitor: http://sonarr:8989
+        siteMonitor: http://sonarr:8989/ping
         statusStyle: dot
-        # API key auto-populated by bootstrap script
-        # widget:
-        #   type: sonarr
-        #   url: http://sonarr:8989
-        #   key: YOUR_SONARR_API_KEY
-        #   enableQueue: true
 
     - Radarr:
         icon: radarr.png
         href: https://radarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: Movie Manager
-        siteMonitor: http://radarr:7878
+        siteMonitor: http://radarr:7878/ping
         statusStyle: dot
-        # widget:
-        #   type: radarr
-        #   url: http://radarr:7878
-        #   key: YOUR_RADARR_API_KEY
-        #   enableQueue: true
 
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: Indexer Manager
-        siteMonitor: http://prowlarr:9696
+        siteMonitor: http://prowlarr:9696/ping
         statusStyle: dot
-        # widget:
-        #   type: prowlarr
-        #   url: http://prowlarr:9696
-        #   key: YOUR_PROWLARR_API_KEY
 
     - Bazarr:
         icon: bazarr.png
         href: https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}
-        description: Subtitle Manager
+        description: Subtitles
         siteMonitor: http://bazarr:6767
         statusStyle: dot
-        # widget:
-        #   type: bazarr
-        #   url: http://bazarr:6767
-        #   key: YOUR_BAZARR_API_KEY
+
+- Downloads:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: https://qbt.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Torrent downloads (via VPN)
+        siteMonitor: http://qbittorrent:8080
+        statusStyle: dot
 
 - Monitoring:
+    - Tautulli:
+        icon: tautulli.png
+        href: https://tautulli.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Plex stats
+        siteMonitor: http://tautulli:8181/status
+        statusStyle: dot
+
     - Grafana:
         icon: grafana.png
         href: https://grafana.{{HOMEPAGE_VAR_DOMAIN}}
-        description: Logs & Analytics
-        siteMonitor: http://grafana:3000
+        description: Logs & metrics
+        siteMonitor: http://grafana:3000/api/health
         statusStyle: dot
-        widget:
-          type: grafana
-          url: http://grafana:3000
-          username: admin
-          password: mediastack
 
-    - Loki:
-        icon: loki.png
-        href: https://loki.{{HOMEPAGE_VAR_DOMAIN}}
-        description: Log Aggregation
-        siteMonitor: http://loki:3100/ready
+    - Notifiarr:
+        icon: notifiarr.png
+        href: https://notifiarr.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Notifications & integrations
+        siteMonitor: http://notifiarr:5454
+        statusStyle: dot
+
+    - Tdarr:
+        icon: tdarr.png
+        href: https://tdarr.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Transcoding
+        siteMonitor: http://tdarr:8265
         statusStyle: dot
 
 - System:
     - Watchtower:
         icon: watchtower.png
-        href: https://{{HOMEPAGE_VAR_DOMAIN}}
-        description: Auto Updates
+        href: https://hub.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Auto updates (background)
         statusStyle: dot

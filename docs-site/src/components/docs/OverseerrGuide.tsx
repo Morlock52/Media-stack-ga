@@ -35,8 +35,8 @@ export function OverseerrGuide() {
                         <li>
                             In your browser, go to your Overseerr URL. Common examples:
                             <ul className="list-disc list-inside ml-5 text-xs text-gray-400 mt-1">
-                                <li><code>http://localhost:5055</code> if you run on your local machine.</li>
-                                <li><code>https://requests.your-domain.com</code> if you configured a subdomain.</li>
+                                <li><code>http://&lt;server-ip&gt;:5055</code> (local ports stack)</li>
+                                <li><code>https://request.your-domain.com</code> (Cloudflare Tunnel / remote access)</li>
                             </ul>
                         </li>
                         <li>You should see the Overseerr setup or login screen.</li>

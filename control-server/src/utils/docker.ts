@@ -37,6 +37,11 @@ const release = () => {
 const friendlyDockerError = (command: string, err: unknown) => {
     const raw = getErrorMessage(err);
     const msg = raw.toLowerCase();
+    const portAllocatedMatch = raw.match(/Bind for [^:]+:(\d+) failed: port is already allocated/i);
+    if (portAllocatedMatch) {
+        const port = portAllocatedMatch[1];
+        return `Port ${port} is already in use on this machine. Stop the process/container using it, or change the service port mapping and try again.`;
+    }
     if (msg.includes('enoent') || msg.includes('not found')) {
         return `Required CLI "${command}" is not available. Install Docker Desktop/Engine or ensure "${command}" is on PATH.`;
     }
@@ -110,7 +115,15 @@ export const runCommand = (command: string, args: string[], options: RunCommandO
                     resolve(stdout.trim());
                 } else {
                     const message = friendlyDockerError(command, stderr || stdout || `exit code ${code}`);
-                    logger.error({ command, args, code, stderr }, 'command failed');
+                    // Reduce log level for expected compose config errors (missing .env, etc.)
+                    const isComposeConfigError = (stderr || '').includes('required variable')
+                        || (stderr || '').includes('is missing a value')
+                        || (stderr || '').includes('error while interpolating');
+                    if (isComposeConfigError) {
+                        logger.debug({ command, args, code }, 'compose config incomplete (expected without .env)');
+                    } else {
+                        logger.error({ command, args, code, stderr }, 'command failed');
+                    }
                     reject(new Error(message));
                 }
             });

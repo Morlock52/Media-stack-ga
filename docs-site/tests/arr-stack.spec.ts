@@ -34,7 +34,7 @@ test.describe('Settings: Arr-Stack Automation', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ hasKey: true, model: 'gpt-5.2' }),
+        body: JSON.stringify({ hasKey: true, model: 'gpt-4o' }),
       })
     })
 
@@ -43,9 +43,10 @@ test.describe('Settings: Arr-Stack Automation', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          defaultProvider: 'openai',
-          openai: { hasKey: true, ttsModel: 'tts-1', ttsVoice: 'alloy' },
-          elevenlabs: { hasKey: false, ttsModel: 'eleven_multilingual_v2', voiceId: null },
+          provider: 'openai',
+          hasKey: true,
+          ttsModel: 'tts-1',
+          ttsVoice: 'alloy',
         }),
       })
     })

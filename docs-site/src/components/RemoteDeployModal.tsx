@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import {
     X, Server, Key, Lock, CheckCircle, AlertCircle,
-    Loader2, Upload, Rocket, Eye, EyeOff, KeyRound
+    Loader2, Upload, Rocket, Eye, EyeOff, KeyRound, Monitor, Globe
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { buildControlServerUrl, controlServer, controlServerAuthHeaders, getControlServerBaseUrl } from '../utils/controlServer'
 import dockerComposeTemplate from '../../../docker-compose.yml?raw'
 import { useSetupStore } from '../store/setupStore'
 import { generateEnvFile } from '../utils/generateEnvFile'
+import { downloadAsFile } from '../utils/configManager'
 import { getErrorMessage, log } from '../utils/logging'
 import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 
 interface DeployStep {
     step: string
@@ -72,6 +73,7 @@ const tryParseJson = (text: string) => {
 export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     const { config, selectedServices } = useSetupStore()
     const didHydratePrefsRef = useRef(false)
+    const [deployMode, setDeployMode] = useState<'local' | 'remote'>('remote')
     const [host, setHost] = useState('')
     const [port, setPort] = useState('22')
     const [username, setUsername] = useState('')
@@ -285,6 +287,51 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
     }
 
     const deploy = async () => {
+        // Handle local deployment - just download files
+        if (deployMode === 'local') {
+            setStatus('deploying')
+            setSteps([
+                { step: 'Generating configuration files...', status: 'running' }
+            ])
+            toast.loading('Generating files...', { id: 'deploy' })
+
+            try {
+                // Small delay for UX
+                await new Promise(r => setTimeout(r, 500))
+
+                // Generate and download files
+                const envContent = generateEnvFile(config, selectedServices)
+                downloadAsFile(envContent, '.env')
+
+                setSteps(prev => [
+                    { ...prev[0], status: 'done' },
+                    { step: 'Downloading .env file...', status: 'done' }
+                ])
+
+                await new Promise(r => setTimeout(r, 300))
+                downloadAsFile(dockerComposeTemplate, 'docker-compose.yml')
+
+                setSteps(prev => [
+                    ...prev,
+                    { step: 'Downloading docker-compose.yml...', status: 'done' }
+                ])
+
+                await new Promise(r => setTimeout(r, 300))
+                setStatus('success')
+                toast.success('Files generated!', {
+                    id: 'deploy',
+                    description: `Place files in ${deployPath} and run: docker compose up -d`
+                })
+            } catch (err) {
+                log('error', 'RemoteDeployModal: local deploy failed', err)
+                setError(getErrorMessage(err))
+                setStatus('error')
+                toast.error('Failed to generate files', { id: 'deploy' })
+            }
+            return
+        }
+
+        // Remote deployment via SSH
         setStatus('deploying')
         setError('')
         setDeployLocked(false)
@@ -387,7 +434,9 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
         }
     }
 
-    const isFormValid = host && username && (authType === 'password' ? password : privateKey)
+    const isFormValid = deployMode === 'local'
+        ? deployPath.trim() !== ''
+        : host && username && (authType === 'password' ? password : privateKey)
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
@@ -396,6 +445,9 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                 className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden p-0 max-h-[90vh] flex flex-col"
             >
                 <DialogTitle className="sr-only">Deploy to Server</DialogTitle>
+                <DialogDescription className="sr-only">
+                    Configure SSH connection and deploy your media stack to a remote server
+                </DialogDescription>
                 <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col flex-1">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-border">
@@ -603,46 +655,72 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                             </div>
                         ) : (
                             <>
-                                {/* Server Details */}
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="col-span-2">
-                                        <label className="text-xs text-muted-foreground">Host / IP</label>
-                                        <input
-                                            type="text"
-                                            value={host}
-                                            onChange={e => setHost(e.target.value)}
-                                            placeholder="192.168.1.100"
-                                            className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-muted-foreground" htmlFor="port">Port</label>
-                                        <input
-                                            type="text"
-                                            value={port}
-                                            onChange={e => setPort(e.target.value)}
-                                            placeholder="22"
-                                            className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                            id="port"
-                                            aria-label="Port"
-                                        />
-                                    </div>
+                                {/* Deploy Mode Toggle */}
+                                <div className="flex gap-2 mb-2">
+                                    <Button
+                                        type="button"
+                                        variant={deployMode === 'local' ? 'default' : 'outline'}
+                                        className="flex-1 gap-2"
+                                        onClick={() => setDeployMode('local')}
+                                        aria-label="Local deployment"
+                                    >
+                                        <Monitor className="w-4 h-4" /> Local
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={deployMode === 'remote' ? 'default' : 'outline'}
+                                        className="flex-1 gap-2"
+                                        onClick={() => setDeployMode('remote')}
+                                        aria-label="Remote deployment via SSH"
+                                    >
+                                        <Globe className="w-4 h-4" /> Remote (SSH)
+                                    </Button>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs text-muted-foreground" htmlFor="username">Username</label>
-                                    <input
-                                        type="text"
-                                        value={username}
-                                        onChange={e => setUsername(e.target.value)}
-                                        placeholder="root"
-                                        className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                        id="username"
-                                        aria-label="Username"
-                                    />
-                                </div>
+                                {deployMode === 'remote' && (
+                                    <>
+                                        {/* Server Details */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="col-span-2">
+                                                <label htmlFor="deploy-host" className="text-xs text-muted-foreground">Host / IP</label>
+                                                <input
+                                                    id="deploy-host"
+                                                    type="text"
+                                                    value={host}
+                                                    onChange={e => setHost(e.target.value)}
+                                                    placeholder="192.168.1.100"
+                                                    aria-label="Host or IP address"
+                                                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-muted-foreground" htmlFor="port">Port</label>
+                                                <input
+                                                    type="text"
+                                                    value={port}
+                                                    onChange={e => setPort(e.target.value)}
+                                                    placeholder="22"
+                                                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    id="port"
+                                                    aria-label="Port"
+                                                />
+                                            </div>
+                                        </div>
 
-                                {/* Auth Type Toggle */}
+                                        <div>
+                                            <label className="text-xs text-muted-foreground" htmlFor="username">Username</label>
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={e => setUsername(e.target.value)}
+                                                placeholder="root"
+                                                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                                id="username"
+                                                aria-label="Username"
+                                            />
+                                        </div>
+
+                                        {/* Auth Type Toggle */}
                                 <div className="flex gap-2">
                                     <Button
                                         type="button"
@@ -700,15 +778,27 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                                         />
                                     </div>
                                 )}
+                                    </>
+                                )}
 
-                                {/* Deploy Path */}
+                                {/* Local mode info */}
+                                {deployMode === 'local' && (
+                                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                                        <p className="text-xs text-blue-300">
+                                            <strong>Local deployment:</strong> Files will be saved to the path below.
+                                            Run <code className="bg-blue-500/20 px-1 rounded">docker compose up -d</code> from that directory to start your stack.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Deploy Path - shown for both local and remote */}
                                 <div>
                                     <label className="text-xs text-muted-foreground" htmlFor="deployPath">Deploy Path</label>
                                     <input
                                         type="text"
                                         value={deployPath}
                                         onChange={e => setDeployPath(e.target.value)}
-                                        placeholder="~/media-stack"
+                                        placeholder={deployMode === 'local' ? './media-stack' : '~/media-stack'}
                                         className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                                         id="deployPath"
                                         aria-label="Deploy Path"
@@ -791,26 +881,28 @@ export function RemoteDeployModal({ isOpen, onClose }: RemoteDeployModalProps) {
                     {/* Footer Actions */}
                     {status !== 'success' && status !== 'deploying' && (
                         <div className="flex gap-2 p-4 border-t border-border bg-card/50">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={testConnection}
-                                disabled={!isFormValid || status === 'testing'}
-                                className="flex-1 gap-2"
-                            >
-                                {status === 'testing' ? (
-                                    <><Loader2 className="w-4 h-4 animate-spin" /> Testing...</>
-                                ) : (
-                                    <><Upload className="w-4 h-4" /> Test Connection</>
-                                )}
-                            </Button>
+                            {deployMode === 'remote' && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={testConnection}
+                                    disabled={!isFormValid || status === 'testing'}
+                                    className="flex-1 gap-2"
+                                >
+                                    {status === 'testing' ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin" /> Testing...</>
+                                    ) : (
+                                        <><Upload className="w-4 h-4" /> Test Connection</>
+                                    )}
+                                </Button>
+                            )}
                             <Button
                                 type="button"
                                 onClick={deploy}
                                 disabled={!isFormValid || status === 'testing'}
                                 className="flex-1 gap-2"
                             >
-                                <Rocket className="w-4 h-4" /> Deploy
+                                <Rocket className="w-4 h-4" /> {deployMode === 'local' ? 'Generate Files' : 'Deploy'}
                             </Button>
                         </div>
                     )}

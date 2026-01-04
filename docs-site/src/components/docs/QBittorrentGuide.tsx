@@ -15,8 +15,11 @@ export function QBittorrentGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">VPN Protection</h3>
                     <p className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg text-blue-200">
                         <Shield className="w-4 h-4 inline-block mr-2" />
-                        In this stack, qBittorrent routes 100% of its traffic through the <strong>Gluetun</strong> container. 
-                        If Gluetun (VPN) is down, qBittorrent cuts the connection (Kill Switch).
+                        In the <strong>secure stack</strong> (<code>docker-compose.yml</code>), qBittorrent routes 100% of its traffic
+                        through the <strong>Gluetun</strong> container (kill-switch).
+                        <br />
+                        In the <strong>local ports</strong> stack (<code>docker-compose.local.yml</code>), qBittorrent runs directly (no VPN)
+                        for simplicity.
                     </p>
                 </div>
 
@@ -24,7 +27,15 @@ export function QBittorrentGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Configuration</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Open WebUI at <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">http://localhost:8080</a>
+                            Open the Web UI:
+                            <ul className="list-disc list-inside mt-2 space-y-1 text-gray-300">
+                                <li>
+                                    Local ports: <code>http://&lt;server-ip&gt;:8081</code>
+                                </li>
+                                <li>
+                                    Secure / tunnel: <code>https://qbt.yourdomain.com</code> (or <code>http://&lt;server-ip&gt;:8080</code> if you published it)
+                                </li>
+                            </ul>
                         </li>
                         <li>
                             <strong>Login:</strong> Default user is <code>admin</code>. On first run, LinuxServer qBittorrent prints a temporary/random password in the container logs.
@@ -35,7 +46,7 @@ export function QBittorrentGuide() {
                         </li>
                         <li>
                             <strong>Verify VPN:</strong> 
-                            Since the container uses the VPN network mode, you can check your IP by running:
+                            If you are using the secure stack (Gluetun), you can check the outbound IP:
                             <code className="block bg-slate-950 p-2 mt-1 rounded text-xs">docker exec qbittorrent curl -s ifconfig.me</code>
                             It should be different from your home IP.
                         </li>

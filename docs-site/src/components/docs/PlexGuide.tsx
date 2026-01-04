@@ -35,7 +35,7 @@ export function PlexGuide() {
                         <li>
                             In your browser, go to the Plex URL from your stack. Common defaults:
                             <ul className="list-disc list-inside ml-5 text-xs text-gray-400 mt-1">
-                                <li><code>http://localhost:32400/web</code> if running on your local machine.</li>
+                                <li><code>http://localhost:32400/web/</code> if running on your local machine.</li>
                                 <li><code>https://plex.your-domain.com</code> if you used a subdomain in the wizard.</li>
                             </ul>
                         </li>

@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  NODE_VERSION: '20'
+
 jobs:
   validate-compose:
     runs-on: ubuntu-latest
@@ -20,16 +23,16 @@ jobs:
           if [ ! -f .env ]; then
             cp .env.example .env || touch .env
           fi
-          
+
           # Validate the main compose file
           docker compose -f docker-compose.yml config > /dev/null
-          
+
           # Validate the wizard compose file
           docker compose -f docker-compose.wizard.yml config > /dev/null
-          
+
           echo "✅ Docker Compose files are valid."
 
-  lint-and-build:
+  lint-and-typecheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,29 +41,140 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint docs-site
-        run: npm run lint -w docs-site
+      - name: Lint all workspaces
+        run: npm run lint
 
-      - name: Build docs-site
-        run: npm run build -w docs-site
+      - name: Type check control-server
+        run: npx tsc --noEmit -p control-server/tsconfig.json
 
-      - name: Lint control-server
-        run: npm run lint -w control-server
+      - name: Type check docs-site
+        run: npx tsc --noEmit -p docs-site/tsconfig.json
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build control-server
         run: npm run build -w control-server
 
-      - name: Run control-server tests
-        run: npm test -w control-server || true  # Allow test failures for now
+      - name: Build docs-site
+        run: npm run build -w docs-site
+
+      - name: Upload docs-site build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site-dist
+          path: docs-site/dist
+          retention-days: 7
+
+  test-control-server:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build control-server
+        run: npm run build -w control-server
+
+      - name: Run control-server unit tests
+        run: npm test -w control-server
+
+  test-docs-site-unit:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run docs-site unit tests
+        run: npm run test:unit -w docs-site
+
+  test-docs-site-e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build control-server
+        run: npm run build -w control-server
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        run: npm test -w docs-site -- tests/smoke.spec.ts
+        env:
+          CI: true
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true  # Report but don't fail on vulnerabilities
 
   security-scan:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

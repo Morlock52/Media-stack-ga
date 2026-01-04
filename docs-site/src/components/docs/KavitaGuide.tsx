@@ -24,7 +24,11 @@ export function KavitaGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">Initial setup</h3>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300">
                         <li>
-                            Open <code>https://kavita.yourdomain.com</code> or <code>http://localhost:5000</code>.
+                            Open <code>https://kavita.yourdomain.com</code> (Cloudflare Tunnel / remote access).
+                        </li>
+                        <li className="text-xs text-gray-400">
+                            Kavita is enabled via the <code>kavita</code> profile in the secure stack (<code>docker-compose.yml</code>).
+                            It is not included in the local ports stack (<code>docker-compose.local.yml</code>).
                         </li>
                         <li>
                             Create your admin account on first launch.

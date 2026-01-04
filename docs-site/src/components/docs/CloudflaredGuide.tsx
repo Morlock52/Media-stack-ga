@@ -31,21 +31,21 @@ export function CloudflaredGuide() {
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline"
                             >
-                                Cloudflare Zero Trust dashboard
+                            Cloudflare Zero Trust dashboard
                             </a>{' '}
                             → Access → Tunnels → <strong>Create a tunnel</strong>. Name it something like <code>mediastack</code>.
                         </li>
                         <li>
-                            Choose the <strong>Cloudflared</strong> connector, download the credentials file, and place it in{' '}
-                            <code>config/cloudflared/</code>. The setup wizard already creates this folder; just replace the credential file if
-                            you re-generated it manually.
+                            Copy the tunnel <strong>token</strong> and store it in your <code>.env</code> as{' '}
+                            <code>CLOUDFLARE_TUNNEL_TOKEN</code>.
                         </li>
                         <li>
-                            Confirm your <code>.env</code> has <code>CLOUDFLARED_COMMAND=tunnel --no-autoupdate run mediastack</code>{' '}
-                            (or the name you used). Update it if the tunnel UUID changed.
+                            Update <code>config/cloudflared/config.yml</code> with your real domain hostnames (replace{' '}
+                            <code>*.example.com</code>) and set the correct <code>tunnel:</code> ID / credentials if you use file mode.
                         </li>
                         <li>
-                            Start (or restart) the container: <code>docker compose up -d cloudflared</code>.
+                            Start the tunnel container:{' '}
+                            <code>docker compose --profile cloudflared up -d</code>
                         </li>
                         <li>
                             Watch the logs until you see <em>&quot;Connection established&quot;</em>: <code>docker compose logs -f cloudflared</code>.

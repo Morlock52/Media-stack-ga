@@ -36,7 +36,7 @@ export function JellyfinGuide() {
                         <li>
                             In your browser, go to the Jellyfin URL from your stack. Common defaults:
                             <ul className="list-disc list-inside ml-5 text-xs text-gray-400 mt-1">
-                                <li><code>http://localhost:8096</code> if running on your local machine.</li>
+                                <li><code>http://localhost:8096/web/</code> if running on your local machine.</li>
                                 <li><code>https://jellyfin.your-domain.com</code> if you used a subdomain in the wizard.</li>
                             </ul>
                         </li>

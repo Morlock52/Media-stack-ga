@@ -6,6 +6,10 @@
 - `docs/getting-started/DOCKER_WIZARD.md` — run the wizard in Docker (UI/API)
 - `docs/getting-started/QUICK_REFERENCE.md` — quick commands, ports, profiles
 
+## Professional docs
+
+- `docs/pro/README.md` — index (project plan + training guide)
+
 ## Operations
 
 - `docs/operations/POST_DEPLOY_CHECKS.md` — VPN/Auth/Tunnel post‑deploy sanity checks

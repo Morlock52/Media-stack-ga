@@ -41,7 +41,7 @@ export function AppGuideLayout({ icon, title, subtitle, category, estimatedTime,
                         <div className="rounded-2xl border border-border bg-card/60 p-4">
                             <h3 className="text-sm font-semibold text-foreground mb-2">How to read this guide</h3>
                             <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-1">
-                                <li>Follow the steps in order after you have run <code>docker compose up -d</code>.</li>
+                                <li>Follow the steps in order after you have deployed the stack (local ports or reverse proxy).</li>
                                 <li>Keep this page open while you click through the app UI.</li>
                                 <li>If you get stuck, use the AI assistant inside the wizard for extra help.</li>
                             </ol>

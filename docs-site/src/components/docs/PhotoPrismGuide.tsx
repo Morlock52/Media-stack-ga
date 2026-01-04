@@ -32,11 +32,14 @@ export function PhotoPrismGuide() {
                     <h3 className="text-base font-semibold text-white mb-2">1. Open PhotoPrism</h3>
                     <ol className="list-decimal list-inside space-y-1 text-gray-300">
                         <li>
-                            In your browser, go to your PhotoPrism URL. Common examples:
+                            In your browser, go to your PhotoPrism URL:
                             <ul className="list-disc list-inside ml-5 text-xs text-gray-400 mt-1">
-                                <li><code>http://localhost:2342</code> on a local machine.</li>
-                                <li><code>https://photos.your-domain.com</code> if you configured a subdomain.</li>
+                                <li><code>https://photoprism.your-domain.com</code> (Cloudflare Tunnel / remote access)</li>
                             </ul>
+                        </li>
+                        <li className="text-xs text-gray-400">
+                            PhotoPrism is enabled via the <code>photoprism</code> profile in the secure stack (<code>docker-compose.yml</code>).
+                            It is not included in the local ports stack (<code>docker-compose.local.yml</code>).
                         </li>
                         <li>You should see the login or setup page for PhotoPrism.</li>
                     </ol>

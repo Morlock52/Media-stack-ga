@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
 import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges, ExtendedAgent } from '../agents.js';
-import { setEnvValue, removeEnvKey, PROJECT_ROOT, getOpenAIKey, getElevenLabsKey, getAnthropicKey } from '../utils/env.js';
+import { setEnvValue, removeEnvKey, PROJECT_ROOT, getOpenAIKey } from '../utils/env.js';
 import { runCommand } from '../utils/docker.js';
 import { selectModelForQuery, estimateComplexity } from '../services/aiProviders.js';
 import { recordRequest } from '../services/metricsService.js';
@@ -9,6 +9,8 @@ import path from 'path';
 import { AiChatRequest, ChatMessage } from '../types/index.js';
 import * as arrService from '../services/arrService.js';
 import { getErrorMessage } from '../utils/errors.js';
+import { orchestrator } from '../orchestrator/orchestrator.js';
+import type { OrchestrationRequest, ExecutionStrategy } from '../orchestrator/types.js';
 
 // OpenAI API response types
 interface OpenAIMessage {
@@ -20,6 +22,13 @@ interface OpenAIMessage {
         function: { name: string; arguments: string };
     }>;
 }
+
+type OpenAIRequestMessage = {
+    role: 'system' | 'user' | 'assistant' | 'tool';
+    content: string | null;
+    tool_call_id?: string;
+    tool_calls?: OpenAIMessage['tool_calls'];
+};
 
 interface OpenAIChoice {
     message: OpenAIMessage;
@@ -57,11 +66,11 @@ interface ConversationMetadata {
 
 // Model configuration - Updated December 2025 for production-ready models
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
-// TTS: gpt-4o-mini-tts is the latest with better steerability and new voices (marin, cedar)
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
-const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1-hd';
-// New recommended voices: marin, cedar (best quality), also: alloy, ash, ballad, coral, echo, fable, onyx, nova, sage, shimmer, verse
-const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'coral';
+// TTS: Use stable OpenAI TTS models by default; allow override via env.
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1-hd';
+const OPENAI_TTS_FALLBACK_MODEL = process.env.OPENAI_TTS_FALLBACK_MODEL || 'tts-1';
+// Default voice must be compatible with the TTS endpoint.
+const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 // STT: gpt-4o-transcribe is the most accurate transcription model (Dec 2025)
 // It has significantly lower Word Error Rate (WER) than whisper-1 or gpt-4o-mini-transcribe
 const OPENAI_STT_MODEL = process.env.OPENAI_STT_MODEL || 'gpt-4o-transcribe';
@@ -142,14 +151,7 @@ function recordCircuitBreakerFailure() {
         circuitBreaker.state = 'open';
     }
 }
-const TTS_PROVIDER = process.env.TTS_PROVIDER || 'openai';
-// ElevenLabs Flash v2.5 provides ~75ms latency vs ~300ms for multilingual_v2
-// This is 4x faster and ideal for real-time voice applications
-const ELEVENLABS_TTS_MODEL = process.env.ELEVENLABS_TTS_MODEL || 'eleven_flash_v2_5';
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
-
-// Claude/Anthropic settings (December 2025: Claude Sonnet 4.5)
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
+// OpenAI-only TTS provider (simplified from multi-provider)
 
 type VoiceAgentHistoryItem = { role: 'user' | 'assistant'; content: string };
 
@@ -261,33 +263,6 @@ const requestOpenAiTts = async (options: {
     return response;
 };
 
-const requestElevenLabsTts = async (options: {
-    apiKey: string;
-    text: string;
-    voiceId: string;
-    model: string;
-}) => {
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${options.voiceId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': options.apiKey,
-            Accept: 'audio/mpeg',
-        },
-        body: JSON.stringify({
-            text: options.text,
-            model_id: options.model,
-            voice_settings: {
-                stability: 0.35,
-                similarity_boost: 0.85,
-                style: 0.25,
-                use_speaker_boost: true,
-            },
-        }),
-    });
-
-    return response;
-};
 
 const sendTtsUpstreamError = async (
     reply: FastifyReply,
@@ -470,18 +445,16 @@ export async function aiRoutes(fastify: FastifyInstance) {
         }
     );
 
-    // High-quality TTS endpoint (used by docs-site VoiceCompanion when an OpenAI key is available)
+    // High-quality TTS endpoint (OpenAI only - used by docs-site VoiceCompanion)
     fastify.post<{
         Body: {
             text?: string;
-            provider?: 'openai' | 'elevenlabs';
             voice?: string;
-            voiceId?: string;
             speed?: number;
             format?: 'mp3' | 'wav' | 'opus';
         };
     }>('/api/tts', async (request, reply) => {
-        const { text, voice, voiceId, speed, format, provider } = request.body || {};
+        const { text, voice, speed, format } = request.body || {};
 
         if (!text || typeof text !== 'string') {
             return reply.status(400).send({ error: 'text is required' });
@@ -497,53 +470,11 @@ export async function aiRoutes(fastify: FastifyInstance) {
             return reply.status(413).send({ error: 'text is too long' });
         }
 
-        const requestedProvider =
-            provider === 'elevenlabs' || provider === 'openai'
-                ? provider
-                : (TTS_PROVIDER === 'elevenlabs' ? 'elevenlabs' : 'openai');
-
         const requestedSpeed = typeof speed === 'number' && Number.isFinite(speed) ? speed : undefined;
         const safeSpeed =
             typeof requestedSpeed === 'number' && requestedSpeed >= 0.25 && requestedSpeed <= 4
                 ? requestedSpeed
                 : undefined;
-
-        if (requestedProvider === 'elevenlabs') {
-            const elevenKey = getElevenLabsKey();
-            if (!elevenKey) {
-                return reply.status(400).send({ error: 'ElevenLabs API key is required for TTS', reason: 'missing_elevenlabs_key' });
-            }
-
-            const resolvedVoiceId =
-                typeof voiceId === 'string' && voiceId.trim().length > 0 ? voiceId.trim() : ELEVENLABS_VOICE_ID;
-            if (!resolvedVoiceId) {
-                return reply.status(400).send({ error: 'ElevenLabs voiceId is required for TTS', reason: 'missing_voice_id' });
-            }
-
-            try {
-                const response = await requestElevenLabsTts({
-                    apiKey: elevenKey,
-                    text: normalizedText,
-                    voiceId: resolvedVoiceId,
-                    model: ELEVENLABS_TTS_MODEL,
-                });
-
-                if (!response.ok) {
-                    fastify.log.warn({ status: response.status }, 'ElevenLabs TTS error');
-                    return sendTtsUpstreamError(reply, response, 'TTS failed', 'ElevenLabs');
-                }
-
-                const audioBuffer = Buffer.from(await response.arrayBuffer());
-                reply.header('Cache-Control', 'no-store');
-                reply.header('Content-Type', 'audio/mpeg');
-                reply.header('X-TTS-Provider', 'elevenlabs');
-                reply.header('X-TTS-Model', ELEVENLABS_TTS_MODEL);
-                return reply.send(audioBuffer);
-            } catch (error: unknown) {
-                fastify.log.warn({ err: error }, 'ElevenLabs TTS failed');
-                return reply.status(502).send({ error: 'TTS failed', reason: 'server_error' });
-            }
-        }
 
         const effectiveApiKey = getOpenAIKey();
         if (!effectiveApiKey) {
@@ -747,68 +678,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
     fastify.get('/api/settings/tts', async (_request, _reply) => {
         const openaiKey = getOpenAIKey();
-        const elevenKey = getElevenLabsKey();
         return {
-            defaultProvider: TTS_PROVIDER,
-            openai: {
-                hasKey: Boolean(openaiKey && openaiKey.length > 0),
-                ttsModel: OPENAI_TTS_MODEL,
-                ttsVoice: OPENAI_TTS_VOICE,
-            },
-            elevenlabs: {
-                hasKey: Boolean(elevenKey && elevenKey.length > 0),
-                ttsModel: ELEVENLABS_TTS_MODEL,
-                voiceId: ELEVENLABS_VOICE_ID,
-            },
+            provider: 'openai',
+            hasKey: Boolean(openaiKey && openaiKey.length > 0),
+            ttsModel: OPENAI_TTS_MODEL,
+            ttsVoice: OPENAI_TTS_VOICE,
         };
-    });
-
-    fastify.post<{ Body: { key?: string } }>('/api/settings/elevenlabs-key', async (request, reply) => {
-        const { key } = request.body || {};
-        if (!key || typeof key !== 'string' || key.trim().length < 10) {
-            return reply.status(400).send({ error: 'ElevenLabs API key is required and must be at least 10 characters.' });
-        }
-        try {
-            setEnvValue('ELEVENLABS_API_KEY', key.trim());
-            process.env.ELEVENLABS_API_KEY = key.trim();
-            return { success: true };
-        } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to save ElevenLabs key');
-            reply.status(500).send({ error: 'Failed to save ElevenLabs key' });
-        }
-    });
-
-    fastify.delete('/api/settings/elevenlabs-key', async (_request, reply) => {
-        try {
-            removeEnvKey('ELEVENLABS_API_KEY');
-            delete process.env.ELEVENLABS_API_KEY;
-            return { success: true };
-        } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to remove ElevenLabs key');
-            reply.status(500).send({ error: 'Failed to remove ElevenLabs key' });
-        }
-    });
-
-    fastify.get('/api/settings/elevenlabs-voice', async (_request, _reply) => {
-        return {
-            voiceId: ELEVENLABS_VOICE_ID || null,
-            model: ELEVENLABS_TTS_MODEL,
-        };
-    });
-
-    fastify.post<{ Body: { voiceId?: string } }>('/api/settings/elevenlabs-voice', async (request, reply) => {
-        const { voiceId: nextVoiceId } = request.body || {};
-        if (!nextVoiceId || typeof nextVoiceId !== 'string' || !nextVoiceId.trim()) {
-            return reply.status(400).send({ error: 'voiceId is required.' });
-        }
-        try {
-            setEnvValue('ELEVENLABS_VOICE_ID', nextVoiceId.trim());
-            process.env.ELEVENLABS_VOICE_ID = nextVoiceId.trim();
-            return { success: true };
-        } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to save ElevenLabs voiceId');
-            reply.status(500).send({ error: 'Failed to save ElevenLabs voiceId' });
-        }
     });
 
     // Settings: OpenAI key management
@@ -826,68 +701,57 @@ export async function aiRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: { key?: string, openaiKey?: string } }>('/api/settings/openai-key', async (request, reply) => {
         const { key, openaiKey } = request.body || {};
         const apiKey = key || openaiKey;
+        const clientIp = request.ip || 'unknown';
 
-        if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 10) {
-            return reply.status(400).send({ error: 'OpenAI API key is required and must be at least 10 characters.' });
+        fastify.log.info({ clientIp }, '[settings/openai-key] POST request received');
+
+        if (!apiKey || typeof apiKey !== 'string') {
+            fastify.log.warn({ clientIp }, '[settings/openai-key] Missing or invalid API key in request body');
+            return reply.status(400).send({ error: 'OpenAI API key is required.' });
+        }
+
+        const trimmed = apiKey.trim();
+
+        // Validate key format
+        if (!trimmed.startsWith('sk-')) {
+            fastify.log.warn({ clientIp, prefix: trimmed.substring(0, 3) }, '[settings/openai-key] Invalid key prefix');
+            return reply.status(400).send({ error: 'Invalid API key format: must start with "sk-"' });
+        }
+
+        if (trimmed.length < 20 || trimmed.length > 200) {
+            fastify.log.warn({ clientIp, length: trimmed.length }, '[settings/openai-key] Invalid key length');
+            return reply.status(400).send({ error: 'Invalid API key length: expected 20-200 characters' });
+        }
+
+        // Check for valid characters (alphanumeric, dash, underscore)
+        if (!/^sk-[a-zA-Z0-9_-]+$/.test(trimmed)) {
+            fastify.log.warn({ clientIp }, '[settings/openai-key] Key contains invalid characters');
+            return reply.status(400).send({ error: 'Invalid API key format: contains invalid characters' });
         }
 
         try {
-            setEnvValue('OPENAI_API_KEY', apiKey.trim());
-            process.env.OPENAI_API_KEY = apiKey.trim();
+            setEnvValue('OPENAI_API_KEY', trimmed);
+            process.env.OPENAI_API_KEY = trimmed;
+            fastify.log.info({ clientIp, keyLength: trimmed.length }, '[settings/openai-key] API key saved successfully');
             return { success: true };
         } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to save OpenAI key');
+            fastify.log.error({ err: error, clientIp }, '[settings/openai-key] Failed to save OpenAI key');
             reply.status(500).send({ error: 'Failed to save OpenAI key' });
         }
     });
 
-    fastify.delete('/api/settings/openai-key', async (_request, reply) => {
+    fastify.delete('/api/settings/openai-key', async (request, reply) => {
+        const clientIp = request.ip || 'unknown';
+        fastify.log.info({ clientIp }, '[settings/openai-key] DELETE request received');
+
         try {
             removeEnvKey('OPENAI_API_KEY');
             delete process.env.OPENAI_API_KEY;
+            fastify.log.info({ clientIp }, '[settings/openai-key] API key removed successfully');
             return { success: true };
         } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to remove OpenAI key');
+            fastify.log.error({ err: error, clientIp }, '[settings/openai-key] Failed to remove OpenAI key');
             reply.status(500).send({ error: 'Failed to remove OpenAI key' });
-        }
-    });
-
-    // Settings: Claude/Anthropic key management
-    fastify.get('/api/settings/claude-key', async (_request, _reply) => {
-        const key = getAnthropicKey();
-        const hasKey = Boolean(key && key.length > 0);
-        return {
-            hasKey,
-            model: CLAUDE_MODEL,
-        };
-    });
-
-    fastify.post<{ Body: { key?: string, anthropicKey?: string } }>('/api/settings/claude-key', async (request, reply) => {
-        const { key, anthropicKey } = request.body || {};
-        const apiKey = key || anthropicKey;
-
-        if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 10) {
-            return reply.status(400).send({ error: 'Claude API key is required and must be at least 10 characters.' });
-        }
-
-        try {
-            setEnvValue('ANTHROPIC_API_KEY', apiKey.trim());
-            process.env.ANTHROPIC_API_KEY = apiKey.trim();
-            return { success: true };
-        } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to save Claude key');
-            reply.status(500).send({ error: 'Failed to save Claude key' });
-        }
-    });
-
-    fastify.delete('/api/settings/claude-key', async (_request, reply) => {
-        try {
-            removeEnvKey('ANTHROPIC_API_KEY');
-            delete process.env.ANTHROPIC_API_KEY;
-            return { success: true };
-        } catch (error) {
-            fastify.log.error({ err: error }, 'Failed to remove Claude key');
-            reply.status(500).send({ error: 'Failed to remove Claude key' });
         }
     });
 
@@ -901,19 +765,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     });
 
     fastify.get('/api/settings/tts/status', async (_request, _reply) => {
-        const provider = (TTS_PROVIDER || 'openai').toLowerCase();
         const openaiKey = getOpenAIKey();
-        const elevenKey = getElevenLabsKey();
-
-        if (provider === 'elevenlabs') {
-            return {
-                provider: 'elevenlabs',
-                hasKey: Boolean(elevenKey && elevenKey.length > 0),
-                voiceId: ELEVENLABS_VOICE_ID || null,
-                model: ELEVENLABS_TTS_MODEL,
-            };
-        }
-
         return {
             provider: 'openai',
             hasKey: Boolean(openaiKey && openaiKey.length > 0),
@@ -1005,8 +857,8 @@ Return ONLY a JSON object with the following structure:
         }
     });
 
-    // Main agent chat endpoint
-    fastify.post<{ Body: AiChatRequest }>('/api/agent/chat', async (request, reply) => {
+    // Main agent chat endpoint - supports orchestration mode
+    fastify.post<{ Body: AiChatRequest & { orchestrate?: boolean; strategy?: ExecutionStrategy } }>('/api/agent/chat', async (request, reply) => {
         const clientIp = request.ip || 'unknown';
         const startTime = Date.now();
 
@@ -1031,8 +883,38 @@ Return ONLY a JSON object with the following structure:
             });
         }
 
-        const { message, agentId, history = [], context = {} } = request.body;
+        const { message, agentId, history = [], context = {}, orchestrate = false, strategy } = request.body;
         const effectiveApiKey = getOpenAIKey();
+
+        // Handle orchestration mode
+        if (orchestrate && effectiveApiKey) {
+            try {
+                fastify.log.info({ orchestrate: true }, 'Routing to orchestrator');
+                const orchestrationRequest: OrchestrationRequest = {
+                    message,
+                    history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+                    orchestrate: true,
+                    strategy,
+                };
+
+                const result = await orchestrator.processRequest(orchestrationRequest, {
+                    history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+                });
+
+                return {
+                    answer: result.response,
+                    agent: { id: 'orchestrator', name: 'Stack Orchestrator', icon: '🎯' },
+                    nudges: [],
+                    aiPowered: true,
+                    orchestrated: true,
+                    plan: result.plan,
+                    executionDetails: result.executionDetails,
+                };
+            } catch (error) {
+                fastify.log.error({ err: error }, 'Orchestration failed, falling back to standard agent');
+                // Fall through to standard agent handling
+            }
+        }
 
         if (!message) {
             return reply.status(400).send({ error: 'Message is required' });
@@ -1048,13 +930,17 @@ Return ONLY a JSON object with the following structure:
         // Intelligent model routing based on query complexity
         const complexity = estimateComplexity(message);
         const selectedModel = selectModelForQuery(message, complexity);
-        // Use OpenAI models only for direct OpenAI API calls, fall back to default for Claude
-        const modelToUse = selectedModel.startsWith('claude') ? OPENAI_MODEL : selectedModel;
+        const modelToUse = selectedModel;
         fastify.log.info({ complexity, selectedModel, modelToUse }, 'Selected model for query');
 
         if (effectiveApiKey) {
             try {
-                const messages: ChatMessage[] = buildAgentMessages(agent, message, history as ChatMessage[], context);
+                const baseMessages: ChatMessage[] = buildAgentMessages(agent, message, history as ChatMessage[], context);
+                const openAiMessages: OpenAIRequestMessage[] = baseMessages.map((msg) => ({
+                    role: msg.role,
+                    content: msg.content,
+                    ...(msg.tool_call_id ? { tool_call_id: msg.tool_call_id } : {}),
+                }));
                 const tools = [
                     {
                         type: "function",
@@ -1120,7 +1006,7 @@ Return ONLY a JSON object with the following structure:
                     },
                     body: JSON.stringify({
                         model: modelToUse,
-                        messages,
+                        messages: openAiMessages,
                         tools,
                         tool_choice: "auto",
                         max_tokens: 1000,
@@ -1163,9 +1049,13 @@ Return ONLY a JSON object with the following structure:
                         try {
                             const output = await runCommand('docker', ['logs', '--tail', lines.toString(), service]);
 
-                            messages.push({ role: messageData.role, content: messageData.content || '' });
-                            messages.push({
-                                role: "tool" as const,
+                            openAiMessages.push({
+                                role: 'assistant',
+                                content: messageData.content ?? null,
+                                tool_calls: messageData.tool_calls,
+                            });
+                            openAiMessages.push({
+                                role: 'tool',
                                 tool_call_id: toolCall.id,
                                 content: output || "(No logs found)"
                             });
@@ -1178,7 +1068,7 @@ Return ONLY a JSON object with the following structure:
                                 },
                                 body: JSON.stringify({
                                     model: OPENAI_MODEL,
-                                    messages,
+                                    messages: openAiMessages,
                                     max_tokens: 1000,
                                     temperature: 0.7,
                                     store: true
@@ -1229,9 +1119,13 @@ Return ONLY a JSON object with the following structure:
                                 }
                             }
 
-                            messages.push({ role: messageData.role, content: messageData.content || '' });
-                            messages.push({
-                                role: "tool" as const,
+                            openAiMessages.push({
+                                role: 'assistant',
+                                content: messageData.content ?? null,
+                                tool_calls: messageData.tool_calls,
+                            });
+                            openAiMessages.push({
+                                role: 'tool',
                                 tool_call_id: toolCall.id,
                                 content: result
                             });
@@ -1244,7 +1138,7 @@ Return ONLY a JSON object with the following structure:
                                 },
                                 body: JSON.stringify({
                                     model: OPENAI_MODEL,
-                                    messages,
+                                    messages: openAiMessages,
                                     max_tokens: 1000,
                                     temperature: 0.7,
                                     store: true
@@ -1273,9 +1167,13 @@ Return ONLY a JSON object with the following structure:
                                 ? `Successfully extracted ${count} keys: ${Object.keys(results).join(', ')}`
                                 : "No API keys could be extracted. Make sure the containers are running and initialized (config.xml must exist).";
 
-                            messages.push({ role: messageData.role, content: messageData.content || '' });
-                            messages.push({
-                                role: "tool" as const,
+                            openAiMessages.push({
+                                role: 'assistant',
+                                content: messageData.content ?? null,
+                                tool_calls: messageData.tool_calls,
+                            });
+                            openAiMessages.push({
+                                role: 'tool',
                                 tool_call_id: toolCall.id,
                                 content: resultContent
                             });
@@ -1288,7 +1186,7 @@ Return ONLY a JSON object with the following structure:
                                 },
                                 body: JSON.stringify({
                                     model: OPENAI_MODEL,
-                                    messages,
+                                    messages: openAiMessages,
                                     max_tokens: 1000,
                                     temperature: 0.7,
                                     store: true
@@ -1468,8 +1366,7 @@ Return ONLY a JSON object with the following structure:
             // Intelligent model routing for streaming
             const complexity = estimateComplexity(message);
             const selectedModel = selectModelForQuery(message, complexity);
-            // Use OpenAI for streaming (Claude doesn't support same SSE format)
-            const streamingModel = selectedModel.startsWith('claude') ? OPENAI_MODEL : selectedModel;
+            const streamingModel = selectedModel;
 
             // Set SSE headers (including CORS since we bypass Fastify's reply)
             const origin = request.headers.origin;
@@ -1895,43 +1792,4 @@ Return ONLY a JSON object with the following structure:
         }
     );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Streaming TTS API (ElevenLabs WebSocket proxy info)
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Get ElevenLabs WebSocket streaming configuration
-     *
-     * Returns the WebSocket URL and configuration for client-side streaming TTS.
-     * Client connects directly to ElevenLabs for lowest latency (~75ms with Flash v2.5).
-     */
-    fastify.get('/api/tts/streaming/config', async (_request, reply) => {
-        const elevenLabsKey = getElevenLabsKey();
-        if (!elevenLabsKey) {
-            return reply.status(400).send({
-                error: 'ElevenLabs API key not configured',
-                available: false
-            });
-        }
-
-        const voiceId = ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Default: Sarah
-
-        return reply.send({
-            available: true,
-            websocketUrl: `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input`,
-            model: ELEVENLABS_TTS_MODEL,
-            voiceId,
-            // Recommended chunk schedule for optimal latency/quality balance
-            chunkLengthSchedule: [120, 160, 250, 290],
-            // Client must include this in the initial WebSocket message
-            authHeader: `xi-api-key: ${elevenLabsKey}`,
-            // Best practices
-            recommendations: {
-                model: 'eleven_flash_v2_5',
-                latency: '~75ms TTFB',
-                format: 'mp3_44100_128',
-                flush: 'Use flush:true at end of sentences',
-            }
-        });
-    });
 }

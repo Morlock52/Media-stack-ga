@@ -2,7 +2,7 @@
 
 | Application | Docker Image | Tag | Purpose |
 | :--- | :--- | :--- | :--- |
-| Traefik | `traefik` | `v3.2` | Reverse proxy + routing |
+| Traefik | `traefik` | `v3.6` | Reverse proxy + routing |
 | Cloudflared | `cloudflare/cloudflared` | `latest` | Cloudflare Tunnel connector |
 | Authelia | `authelia/authelia` | `latest` | SSO/MFA in front of routes |
 | Redis | `redis` | `alpine` | Session store for Authelia |
@@ -29,5 +29,10 @@
 | Mealie | `ghcr.io/mealie-recipes/mealie` | `latest` | Recipe manager |
 | PhotoPrism | `lscr.io/linuxserver/photoprism` | `latest` | Photo management |
 | Notifiarr | `golift/notifiarr` | `latest` | Alerts/notifications |
+| Loki | `grafana/loki` | `latest` | Log aggregation |
+| Promtail | `grafana/promtail` | `latest` | Docker log collection |
+| Grafana | `grafana/grafana` | `latest` | Dashboards + log explorer |
 
 Wizard components (`control-server`, `docs-site`) run only in `docker-compose.wizard*.yml` and are not part of the primary stack above.
+
+> Note: `docker-compose.local.yml` is a separate “direct ports” stack for home LAN use. It exposes apps on host ports (Plex `32400`, Sonarr `8989`, qBittorrent `8081`, Grafana `3003`, etc) and omits Traefik/Authelia/Cloudflared.
