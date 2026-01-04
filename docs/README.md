@@ -15,6 +15,10 @@
 - `docs/operations/POST_DEPLOY_CHECKS.md` — VPN/Auth/Tunnel post‑deploy sanity checks
 - `docs/operations/VERIFICATION_PLAN.md` — end-to-end implementation/verification steps
 
+## App usage
+
+- `docs/app.md` — how to use each stack app (URLs, first-run steps, and tips)
+
 ## Architecture
 
 - `docs/architecture/APPS.md` — installed services and images
