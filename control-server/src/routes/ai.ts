@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
-import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges, ExtendedAgent } from '../agents.js';
+import { AGENTS, detectAgent, buildAgentMessages, getFallbackResponse, getProactiveNudges, ExtendedAgent, type AgentMessageContext } from '../agents.js';
 import { setEnvValue, removeEnvKey, PROJECT_ROOT, getOpenAIKey } from '../utils/env.js';
 import { runCommand } from '../utils/docker.js';
 import { selectModelForQuery, estimateComplexity } from '../services/aiProviders.js';
@@ -376,6 +376,64 @@ const openAiErrorPayload = (status: number, fallbackMessage: string) => {
 
     return { httpStatus: 502, payload: { error: fallbackMessage, reason: 'upstream_error', upstreamStatus: status } };
 };
+
+const WIZARD_NEXT_STEPS: Record<number, string[]> = {
+    0: [
+        'Choose Newbie or Expert mode.',
+        'Review the quick-start tips before continuing.',
+        'Click Continue to start configuration.'
+    ],
+    1: [
+        'Set timezone, PUID, and PGID for file permissions.',
+        'Pick a domain (or use localhost for LAN-only).',
+        'Set a strong master password.'
+    ],
+    2: [
+        'Pick a media server (Plex or Jellyfin).',
+        'Add automation apps like Sonarr/Radarr/Prowlarr.',
+        'Decide whether you need a VPN for downloads.'
+    ],
+    3: [
+        'Fill required app settings only.',
+        'Leave optional fields blank if unsure.',
+        'Save settings and continue.'
+    ],
+    4: [
+        'Add Cloudflare token if using remote access.',
+        'Add VPN or Plex claim tokens if needed.',
+        'Review advanced toggles and continue.'
+    ],
+    5: [
+        'Download the generated files.',
+        'Copy them to your server.',
+        'Run docker compose up -d and post-deploy checks.'
+    ],
+};
+
+const buildWizardNextSteps = (context: Record<string, unknown> = {}): string[] => {
+    const step = typeof context.wizardStep === 'number' ? context.wizardStep : undefined;
+    if (typeof step !== 'number') {
+        return [];
+    }
+
+    const base = WIZARD_NEXT_STEPS[step] ? [...WIZARD_NEXT_STEPS[step]] : [];
+    const selectedServices = Array.isArray(context.selectedServices) ? context.selectedServices : [];
+    const config = typeof context.config === 'object' && context.config ? (context.config as Record<string, unknown>) : {};
+    const deploymentMode = typeof config.deploymentMode === 'string' ? config.deploymentMode : undefined;
+    const domain = typeof config.domain === 'string' ? config.domain : '';
+    const vpnEnabled = Boolean(config.vpnEnabled);
+
+    if (step === 2 && selectedServices.includes('torrent') && !selectedServices.includes('vpn') && !vpnEnabled) {
+        base.push('Consider enabling the VPN (Gluetun) before running torrents.');
+    }
+
+    if (step === 1 && deploymentMode === 'cloud' && !domain) {
+        base.push('Cloud mode needs a domain. Add one now or switch to local mode.');
+    }
+
+    return base.slice(0, 6);
+};
+
 
 export async function aiRoutes(fastify: FastifyInstance) {
     // Get list of available agents
@@ -943,6 +1001,9 @@ Return ONLY a JSON object with the following structure:
         const { message, agentId, history = [], context = {}, orchestrate = false, strategy } = request.body;
         const effectiveApiKey = getOpenAIKey();
 
+        const nudges = getProactiveNudges(context);
+        const nextSteps = buildWizardNextSteps(context);
+
         // Handle orchestration mode
         if (orchestrate && effectiveApiKey) {
             try {
@@ -961,7 +1022,8 @@ Return ONLY a JSON object with the following structure:
                 return {
                     answer: result.response,
                     agent: { id: 'orchestrator', name: 'Stack Orchestrator', icon: '🎯' },
-                    nudges: [],
+                    nudges,
+                    nextSteps,
                     aiPowered: true,
                     orchestrated: true,
                     plan: result.plan,
@@ -981,8 +1043,6 @@ Return ONLY a JSON object with the following structure:
         if (!agent) {
             agent = detectAgent(message);
         }
-
-        const nudges = getProactiveNudges(context);
 
         // Intelligent model routing based on query complexity
         const complexity = estimateComplexity(message);
@@ -1298,6 +1358,7 @@ Return ONLY a JSON object with the following structure:
                     answer: answer || 'Sorry, I could not generate a response.',
                     agent: { id: agent.id, name: agent.name, icon: agent.icon },
                     nudges,
+                    nextSteps,
                     aiPowered: true,
                     toolUsed,
                     model: modelToUse,
@@ -1341,6 +1402,7 @@ Return ONLY a JSON object with the following structure:
                     answer: userFriendlyError,
                     agent: { id: agent.id, name: agent.name, icon: agent.icon },
                     nudges,
+                    nextSteps,
                     aiPowered: false,
                     error: {
                         retryable: errorContext.retryable,
@@ -1355,6 +1417,7 @@ Return ONLY a JSON object with the following structure:
             answer,
             agent: { id: agent.id, name: agent.name, icon: agent.icon },
             nudges,
+            nextSteps,
             aiPowered: false
         };
     });
@@ -1385,6 +1448,173 @@ Return ONLY a JSON object with the following structure:
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // SSE Streaming Chat Endpoint (POST with context)
+    // ═══════════════════════════════════════════════════════════════════════════
+    fastify.post<{ Body: { message: string; agentId?: string; history?: ChatMessage[]; context?: Record<string, unknown>; orchestrate?: boolean; strategy?: 'parallel' | 'sequential' | 'adaptive' } }>(
+        '/api/agent/chat/stream',
+        async (request, reply) => {
+            const clientIp = request.ip || 'unknown';
+
+            // Rate limiting
+            const rateLimit = checkRateLimit(clientIp);
+            addRateLimitHeaders(reply, rateLimit);
+            if (!rateLimit.allowed) {
+                reply.header('Retry-After', rateLimit.retryAfter);
+                return reply.status(429).send({ error: 'Rate limit exceeded', retryAfter: rateLimit.retryAfter });
+            }
+
+            // Circuit breaker
+            const circuitCheck = checkCircuitBreaker();
+            if (!circuitCheck.allowed) {
+                return reply.status(503).send({ error: 'Service temporarily unavailable' });
+            }
+
+            const { message, agentId, history = [], context = {}, orchestrate = false, strategy } = request.body || {};
+            const effectiveApiKey = getOpenAIKey();
+
+            if (!message) {
+                return reply.status(400).send({ error: 'Message is required' });
+            }
+
+            if (!effectiveApiKey) {
+                return reply.status(400).send({ error: 'OpenAI API key not configured' });
+            }
+
+            const nudges = getProactiveNudges(context);
+            const nextSteps = buildWizardNextSteps(context);
+            let doneSent = false;
+
+            const sanitizedHistory = Array.isArray(history)
+                ? history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }))
+                : [];
+
+            // Set SSE headers (including CORS since we bypass Fastify's reply)
+            const origin = request.headers.origin;
+            if (origin) {
+                reply.raw.setHeader('Access-Control-Allow-Origin', origin);
+                reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+            }
+            reply.raw.setHeader('Content-Type', 'text/event-stream');
+            reply.raw.setHeader('Cache-Control', 'no-cache');
+            reply.raw.setHeader('Connection', 'keep-alive');
+            reply.raw.setHeader('X-Accel-Buffering', 'no');
+
+            if (orchestrate && effectiveApiKey) {
+                try {
+                    const orchestrationRequest: OrchestrationRequest = {
+                        message,
+                        history: sanitizedHistory,
+                        orchestrate: true,
+                        strategy,
+                    };
+
+                    const result = await orchestrator.processRequest(orchestrationRequest, {
+                        history: sanitizedHistory,
+                    });
+
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'agent', agent: { id: 'orchestrator', name: 'Stack Orchestrator', icon: '🎯' } })}\n\n`);
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: result.response })}\n\n`);
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'meta', meta: { nudges, nextSteps, orchestrated: true, plan: result.plan, executionDetails: result.executionDetails } })}\n\n`);
+                    reply.raw.write('data: [DONE]\n\n');
+                    reply.raw.end();
+                    return;
+                } catch (error: unknown) {
+                    recordCircuitBreakerFailure();
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: getErrorMessage(error) })}\n\n`);
+                    reply.raw.end();
+                    return;
+                }
+            }
+
+            let agent: ExtendedAgent | undefined = agentId ? AGENTS[agentId] : undefined;
+            if (!agent) {
+                agent = detectAgent(message);
+            }
+
+            const messages = buildAgentMessages(agent, message, sanitizedHistory, context as AgentMessageContext);
+
+            // Intelligent model routing for streaming
+            const complexity = estimateComplexity(message);
+            const selectedModel = selectModelForQuery(message, complexity);
+            const streamingModel = selectedModel;
+
+            try {
+                // Send agent info first
+                reply.raw.write(`data: ${JSON.stringify({ type: 'agent', agent: { id: agent.id, name: agent.name, icon: agent.icon } })}\n\n`);
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${effectiveApiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: streamingModel,
+                        messages,
+                        max_tokens: 1000,
+                        temperature: 0.7,
+                        stream: true,
+                        store: true
+                    })
+                });
+
+                if (!response.ok || !response.body) {
+                    recordCircuitBreakerFailure();
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: 'API request failed' })}\n\n`);
+                    reply.raw.end();
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                reply.raw.write(`data: ${JSON.stringify({ type: 'meta', meta: { nudges, nextSteps } })}\n\n`);
+                                reply.raw.write('data: [DONE]\n\n');
+                                doneSent = true;
+                                continue;
+                            }
+                            try {
+                                const parsed = JSON.parse(data);
+                                const delta = parsed.choices?.[0]?.delta;
+                                if (delta?.content) {
+                                    reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+                                }
+                            } catch {
+                                // Skip invalid JSON
+                            }
+                        }
+                    }
+                }
+
+                recordCircuitBreakerSuccess();
+                if (!doneSent) {
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'meta', meta: { nudges, nextSteps } })}\n\n`);
+                    reply.raw.write('data: [DONE]\n\n');
+                }
+                reply.raw.end();
+            } catch (error: unknown) {
+                recordCircuitBreakerFailure();
+                fastify.log.error({ err: error }, 'Streaming chat error');
+                reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: getErrorMessage(error) })}\n\n`);
+                reply.raw.end();
+            }
+        }
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // SSE Streaming Chat Endpoint
     // ═══════════════════════════════════════════════════════════════════════════
     fastify.get<{ Querystring: { message: string; agentId?: string } }>(
@@ -1408,6 +1638,10 @@ Return ONLY a JSON object with the following structure:
 
             const { message, agentId } = request.query;
             const effectiveApiKey = getOpenAIKey();
+
+            const nudges = getProactiveNudges({});
+            const nextSteps = buildWizardNextSteps({});
+            let doneSent = false;
 
             if (!message) {
                 return reply.status(400).send({ error: 'Message is required' });
@@ -1483,7 +1717,9 @@ Return ONLY a JSON object with the following structure:
                         if (line.startsWith('data: ')) {
                             const data = line.slice(6);
                             if (data === '[DONE]') {
+                                reply.raw.write(`data: ${JSON.stringify({ type: 'meta', meta: { nudges, nextSteps } })}\n\n`);
                                 reply.raw.write('data: [DONE]\n\n');
+                                doneSent = true;
                                 continue;
                             }
                             try {
@@ -1500,7 +1736,10 @@ Return ONLY a JSON object with the following structure:
                 }
 
                 recordCircuitBreakerSuccess();
-                reply.raw.write('data: [DONE]\n\n');
+                if (!doneSent) {
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'meta', meta: { nudges, nextSteps } })}\n\n`);
+                    reply.raw.write('data: [DONE]\n\n');
+                }
                 reply.raw.end();
             } catch (error: unknown) {
                 recordCircuitBreakerFailure();

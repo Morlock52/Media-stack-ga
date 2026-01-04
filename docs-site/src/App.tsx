@@ -242,7 +242,7 @@ function App() {
 	              onTouchStart={prefetchRemoteDeployModal}
 	              onClick={() => setShowDeployModal(true)}
 	              variant="gradient"
-	              className="fixed bottom-4 left-4 z-40 animate-in fade-in slide-in-from-bottom-2"
+	              className="fixed bottom-4 left-4 z-40 animate-in fade-in slide-in-from-bottom-2 shadow-lg backdrop-blur-sm"
 	              title="Deploy to remote server via SSH"
 	              aria-haspopup="dialog"
 	              data-testid="deploy-to-server"

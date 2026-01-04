@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket, Home, Key, Loader2, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket, Home, Key, Loader2, Eye, EyeOff, X } from 'lucide-react'
 import { PostInstallChecklist } from '../../PostInstallChecklist'
 import { controlServer } from '../../../utils/controlServer'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT, STORAGE_CATEGORIES } from '../../../data/storagePlan'
@@ -778,14 +778,24 @@ export function ReviewGenerateStep({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-6 border-b border-border">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                                        <Rocket className="w-6 h-6 text-blue-400" />
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-500/20 rounded-lg">
+                                            <Rocket className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-foreground">Run Local Install</h2>
+                                            <p className="text-sm text-muted-foreground">Deploy your media stack to this machine</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-foreground">Run Local Install</h2>
-                                        <p className="text-sm text-muted-foreground">Deploy your media stack to this machine</p>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeployModal(false)}
+                                        className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+                                        aria-label="Close modal"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
                             </div>
 

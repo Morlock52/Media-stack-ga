@@ -29,6 +29,7 @@ interface Message {
     toolUsed?: { command: string }
     confidence?: ConfidenceLevel
     sources?: SourceAttribution[]
+    nextSteps?: string[]
 }
 
 interface AIAssistantProps {
@@ -137,6 +138,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
     const inputRef = useRef<HTMLInputElement>(null)
     const sendMessageRef = useRef<(text: string) => void>(() => {})
     const spokenTextRef = useRef('') // Track what's been spoken for streaming TTS
+    const streamMetaRef = useRef<{ nudges?: Array<{ message: string }>; nextSteps?: string[] } | null>(null)
 
     // Voice I/O integration
     const voice = useVoice()
@@ -166,6 +168,17 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         },
         onAgentInfo: (agent) => {
             setStreamingAgent(agent)
+        },
+        onMeta: (meta) => {
+            streamMetaRef.current = meta
+            if (meta?.nudges?.length) {
+                const availableNudge = meta.nudges.find(
+                    (n) => n?.message && !dismissedNudges.has(n.message)
+                )
+                if (availableNudge) {
+                    setProactiveNudge(availableNudge.message)
+                }
+            }
         },
         onComplete: () => {
             setStatus('idle')
@@ -318,14 +331,48 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         setIsLoading(true)
         setStatus('thinking')
         setProactiveNudge(null)
+        streamMetaRef.current = null
         setStreamingContent('')
         spokenTextRef.current = '' // Reset spoken text tracking
         setStreamingAgent(null)
 
+        const recentTopics = [...messages, userMsg]
+            .filter((msg) => msg.role === 'user')
+            .slice(-4)
+            .map((msg) => msg.content.toLowerCase())
+
+        const vpnEnabled = selectedServices.includes('vpn')
+        const envComplete = Boolean(config.timezone && config.puid && config.pgid && config.password)
+        const hasDomain = Boolean(config.domain)
+        const shouldOrchestrate = wizardStep >= 0
+
+        const contextPayload = {
+            currentApp,
+            wizardStep,
+            wizardStepName,
+            selectedServices,
+            recentTopics,
+            userProgress: {
+                step: wizardStep,
+                envComplete,
+                hasDomain,
+            },
+            config: {
+                deploymentMode: config.deploymentMode,
+                domain: config.domain,
+                vpnEnabled,
+            }
+        }
+
         // Try streaming first for real-time feedback
         try {
             setStatus('generating')
-            const response = await streamChat(messageText, selectedAgent || undefined)
+            const response = await streamChat(messageText, selectedAgent || undefined, {
+                history: messages.slice(-8),
+                context: contextPayload,
+                orchestrate: shouldOrchestrate,
+                strategy: shouldOrchestrate ? 'sequential' : undefined,
+            })
 
             // Streaming complete - add the final message
             const assistantMsg: Message = {
@@ -333,6 +380,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                 content: response || 'Sorry, I could not respond.',
                 agent: streamingAgent || { id: 'general', name: 'AI Assistant', icon: '🤖' },
                 aiPowered: true,
+                nextSteps: streamMetaRef.current?.nextSteps,
                 confidence: calculateConfidence({
                     isValidated: Boolean(response),
                     hasExamples: true, // Streaming implies LLM processing
@@ -344,6 +392,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
             setStreamingAgent(null)
             setIsLoading(false)
             setStatus('idle')
+            streamMetaRef.current = null
 
             // Auto-speak response if voice output is enabled
             if (voiceEnabled && response) {
@@ -367,13 +416,21 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                     wizardStep: number
                     wizardStepName: string
                     selectedServices: string[]
+                    recentTopics: string[]
                     userProgress: {
                         step: number
                         envComplete: boolean
                         hasDomain: boolean
                     }
+                    config: {
+                        deploymentMode: string
+                        domain: string
+                        vpnEnabled: boolean
+                    }
                 }
                 agentId?: string
+                orchestrate?: boolean
+                strategy?: 'parallel' | 'sequential' | 'adaptive'
             } = {
                 message: messageText,
                 history: messages.slice(-8),
@@ -382,12 +439,20 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                     wizardStep,
                     wizardStepName,
                     selectedServices,
+                    recentTopics,
                     userProgress: {
                         step: wizardStep,
-                        envComplete: Boolean(hasRemoteKey),
-                        hasDomain: Boolean(config.domain),
+                        envComplete,
+                        hasDomain,
                     },
+                    config: {
+                        deploymentMode: config.deploymentMode,
+                        domain: config.domain,
+                        vpnEnabled,
+                    }
                 },
+                orchestrate: shouldOrchestrate,
+                strategy: shouldOrchestrate ? 'sequential' : undefined,
             }
 
             if (selectedAgent) {
@@ -413,6 +478,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                 agent: data.agent,
                 aiPowered: data.aiPowered,
                 toolUsed: data.toolUsed,
+                nextSteps: data.nextSteps,
                 confidence: calculateConfidence({
                     isValidated: Boolean(data.answer),
                     hasExamples: data.aiPowered,
@@ -448,7 +514,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
         } finally {
             setIsLoading(false)
         }
-    }, [input, isLoading, isStreaming, selectedAgent, messages, wizardStep, wizardStepName, selectedServices, hasRemoteKey, config.domain, currentApp, streamChat, streamingAgent, voiceEnabled, voice, dismissedNudges])
+    }, [input, isLoading, isStreaming, selectedAgent, messages, wizardStep, wizardStepName, selectedServices, hasRemoteKey, config.domain, config.deploymentMode, config.timezone, config.puid, config.pgid, config.password, currentApp, streamChat, streamingAgent, voiceEnabled, voice, dismissedNudges])
 
     // Keep sendMessageRef updated so voice callbacks can use latest version
     useEffect(() => {
@@ -714,7 +780,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                                     <span className="truncate">Executed: {msg.toolUsed.command}</span>
                                                 </div>
                                             )}
-                                            {/* Source attribution for AI transparency */}
+                                                                                        {/* Source attribution for AI transparency */}
                                             {msg.sources && msg.sources.length > 0 && (
                                                 <div className="mt-1.5 flex flex-wrap gap-1">
                                                     {msg.sources.map((source, sIdx) => (
@@ -742,6 +808,16 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                                                             </Tooltip>
                                                         </TooltipProvider>
                                                     ))}
+                                                </div>
+                                            )}
+                                            {msg.nextSteps && msg.nextSteps.length > 0 && (
+                                                <div className="mt-2 mx-1 p-2 rounded-lg bg-muted/40 border border-border">
+                                                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Next steps</p>
+                                                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                                        {msg.nextSteps.slice(0, 5).map((step, sIdx) => (
+                                                            <li key={sIdx}>{step}</li>
+                                                        ))}
+                                                    </ul>
                                                 </div>
                                             )}
                                             {msg.role === 'assistant' && (

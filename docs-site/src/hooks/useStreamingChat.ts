@@ -19,10 +19,26 @@ export interface StreamingChatOptions {
     onComplete?: (fullResponse: string) => void
     onError?: (error: Error) => void
     onAgentInfo?: (agent: { id: string; name: string; icon: string }) => void
+    onMeta?: (meta: StreamingMeta) => void
+}
+
+export interface StreamingMeta {
+    nudges?: Array<{ message: string; agent?: string }>
+    nextSteps?: string[]
+    plan?: unknown
+    executionDetails?: unknown
+    orchestrated?: boolean
+}
+
+export interface StreamChatRequest {
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>
+    context?: Record<string, unknown>
+    orchestrate?: boolean
+    strategy?: 'parallel' | 'sequential' | 'adaptive'
 }
 
 export interface StreamingChatResult {
-    streamChat: (message: string, agentId?: string) => Promise<string>
+    streamChat: (message: string, agentId?: string, request?: StreamChatRequest) => Promise<string>
     cancelStream: () => void
     status: StreamingStatus
     currentResponse: string
@@ -45,7 +61,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}): StreamingC
         setStatus('idle')
     }, [])
 
-    const streamChat = useCallback(async (message: string, agentId?: string): Promise<string> => {
+    const streamChat = useCallback(async (message: string, agentId?: string, request?: StreamChatRequest): Promise<string> => {
         // Cancel any existing stream
         cancelStream()
 
@@ -57,19 +73,35 @@ export function useStreamingChat(options: StreamingChatOptions = {}): StreamingC
 
         return new Promise((resolve, reject) => {
             try {
-                // Build URL with query params
                 const url = new URL(buildControlServerUrl('/api/agent/chat/stream'))
-                url.searchParams.set('message', message)
-                if (agentId) {
-                    url.searchParams.set('agentId', agentId)
+                const authHeaders = controlServerAuthHeaders()
+                const needsBody = Boolean(request && (request.history || request.context || request.orchestrate || request.strategy))
+                const body = needsBody
+                    ? JSON.stringify({
+                        message,
+                        agentId,
+                        history: request?.history,
+                        context: request?.context,
+                        orchestrate: request?.orchestrate,
+                        strategy: request?.strategy
+                    })
+                    : undefined
+
+                if (!needsBody) {
+                    url.searchParams.set('message', message)
+                    if (agentId) {
+                        url.searchParams.set('agentId', agentId)
+                    }
                 }
 
                 // Add auth headers via fetch first to check, then use EventSource
                 // Note: EventSource doesn't support custom headers, so we use fetch for auth check
-                const authHeaders = controlServerAuthHeaders()
-                if (Object.keys(authHeaders).length > 0) {
-                    // If we need auth, fall back to fetch with manual SSE parsing
-                    streamWithFetch(url.toString(), authHeaders, resolve, reject)
+                if (needsBody || Object.keys(authHeaders).length > 0) {
+                    const headers = {
+                        ...authHeaders,
+                        ...(needsBody ? { 'Content-Type': 'application/json' } : {})
+                    }
+                    streamWithFetch(url.toString(), headers, resolve, reject, needsBody ? 'POST' : 'GET', body)
                     return
                 }
 
@@ -100,6 +132,8 @@ export function useStreamingChat(options: StreamingChatOptions = {}): StreamingC
                             responseRef.current += data.content
                             setCurrentResponse(responseRef.current)
                             options.onToken?.(data.content)
+                        } else if (data.type === 'meta') {
+                            options.onMeta?.(data.meta || data)
                         } else if (data.type === 'error') {
                             throw new Error(data.error)
                         }
@@ -132,15 +166,18 @@ export function useStreamingChat(options: StreamingChatOptions = {}): StreamingC
             url: string,
             headers: Record<string, string>,
             resolve: (value: string) => void,
-            reject: (reason: Error) => void
+            reject: (reason: Error) => void,
+            method: 'GET' | 'POST',
+            body?: string
         ) {
             try {
                 const response = await fetch(url, {
-                    method: 'GET',
+                    method,
                     headers: {
                         Accept: 'text/event-stream',
                         ...headers
-                    }
+                    },
+                    body
                 })
 
                 if (!response.ok) {
@@ -183,6 +220,8 @@ export function useStreamingChat(options: StreamingChatOptions = {}): StreamingC
                                     responseRef.current += parsed.content
                                     setCurrentResponse(responseRef.current)
                                     options.onToken?.(parsed.content)
+                                } else if (parsed.type === 'meta') {
+                                    options.onMeta?.(parsed.meta || parsed)
                                 } else if (parsed.type === 'error') {
                                     throw new Error(parsed.error)
                                 }

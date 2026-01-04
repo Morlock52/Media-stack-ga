@@ -26,13 +26,18 @@ export interface AgentCapability {
 export interface NudgeContext {
     currentApp?: string;
     recentTopics?: string[];
+    wizardStep?: number;
+    wizardStepName?: string;
+    selectedServices?: string[];
     userProgress?: {
-        step?: string;
+        step?: number | string;
         envComplete?: boolean;
+        hasDomain?: boolean;
     };
     config?: {
-        profile?: string;
+        deploymentMode?: string;
         vpnEnabled?: boolean;
+        domain?: string;
     };
 }
 
@@ -407,18 +412,29 @@ export function detectAgent(message: string) {
 
 // Get proactive nudges based on context
 export function getProactiveNudges(context: NudgeContext) {
-    const { currentApp, recentTopics, userProgress, config } = context;
+    const {
+        currentApp,
+        recentTopics,
+        userProgress,
+        config,
+        wizardStep,
+        wizardStepName,
+        selectedServices,
+    } = context;
     const nudges = [];
 
+    const hasTopic = (term: string) =>
+        recentTopics?.some((topic) => topic.toLowerCase().includes(term)) ?? false;
+
     // Suggest next steps based on app
-    if (currentApp === 'sonarr' && !recentTopics?.includes('indexer')) {
+    if (currentApp === 'sonarr' && !hasTopic('indexer')) {
         nudges.push({
             agent: 'apps',
             message: "💡 Tip: Sonarr needs indexers to find content. Want me to explain how to set them up?"
         });
     }
 
-    if (currentApp === 'plex' && !recentTopics?.includes('library')) {
+    if (currentApp === 'plex' && !hasTopic('library')) {
         nudges.push({
             agent: 'apps',
             message: "💡 Have you added your media libraries to Plex yet? I can walk you through it!"
@@ -426,34 +442,62 @@ export function getProactiveNudges(context: NudgeContext) {
     }
 
     // Context-aware nudges
-    if (userProgress?.step === 'troubleshoot') {
+    const troubleshootingSignals = ['error', 'fail', 'not working', 'crash', 'restart', 'issue'];
+    if (troubleshootingSignals.some((term) => hasTopic(term))) {
         nudges.push({
             agent: 'troubleshoot',
-            message: "🔍 I see you're looking at troubleshooting. Need Dr. Debug to analyze your logs?"
+            message: "🔍 I noticed troubleshooting signals. Want Dr. Debug to analyze logs?"
         });
     }
 
-    if (config?.profile === 'torrent' && !config?.vpnEnabled) {
+    const wantsTorrent = selectedServices?.includes('torrent');
+    const vpnEnabled = config?.vpnEnabled ?? selectedServices?.includes('vpn');
+
+    if (wantsTorrent && !vpnEnabled) {
         nudges.push({
             agent: 'setup',
-            message: "🛡️ You selected the 'Torrent' profile but VPN is not enabled. I strongly recommend setting up Gluetun."
+            message: "🛡️ You selected torrents without VPN. I strongly recommend enabling Gluetun."
         });
     }
 
-    // Setup progress nudges
-    if (userProgress?.step === 'env' && !userProgress?.envComplete) {
+    const stepName = typeof wizardStepName === 'string' ? wizardStepName.toLowerCase() : '';
+    const isBasicConfigStep = wizardStep === 1 || stepName.includes('basic');
+
+    if (isBasicConfigStep && userProgress?.envComplete === false) {
         nudges.push({
             agent: 'setup',
-            message: "🔧 I notice you're working on the .env file. Need help with any settings?"
+            message: "🔧 You're on Basic Config. Want help filling PUID/PGID, timezone, or domain?"
+        });
+    }
+
+    if (config?.deploymentMode === 'cloud' && !config?.domain) {
+        nudges.push({
+            agent: 'setup',
+            message: "🌐 Cloud mode needs a domain. Want help choosing one?"
         });
     }
 
     return nudges;
 }
 
+
 /** Context for agent messages */
 export interface AgentMessageContext {
     currentApp?: string;
+    wizardStep?: number;
+    wizardStepName?: string;
+    selectedServices?: string[];
+    recentTopics?: string[];
+    userProgress?: {
+        step?: number | string;
+        envComplete?: boolean;
+        hasDomain?: boolean;
+    };
+    config?: {
+        deploymentMode?: string;
+        vpnEnabled?: boolean;
+        domain?: string;
+    };
     voice?: boolean;
 }
 
@@ -473,6 +517,46 @@ export function buildAgentMessages(
         messages.push({
             role: 'system',
             content: `User is currently viewing: ${context.currentApp}. Tailor your response accordingly.`
+        });
+    }
+
+    if (context.wizardStepName || typeof context.wizardStep === 'number') {
+        const stepLabel = context.wizardStepName ?? `Step ${context.wizardStep}`;
+        messages.push({
+            role: 'system',
+            content: `Wizard step: ${stepLabel}. Provide step-by-step guidance for this stage.`
+        });
+        messages.push({
+            role: 'system',
+            content: 'Include a short checklist (2-4 items) and one practical tip in your response.'
+        });
+    }
+
+    if (context.selectedServices && context.selectedServices.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `Selected services: ${context.selectedServices.join(', ')}.`
+        });
+    }
+
+    if (context.userProgress) {
+        messages.push({
+            role: 'system',
+            content: `Progress: step=${context.userProgress.step ?? 'unknown'}, envComplete=${context.userProgress.envComplete ?? 'unknown'}, hasDomain=${context.userProgress.hasDomain ?? 'unknown'}.`
+        });
+    }
+
+    if (context.config && (context.config.deploymentMode || context.config.domain || context.config.vpnEnabled !== undefined)) {
+        messages.push({
+            role: 'system',
+            content: `Config: deploymentMode=${context.config.deploymentMode ?? 'unknown'}, domain=${context.config.domain ?? 'unset'}, vpnEnabled=${context.config.vpnEnabled ?? 'unknown'}.`
+        });
+    }
+
+    if (context.recentTopics && context.recentTopics.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `Recent topics: ${context.recentTopics.slice(-3).join(' | ')}.`
         });
     }
 

@@ -396,7 +396,9 @@ export class Orchestrator {
         logger.info({ planId: plan.id, strategy: plan.strategy }, 'Starting plan execution');
 
         // Get tasks in execution order
-        const executionOrder = this.getExecutionOrder(plan.tasks);
+        const executionOrder = plan.strategy === 'sequential'
+            ? plan.tasks.map(task => [task])
+            : this.getExecutionOrder(plan.tasks);
 
         for (const batch of executionOrder) {
             // Execute batch (parallel if multiple tasks with no dependencies on each other)
