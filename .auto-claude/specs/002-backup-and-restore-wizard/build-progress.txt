@@ -404,3 +404,75 @@ This subtask was already completed as part of subtask 6.1. The ModernSidebar.tsx
 - Subtask 6.3: Add backup widget to HealthDashboard
 
 ---
+
+## 2026-01-05 - Subtask 6.3 Completed
+
+**Subtask:** Add backup status card to main health dashboard
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Added comprehensive backup status widget to HealthDashboard component
+- Integrated backup state management using useBackupStore and useBackupList hook
+- Implemented collapsible widget with expand/collapse functionality
+- Added utility functions for formatting (formatBytes, formatRelativeTime, formatNextRun)
+
+**Widget Features:**
+1. **Header Section:**
+   - Database icon and "Backup Status" title
+   - Status badges showing backup count and scheduled status
+   - Quick navigation button to full backup dashboard
+   - Collapsible with chevron indicator
+
+2. **Stats Grid (2 cards):**
+   - Last Backup Status card:
+     - Relative time display ("X hours ago", "X days ago")
+     - Status icon (green checkmark/red X/gray clock)
+     - Item count and size with encryption indicator
+     - Color-coded border (green=success, red=failed, gray=none)
+   - Next Scheduled Backup card:
+     - Time until next backup ("in X hours", "in X days")
+     - Schedule frequency and time display
+     - Color-coded (cyan=enabled, gray=disabled)
+     - Calendar icon
+
+3. **Quick Actions:**
+   - "Backup Now" button → navigates to /backup/new
+   - "Restore" button → navigates to /backup/restore
+   - Both use Button component with proper styling
+
+4. **State Handling:**
+   - Empty state when no destination configured
+   - Warning banner when backups exist but no schedule
+   - Loading state during initial backup list fetch
+   - Proper error handling with try/catch
+
+**Implementation Details:**
+- Follows existing HealthDashboard patterns exactly
+- Uses AnimatePresence for smooth animations
+- Responsive grid layout (1-2 columns based on screen size)
+- Fetches last 5 backups on mount when destination configured
+- Color-coded visual feedback throughout
+- Proper TypeScript types and imports
+- Clean separation of concerns with utility functions
+
+**User Experience:**
+- Quick visibility into backup health from main dashboard
+- Easy access to backup actions without navigation
+- Helpful guidance when backups not configured
+- Warning prompts for missing schedule
+- Smooth animations matching existing components
+
+**Files Modified:**
+- docs-site/src/components/HealthDashboard.tsx (282 insertions, 1 deletion)
+
+**Commit:** fa3e8a6 - auto-claude: 6.3 - Add backup status card to main health dashboard showing: last backup time, next scheduled, health status. Quick backup button.
+
+**Next Steps:**
+- Phase 6 (Integration and Navigation) is now complete
+- Phase 7: Testing and Documentation
+  - Subtask 7.1: Add backend unit tests
+  - Subtask 7.2: Add frontend smoke tests
+  - Subtask 7.3: Verify all acceptance criteria
+
+---
+

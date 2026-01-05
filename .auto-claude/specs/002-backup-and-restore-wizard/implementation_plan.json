@@ -391,11 +391,13 @@
           "id": "6.3",
           "title": "Add backup widget to HealthDashboard",
           "description": "Add backup status card to main health dashboard showing: last backup time, next scheduled, health status. Quick backup button.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/HealthDashboard.tsx"
           ],
-          "estimated_time": "45min"
+          "estimated_time": "45min",
+          "notes": "Added comprehensive backup status widget to HealthDashboard component with the following features:\n\n**Widget Structure:**\n- Collapsible card with expand/collapse functionality\n- Header with \"Backup Status\" title and Database icon\n- Status badges showing number of backups and scheduled status\n- Quick navigation button to full backup dashboard\n\n**Stats Grid (2 cards):**\n1. **Last Backup Status:**\n   - Shows time since last backup (relative format: \"X hours ago\", \"X days ago\")\n   - Visual status indicator (green checkmark for success, red X for failed, gray clock for none)\n   - Item count and size display\n   - Encryption indicator (Shield icon when encrypted)\n   - Color-coded border based on status (green=success, red=failed, gray=none)\n\n2. **Next Scheduled Backup:**\n   - Shows time until next backup (relative format: \"in X hours\", \"in X days\")\n   - Displays schedule frequency and time\n   - Color-coded (cyan when enabled, gray when disabled)\n   - Calendar icon indicator\n\n**Quick Actions:**\n- \"Backup Now\" button (navigates to /backup/new)\n- \"Restore\" button (navigates to /backup/restore)\n- Both buttons use proper Button component with icons\n\n**Empty States:**\n- Shows \"No backup destination configured\" message when destination is not set\n- \"Configure Backup\" button to navigate to backup wizard\n- Database icon with helpful text\n\n**Warning Banner:**\n- Shows when backups exist but no schedule configured\n- Amber/orange warning theme with AlertCircle icon\n- Clickable link to configure backup schedules\n- Encourages users to set up automatic backups\n\n**Implementation Details:**\n- Uses useBackupStore for destination and schedule state\n- Uses useBackupList hook to fetch last 5 backups\n- Uses useNavigate for routing to backup pages\n- Follows existing HealthDashboard patterns exactly (collapsible sections, status cards, badges)\n- Utility functions: formatBytes(), formatRelativeTime(), formatNextRun()\n- AnimatePresence for smooth expand/collapse animations\n- Responsive grid layout (1 column on mobile, 2 columns on desktop)\n- Proper error handling with try/catch\n- Color-coded visual feedback throughout (green=success, red=error, cyan=scheduled, gray=inactive)\n- Visibility-aware (fetches backups on mount if destination configured)\n\n**User Experience:**\n- Clear status indicators for backup health\n- Quick access to backup actions without leaving health dashboard\n- Helpful guidance when backups not configured\n- Warning prompts for missing schedule configuration\n- Visual feedback with color-coded borders and badges\n- Smooth animations matching existing component\n\n**Files Modified:**\n- docs-site/src/components/HealthDashboard.tsx (added imports, state, fetch function, and backup widget card)\n\n**Commit:** fa3e8a6 - auto-claude: 6.3 - Add backup status card to main health dashboard showing: last backup time, next scheduled, health status. Quick backup button.\n\nThe widget provides a comprehensive backup status overview directly in the main health dashboard, giving users quick visibility into their backup health and easy access to backup features.",
+          "updated_at": "2026-01-05T20:40:35.926972+00:00"
         }
       ]
     },
@@ -513,5 +515,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T20:35:57.092585+00:00"
+  "last_updated": "2026-01-05T20:40:35.926981+00:00"
 }
