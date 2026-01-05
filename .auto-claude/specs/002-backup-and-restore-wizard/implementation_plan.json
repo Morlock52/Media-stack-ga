@@ -79,11 +79,13 @@
           "id": "1.6",
           "title": "Create restore API routes",
           "description": "Implement Fastify routes: POST /api/restore/preview (analyze backup contents), POST /api/restore/execute (perform restore with optional selective restore), GET /api/restore/status/:id (progress tracking).",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "control-server/src/routes/restore.ts"
           ],
-          "estimated_time": "2h"
+          "estimated_time": "2h",
+          "notes": "Implemented comprehensive restore API routes for control-server:\n\n**Routes Implemented:**\n1. POST /api/restore/preview - Analyze backup contents without restoring\n   - Downloads and parses manifest file from destination\n   - Returns preview of backup items (type, name, path, size, service)\n   - Checks encryption status and validates decryption password if needed\n   - Returns backup metadata (created date, total size, item count, etc.)\n\n2. POST /api/restore/execute - Execute restore with optional selective restore\n   - Validates restore config with Zod schema\n   - Returns restore ID and starts async restore process\n   - Supports selective restore (specify which items to restore)\n   - Tracks progress in memory for status queries\n   - Includes optional service stop/start and pre-restore backup\n\n3. GET /api/restore/status/:id - Get progress of active restore\n   - Returns real-time progress including status, current operation, items/bytes processed, ETA\n   - Supports all restore statuses: initializing, downloading, validating, decrypting, extracting, applying, completed, failed\n\n**Implementation Details:**\n- Follows existing patterns from backup.ts routes\n- Uses Zod schemas (RestoreConfigSchema, RestorePreviewRequestSchema) for request validation\n- Proper error handling with getErrorMessage()\n- Uses createLogger() for logging\n- Async/await throughout\n- In-memory progress tracking for active restores\n- Integrates with BackupService, destination adapters, and encryption utilities\n- All imports use .js extensions (ES modules)\n- TypeScript types properly applied\n- Status codes: 200 (success), 202 (accepted), 400 (bad request), 404 (not found), 500 (error), 503 (unavailable)\n\n**executeRestore() Helper:**\n- Runs restore operation asynchronously\n- Updates progress at each stage\n- Handles downloading, decryption, extraction, and application of backup files\n- Supports selective restore (filter items by name)\n- Optional service stopping before restore and restarting after\n- Proper cleanup of temporary files\n- Comprehensive error handling with automatic restart of stopped containers on failure\n\n**Added to backupService.ts:**\n- extractBackupArchive() - Extract tar.gz archives to directory\n- restoreToVolume() - Restore files to Docker volume using alpine container\n- restoreToContainerPath() - Restore files to container path using docker cp\n- stopContainer() - Stop a Docker container\n- startContainer() - Start a Docker container\n\n**Added to backup.ts:**\n- RestorePreviewRequestSchema - Zod schema for preview requests\n\nThe routes provide a complete API for restore operations with progress tracking, selective restore support, and proper error handling.",
+          "updated_at": "2026-01-05T17:56:24.579053+00:00"
         },
         {
           "id": "1.7",
@@ -467,5 +469,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T17:52:18.095909+00:00"
+  "last_updated": "2026-01-05T17:56:24.579061+00:00"
 }

@@ -59,11 +59,23 @@
         }
       ],
       "status": "completed"
+    },
+    "1.6": {
+      "attempts": [
+        {
+          "session": 7,
+          "timestamp": "2026-01-05T12:56:36.361555",
+          "approach": "Implemented: Implement Fastify routes: POST /api/restore/preview (analyze backup contents), POST /api/restore/exe",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T12:31:17.502829",
-    "last_updated": "2026-01-05T12:52:39.435090"
+    "last_updated": "2026-01-05T12:56:36.361570"
   }
 }
