@@ -888,3 +888,88 @@
 
 ---
 
+
+## 2026-01-05 - Subtask 4.6 Completed
+
+**Subtask:** Create RestoreProgress component for real-time restore progress display
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created reusable RestoreProgress component by extracting progress display logic from RestoreConfirmStep
+- Implemented comprehensive real-time restore progress display with all required features
+- Refactored RestoreConfirmStep to use the new RestoreProgress component for cleaner code organization
+- Component is now reusable across multiple parts of the application (BackupDashboard, etc.)
+
+**Component Features:**
+- **Animated Progress Bar:** Shows percentage complete (0-100%) with smooth Framer Motion animation using amber/orange/red gradient (caution theme)
+- **Bytes Display:** Real-time display of bytes processed/total with formatted sizes (B, KB, MB, GB, TB)
+- **Status Badge:** Centered badge with appropriate icon and color coding:
+  - In-progress: Primary color with spinning loader icon
+  - Completed: Green with checkmark icon
+  - Failed: Red with error icon
+- **Current Operation:** Card showing what's happening now (e.g., "Stopping services", "Extracting files", "Applying configs", "Restarting services")
+- **Current Item:** Displays which file/volume is being processed with path truncation for long names
+- **Progress Stats Grid:** Three-column responsive grid (1 column on mobile, 3 on desktop) with:
+  - **Items Processed:** X/Y counter with Database icon
+  - **Transfer Speed:** Formatted as MB/s or KB/s with TrendingUp icon
+  - **Estimated Time:** Calculated ETA formatted as "~Xh Ym" or "~Xm Ys" with Timer icon
+- **Success Banner:** Green banner with CheckCircle2 icon when restore completes, shows confirmation message mentioning service restart
+- **Error Banner:** Red banner with XCircle icon when restore fails, displays error message in monospace font
+- **Loading State:** Spinner with customizable loading message when waiting for initial progress data
+
+**Utility Functions:**
+- `formatBytes(bytes)`: Converts bytes to human-readable sizes using 1024 base
+- `formatSpeed(bytesPerSecond)`: Formats transfer speed by appending "/s" to formatBytes
+- `formatETA(estimatedCompletionAt, startedAt)`: Calculates and formats time remaining
+  - Returns "~Xh Ym" for hours + minutes
+  - Returns "~Xm Ys" for minutes + seconds
+  - Returns "~Xs" for seconds only
+  - Returns "Calculating..." when ETA is not yet available
+  - Returns "Almost done..." when time remaining is <= 0
+
+**Implementation Details:**
+- Accepts `RestoreProgressType | null` via props (from backupStore)
+- Optional `loading` prop for showing loading state
+- Optional `loadingMessage` prop for customizing loading text (default: "Initializing restore...")
+- Progress bar animates smoothly with Framer Motion (0.5s duration, easeOut)
+- Progress bar uses amber/orange/red gradient to match restore theme (different from backup's green gradient)
+- Color-coded status badges (green=success, red=error, primary=in-progress)
+- Responsive grid layout adapts to screen size
+- Proper TypeScript types matching backupStore interfaces
+- Follows existing patterns: InteractiveCard, motion animations
+- Comprehensive JSDoc comments explaining component purpose and usage
+- Clean separation of concerns - pure presentation component
+
+**Refactoring Benefits:**
+- Extracted ~200 lines of progress display logic from RestoreConfirmStep
+- Reduced RestoreConfirmStep from 551 to 351 lines (~36% reduction)
+- RestoreConfirmStep is now cleaner and easier to maintain
+- RestoreProgress component is reusable for:
+  - BackupDashboard (future subtask 5.1)
+  - RestoreHistoryList (future components)
+  - Any other component that needs to display restore progress
+- Maintains all existing functionality with improved code organization
+- Single source of truth for restore progress display formatting and styling
+- Matches BackupProgress component pattern for consistency
+
+**Files Created:**
+- docs-site/src/components/restore/RestoreProgress.tsx (254 lines)
+
+**Files Modified:**
+- docs-site/src/components/restore/RestoreConfirmStep.tsx (refactored to use RestoreProgress component)
+  - Removed duplicate utility functions (formatSpeed, formatETA were already in RestoreConfirmStep)
+  - Removed duplicate progress UI JSX (~200 lines)
+  - Replaced with single `<RestoreProgress>` component usage
+  - Kept only RestoreConfirmStep-specific logic (configuration summary, restore initiation)
+
+**Commit:** d6fbf03 - auto-claude: 4.6 - Real-time restore progress similar to BackupProgre
+
+**Next Steps:**
+- Phase 4 (Restore Wizard UI) is now complete! ✅
+- Move to Phase 5: Backup Management Dashboard
+- Subtask 5.1: Create BackupDashboard component
+- Subtask 5.2: Create BackupHistoryList component
+- Subtask 5.3: Create ScheduleManager component
+
+---
+

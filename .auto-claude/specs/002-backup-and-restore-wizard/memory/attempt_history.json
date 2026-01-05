@@ -155,11 +155,23 @@
         }
       ],
       "status": "completed"
+    },
+    "4.6": {
+      "attempts": [
+        {
+          "session": 14,
+          "timestamp": "2026-01-05T15:14:26.852533",
+          "approach": "Implemented: Real-time restore progress similar to BackupProgress. Show stopping services, extracting files, appl",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T14:09:55.411917",
-    "last_updated": "2026-01-05T15:10:24.064352"
+    "last_updated": "2026-01-05T15:14:26.852546"
   }
 }
