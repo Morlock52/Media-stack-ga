@@ -499,6 +499,8 @@ export interface AgentMessageContext {
         domain?: string;
     };
     voice?: boolean;
+    /** Conversation ID for linking troubleshooting sessions */
+    conversationId?: string;
 }
 
 // Build messages for OpenAI API

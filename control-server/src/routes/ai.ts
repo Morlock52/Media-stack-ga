@@ -1052,7 +1052,40 @@ Return ONLY a JSON object with the following structure:
 
         if (effectiveApiKey) {
             try {
+                // Inject troubleshooting history context if available
+                let troubleshootingContext = '';
+                const conversationId = context.conversationId as string | undefined;
+
+                if (conversationId) {
+                    try {
+                        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+                        const relatedSessions = await troubleshootingStore.getSessionsByConversation(conversationId, 3);
+
+                        if (relatedSessions.length > 0) {
+                            fastify.log.info({ conversationId, sessionCount: relatedSessions.length }, 'Injecting troubleshooting context');
+
+                            troubleshootingContext = '\n\n## Recent Troubleshooting Context\n\n';
+                            troubleshootingContext += 'The user has active troubleshooting sessions. Use this context to provide informed follow-up assistance:\n\n';
+
+                            for (const session of relatedSessions) {
+                                const sessionContext = await troubleshootingStore.getSessionContext(session.id);
+                                if (sessionContext) {
+                                    troubleshootingContext += sessionContext + '\n---\n\n';
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        fastify.log.warn({ err, conversationId }, 'Failed to load troubleshooting context');
+                    }
+                }
+
                 const baseMessages: ChatMessage[] = buildAgentMessages(agent, message, history as ChatMessage[], context);
+
+                // Inject troubleshooting context into system message if available
+                if (troubleshootingContext && baseMessages.length > 0 && baseMessages[0].role === 'system') {
+                    baseMessages[0].content += troubleshootingContext;
+                }
+
                 const openAiMessages: OpenAIRequestMessage[] = baseMessages.map((msg) => ({
                     role: msg.role,
                     content: msg.content,
@@ -1531,7 +1564,39 @@ Return ONLY a JSON object with the following structure:
                 agent = detectAgent(message);
             }
 
+            // Inject troubleshooting history context if available
+            let troubleshootingContext = '';
+            const conversationId = context.conversationId as string | undefined;
+
+            if (conversationId) {
+                try {
+                    const troubleshootingStore = await import('../services/troubleshootingStore.js');
+                    const relatedSessions = await troubleshootingStore.getSessionsByConversation(conversationId, 3);
+
+                    if (relatedSessions.length > 0) {
+                        fastify.log.info({ conversationId, sessionCount: relatedSessions.length }, 'Injecting troubleshooting context (streaming)');
+
+                        troubleshootingContext = '\n\n## Recent Troubleshooting Context\n\n';
+                        troubleshootingContext += 'The user has active troubleshooting sessions. Use this context to provide informed follow-up assistance:\n\n';
+
+                        for (const session of relatedSessions) {
+                            const sessionContext = await troubleshootingStore.getSessionContext(session.id);
+                            if (sessionContext) {
+                                troubleshootingContext += sessionContext + '\n---\n\n';
+                            }
+                        }
+                    }
+                } catch (err) {
+                    fastify.log.warn({ err, conversationId }, 'Failed to load troubleshooting context (streaming)');
+                }
+            }
+
             const messages = buildAgentMessages(agent, message, sanitizedHistory, context as AgentMessageContext);
+
+            // Inject troubleshooting context into system message if available
+            if (troubleshootingContext && messages.length > 0 && messages[0].role === 'system') {
+                messages[0].content += troubleshootingContext;
+            }
 
             // Intelligent model routing for streaming
             const complexity = estimateComplexity(message);
