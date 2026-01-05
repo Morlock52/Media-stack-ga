@@ -36,9 +36,9 @@
       "discovered_at": "2026-01-05T17:33:30.959746+00:00"
     },
     "docs-site/playwright.config.ts": {
-      "description": "Playwright config starts two webServers: 1) control-server (builds first, then runs on port 3001), 2) Vite dev server on port 5175. Uses 120s timeout for server startup. The 'AI assistant can chat with control-server' test requires both servers running.",
+      "description": "Playwright tests verify frontend\u2192backend integration. The 'AI assistant can chat with control-server' test (smoke.spec.ts:256-267) is the primary E2E test for API proxy/direct-call functionality. Playwright config starts both servers: control-server on port 3001 and Vite dev server on port 5175 (configurable via PLAYWRIGHT_UI_PORT).",
       "category": "testing",
-      "discovered_at": "2026-01-05T17:33:31.021352+00:00"
+      "discovered_at": "2026-01-05T17:58:14.390579+00:00"
     },
     "scripts/check_app_docs.py": {
       "description": "Python script that validates Docker Compose services have corresponding documentation in docs/app.md. Called by npm run check with --strict flag. Uses fuzzy matching to link services to documentation sections.",
@@ -79,7 +79,12 @@
       "description": "AI Assistant component (1021 lines) with floating button, chat panel, streaming responses, voice I/O, agent selection, and proactive nudges. Button at fixed bottom-4 right-4 z-50 with title=\"Ask AI Assistant\". Uses streaming chat hook with fallback to non-streaming. Comprehensive E2E test coverage in smoke.spec.ts.",
       "category": "component",
       "discovered_at": "2026-01-05T17:56:20.846684+00:00"
+    },
+    "docs-site/src/utils/controlServer.ts": {
+      "description": "The Vite proxy config in vite.config.ts is effectively BYPASSED in development mode. The buildControlServerUrl() function (line 53) directly returns 'http://127.0.0.1:3001' when isDev && isLoopback is true. The proxy is only used when: (1) VITE_CONTROL_SERVER_URL is not set, and (2) the page is not accessed from localhost. For standard dev workflow (localhost:5173), API calls go directly to control-server:3001, not through Vite proxy.",
+      "category": "api-integration",
+      "discovered_at": "2026-01-05T17:58:14.352211+00:00"
     }
   },
-  "last_updated": "2026-01-05T17:56:20.846701+00:00"
+  "last_updated": "2026-01-05T17:58:14.390590+00:00"
 }

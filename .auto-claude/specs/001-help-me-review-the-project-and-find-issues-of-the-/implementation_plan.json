@@ -356,7 +356,9 @@
             ]
           },
           "expected_output": "Document API proxy behavior and any CORS issues",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Verified API proxy configuration. Key finding: Vite proxy is bypassed in dev mode - frontend directly calls http://127.0.0.1:3001 via buildControlServerUrl(). This is intentional design. CORS, Playwright test coverage, and integration all verified correct through static analysis.",
+          "updated_at": "2026-01-05T17:59:51.284671+00:00"
         },
         {
           "id": "subtask-4-2",
@@ -594,5 +596,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2026-01-05T17:56:20.808947+00:00"
+  "last_updated": "2026-01-05T17:59:51.284680+00:00"
 }
