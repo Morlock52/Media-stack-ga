@@ -149,7 +149,9 @@
             "expected_status": 200
           },
           "expected_output": "Document root response and verify service info is correct",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Verified root endpoint (/) returns service info correctly. Response includes: service name, status, version, and available endpoints. Status code: 200. No code changes required - existing implementation is correct.",
+          "updated_at": "2026-01-05T17:38:14.322911+00:00"
         },
         {
           "id": "subtask-2-3",
@@ -167,7 +169,9 @@
             "expected_status": 200
           },
           "expected_output": "Document behavior when Docker is available vs not available",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Verified /api/containers endpoint returns HTTP 200 with valid JSON array of Container objects. All containers have required fields (id, name, status, state, ports). Response matches shared/types.ts Container interface. Confirmed test coverage gap - no unit tests for this endpoint.",
+          "updated_at": "2026-01-05T17:40:34.503644+00:00"
         },
         {
           "id": "subtask-2-4",
@@ -578,5 +582,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2026-01-05T17:37:24.046451+00:00"
+  "last_updated": "2026-01-05T17:40:34.503653+00:00"
 }

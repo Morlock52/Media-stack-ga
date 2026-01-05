@@ -506,3 +506,85 @@ app.get('/api/health', async (request, reply) => {
 **Status: COMPLETE** ✅
 
 ---
+
+## subtask-2-2: Verify root endpoint (/) returns correct response
+
+### Live Verification (Server Running):
+
+**Test Command:**
+```bash
+curl -s -X GET http://localhost:3001/ -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+    "service": "Media Stack Control Server",
+    "status": "running",
+    "version": "2.0.0",
+    "endpoints": ["/api/health", "/api/containers", "/api/agents", "/api/orchestrator"]
+}
+```
+
+**HTTP Status Code:** 200 ✅
+
+**Status: COMPLETE** ✅
+
+---
+
+## subtask-2-3: Test /api/containers endpoint (Docker integration)
+
+### Live Verification (Server Running):
+
+**Test Command:**
+```bash
+curl -s -w "\nHTTP_STATUS: %{http_code}" -X GET http://localhost:3001/api/containers -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+[
+    {"id":"05e082bcbecc","name":"qbittorrent","status":"Up 4 hours","state":"running","ports":"0.0.0.0:6881->6881/tcp..."},
+    {"id":"a82ffb89d9ad","name":"bazarr","status":"Up 4 hours","state":"running","ports":"0.0.0.0:6767->6767/tcp..."},
+    ...14 total containers
+]
+```
+
+**HTTP Status Code:** 200 ✅
+
+### Response Validation:
+- ✅ Returns JSON array of Container objects
+- ✅ Each container has required fields: id, name, status, state, ports
+- ✅ Matches shared/types.ts Container interface
+- ✅ Contains 14 containers (13 running, 1 created)
+
+### Response Headers:
+```
+HTTP/1.1 200 OK
+content-type: application/json; charset=utf-8
+x-ratelimit-limit: 1000
+x-ratelimit-remaining: 996
+x-ratelimit-reset: 35
+```
+
+### Implementation Analysis (control-server/src/routes/docker.ts):
+
+**Features:**
+1. **Caching:** Uses DOCKER_STATUS_CACHE_MS (default 1500ms) to cache results
+2. **Request deduplication:** Uses `containersInFlight` promise to prevent parallel docker ps calls
+3. **Error handling:** Returns 503 with docker_unavailable when Docker daemon not running
+4. **Parsing:** Splits docker ps output by pipe delimiters, filters empty lines
+
+**Code Quality:**
+- ✅ Proper error handling with isDockerUnavailable() check
+- ✅ Uses getErrorMessage() utility for safe error messages
+- ✅ Clean async/await pattern with proper promise handling
+- ✅ No console.log debug statements
+
+**Test Coverage Gap Confirmed:**
+- ❌ No unit tests for /api/containers endpoint in control-server/test/
+- This was already noted in Phase 1 analysis
+
+**Status: COMPLETE** ✅
+
+---
