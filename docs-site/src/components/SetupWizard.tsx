@@ -1,52 +1,58 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion, AnimatePresence } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
+import { Sparkles, Settings, Layers, Server, Key, FileText, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+
+// Store
+import { useSetupStore, initialConfig } from '../store/setupStore'
+
+// Hooks
 import { useConfigGenerators } from '../hooks/useConfigGenerators'
 import { useFileDownload } from '../hooks/useFileDownload'
 import { useWizardValidation } from '../hooks/useWizardValidation'
 import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
-import { toast } from 'sonner'
-import {
-    RotateCcw,
-    Sparkles, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
-} from 'lucide-react'
-import { useSetupStore, initialConfig } from '../store/setupStore'
-
-// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
-const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
 import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'
-import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
+
+// Schemas
 import {
     basicConfigSchema,
     advancedSettingsSchema,
     type BasicConfigFormData,
     type AdvancedSettingsFormData
 } from '../schemas/setupSchema'
-import { TemplateSelector } from './TemplateSelector'
-import { Template } from '../data/templates'
+
+// Utils
 import { importConfiguration, downloadAsFile } from '../utils/configManager'
+import { Template } from '../data/templates'
+
+// Components
+import { GlassCard } from './ui/glass-card'
+import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
+import { TemplateSelector } from './TemplateSelector'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
-import { Button } from './ui/button'
-import { GlassCard } from './ui/glass-card'
-import { services } from '../data/services'
+// Wizard Components
+import {
+    WizardHeader,
+    WizardProgressBar,
+    WizardStepIndicator,
+    WizardNavigation,
+    DraftRecoveryModal,
+    ProfilesPanel,
+    ToolsDialog,
+    VoiceCompanionTrigger,
+    QuickStartStep,
+    StackSelectionStep,
+    BasicConfigurationStep,
+    AdvancedSettingsStep,
+    ReviewGenerateStep
+} from './wizard'
 
-// New Step Components
-import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'
-import { StackSelectionStep } from './wizard/steps/StackSelectionStep'
-import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'
-import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
-import { QuickStartStep } from './wizard/steps/QuickStartStep'
-import { WizardHeader } from './wizard/WizardHeader'
-import { WizardProgressBar } from './wizard/WizardProgressBar'
-import { WizardStepIndicator } from './wizard/WizardStepIndicator'
-import { WizardNavigation } from './wizard/WizardNavigation'
-import { DraftRecoveryModal } from './wizard/DraftRecoveryModal'
-import { ProfilesPanel } from './wizard/ProfilesPanel'
-import { ToolsDialog } from './wizard/ToolsDialog'
-import { VoiceCompanionTrigger } from './wizard/VoiceCompanionTrigger'
+// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
+const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
