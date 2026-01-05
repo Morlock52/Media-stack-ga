@@ -366,3 +366,41 @@
 - Subtask 6.3: Add backup widget to HealthDashboard
 
 ---
+
+## 2026-01-05 - Subtask 6.2 Completed
+
+**Subtask:** Add Backup section to ModernSidebar with links and status indicator
+**Status:** ✅ Completed (Already Done in 6.1)
+
+**What Was Done:**
+This subtask was already completed as part of subtask 6.1. The ModernSidebar.tsx already includes all required features:
+
+**Existing Implementation (lines 64-200 of ModernSidebar.tsx):**
+- ✅ Backup & Restore section in sidebar navigation
+- ✅ Dashboard link (Database icon) → /backup
+- ✅ Create Backup link (Plus icon) → /backup/new
+- ✅ Restore link (RotateCcw icon) → /backup/restore
+- ✅ Schedules link (Clock icon) → /backup/schedules
+- ✅ Status indicator showing green dot when schedule is enabled
+- ✅ Proper integration with useBackupStore for schedule status checking
+- ✅ Consistent styling with other navigation sections
+
+**Implementation Details:**
+- Navigation data defined in navData.backup array (lines 64-90)
+- Rendered using SidebarGroup component (lines 172-200)
+- Status indicator shows on Schedules item when schedule?.enabled is true (line 181)
+- Uses React Router Link component for client-side navigation
+- Proper TypeScript typing and null-safe optional chaining
+- Follows existing patterns from Setup Steps and Resources sections
+
+**Files:**
+- docs-site/src/components/ModernSidebar.tsx (no changes needed - already complete)
+
+**Commit:** 6c5ca6a - auto-claude: 6.2 - Add Backup section to ModernSidebar (already completed in 6.1)
+
+**Note:** No code changes were required. This subtask was marked as completed to reflect the work that was done in subtask 6.1.
+
+**Next Steps:**
+- Subtask 6.3: Add backup widget to HealthDashboard
+
+---
