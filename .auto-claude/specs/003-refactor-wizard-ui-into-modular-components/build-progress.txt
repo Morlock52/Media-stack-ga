@@ -1,0 +1,16 @@
+# Build Progress - Refactor Wizard UI into Modular Components
+
+## Completed Subtasks
+
+### Phase 2: Extract Hooks and Utilities
+
+#### 2.2 - Extract YAML/config generation logic ✅
+- Created `docs-site/src/hooks/useConfigGenerators.ts`
+- Extracted `generateAutheliaYaml` and `generateCloudflareYaml` functions
+- Hook reads config and selectedServices from store via selectors
+- Returns memoized generator functions with proper dependency tracking
+- Updated SetupWizard.tsx to use the new hook
+- Committed in aa45900
+
+## Summary
+Successfully extracted config generation logic into a reusable hook following the established pattern from useWizardAnimations.ts. The hook properly memoizes the generator functions and tracks dependencies on config.domain and selectedServices.

@@ -88,11 +88,12 @@
           "id": "2.2",
           "title": "Create useConfigGenerators hook",
           "description": "Extract YAML/config generation logic (generateAutheliaYaml, generateCloudflareYaml) into docs-site/src/hooks/useConfigGenerators.ts",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/hooks/useConfigGenerators.ts"
           ],
-          "notes": "Takes config and selectedServices from store, returns generator functions. generateEnvFile already exists in utils"
+          "notes": "Successfully extracted YAML/config generation logic (generateAutheliaYaml, generateCloudflareYaml) into docs-site/src/hooks/useConfigGenerators.ts. Hook reads config and selectedServices from store via selectors and returns memoized generator functions with proper dependency tracking. Functions generate Authelia SSO config and Cloudflare Tunnel ingress rules. SetupWizard.tsx updated to use the new hook. Committed in aa45900.",
+          "updated_at": "2026-01-05T19:15:13.464613+00:00"
         },
         {
           "id": "2.3",
@@ -319,5 +320,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:11:23.562471+00:00"
+  "last_updated": "2026-01-05T19:15:13.464623+00:00"
 }

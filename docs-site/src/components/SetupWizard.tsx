@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useConfigGenerators } from '../hooks/useConfigGenerators'
+import { useFileDownload } from '../hooks/useFileDownload'
 import { toast } from 'sonner'
 import {
     FileDown, FileUp, RotateCcw, Save,
@@ -25,9 +26,6 @@ import {
 import { TemplateSelector } from './TemplateSelector'
 import { Template } from '../data/templates'
 import { importConfiguration, downloadAsFile } from '../utils/configManager'
-import dockerComposeTemplate from '../../../docker-compose.yml?raw'
-import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'
-import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 
@@ -67,7 +65,6 @@ export function SetupWizard() {
         saveProfile, deleteProfile, loadProfile,
         hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
     } = useSetupStore()
-    const [copied, setCopied] = useState(false)
     const [shakeField, setShakeField] = useState<string | null>(null)
     const [showTemplates, setShowTemplates] = useState(false)
     const [showProfiles, setShowProfiles] = useState(false)
@@ -84,6 +81,9 @@ export function SetupWizard() {
 
     // Config generators for YAML files
     const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()
+
+    // File download and clipboard utilities
+    const { copied, copyToClipboard, downloadFile, downloadAllFiles, generateEnvFile } = useFileDownload()
 
     // Handle proactive suggestion actions
     const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {
@@ -382,37 +382,6 @@ export function SetupWizard() {
         dismissDraft()
         setShowDraftRecovery(false)
         setDraftInfo(null)
-    }
-
-    const generateEnvFile = () => buildEnvFile(config, selectedServices)
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
-
-    const downloadFile = (content: string, filename: string) => {
-        const blob = new Blob([content], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-    }
-
-    const downloadAllFiles = () => {
-        downloadFile(generateEnvFile(), '.env')
-        downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')
-        downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')
-        const compose =
-            config.deploymentMode === 'local'
-                ? dockerComposeLocalTemplate
-                : dockerComposeTemplate
-        downloadFile(compose, 'docker-compose.yml')
     }
 
     const handleShare = () => {

@@ -1,7 +1,7 @@
 {
   "spec_id": "003-refactor-wizard-ui-into-modular-components",
   "created_at": "2026-01-05T19:09:51.306057+00:00",
-  "updated_at": "2026-01-05T19:15:03.990229+00:00",
+  "updated_at": "2026-01-05T19:18:37.584008+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -931,6 +931,676 @@
           "tool_input": "git add -A && git commit -m \"auto-claude: 2.2 -...",
           "subtask_id": "2.2",
           "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:06.859569+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "2.2",
+          "session": 2,
+          "detail": "[auto-claude/003-refactor-wizard-ui-into-modular-components aa45900] auto-claude: 2.2 - Extract YAML/config generation logic (generateAutheliaYaml, generateCloudflareYaml) into useConfigGenerators hook\n 8 files changed, 766 insertions(+), 110 deletions(-)\n create mode 100644 .auto-claude/specs/003-refactor-wizard-ui-into-modular-components/memory/session_insights/session_001.json\n create mode 100644 docs-site/src/hooks/useConfigGenerators.ts",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:15:10.690142+00:00",
+          "type": "text",
+          "content": "Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:13.421672+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:13.509077+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "2.2",
+          "session": 2,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:15:17.040715+00:00",
+          "type": "text",
+          "content": "Let me update the build-progress file to document the completion:",
+          "phase": "coding",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:17.937721+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:18.026736+00:00",
+          "type": "tool_end",
+          "content": "[Read] Error: <tool_use_error>File does not exist.</tool_use_error>",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.2",
+          "session": 2,
+          "detail": "<tool_use_error>File does not exist.</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:15:25.779441+00:00",
+          "type": "tool_start",
+          "content": "[Write] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Write",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:25.855416+00:00",
+          "type": "tool_end",
+          "content": "[Write] Done",
+          "phase": "coding",
+          "tool_name": "Write",
+          "subtask_id": "2.2",
+          "session": 2,
+          "detail": "File created successfully at: ./.auto-claude/specs/003-refactor-wizard-ui-into-modular-components/build-progress.txt",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:15:30.432853+00:00",
+          "type": "text",
+          "content": "Let me verify the final implementation by checking the updated SetupWizard.tsx usage:",
+          "phase": "coding",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:31.432467+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:31.612680+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.2",
+          "session": 2,
+          "detail": "    82→    // Proactive suggestions based on current step and config\n    83→    const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)\n    84→\n    85→    // Config generators for YAML files\n    86→    const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()\n    87→\n    88→    // Handle proactive suggestion actions\n    89→    const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {\n    90→        suggestion.action()\n    91→        toast.success(`Applied: ${suggestion.text.replace('?', '')}`, {\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:15:43.158782+00:00",
+          "type": "text",
+          "content": "Perfect! The subtask is now complete. Here's a summary of what was accomplished:\n\n## ✅ Subtask 2.2 Complete - Extract YAML/Config Generation Logic\n\n### Changes Made:\n\n1. **Created `docs-site/src/hooks/useConfigGenerators.ts`**\n   - Extracted `generateAutheliaYaml` and `generateCloudflareYaml` functions from SetupWizard.tsx\n   - Hook reads `config` and `selectedServices` from the Zustand store via selectors\n   - Returns memoized generator functions with proper dependency tracking\n   - Includes comprehensive JSDoc documentation\n\n2. **Updated `docs-site/src/components/SetupWizard.tsx`**\n   - Added import for `useConfigGenerators` hook\n   - Replaced inline function definitions with hook usage\n   - Removed ~100 lines of inline YAML generation code\n   - Maintained same functionality, now with better organization\n\n3. **Key Benefits:**\n   - ✅ Follows the established pattern from `useWizardAnimations.ts`\n   - ✅ Proper memoization with dependency arrays (`config.domain`, `selectedServices`)\n   - ✅ Cleaner separation of concerns\n   - ✅ Easier to test and maintain\n   - ✅ Functions remain available to ReviewGenerateStep via props\n\n### Verification:\n- All references to the functions have been updated correctly\n- SetupWizard.tsx still passes the functions to ReviewGenerateStep as props\n- Code maintains exact same functionality with improved organization\n\n**Committed in:** aa45900",
+          "phase": "coding",
+          "subtask_id": "2.2",
+          "session": 2
+        },
+        {
+          "timestamp": "2026-01-05T19:15:57.156571+00:00",
+          "type": "text",
+          "content": "I'll help you implement subtask 2.3 - extracting file download and clipboard utilities into a dedicated hook. Let me start by reading the relevant files to understand the current implementation and patterns.",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:15:57.698788+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...actor-wizard-ui-into-modular-components/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...actor-wizard-ui-into-modular-components/spec.md",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:15:58.184778+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...nto-modular-components/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...nto-modular-components/implementation_plan.json",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:15:58.737628+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:15:58.929488+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "     1→# Refactor Wizard UI into Modular Components\n     2→\n     3→Break down the large monolithic SetupWizard.tsx component into smaller, reusable components with clear responsibilities. Implement proper state management boundaries and improve code organization.\n     4→\n     5→## Rationale\n     6→Technical debt identified in discovery. Large monolithic components make the codebase harder to maintain and test. Modular architecture enables faster feature development and easier onboarding for contributors.\n     7→\n     8→## User Stories\n     9→- As a contributor, I want modular wizard components so that I can add new features without understanding the entire codebase\n    10→\n    11→## Acceptance Criteria\n    12→- [ ] SetupWizard.tsx split into logical step components (ServiceSelection, StorageConfig, SecurityConfig, etc.)\n    13→- [ ] Each component has clear props interface and single responsibility\n    14→- [ ] Shared state managed through Zustand store slices\n    15→- [ ] Component structure documented for contributors\n    16→- [ ] No regression in existing functionality\n    17→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:05.396220+00:00",
+          "type": "text",
+          "content": "Now let me read the current SetupWizard.tsx to find the file download and clipboard utilities:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:06.574284+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: downloadFile|copyToClipboard|downloadAllFiles",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: downloadFile|copyToClipboard|downloadAllFiles",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:06.976664+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/hooks/useWizardAnimations.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/hooks/useWizardAnimations.ts",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:07.412961+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/hooks/useConfigGenerators.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/hooks/useConfigGenerators.ts",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:07.526530+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "     1→import { useMemo } from 'react'\n     2→import { useReducedMotion } from './useReducedMotion'\n     3→\n     4→/**\n     5→ * Animation variants for wizard components that respect reduced motion preferences.\n     6→ * Returns memoized variants for fade-in-up and scale-in animations.\n     7→ *\n     8→ * @returns Object containing fadeInUp and scaleIn animation variants\n     9→ */\n    10→export function useWizardAnimations() {\n    11→    const prefersReducedMotion = useReducedMotion()\n    12→\n    13→    const fadeInUp = useMemo(\n    14→        () => prefersReducedMotion\n    15→            ? { initial: {}, animate: {}, transition: { duration: 0 } }\n    16→            : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },\n    17→        [prefersReducedMotion]\n    18→    )\n    19→\n    20→    const scaleIn = useMemo(\n    21→        () => prefersReducedMotion\n    22→            ? { initial: {}, animate: {}, exit: {}, transition: { duration: 0 } }\n    23→            : { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 } },\n    24→        [prefersReducedMotion]\n    25→    )\n    26→\n    27→    return { fadeInUp, scaleIn }\n    28→}\n    29→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:14.742314+00:00",
+          "type": "text",
+          "content": "Now let me find where the `copied` state is defined:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:16.214571+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: const \\[copied|setCopied",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: const \\[copied|setCopied",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:16.831832+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "68-        hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft\n69-    } = useSetupStore()\n70:    const [copied, setCopied] = useState(false)\n71-    const [shakeField, setShakeField] = useState<string | null>(null)\n72-    const [showTemplates, setShowTemplates] = useState(false)\n--\n389-    const copyToClipboard = (text: string) => {\n390-        navigator.clipboard.writeText(text)\n391:        setCopied(true)\n392:        setTimeout(() => setCopied(false), 2000)\n393-    }\n394-",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:20.288281+00:00",
+          "type": "text",
+          "content": "Let me check the generateEnvFile function and buildEnvFile import:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:21.387550+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: buildEnvFile|generateEnvFile",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: buildEnvFile|generateEnvFile",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:22.004679+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "28-import dockerComposeTemplate from '../../../docker-compose.yml?raw'\n29-import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'\n30:import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'\n31-import { WelcomeStep } from './WelcomeStep'\n32-import { ServiceConfigStep } from './ServiceConfigStep'\n--\n385-    }\n386-\n387:    const generateEnvFile = () => buildEnvFile(config, selectedServices)\n388-\n389-    const copyToClipboard = (text: string) => {\n--\n406-\n407-    const downloadAllFiles = () => {\n408:        downloadFile(generateEnvFile(), '.env')\n409-        downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')\n410-        downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')\n--\n732-                                        selectedServices={selectedServices}\n733-                                        appliedTemplateId={appliedTemplateId}\n734:                                        generateEnvFile={generateEnvFile}\n735-                                        generateAutheliaYaml={generateAutheliaYaml}\n736-                                        generateCloudflareYaml={generateCloudflareYaml}",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:25.442338+00:00",
+          "type": "text",
+          "content": "Let me check the docker compose template imports to understand all dependencies:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:26.533476+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: dockerComposeTemplate|dockerComposeLocalTemplate",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: dockerComposeTemplate|dockerComposeLocalTemplate",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:27.264771+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "27-import { importConfiguration, downloadAsFile } from '../utils/configManager'\n28:import dockerComposeTemplate from '../../../docker-compose.yml?raw'\n29:import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'\n30-import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'\n--\n412-            config.deploymentMode === 'local'\n413:                ? dockerComposeLocalTemplate\n414:                : dockerComposeTemplate\n415-        downloadFile(compose, 'docker-compose.yml')",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:35.015709+00:00",
+          "type": "text",
+          "content": "Perfect! Now I have all the information I need. Let me create the `useFileDownload` hook:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:44.107705+00:00",
+          "type": "tool_start",
+          "content": "[Write] ./docs-site/src/hooks/useFileDownload.ts",
+          "phase": "coding",
+          "tool_name": "Write",
+          "tool_input": "./docs-site/src/hooks/useFileDownload.ts",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:44.999997+00:00",
+          "type": "tool_end",
+          "content": "[Write] Done",
+          "phase": "coding",
+          "tool_name": "Write",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "File created successfully at: ./docs-site/src/hooks/useFileDownload.ts",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:49.399459+00:00",
+          "type": "text",
+          "content": "Now let me update SetupWizard.tsx to use the new hook. First, let me read the relevant sections:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:49.981984+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:50.340841+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "     1→import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'\n     2→import { useForm } from 'react-hook-form'\n     3→import { zodResolver } from '@hookform/resolvers/zod'\n     4→import { motion, AnimatePresence } from 'motion/react'\n     5→import { useReducedMotion } from '../hooks/useReducedMotion'\n     6→import { useConfigGenerators } from '../hooks/useConfigGenerators'\n     7→import { toast } from 'sonner'\n     8→import {\n     9→    FileDown, FileUp, RotateCcw, Save,\n    10→    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2\n    11→} from 'lucide-react'\n    12→import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'\n    13→import type { VoicePlanSummary } from './VoiceCompanion'\n    14→\n    15→// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size\n    16→const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))\n    17→import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'\n    18→import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'\n    19→import {\n    20→    basicConfigSchema,\n    21→    advancedSettingsSchema,\n    22→    type BasicConfigFormData,\n    23→    type AdvancedSettingsFormData\n    24→} from '../schemas/setupSchema'\n    25→import { TemplateSelector } from './TemplateSelector'\n    26→import { Template } from '../data/templates'\n    27→import { importConfiguration, downloadAsFile } from '../utils/configManager'\n    28→import dockerComposeTemplate from '../../../docker-compose.yml?raw'\n    29→import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'\n    30→import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'\n    31→import { WelcomeStep } from './WelcomeStep'\n    32→import { ServiceConfigStep } from './ServiceConfigStep'\n    33→\n    34→import { Button } from './ui/button'\n    35→import { GlassCard } from './ui/glass-card'\n    36→import { services } from '../data/services'\n    37→\n    38→// New Step Components\n    39→import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'\n    40→import { StackSelectionStep } from './wizard/steps/StackSelectionStep'\n    41→import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'\n    42→import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'\n    43→import { QuickStartStep } from './wizard/steps/QuickStartStep'\n    44→import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'\n    45→import { WizardHeader } from './wizard/WizardHeader'\n    46→import { WizardProgressBar } from './wizard/WizardProgressBar'\n    47→import { WizardStepIndicator } from './wizard/WizardStepIndicator'\n    48→import { WizardNavigation } from './wizard/WizardNavigation'\n    49→\n    50→const steps = [\n    51→    { title: 'Welcome', icon: Sparkles },\n    52→    { title: 'Basic Config', icon: Settings },\n    53→    { title: 'Stack Selection', icon: Layers },\n    54→    { title: 'Service Config', icon: Server },\n    55→    { title: 'Advanced', icon: Key },\n    56→    { title: 'Review', icon: FileText }\n    57→]\n    58→\n    59→export function SetupWizard() {\n    60→    const {\n    61→        currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,\n    62→        quickStartMode,\n    63→        setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,\n    64→        updateStoragePath, setCurrentStep,\n    65→        nextStep, prevStep,\n    66→        loadTemplate, exportConfig, importConfig, resetWizard,\n    67→        saveProfile, deleteProfile, loadProfile,\n    68→        hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft\n    69→    } = useSetupStore()\n    70→    const [copied, setCopied] = useState(false)\n    71→    const [shakeField, setShakeField] = useState<string | null>(null)\n    72→    const [showTemplates, setShowTemplates] = useState(false)\n    73→    const [showProfiles, setShowProfiles] = useState(false)\n    74→    const [newProfileName, setNewProfileName] = useState('')\n    75→    const [showVoiceCompanion, setShowVoiceCompanion] = useState(false)\n    76→    const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)\n    77→    const [toolsOpen, setToolsOpen] = useState(false)\n    78→\n    79→    // Accessibility: Respect user's reduced motion preference\n    80→    const prefersReducedMotion = useReducedMotion()\n    81→\n    82→    // Proactive suggestions based on current step and config\n    83→    const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)\n    84→\n    85→    // Config generators for YAML files\n    86→    const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()\n    87→\n    88→    // Handle proactive suggestion actions\n    89→    const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {\n    90→        suggestion.action()\n    91→        toast.success(`Applied: ${suggestion.text.replace('?', '')}`, {\n    92→            description: suggestion.description\n    93→        })\n    94→    }, [])\n    95→\n    96→    // Animation variants that respect reduced motion\n    97→    const fadeInUp = useMemo(() => prefersReducedMotion\n    98→        ? { initial: {}, animate: {}, transition: { duration: 0 } }\n    99→        : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },\n   100→        [prefersReducedMotion]\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:16:54.670921+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:16:55.065008+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "   380→\n   381→    const handleDismissDraft = () => {\n   382→        dismissDraft()\n   383→        setShowDraftRecovery(false)\n   384→        setDraftInfo(null)\n   385→    }\n   386→\n   387→    const generateEnvFile = () => buildEnvFile(config, selectedServices)\n   388→\n   389→    const copyToClipboard = (text: string) => {\n   390→        navigator.clipboard.writeText(text)\n   391→        setCopied(true)\n   392→        setTimeout(() => setCopied(false), 2000)\n   393→    }\n   394→\n   395→    const downloadFile = (content: string, filename: string) => {\n   396→        const blob = new Blob([content], { type: 'text/plain' })\n   397→        const url = URL.createObjectURL(blob)\n   398→        const a = document.createElement('a')\n   399→        a.href = url\n   400→        a.download = filename\n   401→        document.body.appendChild(a)\n   402→        a.click()\n   403→        document.body.removeChild(a)\n   404→        URL.revokeObjectURL(url)\n   405→    }\n   406→\n   407→    const downloadAllFiles = () => {\n   408→        downloadFile(generateEnvFile(), '.env')\n   409→        downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')\n   410→        downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')\n   411→        const compose =\n   412→            config.deploymentMode === 'local'\n   413→                ? dockerComposeLocalTemplate\n   414→                : dockerComposeTemplate\n   415→        downloadFile(compose, 'docker-compose.yml')\n   416→    }\n   417→\n   418→    const handleShare = () => {\n   419→        const data = { mode, selectedServices, config }\n   420→        const encoded = btoa(JSON.stringify(data))\n   421→        const url = `${window.location.origin}${window.location.pathname}?config=${encoded}`\n   422→        navigator.clipboard\n   423→            .writeText(url)\n   424→            .then(() => {\n   425→                toast.success('Share link copied to clipboard!')\n   426→            })\n   427→            .catch((err) => {\n   428→                console.error('SetupWizard: failed to copy share link', err)\n   429→                toast.error('Failed to copy share link')\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:17:01.209401+00:00",
+          "type": "text",
+          "content": "Now I'll update SetupWizard.tsx to use the new hook. Let me make the necessary changes:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:03.028415+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:05.816190+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:08.443214+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:10.819222+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:15.149571+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:15.234484+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "The file ./docs-site/src/components/SetupWizard.tsx has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n     1→import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'\n     2→import { useForm } from 'react-hook-form'\n     3→import { zodResolver } from '@hookform/resolvers/zod'\n     4→import { motion, AnimatePresence } from 'motion/react'\n     5→import { useReducedMotion } from '../hooks/useReducedMotion'\n     6→import { useConfigGenerators } from '../hooks/useConfigGenerators'\n     7→import { useFileDownload } from '../hooks/useFileDownload'\n     8→import { toast } from 'sonner'\n     9→import {\n    10→    FileDown, FileUp, RotateCcw, Save,\n    11→    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2\n    12→} from 'lucide-react'",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:17:20.608575+00:00",
+          "type": "text",
+          "content": "Perfect! Now let me verify that the code compiles correctly:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:21.567049+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd docs-site && npm run build",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd docs-site && npm run build",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:21.642158+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Error: Command 'npm' is not in the allowed commands for this project",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "Command 'npm' is not in the allowed commands for this project",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:17:37.515513+00:00",
+          "type": "text",
+          "content": "Let me verify the changes by checking the ReviewGenerateStep component to ensure it matches the new hook interface:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:39.022977+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: copyToClipboard|downloadFile|downloadAllFiles|generateEnvFile",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: copyToClipboard|downloadFile|downloadAllFiles|generateEnvFile",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:40.213544+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: interface.*Props|type.*Props",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: interface.*Props|type.*Props",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:41.282424+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "Found 1 file\ndocs-site/src/components/wizard/steps/ReviewGenerateStep.tsx",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:17:52.252314+00:00",
+          "type": "text",
+          "content": "Let me verify that SetupWizard is passing the props correctly to ReviewGenerateStep:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:53.536691+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: ReviewGenerateStep",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: ReviewGenerateStep",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:17:54.106648+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "38-import { StackSelectionStep } from './wizard/steps/StackSelectionStep'\n39-import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'\n40:import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'\n41-import { QuickStartStep } from './wizard/steps/QuickStartStep'\n42-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'\n43-import { WizardHeader } from './wizard/WizardHeader'\n44-import { WizardProgressBar } from './wizard/WizardProgressBar'\n45-import { WizardStepIndicator } from './wizard/WizardStepIndicator'\n46-import { WizardNavigation } from './wizard/WizardNavigation'\n47-\n48-const steps = [\n49-    { title: 'Welcome', icon: Sparkles },\n50-    { title: 'Basic Config', icon: Settings },\n51-    { title: 'Stack Selection', icon: Layers },\n52-    { title: 'Service Config', icon: Server },\n53-    { title: 'Advanced', icon: Key },\n54-    { title: 'Review', icon: FileText }\n55-]\n--\n696-                                {/* Step 5: Review & Generate */}\n697-                                {currentStep === 5 && (\n698:                                    <ReviewGenerateStep\n699-                                        config={config}\n700-                                        mode={mode}\n701-                                        selectedServices={selectedServices}\n702-                                        appliedTemplateId={appliedTemplateId}\n703-                                        generateEnvFile={generateEnvFile}\n704-                                        generateAutheliaYaml={generateAutheliaYaml}\n705-                                        generateCloudflareYaml={generateCloudflareYaml}\n706-                                        copyToClipboard={copyToClipboard}\n707-                                        downloadFile={downloadFile}\n708-                                        downloadAllFiles={downloadAllFiles}\n709-                                        handleShare={handleShare}\n710-                                        copied={copied}\n711-                                    />\n712-                                )}\n713-                            </AnimatePresence>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:18:05.075967+00:00",
+          "type": "text",
+          "content": "Let me make sure there are no other references to these functions in the file:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:06.125642+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: const \\[.*copied|setCopied|const.*generateEnvFile|const.*downloadFile|const.*copyToClipb...",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: const \\[.*copied|setCopied|const.*generateEnvFile|const.*downloadFile|const.*copyToClipb...",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:06.758271+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "86:    const { copied, copyToClipboard, downloadFile, downloadAllFiles, generateEnvFile } = useFileDownload()",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:18:17.173665+00:00",
+          "type": "text",
+          "content": "Perfect! Now let me verify the final state of the code and commit the changes:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:17.545568+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/hooks/useFileDownload.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/hooks/useFileDownload.ts",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:17.694925+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "     1→import { useState, useCallback } from 'react'\n     2→import { useSetupStore } from '../store/setupStore'\n     3→import { useConfigGenerators } from './useConfigGenerators'\n     4→import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'\n     5→import dockerComposeTemplate from '../../../docker-compose.yml?raw'\n     6→import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'\n     7→\n     8→/**\n     9→ * Hook that provides file download and clipboard utilities for the wizard.\n    10→ * Handles downloading configuration files and copying text to clipboard.\n    11→ *\n    12→ * @returns Object containing download/clipboard functions and copied state\n    13→ */\n    14→export function useFileDownload() {\n    15→    const config = useSetupStore((state) => state.config)\n    16→    const selectedServices = useSetupStore((state) => state.selectedServices)\n    17→    const [copied, setCopied] = useState(false)\n    18→\n    19→    const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()\n    20→\n    21→    /**\n    22→     * Copies text to clipboard and shows feedback for 2 seconds\n    23→     */\n    24→    const copyToClipboard = useCallback((text: string) => {\n    25→        navigator.clipboard.writeText(text)\n    26→        setCopied(true)\n    27→        setTimeout(() => setCopied(false), 2000)\n    28→    }, [])\n    29→\n    30→    /**\n    31→     * Downloads content as a file with the specified filename\n    32→     */\n    33→    const downloadFile = useCallback((content: string, filename: string) => {\n    34→        const blob = new Blob([content], { type: 'text/plain' })\n    35→        const url = URL.createObjectURL(blob)\n    36→        const a = document.createElement('a')\n    37→        a.href = url\n    38→        a.download = filename\n    39→        document.body.appendChild(a)\n    40→        a.click()\n    41→        document.body.removeChild(a)\n    42→        URL.revokeObjectURL(url)\n    43→    }, [])\n    44→\n    45→    /**\n    46→     * Generates the .env file content\n    47→     */\n    48→    const generateEnvFile = useCallback(\n    49→        () => buildEnvFile(config, selectedServices),\n    50→        [config, selectedServices]\n    51→    )\n    52→\n    53→    /**\n    54→     * Downloads all configuration files (.env, authelia, cloudflare, docker-compose)\n    55→     */\n    56→    const downloadAllFiles = useCallback(() => {\n    57→        downloadFile(generateEnvFile(), '.env')\n    58→        downloadFile(generateAutheliaYaml(), 'authelia-configuration.yml')\n    59→        downloadFile(generateCloudflareYaml(), 'cloudflare-config.yml')\n    60→        const compose =\n    61→            config.deploymentMode === 'local'\n    62→                ? dockerComposeLocalTemplate\n    63→                : dockerComposeTemplate\n    64→        downloadFile(compose, 'docker-compose.yml')\n    65→    }, [\n    66→        downloadFile,\n    67→        generateEnvFile,\n    68→        generateAutheliaYaml,\n    69→        generateCloudflareYaml,\n    70→        config.deploymentMode\n    71→    ])\n    72→\n    73→    return {\n    74→        copied,\n    75→        copyToClipboard,\n    76→        downloadFile,\n    77→        downloadAllFiles,\n    78→        generateEnvFile\n    79→    }\n    80→}\n    81→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:18:23.523934+00:00",
+          "type": "text",
+          "content": "Let me verify the imports in SetupWizard.tsx are correct:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:24.525769+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/components/SetupWizard.tsx",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/components/SetupWizard.tsx",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:24.757184+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "2.3",
+          "session": 3,
+          "detail": "     1→import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'\n     2→import { useForm } from 'react-hook-form'\n     3→import { zodResolver } from '@hookform/resolvers/zod'\n     4→import { motion, AnimatePresence } from 'motion/react'\n     5→import { useReducedMotion } from '../hooks/useReducedMotion'\n     6→import { useConfigGenerators } from '../hooks/useConfigGenerators'\n     7→import { useFileDownload } from '../hooks/useFileDownload'\n     8→import { toast } from 'sonner'\n     9→import {\n    10→    FileDown, FileUp, RotateCcw, Save,\n    11→    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2\n    12→} from 'lucide-react'\n    13→import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'\n    14→import type { VoicePlanSummary } from './VoiceCompanion'\n    15→\n    16→// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size\n    17→const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))\n    18→import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'\n    19→import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'\n    20→import {\n    21→    basicConfigSchema,\n    22→    advancedSettingsSchema,\n    23→    type BasicConfigFormData,\n    24→    type AdvancedSettingsFormData\n    25→} from '../schemas/setupSchema'\n    26→import { TemplateSelector } from './TemplateSelector'\n    27→import { Template } from '../data/templates'\n    28→import { importConfiguration, downloadAsFile } from '../utils/configManager'\n    29→import { WelcomeStep } from './WelcomeStep'\n    30→import { ServiceConfigStep } from './ServiceConfigStep'\n    31→\n    32→import { Button } from './ui/button'\n    33→import { GlassCard } from './ui/glass-card'\n    34→import { services } from '../data/services'\n    35→\n    36→// New Step Components\n    37→import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'\n    38→import { StackSelectionStep } from './wizard/steps/StackSelectionStep'\n    39→import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'\n    40→import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'\n    41→import { QuickStartStep } from './wizard/steps/QuickStartStep'\n    42→import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'\n    43→import { WizardHeader } from './wizard/WizardHeader'\n    44→import { WizardProgressBar } from './wizard/WizardProgressBar'\n    45→import { WizardStepIndicator } from './wizard/WizardStepIndicator'\n    46→import { WizardNavigation } from './wizard/WizardNavigation'\n    47→\n    48→const steps = [\n    49→    { title: 'Welcome', icon: Sparkles },\n    50→    { title: 'Basic Config', icon: Settings },\n    51→    { title: 'Stack Selection', icon: Layers },\n    52→    { title: 'Service Config', icon: Server },\n    53→    { title: 'Advanced', icon: Key },\n    54→    { title: 'Review', icon: FileText }\n    55→]\n    56→\n    57→export function SetupWizard() {\n    58→    const {\n    59→        currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,\n    60→        quickStartMode,\n    61→        setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,\n    62→        updateStoragePath, setCurrentStep,\n    63→        nextStep, prevStep,\n    64→        loadTemplate, exportConfig, importConfig, resetWizard,\n    65→        saveProfile, deleteProfile, loadProfile,\n    66→        hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft\n    67→    } = useSetupStore()\n    68→    const [shakeField, setShakeField] = useState<string | null>(null)\n    69→    const [showTemplates, setShowTemplates] = useState(false)\n    70→    const [showProfiles, setShowProfiles] = useState(false)\n    71→    const [newProfileName, setNewProfileName] = useState('')\n    72→    const [showVoiceCompanion, setShowVoiceCompanion] = useState(false)\n    73→    const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)\n    74→    const [toolsOpen, setToolsOpen] = useState(false)\n    75→\n    76→    // Accessibility: Respect user's reduced motion preference\n    77→    const prefersReducedMotion = useReducedMotion()\n    78→\n    79→    // Proactive suggestions based on current step and config\n    80→    const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)\n    81→\n    82→    // Config generators for YAML files\n    83→    const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()\n    84→\n    85→    // File download and clipboard utilities\n    86→    const { copied, copyToClipboard, downloadFile, downloadAllFiles, generateEnvFile } = useFileDownload()\n    87→\n    88→    // Handle proactive suggestion actions\n    89→    const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {\n    90→        suggestion.action()\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:18:31.672015+00:00",
+          "type": "text",
+          "content": "Excellent! The changes look good. Now let me commit them:",
+          "phase": "coding",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:32.518600+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git add -A",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git add -A",
+          "subtask_id": "2.3",
+          "session": 3
+        },
+        {
+          "timestamp": "2026-01-05T19:18:37.583970+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git commit -m \"auto-claude: 2.3 - Extract file ...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git commit -m \"auto-claude: 2.3 - Extract file ...",
+          "subtask_id": "2.3",
+          "session": 3
         }
       ]
     },
