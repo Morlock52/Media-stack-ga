@@ -1,7 +1,7 @@
 {
   "spec_id": "003-refactor-wizard-ui-into-modular-components",
   "created_at": "2026-01-05T19:09:51.306057+00:00",
-  "updated_at": "2026-01-05T20:08:13.904860+00:00",
+  "updated_at": "2026-01-05T20:08:45.687197+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -9374,6 +9374,96 @@
           "phase": "coding",
           "tool_name": "Bash",
           "tool_input": "git commit -m \"auto-claude: 5.2 - Add JSDoc com...",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:15.383551+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:20.487234+00:00",
+          "type": "text",
+          "content": "Excellent! Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:22.904706+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:23.002888+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "5.2",
+          "session": 17,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:26.677556+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:26.893694+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "     1→# Build Progress - Refactor Wizard UI into Modular Components\n     2→\n     3→## Completed Subtasks\n     4→\n     5→### Phase 2: Extract Hooks and Utilities\n     6→\n     7→#### 2.2 - Extract YAML/config generation logic ✅\n     8→- Created `docs-site/src/hooks/useConfigGenerators.ts`\n     9→- Extracted `generateAutheliaYaml` and `generateCloudflareYaml` functions\n    10→- Hook reads config and selectedServices from store via selectors\n    11→- Returns memoized generator functions with proper dependency tracking\n    12→- Updated SetupWizard.tsx to use the new hook\n    13→- Committed in aa45900\n    14→\n    15→#### 2.3 - Extract file download and clipboard utilities ✅\n    16→- Created `docs-site/src/hooks/useFileDownload.ts`\n    17→- Extracted `copyToClipboard`, `downloadFile`, `downloadAllFiles`, and `generateEnvFile` functions\n    18→- Hook manages `copied` state internally with 2-second timeout for user feedback\n    19→- All functions properly memoized with useCallback and correct dependencies\n    20→- Updated SetupWizard.tsx to use the new hook\n    21→- Removed inline implementations and unused imports (dockerComposeTemplate, dockerComposeLocalTemplate, buildEnvFile)\n    22→- Committed in 3220c06\n    23→\n    24→#### 2.4 - Extract form validation and step navigation logic ✅\n    25→- Created `docs-site/src/hooks/useWizardValidation.ts`\n    26→- Extracted `handleNextStep` logic including form validation, error scrolling, and toast messages\n    27→- Hook handles validation for Basic Config (step 1) and Advanced Settings (step 4) forms\n    28→- Manages `shakeField` state for error field shake animations\n    29→- Includes `scrollToElement` and `scrollToFirstError` helper functions\n    30→- Updated SetupWizard.tsx to use the new hook\n    31→- Removed inline handleNextStep function and helper functions (~70 lines)\n    32→- Follows established pattern from useConfigGenerators and useFileDownload hooks\n    33→- Committed in 176330f\n    34→\n    35→#### 2.5 - Extract voice plan application logic ✅\n    36→- Created `docs-site/src/hooks/useVoicePlanHandler.ts`\n    37→- Extracted `handleApplyVoicePlan` function that applies voice companion suggestions to wizard state\n    38→- Hook handles applying services, domain, and storage paths from AI-generated voice plans\n    39→- Provides undo support via toast action button\n    40→- Includes automatic navigation to Stack Selection step after applying plan\n    41→- Updated SetupWizard.tsx to use the new hook with onClose callback support\n    42→- Removed inline handleApplyVoicePlan function (~50 lines)\n    43→- Cleaned up unused imports: setSelectedServices, setCurrentStep, updateServiceConfig, updateStoragePath, VoicePlanSummary type\n    44→- Follows established pattern with proper JSDoc documentation and store selectors\n    45→- Committed in 071c6fb\n    46→\n    47→### Phase 3: Extract Modal Components\n    48→\n    49→#### 3.1 - Create DraftRecoveryModal component ✅\n    50→- Created `docs-site/src/components/wizard/DraftRecoveryModal.tsx`\n    51→- Extracted the auto-save draft recovery modal from SetupWizard.tsx\n    52→- Component accepts `isOpen`, `draftInfo`, `onRestore`, and `onDismiss` as props\n    53→- Uses AnimatePresence internally for smooth enter/exit animations\n    54→- Modal displays draft metadata (savedAt timestamp and service count)\n    55→- Provides Resume/Start Fresh action buttons\n    56→- Added to barrel export at `docs-site/src/components/wizard/index.ts`\n    57→- Removed 57 lines of inline JSX from SetupWizard.tsx\n    58→- Cleaned up unused Save icon import from SetupWizard.tsx\n    59→- Follows established component patterns with TypeScript interfaces and JSDoc\n    60→- Committed in fb48ad8\n    61→\n    62→#### 3.2 - Create ProfilesPanel component ✅\n    63→- Created `docs-site/src/components/wizard/ProfilesPanel.tsx`\n    64→- Extracted saved profiles panel/modal from SetupWizard.tsx\n    65→- Component manages saved profiles with save, load, and delete functionality\n    66→- Reads savedProfiles directly from store via selectors\n    67→- Reduced SetupWizard.tsx by ~70 lines of inline JSX\n    68→- Added to barrel export at `docs-site/src/components/wizard/index.ts`\n    69→- Committed in a460a97\n    70→\n    71→#### 3.3 - Create ToolsDialog component ✅\n    72→- Created `docs-site/src/components/wizard/ToolsDialog.tsx`\n    73→- Extracted the tools dialog (import/export/templates) from SetupWizard.tsx\n    74→- Component wraps Dialog UI primitive and provides interface for template browsing, config export, and config import\n    75→- Reduced SetupWizard.tsx by ~50 lines of inline JSX\n    76→- Removed unused FileDown and FileUp icon imports from SetupWizard.tsx\n    77→- Added to barrel export\n    78→- Committed in 05d836c\n    79→\n    80→#### 3.4 - Create VoiceCompanionTrigger component ✅\n    81→- Created `docs-site/src/components/wizard/VoiceCompanionTrigger.tsx`\n    82→- Extracted floating voice companion button from SetupWizard.tsx\n    83→- Component uses useWizardAnimations hook for scaleIn animation with reduced motion support\n    84→- Removed unused animation variant definitions and related imports from SetupWizard.tsx\n    85→- Added to barrel export\n    86→- Committed in 8aeb03f\n    87→\n    88→### Phase 4: Refactor Large Step Components\n    89→\n    90→#### 4.1 - Extract ConfigSummaryCard component ✅\n    91→- Created `docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx`\n    92→- Extracted configuration summary grid from ReviewGenerateStep.tsx\n    93→- Displays deployment mode, domain, timezone, wizard mode, and service count\n    94→- Reduced ReviewGenerateStep by ~30 lines of inline JSX\n    95→- Follows established patterns with proper TypeScript interfaces and JSDoc\n    96→- Committed in 5313f73\n    97→\n    98→#### 4.2 - Extract StorageLayoutCard component ✅\n    99→- Created `docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx`\n   100→- Extracted storage layout summary from ReviewGenerateStep.tsx\n   101→- Displays storage paths for selected services with category labels and optional \"Network share\" badge\n   102→- Reduced ReviewGenerateStep by ~13 lines of inline JSX\n   103→- Follows established patterns from ConfigSummaryCard with proper TypeScript interfaces and JSDoc\n   104→- Committed in 39c6d77\n   105→\n   106→#### 4.3 - Extract LocalAccessGuide component ✅\n   107→- Created `docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx`\n   108→- Extracted local mode access guide table from ReviewGenerateStep.tsx\n   109→- Component includes server IP/hostname input with quick-select buttons (localhost, LAN IP)\n   110→- App URL table with filtering based on selected services\n   111→- Automatic LAN IPv4 detection via controlServer.getNetworkInfo()\n   112→- localStorage persistence for access host preference\n   113→- Reduced ReviewGenerateStep from ~1100 lines to 864 lines\n   114→- Exported helper functions (buildLocalHttpUrl, isLoopbackHost, LOCAL_ACCESS_APPS) for reuse in deploy modal\n   115→- Follows established patterns with proper TypeScript interfaces and JSDoc\n   116→- Committed in 15c318a\n   117→\n   118→#### 4.4 - Extract LocalDeployModal component ✅\n   119→- Created `docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx`\n   120→- Extracted local deployment modal from ReviewGenerateStep.tsx\n   121→- Component handles all three deployment states (idle, deploying, success)\n   122→- Includes bootstrap API key extraction functionality with reveal/copy/validation UI\n   123→- Shows container status after successful deployment\n   124→- Displays access URLs with LAN IP detection\n   125→- Provides error handling with manual deployment fallback\n   126→- Reduced ReviewGenerateStep from 864 lines to 228 lines (~636 line reduction)\n   127→- Component follows established patterns from DraftRecoveryModal with AnimatePresence wrapper\n   128→- Proper TypeScript interfaces and JSDoc documentation\n   129→- Committed in 3618fa2\n   130→\n   131→#### 4.5 - Extract BootstrapKeysPanel component ✅\n   132→- Created `docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx`\n   133→- Extracted API key bootstrap panel from LocalDeployModal.tsx\n   134→- Component includes API key extraction button, polling progress, reveal/copy functionality for keys, and validation status display\n   135→- Reduced LocalDeployModal from 682 lines to 379 lines (~303 line reduction)\n   136→- Follows established patterns with proper TypeScript interfaces and JSDoc\n   137→- Committed in b35039f\n   138→\n   139→#### 4.6 - Refactor StackSelectionStep to use store directly ✅\n   140→- Updated `docs-site/src/components/wizard/steps/StackSelectionStep.tsx` to read from store instead of receiving props\n   141→- Component now uses `useSetupStore()` hook to access mode, setMode, selectedServices, and toggleService\n   142→- Removed props interface (StackSelectionStepProps) and all prop drilling\n   143→- Imports `services` array directly from data/services.ts\n   144→- Updated SetupWizard.tsx to call `<StackSelectionStep />` without props\n   145→- Removed unused destructured values (setMode, toggleService) from SetupWizard.tsx\n   146→- Follows pattern established by QuickStartStep and BasicConfigurationStep\n   147→\n   148→## Summary\n   149→Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), and Phase 4 (Refactor Large Step Components).\n   150→\n   151→Phase 4 Status: All subtasks completed! Extracted ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, LocalDeployModal, and BootstrapKeysPanel. Refactored StackSelectionStep to use store directly. ReviewGenerateStep.tsx reduced from ~1100 lines to 228 lines (872 line reduction). LocalDeployModal reduced by 303 lines.\n   152→\n   153→Total reduction in SetupWizard.tsx: ~400+ lines\n   154→Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)\n   155→Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)\n   156→\n   157→### Phase 5: Store Improvements\n   158→\n   159→#### 5.1 - Add computed selectors to store ✅\n   160→- Added 11 selector hooks to `docs-site/src/store/setupStore.ts` for commonly accessed derived state\n   161→- Selector f\n\n... [truncated - full output was 12619 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:41.461509+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:41.537103+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "The file ./.auto-claude/specs/003-refactor-wizard-ui-into-modular-components/build-progress.txt has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   174→- Selectors leverage Zustand's built-in memoization for optimal performance\n   175→- Ready for component refactoring to use these selectors instead of inline state access\n   176→- Committed in cd50831\n   177→\n   178→#### 5.2 - Document store slices ✅\n   179→- Added comprehensive JSDoc documentation to `docs-site/src/store/setupStore.ts`\n   180→- Added main JSDoc comment at the SetupStore interface level explaining the overall organization\n   181→- Organized the store into 10 logical slices with clear section headers:\n   182→  1. Wizard Navigation State: Step tracking and flow control\n   183→  2. Mode & Configuration State: User preferences and config data\n   184→  3. Navigation Actions: Step movement and wizard flow\n   185→  4. Service Selection Actions: Managing selected services\n   186→  5. Configuration Actions: Updating config and service-specific settings\n   187→  6. Storage Management Actions: Controlling storage paths and modes\n   188→  7. Wizard Control Actions: Reset and initialization\n   189→  8. Template & Import/Export Actions: Config sharing and templates\n   190→  9. Profile Management: Named config presets\n   191→  10. Auto-Save Draft: Automatic draft recovery\n   192→- Each property and method now has clear JSDoc comments explaining its purpose\n   193→- Improves contributor clarity and code maintainability\n   194→- Committed in 1e48beb\n   195→\n   196→## Summary\n   197→Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), and Phase 5 (Store Improvements).\n   198→\n   199→Phase 5 Status: All subtasks completed! Added computed selectors (5.1) and comprehensive JSDoc documentation for all store slices (5.2).\n   200→\n   201→Total reduction in SetupWizard.tsx: ~400+ lines\n   202→Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)\n   203→Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)\n   204→\n   205→Next: Phase 6 - Integration and Cleanup.\n   206→",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:45.687167+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git add -A && git commit -m \"auto-claude: Updat...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git add -A && git commit -m \"auto-claude: Updat...",
           "subtask_id": "5.2",
           "session": 17
         }

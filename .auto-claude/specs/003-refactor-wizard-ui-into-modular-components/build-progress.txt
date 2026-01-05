@@ -175,13 +175,31 @@ Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
 - Ready for component refactoring to use these selectors instead of inline state access
 - Committed in cd50831
 
-## Summary
-Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), and started Phase 5 (Store Improvements).
+#### 5.2 - Document store slices ✅
+- Added comprehensive JSDoc documentation to `docs-site/src/store/setupStore.ts`
+- Added main JSDoc comment at the SetupStore interface level explaining the overall organization
+- Organized the store into 10 logical slices with clear section headers:
+  1. Wizard Navigation State: Step tracking and flow control
+  2. Mode & Configuration State: User preferences and config data
+  3. Navigation Actions: Step movement and wizard flow
+  4. Service Selection Actions: Managing selected services
+  5. Configuration Actions: Updating config and service-specific settings
+  6. Storage Management Actions: Controlling storage paths and modes
+  7. Wizard Control Actions: Reset and initialization
+  8. Template & Import/Export Actions: Config sharing and templates
+  9. Profile Management: Named config presets
+  10. Auto-Save Draft: Automatic draft recovery
+- Each property and method now has clear JSDoc comments explaining its purpose
+- Improves contributor clarity and code maintainability
+- Committed in 1e48beb
 
-Phase 5 Status: Subtask 5.1 completed (computed selectors). Next: Subtask 5.2 (document store slices).
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), and Phase 5 (Store Improvements).
+
+Phase 5 Status: All subtasks completed! Added computed selectors (5.1) and comprehensive JSDoc documentation for all store slices (5.2).
 
 Total reduction in SetupWizard.tsx: ~400+ lines
 Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
 Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
 
-Next: Phase 5.2 - Document store slices with JSDoc comments.
+Next: Phase 6 - Integration and Cleanup.
