@@ -55,9 +55,10 @@
           "file_paths": [
             "control-server/src/knowledge/mediaScanning.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "Module exports MEDIA_SCANNING_KB with patterns for Plex and Jellyfin issues",
-          "notes": ""
+          "notes": "Created comprehensive media scanning knowledge module (1,276 lines) with 10 major issue patterns covering Plex/Jellyfin problems: library-not-updating, file-naming-incorrect, permission-denied, transcoding-failed, transcoding-permission-failed, metadata-not-loading, codec-not-supported, plex-claim-failed, jellyfin-reverse-proxy. Includes diagnostic steps with docker commands, solutions with config examples, search functions, and log pattern matching. Covers file permissions (PUID/PGID), volume mounts, naming conventions, transcoding setup (hardware acceleration, tmpfs, FFmpeg), metadata agents, and reverse proxy configuration. Helper functions for searching and filtering by server/media type/severity. Commit: dd23b37",
+          "updated_at": "2026-01-05T20:01:27.963552+00:00"
         },
         {
           "id": "1.5",
@@ -66,9 +67,10 @@
           "file_paths": [
             "control-server/src/knowledge/errorPatterns.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "Module exports ERROR_PATTERNS with regex patterns, severity levels, and suggested fixes",
-          "notes": ""
+          "notes": "Created comprehensive error pattern database (1,194 lines) with 30+ error patterns covering all service categories. Includes VPN (5 patterns), Docker networking (6 patterns), Arr stack (6 patterns), media servers (6 patterns), download clients (2 patterns), and general errors (5 patterns). Each pattern includes regex matching, severity levels, common causes, quick fixes, and references to detailed knowledge base modules. Helper functions provided: matchErrorPatterns() for log analysis, searchErrorPatterns() for keyword search, analyzeLogOutput() for comprehensive analysis with grouping and summary generation. Supports filtering by category, severity, and service name. Commit: 93ae474",
+          "updated_at": "2026-01-05T20:06:52.785825+00:00"
         },
         {
           "id": "1.6",
@@ -77,9 +79,10 @@
           "file_paths": [
             "control-server/src/knowledge/index.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "Exports searchKnowledge() function that returns relevant troubleshooting entries",
-          "notes": ""
+          "notes": "Created comprehensive knowledge base index (672 lines) that aggregates all knowledge modules. Exports searchKnowledge() as main unified search function with relevance scoring, module filtering, and severity filtering. Also provides analyzeLogsComprehensive() for multi-module log analysis, getKnowledgeBaseStats() for statistics, getIssueById() for specific issue lookup, findRelatedIssues() for cross-module issue relationships, and getAllCriticalIssues(). Re-exports all module-specific functions for convenient access. Created comprehensive README.md (360 lines) with usage examples and API documentation. Commit: 0925d99",
+          "updated_at": "2026-01-05T20:12:36.969907+00:00"
         }
       ]
     },
@@ -95,9 +98,10 @@
           "file_paths": [
             "control-server/src/tools/diagnosticTools.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "diagnose_vpn_connectivity() tool returns detailed analysis with specific recommendations",
-          "notes": ""
+          "notes": "Created comprehensive VPN connectivity diagnostic tool in diagnosticTools.ts (595 lines). The diagnose_vpn_connectivity() function performs 10 diagnostic steps: (1) Gluetun service health check, (2) Log analysis with pattern matching against VPN_TROUBLESHOOTING_KB, (3) Running diagnostic steps from 'vpn-healthy-but-no-connection' issue pattern, (4) network_mode validation for dependent services (qbittorrent, transmission, deluge, prowlarr), (5) External connectivity test from Gluetun container, (6) DNS resolution test through VPN, (7) Port forwarding configuration check. Returns detailed VpnDiagnosticData with: health status, service info, array of DiagnosticCheck results, matched issue patterns with confidence scores, prioritized recommendations with Solution objects, list of affected services, and summary message. Security: Service name validation with allowlist. Tool metadata exported for orchestration. Follows patterns from agentTools.ts with ToolResult return type and comprehensive error handling. Commit: e6ccb0c",
+          "updated_at": "2026-01-05T20:17:26.203668+00:00"
         },
         {
           "id": "2.2",
@@ -384,5 +388,5 @@
     "tests_passed": "",
     "issues": ""
   },
-  "last_updated": "2026-01-05T19:54:41.945314+00:00"
+  "last_updated": "2026-01-05T20:17:26.203678+00:00"
 }

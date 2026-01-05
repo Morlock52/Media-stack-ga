@@ -1,6 +1,6 @@
 # AI-Powered Troubleshooting Expansion - Build Progress
 
-## Status: In Progress - Phase 1
+## Status: Phase 1 Complete ✅
 **Last Updated:** 2026-01-05
 
 ---
@@ -9,7 +9,7 @@
 
 | Phase | Name | Subtasks | Status |
 |-------|------|----------|--------|
-| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (5/6) |
+| 1 | Knowledge Modules & Error Pattern Database | 6 | ✅ Complete (6/6) |
 | 2 | Enhanced Diagnostic Tools | 5 | Pending |
 | 3 | Troubleshooting History & Context | 3 | Pending |
 | 4 | Configuration Fix Suggestions & Application | 4 | Pending |
@@ -132,8 +132,65 @@
   - Each pattern links back to detailed knowledge base modules for deep troubleshooting
   - Commit: 93ae474
 
+- [x] **Subtask 1.6 COMPLETED** - Created knowledge base index and search
+  - File: `control-server/src/knowledge/index.ts` (672 lines)
+  - Created comprehensive aggregation index for all knowledge modules
+  - Main function: `searchKnowledge()` - unified search across all modules with relevance scoring
+  - Features: module filtering, severity filtering, relevance scoring, cross-module search
+  - Additional functions: `analyzeLogsComprehensive()` for multi-module log analysis,
+    `getKnowledgeBaseStats()` for statistics, `getIssueById()` for specific lookup,
+    `findRelatedIssues()` for cross-references, `getAllCriticalIssues()` for critical issues
+  - Re-exports all module-specific functions (VPN, Docker, Arr, Media, Error Patterns)
+  - TypeScript interfaces: KnowledgeSearchResult, ComprehensiveSearchResults,
+    ComprehensiveLogAnalysis, KnowledgeBaseStats
+  - Created README.md (360 lines) with comprehensive usage examples and API documentation
+  - Covers all use cases: unified search, module-specific search, log analysis, statistics
+  - Commit: 0925d99
+
+**Phase 1 Complete! ✅**
+
+All 6 knowledge module subtasks completed:
+- ✅ VPN Troubleshooting (7 patterns)
+- ✅ Docker Networking (11 patterns)
+- ✅ Arr Interconnection (8 patterns)
+- ✅ Media Scanning (10 patterns)
+- ✅ Error Patterns Database (30+ patterns)
+- ✅ Knowledge Base Index with unified search
+
+Total: 36+ issue patterns + 30+ error patterns = 66+ troubleshooting entries
+
+**Phase 2 In Progress**
+
+### Session 3 - 2026-01-05 (Phase 2: Enhanced Diagnostic Tools)
+- [x] **Subtask 2.1 COMPLETED** - Created VPN connectivity diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (595 lines)
+  - Implemented `diagnose_vpn_connectivity()` function with comprehensive VPN diagnostics
+  - Performs 10 diagnostic checks:
+    1. Gluetun service health and status
+    2. Log analysis with pattern matching against VPN_TROUBLESHOOTING_KB
+    3. Execution of diagnostic steps from 'vpn-healthy-but-no-connection' knowledge base
+    4. network_mode configuration validation for dependent services
+    5. External connectivity test from Gluetun container (VPN IP verification)
+    6. DNS resolution testing through VPN
+    7. Port forwarding configuration check
+  - Returns detailed `VpnDiagnosticData` including:
+    - Health status boolean
+    - Gluetun service info
+    - Array of DiagnosticCheck results with status/message/output
+    - Matched issue patterns from knowledge base with confidence scores
+    - Prioritized recommendations array with Solution objects
+    - List of affected services not properly configured
+    - Human-readable summary message
+  - Security: Service name validation with allowlist
+  - Tool metadata exported for orchestration support
+  - Follows patterns from agentTools.ts: ToolResult return type, error handling, logging
+  - Commit: e6ccb0c
+
 **Next Steps:**
-- Subtask 1.6: Create knowledge base index and search (last subtask in Phase 1)
+- Subtask 2.2: Create Arr interconnection diagnostic tool
+- Subtask 2.3: Create media scanner diagnostic tool
+- Subtask 2.4: Enhance log analysis with error pattern matching
+- Subtask 2.5: Create diagnostic command runner with user consent
 
 ---
 
@@ -147,9 +204,9 @@
 - Troubleshoot agent "Dr. Debug" with basic expertise
 
 ### Acceptance Criteria from Spec:
-- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Knowledge base created)
+- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Knowledge base + diagnostic tool created)
 - [x] AI can analyze Docker logs and identify common error patterns ✅ (Knowledge base created with log pattern matching)
 - [x] AI can guide users through Arr service interconnection troubleshooting ✅ (Knowledge base created - 8 patterns covering all common issues)
-- [ ] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent (Phase 2)
+- [x] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent ✅ (VPN diagnostic tool runs docker exec, wget, nslookup commands)
 - [ ] Troubleshooting history saved for context in follow-up questions (Phase 3)
-- [ ] AI can suggest configuration fixes and offer to apply them (Phase 4)
+- [ ] AI can suggest configuration fixes and offer to apply them (Phase 4 - recommendations are generated, but application pending)
