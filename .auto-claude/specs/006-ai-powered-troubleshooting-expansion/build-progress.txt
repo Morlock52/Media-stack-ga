@@ -9,7 +9,7 @@
 
 | Phase | Name | Subtasks | Status |
 |-------|------|----------|--------|
-| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (3/6) |
+| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (4/6) |
 | 2 | Enhanced Diagnostic Tools | 5 | Pending |
 | 3 | Troubleshooting History & Context | 3 | Pending |
 | 4 | Configuration Fix Suggestions & Application | 4 | Pending |
@@ -95,9 +95,23 @@
   - Helper functions: search, filter by service/severity, log matching, related issues
   - Commit: b3223ac
 
+- [x] **Subtask 1.4 COMPLETED** - Created media scanning knowledge module
+  - File: `control-server/src/knowledge/mediaScanning.ts` (1,276 lines)
+  - 10 comprehensive issue patterns covering Plex/Jellyfin problems
+  - Patterns: library-not-updating, file-naming-incorrect, permission-denied,
+    transcoding-failed, transcoding-permission-failed, metadata-not-loading,
+    codec-not-supported, plex-claim-failed, jellyfin-reverse-proxy
+  - Coverage: library scanning, file naming conventions, permissions (PUID/PGID),
+    transcoding (hardware acceleration, tmpfs, FFmpeg), metadata agents,
+    codec compatibility, Plex authentication, reverse proxy setup
+  - Diagnostic steps with docker exec commands and expected results
+  - Solutions with docker-compose examples and step-by-step instructions
+  - Helper functions: search, filter by server/media type/severity, log matching
+  - Commit: dd23b37
+
 **Next Steps:**
-- Subtask 1.4: Create media scanning knowledge module
 - Subtask 1.5: Create common error patterns database
+- Subtask 1.6: Create knowledge base index and search
 
 ---
 
