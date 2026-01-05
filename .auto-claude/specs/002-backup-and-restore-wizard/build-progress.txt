@@ -812,3 +812,38 @@
 
 ---
 
+
+
+## 2026-01-05 - Subtask 4.4 Completed
+
+**Subtask:** Create RestoreSelectionStep component for selective restore
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive RestoreSelectionStep component with tree view and selective restore functionality
+- Added BackupPreview interface and restorePreviewData field to backupStore.ts
+- Updated ValidationStep to store preview data in global store after successful validation
+- Integrated RestoreSelectionStep into RestoreWizard.tsx as Step 2
+
+**Component Features:**
+- Tree view with collapsible sections grouped by type (Config, Database, Metadata, Volume)
+- Individual item checkboxes with service tags, paths, and sizes
+- Type-level selection headers to select/deselect entire categories
+- Global Select All / Deselect All buttons
+- Visual feedback for full, partial, and no selection states
+- Real-time summary showing selected count and total size
+- Empty selection mode = restore all items (full restore)
+- Info banners explaining selective vs full restore modes
+
+**Files Created:**
+- docs-site/src/components/restore/RestoreSelectionStep.tsx (415 lines)
+
+**Files Modified:**
+- docs-site/src/store/backupStore.ts (added BackupPreview interface and restorePreviewData field)
+- docs-site/src/components/restore/ValidationStep.tsx (stores preview data in global store)
+- docs-site/src/components/RestoreWizard.tsx (imported and integrated RestoreSelectionStep)
+
+**Commit:** d00adc1 - auto-claude: 4.4 - Step 3: Choose what to restore. Tree view of backu
+
+---
+

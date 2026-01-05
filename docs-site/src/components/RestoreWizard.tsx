@@ -13,8 +13,8 @@ import { GlassCard } from './ui/glass-card'
 import { BackupSelector } from './restore/BackupSelector'
 import { ValidationStep } from './restore/ValidationStep'
 import { RestoreSelectionStep } from './restore/RestoreSelectionStep'
-// TODO: Remaining step components will be implemented in subsequent subtasks (4.5-4.6)
-// import { RestoreConfirmStep } from './restore/RestoreConfirmStep'
+import { RestoreConfirmStep } from './restore/RestoreConfirmStep'
+// TODO: RestoreExecutionStep component will be implemented in subtask 4.6
 // import { RestoreExecutionStep } from './restore/RestoreExecutionStep'
 
 const steps = [
@@ -277,16 +277,7 @@ export function RestoreWizard() {
                                     exit={{ opacity: 0, y: -20 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <div className="text-center py-12">
-                                        <AlertTriangle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-                                        <h2 className="text-2xl font-bold mb-2">Confirm Restore</h2>
-                                        <p className="text-muted-foreground">
-                                            TODO: RestoreConfirmStep component will be implemented in subtask 4.5
-                                        </p>
-                                        <p className="text-sm text-muted-foreground mt-4">
-                                            This step will show warnings and restore options
-                                        </p>
-                                    </div>
+                                    <RestoreConfirmStep />
                                 </motion.div>
                             )}
 

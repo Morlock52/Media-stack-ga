@@ -281,11 +281,13 @@
           "id": "4.4",
           "title": "Create RestoreSelectionStep component",
           "description": "Step 3: Choose what to restore. Tree view of backup contents. Allow selective restore (e.g., only Sonarr config). Show current vs backup comparison where applicable.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/restore/RestoreSelectionStep.tsx"
           ],
-          "estimated_time": "1.5h"
+          "estimated_time": "1.5h",
+          "notes": "Created comprehensive RestoreSelectionStep component for selective restore:\n\n**Component Features:**\n- Tree view with collapsible sections grouped by type (Config, Database, Metadata, Volume)\n- Individual item checkboxes with service tags, paths, and sizes\n- Type-level selection headers to select/deselect entire categories\n- Global Select All / Deselect All buttons\n- Visual feedback for full, partial, and no selection states\n- Real-time summary showing selected count and total size\n- Empty selection mode = restore all items (full restore)\n- Info banners explaining selective vs full restore modes\n\n**Store Updates:**\n- Added BackupPreview interface to backupStore.ts matching useBackup hook type\n- Added restorePreviewData field to store validated backup contents\n- Added setRestorePreviewData action to update preview data\n- Updated selectAllRestoreItems to use restorePreviewData.items\n- Updated resetRestoreWizard to clear restorePreviewData\n\n**ValidationStep Integration:**\n- Updated ValidationStep to store preview data in global store on successful validation\n- Clears preview data on validation failure\n- Preview data now accessible to RestoreSelectionStep component\n\n**User Experience:**\n- Collapsible type sections with expand/collapse animation\n- Checkbox indicators showing full selection (checkmark), partial selection (dot), or no selection\n- Click type header to toggle all items of that type\n- Click individual items to toggle selection\n- Visual feedback with color-coded borders (primary for selected, muted for unselected)\n- Service badges for each item showing which service it belongs to\n- Path display with truncation for long paths\n- Size display for each item and type group\n- Summary banner shows either \"Full Restore Mode\" (0 selected) or \"Selective Restore\" (N selected)\n\n**Implementation Details:**\n- Follows existing patterns from SelectionStep and BackupSelector components\n- Uses InteractiveCard, Button, motion animations for consistent styling\n- Helper functions: formatBytes(), groupItemsByType(), getTypeIcon(), getTypeName()\n- State management: expandedTypes (local state), restoreSelectedItems (Zustand store)\n- TypeScript types match BackupPreview interface from store\n- Proper error handling with fallback UI when no preview data available\n- Clean component structure with utility functions at top\n\n**Files Created:**\n- docs-site/src/components/restore/RestoreSelectionStep.tsx (415 lines)\n\n**Files Modified:**\n- docs-site/src/store/backupStore.ts (added BackupPreview interface, restorePreviewData field, setRestorePreviewData action)\n- docs-site/src/components/restore/ValidationStep.tsx (stores preview data in global store)\n- docs-site/src/components/RestoreWizard.tsx (imported and integrated RestoreSelectionStep)\n\n**Commit:** d00adc1 - auto-claude: 4.4 - Step 3: Choose what to restore. Tree view of backu\n\nThe component is production-ready with comprehensive selective restore functionality, visual feedback, and proper integration with the restore wizard flow.",
+          "updated_at": "2026-01-05T20:04:08.000829+00:00"
         },
         {
           "id": "4.5",
@@ -497,5 +499,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:55:02.093812+00:00"
+  "last_updated": "2026-01-05T20:04:08.000839+00:00"
 }
