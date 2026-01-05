@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useConfigGenerators } from '../hooks/useConfigGenerators'
 import { useFileDownload } from '../hooks/useFileDownload'
+import { useWizardValidation } from '../hooks/useWizardValidation'
 import { toast } from 'sonner'
 import {
     FileDown, FileUp, RotateCcw, Save,
@@ -65,7 +66,6 @@ export function SetupWizard() {
         saveProfile, deleteProfile, loadProfile,
         hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
     } = useSetupStore()
-    const [shakeField, setShakeField] = useState<string | null>(null)
     const [showTemplates, setShowTemplates] = useState(false)
     const [showProfiles, setShowProfiles] = useState(false)
     const [newProfileName, setNewProfileName] = useState('')
@@ -183,27 +183,6 @@ export function SetupWizard() {
     // Ref for the main content area
     const mainContentRef = useRef<HTMLDivElement>(null)
 
-    // Scroll to element and focus
-    const scrollToElement = useCallback((selector: string, shouldFocus = true) => {
-        setTimeout(() => {
-            const element = document.querySelector(selector) as HTMLElement
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                if (shouldFocus && element instanceof HTMLInputElement) {
-                    element.focus()
-                }
-            }
-        }, 100)
-    }, [])
-
-    // Scroll to first error field
-    const scrollToFirstError = useCallback((errors: Record<string, unknown>) => {
-        const firstErrorField = Object.keys(errors)[0]
-        if (firstErrorField) {
-            scrollToElement(`[name="${firstErrorField}"]`, true)
-        }
-    }, [scrollToElement])
-
     // Scroll to content area when step changes, then focus first input
     useEffect(() => {
         // Scroll main content into view
@@ -241,55 +220,8 @@ export function SetupWizard() {
         mode: 'onChange'
     })
 
-    const handleNextStep = async () => {
-        if (currentStep === 0) {
-            // Welcome step handled by component
-            nextStep()
-        } else if (currentStep === 1) {
-            const isValid = await step1Form.trigger()
-            if (!isValid) {
-                const errors = step1Form.formState.errors
-                const firstErrorField = Object.keys(errors)[0]
-                if (firstErrorField) {
-                    setShakeField(firstErrorField)
-                    setTimeout(() => setShakeField(null), 500)
-                    // Scroll to error field and focus
-                    scrollToFirstError(errors)
-                    toast.error(`Please fix the ${firstErrorField} field`)
-                }
-                return
-            }
-            updateConfig(step1Form.getValues())
-            nextStep()
-        } else if (currentStep === 2) {
-            if (selectedServices.length === 0) {
-                toast.error('Please select at least one service')
-                // Scroll to service selection area
-                scrollToElement('.grid.grid-cols-1.sm\\:grid-cols-2', false)
-                return
-            }
-            nextStep()
-        } else if (currentStep === 3) {
-            // Service Config step
-            nextStep()
-        } else if (currentStep === 4) {
-            const isValid = await step4Form.trigger()
-            if (!isValid) {
-                const errors = step4Form.formState.errors
-                scrollToFirstError(errors)
-                toast.error('Please check the form fields')
-                return
-            }
-            const values = step4Form.getValues()
-            updateConfig({
-                cloudflareToken: values.cloudflareToken,
-                plexClaim: values.plexClaim,
-                wireguardPrivateKey: values.wireguardPrivateKey,
-                wireguardAddresses: values.wireguardAddresses,
-            })
-            nextStep()
-        }
-    }
+    // Form validation and step navigation
+    const { handleNextStep, shakeField, setShakeField } = useWizardValidation(step1Form, step4Form)
 
     const handleTemplateSelect = (template: Template) => {
         loadTemplate(template.id, template.services, template.config)
