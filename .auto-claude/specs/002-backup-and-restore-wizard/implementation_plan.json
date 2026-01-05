@@ -269,11 +269,13 @@
           "id": "4.3",
           "title": "Create ValidationStep component",
           "description": "Step 2: Validate backup integrity. Check checksums, decrypt if encrypted (password prompt), show validation status for each component. Block proceeding if validation fails.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/restore/ValidationStep.tsx"
           ],
-          "estimated_time": "1h"
+          "estimated_time": "1h",
+          "notes": "Created comprehensive ValidationStep component for restore wizard Step 2:\n\n**Component Features:**\n- Auto-validates non-encrypted backups on mount\n- Password input for encrypted backups with show/hide toggle\n- Validate button with loading states\n- Uses useRestorePreview hook to call POST /api/restore/preview endpoint\n- Verifies checksums and decrypts encrypted backups\n- Displays validation status (in-progress/success/failed)\n- Blocks proceeding if validation fails via Zustand store (restoreValidationResult)\n\n**Validation Flow:**\n1. User enters password for encrypted backups (or auto-validates if not encrypted)\n2. Click \"Validate Backup\" button to start validation\n3. Component calls previewBackup() with backup ID, destination, and decryption password\n4. API downloads manifest, verifies checksums, decrypts if encrypted\n5. Success: Shows backup contents with item list, sizes, and stats\n6. Failure: Shows detailed error message with retry option\n\n**Validation Success Display:**\n- Green success banner with checkmarks\n- Full list of validated backup items with icons (Config/Database/Metadata/Volume)\n- Each item shows: name, service tag, type, path, size\n- Summary statistics: total items, total size, compressed size\n- Scrollable list for large backups\n- Next step hint banner\n\n**Validation Failure Display:**\n- Red error banner with detailed explanation\n- Common failure reasons listed (wrong password, corruption, network issues)\n- Error details in monospace font\n- Retry button to attempt validation again\n- Resets validation state when password changes\n\n**Password Management:**\n- Password input with Eye/EyeOff toggle for visibility\n- Password requirement warning for encrypted backups\n- Auto-resets validation state when password changes\n- Stores validated password in Zustand store (restoreDecryptionPassword)\n\n**Integration:**\n- Integrated into RestoreWizard.tsx as Step 1 component\n- Uses Zustand store for state management (validation result, decryption password)\n- RestoreWizard validates step before allowing \"Next\" (blocks if validation fails)\n- Follows existing patterns: InteractiveCard, FocusRing, motion animations, toast notifications\n\n**User Experience:**\n- Loading state with spinner during validation\n- Info banner explaining validation process before starting\n- Success state shows all backup contents for review\n- Error state provides actionable guidance\n- Auto-validation for non-encrypted backups (seamless UX)\n- Password reset detection prevents stale validation results\n\n**Files Created:**\n- docs-site/src/components/restore/ValidationStep.tsx (485 lines)\n\n**Files Modified:**\n- docs-site/src/components/RestoreWizard.tsx (imported and integrated ValidationStep)\n\n**Commit:** 59dcde4 - auto-claude: 4.3 - Step 2: Validate backup integrity. Check checksums\n\nThe component is production-ready with comprehensive validation, error handling, and user feedback following all project patterns.",
+          "updated_at": "2026-01-05T19:55:02.093803+00:00"
         },
         {
           "id": "4.4",
@@ -495,5 +497,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:50:53.240707+00:00"
+  "last_updated": "2026-01-05T19:55:02.093812+00:00"
 }

@@ -14,6 +14,25 @@ export type BackupStatus = 'initializing' | 'discovering' | 'archiving' | 'encry
 export type RestoreStatus = 'initializing' | 'downloading' | 'validating' | 'decrypting' | 'extracting' | 'applying' | 'completed' | 'failed';
 export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly';
 
+// BackupPreview interface (matches useBackup hook type)
+export interface BackupPreview {
+    id: string;
+    name: string;
+    createdAt: string;
+    totalSize: number;
+    totalCompressedSize: number;
+    encrypted: boolean;
+    items: Array<{
+        type: string;
+        name: string;
+        path: string;
+        service?: string;
+        size: number;
+        compressedSize: number;
+    }>;
+    metadata?: Record<string, unknown>;
+}
+
 export interface LocalDestination {
     type: 'local';
     path: string;
@@ -160,6 +179,9 @@ export interface BackupStore {
     // Decryption password for encrypted backups
     restoreDecryptionPassword: string;
 
+    // Preview data from validated backup (null = not validated yet)
+    restorePreviewData: BackupPreview | null;
+
     // ------ Actions for backup wizard navigation ------
     setCurrentStep: (step: number) => void;
     nextStep: () => void;
@@ -206,6 +228,7 @@ export interface BackupStore {
     deselectAllRestoreItems: () => void;
     setRestoreOptions: (options: RestoreOptions) => void;
     setRestoreDecryptionPassword: (password: string) => void;
+    setRestorePreviewData: (data: BackupPreview | null) => void;
 
     // ------ Reset wizards ------
     resetWizard: () => void;
@@ -274,6 +297,7 @@ export const useBackupStore = create<BackupStore>()(
             restoreSelectedItems: [],
             restoreOptions: initialRestoreOptions,
             restoreDecryptionPassword: '',
+            restorePreviewData: null,
 
             // Backup wizard navigation actions
             setCurrentStep: (step) => set({ currentStep: step }),
@@ -379,8 +403,8 @@ export const useBackupStore = create<BackupStore>()(
 
             selectAllRestoreItems: () =>
                 set((state) => {
-                    // Get all item names from the selected backup
-                    const allItemNames = state.selectedBackupForRestore?.metadata?.items?.map((item: any) => item.name) || [];
+                    // Get all item names from the preview data
+                    const allItemNames = state.restorePreviewData?.items?.map((item) => item.name) || [];
                     return { restoreSelectedItems: allItemNames };
                 }),
 
@@ -389,6 +413,8 @@ export const useBackupStore = create<BackupStore>()(
             setRestoreOptions: (options) => set({ restoreOptions: options }),
 
             setRestoreDecryptionPassword: (password) => set({ restoreDecryptionPassword: password }),
+
+            setRestorePreviewData: (data) => set({ restorePreviewData: data }),
 
             // Reset backup wizard to initial state
             resetWizard: () =>
@@ -413,6 +439,7 @@ export const useBackupStore = create<BackupStore>()(
                     restoreSelectedItems: [],
                     restoreOptions: initialRestoreOptions,
                     restoreDecryptionPassword: '',
+                    restorePreviewData: null,
                     activeRestoreProgress: null,
                 }),
         }),

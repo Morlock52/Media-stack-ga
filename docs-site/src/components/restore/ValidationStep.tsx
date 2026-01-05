@@ -54,6 +54,7 @@ export function ValidationStep() {
         restoreDecryptionPassword,
         setRestoreValidationResult,
         setRestoreDecryptionPassword,
+        setRestorePreviewData,
     } = useBackupStore()
 
     const { previewBackup, loading: validating } = useRestorePreview()
@@ -106,6 +107,7 @@ export function ValidationStep() {
             setPreview(result)
             setRestoreValidationResult(true)
             setRestoreDecryptionPassword(selectedBackupForRestore.encrypted ? password : '')
+            setRestorePreviewData(result) // Store preview data in global store
             toast.success('Backup validated successfully! All checksums verified.')
         } catch (error) {
             // Validation failed
@@ -113,6 +115,7 @@ export function ValidationStep() {
             setValidationError(errorMsg)
             setRestoreValidationResult(false)
             setRestoreDecryptionPassword('')
+            setRestorePreviewData(null) // Clear preview data on failure
             toast.error(`Validation failed: ${errorMsg}`)
         }
     }

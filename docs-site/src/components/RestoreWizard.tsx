@@ -12,8 +12,8 @@ import { GlassCard } from './ui/glass-card'
 // Step components
 import { BackupSelector } from './restore/BackupSelector'
 import { ValidationStep } from './restore/ValidationStep'
-// TODO: Remaining step components will be implemented in subsequent subtasks (4.4-4.6)
-// import { RestoreSelectionStep } from './restore/RestoreSelectionStep'
+import { RestoreSelectionStep } from './restore/RestoreSelectionStep'
+// TODO: Remaining step components will be implemented in subsequent subtasks (4.5-4.6)
 // import { RestoreConfirmStep } from './restore/RestoreConfirmStep'
 // import { RestoreExecutionStep } from './restore/RestoreExecutionStep'
 
@@ -264,16 +264,7 @@ export function RestoreWizard() {
                                     exit={{ opacity: 0, y: -20 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <div className="text-center py-12">
-                                        <ListChecks className="w-16 h-16 text-primary mx-auto mb-4" />
-                                        <h2 className="text-2xl font-bold mb-2">Choose Items to Restore</h2>
-                                        <p className="text-muted-foreground">
-                                            TODO: RestoreSelectionStep component will be implemented in subtask 4.4
-                                        </p>
-                                        <p className="text-sm text-muted-foreground mt-4">
-                                            This step will allow selective restore of specific items
-                                        </p>
-                                    </div>
+                                    <RestoreSelectionStep />
                                 </motion.div>
                             )}
 
