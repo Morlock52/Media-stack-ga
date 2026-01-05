@@ -119,11 +119,23 @@
         }
       ],
       "status": "completed"
+    },
+    "4.2": {
+      "attempts": [
+        {
+          "session": 11,
+          "timestamp": "2026-01-05T14:45:14.526900",
+          "approach": "Implemented: Extract the storage layout summary from ReviewGenerateStep into docs-site/src/components/wizard/step",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T14:09:51.301655",
-    "last_updated": "2026-01-05T14:42:27.617730"
+    "last_updated": "2026-01-05T14:45:14.526916"
   }
 }

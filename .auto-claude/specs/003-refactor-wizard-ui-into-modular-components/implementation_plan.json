@@ -201,11 +201,12 @@
           "id": "4.2",
           "title": "Extract StorageLayoutCard component",
           "description": "Extract the storage layout summary from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx"
           ],
-          "notes": "Shows storage paths for selected services"
+          "notes": "Successfully extracted StorageLayoutCard component from ReviewGenerateStep.tsx. Component displays storage paths for selected services with category labels and optional \"Network share\" badge. Reduced ReviewGenerateStep by ~13 lines of inline JSX. Component follows established patterns from ConfigSummaryCard with proper TypeScript interfaces and JSDoc documentation. Committed in 39c6d77.",
+          "updated_at": "2026-01-05T19:44:29.153881+00:00"
         },
         {
           "id": "4.3",
@@ -328,5 +329,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:42:16.550870+00:00"
+  "last_updated": "2026-01-05T19:44:29.153888+00:00"
 }
