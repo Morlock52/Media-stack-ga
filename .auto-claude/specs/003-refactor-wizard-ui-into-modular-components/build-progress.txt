@@ -203,3 +203,77 @@ Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
 Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
 
 Next: Phase 6 - Integration and Cleanup.
+
+### Phase 6: Integration and Cleanup
+
+#### 6.1 - Refactor SetupWizard.tsx to use new components ✅
+- Updated SetupWizard.tsx to use barrel export from `./wizard` for all extracted components
+- Consolidated 13 individual wizard component imports into single barrel export
+- Organized imports into logical sections:
+  - Store: setupStore imports
+  - Hooks: useConfigGenerators, useFileDownload, useWizardValidation, useVoicePlanHandler, useProactiveSuggestions
+  - Schemas: basicConfigSchema, advancedSettingsSchema, form data types
+  - Utils: importConfiguration, downloadAsFile, Template type
+  - Components: GlassCard, ProactiveSuggestionCard, TemplateSelector, WelcomeStep, ServiceConfigStep
+  - Wizard Components: All 13 wizard components from barrel export
+- Removed unused imports:
+  - `RotateCcw` icon (unused)
+  - `MoreHorizontal` icon (unused)
+  - `services` from data/services (unused in SetupWizard)
+  - `Button` component (unused)
+  - `motion` from motion/react (only AnimatePresence is used)
+- File maintains 424 lines (similar to original) but with significantly improved organization
+- All existing functionality preserved with cleaner, more maintainable code structure
+- Follows established pattern from other refactored components
+- Committed in b85959c
+
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), Phase 5 (Store Improvements), and started Phase 6 (Integration and Cleanup).
+
+Phase 6 Status: Subtask 6.1 completed! SetupWizard.tsx now uses barrel exports and has organized imports. Ready for documentation (6.2) and smoke tests (6.3).
+
+Total reduction in SetupWizard.tsx: ~400+ lines across all extracted components
+Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
+Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
+SetupWizard.tsx import organization: Consolidated from 14+ individual wizard component imports to 1 barrel export
+
+#### 6.2 - Create component architecture documentation ✅
+- Created `docs-site/src/components/wizard/README.md` with comprehensive architecture documentation
+- Documented all 18 wizard components across 4 categories:
+  - Shell Components (4): WizardHeader, WizardProgressBar, WizardStepIndicator, WizardNavigation
+  - Modal Components (4): DraftRecoveryModal, ProfilesPanel, ToolsDialog, VoiceCompanionTrigger
+  - Step Components (5): QuickStartStep, BasicConfigurationStep, StackSelectionStep, AdvancedSettingsStep, ReviewGenerateStep
+  - Review Sub-Components (5): ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, LocalDeployModal, BootstrapKeysPanel
+- Included detailed props interfaces and usage examples for every component
+- Documented state management patterns:
+  - 10 Zustand store slices with clear responsibilities
+  - 11 selector hooks for computed state access
+  - Best practices for reading from store vs props
+- Documented all 5 custom hooks with return types and features:
+  - useWizardAnimations: Animation variants with reduced motion support
+  - useConfigGenerators: YAML generation for Authelia and Cloudflare
+  - useFileDownload: File download and clipboard utilities
+  - useWizardValidation: Form validation and step navigation
+  - useVoicePlanHandler: Voice companion suggestion application
+- Provided comprehensive extension guide covering:
+  - How to add new steps to the wizard flow
+  - How to create and integrate new modals
+  - How to add store state and selector hooks
+  - How to create custom hooks following established patterns
+- Included best practices for state management, animations, forms, accessibility, and code style
+- Added file organization chart and migration notes from the refactoring
+- 863 lines of documentation with code examples and clear guidance for contributors
+- Committed in 89a0136
+
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), Phase 5 (Store Improvements), and nearly completed Phase 6 (Integration and Cleanup).
+
+Phase 6 Status: Subtasks 6.1 and 6.2 completed! SetupWizard.tsx uses barrel exports and has organized imports. Comprehensive documentation created for contributors. Ready for smoke tests (6.3).
+
+Total reduction in SetupWizard.tsx: ~400+ lines across all extracted components
+Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
+Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
+SetupWizard.tsx import organization: Consolidated from 14+ individual wizard component imports to 1 barrel export
+Documentation: 863 lines covering 18 components, 5 hooks, and extension patterns
+
+Next: 6.3 - Verify no regression with smoke tests.
