@@ -12,5 +12,14 @@
 - Updated SetupWizard.tsx to use the new hook
 - Committed in aa45900
 
+#### 2.3 - Extract file download and clipboard utilities ✅
+- Created `docs-site/src/hooks/useFileDownload.ts`
+- Extracted `copyToClipboard`, `downloadFile`, `downloadAllFiles`, and `generateEnvFile` functions
+- Hook manages `copied` state internally with 2-second timeout for user feedback
+- All functions properly memoized with useCallback and correct dependencies
+- Updated SetupWizard.tsx to use the new hook
+- Removed inline implementations and unused imports (dockerComposeTemplate, dockerComposeLocalTemplate, buildEnvFile)
+- Committed in 3220c06
+
 ## Summary
-Successfully extracted config generation logic into a reusable hook following the established pattern from useWizardAnimations.ts. The hook properly memoizes the generator functions and tracks dependencies on config.domain and selectedServices.
+Successfully extracted file download and clipboard utilities into a reusable hook following the established pattern from useConfigGenerators.ts. The hook consolidates all file download operations and clipboard functionality, reducing SetupWizard.tsx complexity by ~30 lines. All functions are properly memoized and the copied state is managed internally for better encapsulation.
