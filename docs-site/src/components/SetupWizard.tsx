@@ -6,13 +6,13 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useConfigGenerators } from '../hooks/useConfigGenerators'
 import { useFileDownload } from '../hooks/useFileDownload'
 import { useWizardValidation } from '../hooks/useWizardValidation'
+import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
 import { toast } from 'sonner'
 import {
     FileDown, FileUp, RotateCcw, Save,
     Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
 } from 'lucide-react'
-import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
-import type { VoicePlanSummary } from './VoiceCompanion'
+import { useSetupStore, initialConfig } from '../store/setupStore'
 
 // Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
 const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
@@ -59,8 +59,7 @@ export function SetupWizard() {
     const {
         currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,
         quickStartMode,
-        setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,
-        updateStoragePath, setCurrentStep,
+        setMode, toggleService, updateConfig,
         nextStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
         saveProfile, deleteProfile, loadProfile,
@@ -84,6 +83,9 @@ export function SetupWizard() {
 
     // File download and clipboard utilities
     const { copied, copyToClipboard, downloadFile, downloadAllFiles, generateEnvFile } = useFileDownload()
+
+    // Voice plan handler
+    const { handleApplyVoicePlan } = useVoicePlanHandler()
 
     // Handle proactive suggestion actions
     const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {
@@ -113,55 +115,6 @@ export function SetupWizard() {
             setVoiceHelperInitialized(true)
         }
     }, [mode, voiceHelperInitialized])
-
-    // Apply voice plan to wizard
-    const handleApplyVoicePlan = (plan: VoicePlanSummary) => {
-        const appliedChanges: string[] = []
-
-        if (plan.services?.length) {
-            setSelectedServices(Array.from(new Set(plan.services)))
-            appliedChanges.push(`${plan.services.length} services`)
-        }
-        const configUpdates: Partial<SetupConfig> = {}
-        if (plan.domain) {
-            configUpdates.domain = plan.domain
-            appliedChanges.push(`domain: ${plan.domain}`)
-        }
-        if (Object.keys(configUpdates).length) {
-            updateConfig(configUpdates)
-        }
-        if (plan.storagePaths?.media) {
-            updateServiceConfig('plex', { mediaPath: plan.storagePaths.media })
-            updateStoragePath('movies', { path: plan.storagePaths.media })
-            updateStoragePath('tv', { path: plan.storagePaths.media })
-            appliedChanges.push('media paths')
-        }
-        if (plan.storagePaths?.downloads) {
-            updateServiceConfig('torrent', { downloadsPath: plan.storagePaths.downloads })
-            updateStoragePath('downloads', { path: plan.storagePaths.downloads })
-            appliedChanges.push('download paths')
-        }
-        setShowVoiceCompanion(false)
-
-        // Agentic: Show success feedback and navigate to Stack Selection
-        if (appliedChanges.length > 0) {
-            toast.success('Voice plan applied!', {
-                description: `Set up: ${appliedChanges.join(', ')}`,
-                action: {
-                    label: 'Undo',
-                    onClick: () => {
-                        setSelectedServices([])
-                        updateConfig({ domain: '' })
-                        toast.info('Plan changes undone')
-                    }
-                }
-            })
-            // Navigate to Stack Selection step to review services
-            if (plan.services?.length && currentStep < 2) {
-                setCurrentStep(2)
-            }
-        }
-    }
 
     // Load config from URL on mount
     useEffect(() => {
@@ -344,7 +297,7 @@ export function SetupWizard() {
                 <VoiceCompanion
                     isOpen={showVoiceCompanion}
                     onClose={() => setShowVoiceCompanion(false)}
-                    onApplyPlan={handleApplyVoicePlan}
+                    onApplyPlan={(plan) => handleApplyVoicePlan(plan, () => setShowVoiceCompanion(false))}
                     templateMode={mode}
                 />
             </Suspense>
