@@ -1,0 +1,465 @@
+{
+  "spec_id": "002-backup-and-restore-wizard",
+  "title": "Backup and Restore Wizard",
+  "description": "Comprehensive backup/restore wizard that handles Docker volumes, *Arr databases, Plex/Jellyfin metadata, and configuration files. Supports local, S3-compatible, and rclone destinations with scheduled backups.",
+  "created_at": "2025-01-05T00:00:00Z",
+  "updated_at": "2025-01-05T00:00:00Z",
+  "status": "planned",
+  "planStatus": "complete",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Backend Infrastructure",
+      "description": "Build the control-server API endpoints for backup operations",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "title": "Create backup types and schemas",
+          "description": "Define TypeScript interfaces for backup configs, destinations (local/S3/rclone), backup manifests, and progress tracking. Create Zod schemas for request validation.",
+          "status": "completed",
+          "files": [
+            "control-server/src/types/backup.ts"
+          ],
+          "estimated_time": "30min",
+          "notes": "Created comprehensive TypeScript interfaces and Zod schemas for backup system including: destination types (local/S3/rclone), backup configs, manifests with checksums, progress tracking, restore configs, schedules, and history. All schemas include proper validation with size limits and type constraints.",
+          "updated_at": "2026-01-05T17:36:33.085539+00:00"
+        },
+        {
+          "id": "1.2",
+          "title": "Implement backup service core",
+          "description": "Create BackupService class with methods to: discover backup targets (volumes, configs, databases), calculate backup size, create compressed archives (tar.gz), and generate backup manifests with checksums.",
+          "status": "completed",
+          "files": [
+            "control-server/src/services/backupService.ts"
+          ],
+          "estimated_time": "2h",
+          "notes": "Implemented comprehensive BackupService class with the following functionality:\n- discoverBackupTargets(): Discovers configs, databases, metadata, and volumes from running containers\n- calculateBackupSize(): Calculates total backup size with support for volumes and container paths\n- createBackupArchive(): Creates compressed tar.gz archives with progress tracking\n- generateManifest(): Generates backup manifests with SHA256 checksums\n- validateBackup(): Validates backup integrity using checksums\n- Helper functions: archiveVolume(), archiveContainerPath(), getDockerVolumes(), getRunningContainers(), etc.\n\nSupports all major media stack services: *Arr apps (Sonarr, Radarr, Prowlarr, etc.), media servers (Plex, Jellyfin), download clients (qBittorrent, Deluge, etc.), and request management (Overseerr, Jellyseerr).",
+          "updated_at": "2026-01-05T17:42:34.518877+00:00"
+        },
+        {
+          "id": "1.3",
+          "title": "Implement encryption module",
+          "description": "Create encryption utilities using Node.js crypto for AES-256-GCM encryption of backup archives. Support password-based key derivation (PBKDF2).",
+          "status": "pending",
+          "files": [
+            "control-server/src/utils/encryption.ts"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "1.4",
+          "title": "Implement storage destination adapters",
+          "description": "Create adapter pattern for backup destinations: LocalAdapter (filesystem), S3Adapter (AWS SDK), RcloneAdapter (shell wrapper). Each adapter handles upload, download, list, and delete operations.",
+          "status": "pending",
+          "files": [
+            "control-server/src/services/backup/destinationAdapter.ts",
+            "control-server/src/services/backup/localAdapter.ts",
+            "control-server/src/services/backup/s3Adapter.ts",
+            "control-server/src/services/backup/rcloneAdapter.ts"
+          ],
+          "estimated_time": "2h"
+        },
+        {
+          "id": "1.5",
+          "title": "Create backup API routes",
+          "description": "Implement Fastify routes: POST /api/backup/create (start backup), GET /api/backup/status/:id (progress), GET /api/backup/list (list backups), POST /api/backup/validate (verify integrity), DELETE /api/backup/:id (remove backup).",
+          "status": "pending",
+          "files": [
+            "control-server/src/routes/backup.ts"
+          ],
+          "estimated_time": "2h"
+        },
+        {
+          "id": "1.6",
+          "title": "Create restore API routes",
+          "description": "Implement Fastify routes: POST /api/restore/preview (analyze backup contents), POST /api/restore/execute (perform restore with optional selective restore), GET /api/restore/status/:id (progress tracking).",
+          "status": "pending",
+          "files": [
+            "control-server/src/routes/restore.ts"
+          ],
+          "estimated_time": "2h"
+        },
+        {
+          "id": "1.7",
+          "title": "Implement backup scheduler",
+          "description": "Create scheduler using node-cron for automated backups. Support configurable intervals (daily/weekly/monthly), retention policies (keep N backups), and health check notifications.",
+          "status": "pending",
+          "files": [
+            "control-server/src/services/backupScheduler.ts"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "1.8",
+          "title": "Register backup routes in app",
+          "description": "Update app.ts to register backup and restore routes. Add scheduler initialization to index.ts.",
+          "status": "pending",
+          "files": [
+            "control-server/src/app.ts",
+            "control-server/src/index.ts"
+          ],
+          "estimated_time": "30min"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Frontend Backup Store",
+      "description": "Create Zustand store and hooks for backup state management",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Create backup store",
+          "description": "Create Zustand store for backup wizard state: destination config, selected items, encryption settings, schedule config, backup history, and active backup/restore progress.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/store/backupStore.ts"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "2.2",
+          "title": "Create backup API hooks",
+          "description": "Create React hooks for backup operations: useBackupCreate, useBackupProgress (polling), useBackupList, useRestoreExecute, useRestoreProgress. Handle loading, error, and success states.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useBackup.ts"
+          ],
+          "estimated_time": "1h"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Backup Wizard UI",
+      "description": "Build the multi-step backup wizard interface",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Create BackupWizard main component",
+          "description": "Create main wizard component with step navigation, progress indicator, and step content rendering. Match existing SetupWizard patterns with GlassCard styling.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/BackupWizard.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "3.2",
+          "title": "Create DestinationStep component",
+          "description": "Step 1: Configure backup destination. Tabs for Local/S3/Rclone. Local: path input. S3: endpoint, bucket, access key, secret key. Rclone: remote name, path. Test connection button.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/DestinationStep.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "3.3",
+          "title": "Create SelectionStep component",
+          "description": "Step 2: Select what to backup. Checkboxes for: All configs, Individual service configs, Docker volumes, Databases (*Arr SQLite, etc.), Plex/Jellyfin metadata. Show estimated size for each.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/SelectionStep.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "3.4",
+          "title": "Create EncryptionStep component",
+          "description": "Step 3: Configure encryption. Toggle for encryption on/off. Password input with confirmation. Strength indicator. Warning about password recovery.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/EncryptionStep.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "3.5",
+          "title": "Create ScheduleStep component",
+          "description": "Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/ScheduleStep.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "3.6",
+          "title": "Create ReviewStep component",
+          "description": "Step 5: Review and execute. Summary of all settings. Start backup button. Progress display with: current step, percentage, estimated time remaining, transfer speed.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/ReviewStep.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "3.7",
+          "title": "Create BackupProgress component",
+          "description": "Real-time backup progress display with animated progress bar, current operation label, file counts, size transferred, speed indicator, and ETA. Used in ReviewStep.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/BackupProgress.tsx"
+          ],
+          "estimated_time": "1h"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Restore Wizard UI",
+      "description": "Build the restore wizard interface with validation",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Create RestoreWizard main component",
+          "description": "Create restore wizard with steps: Select backup, Validate integrity, Choose items, Confirm, Execute. Include pre-restore safety warnings.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/RestoreWizard.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "4.2",
+          "title": "Create BackupSelector component",
+          "description": "Step 1: List available backups from destination. Show date, size, contents summary. Support filtering and sorting. Allow selecting backup to restore.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/restore/BackupSelector.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "4.3",
+          "title": "Create ValidationStep component",
+          "description": "Step 2: Validate backup integrity. Check checksums, decrypt if encrypted (password prompt), show validation status for each component. Block proceeding if validation fails.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/restore/ValidationStep.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "4.4",
+          "title": "Create RestoreSelectionStep component",
+          "description": "Step 3: Choose what to restore. Tree view of backup contents. Allow selective restore (e.g., only Sonarr config). Show current vs backup comparison where applicable.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/restore/RestoreSelectionStep.tsx"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "4.5",
+          "title": "Create RestoreConfirmStep component",
+          "description": "Step 4: Confirm and execute. Warning about service interruption. Option to stop services before restore. Backup current state before restore option. Execute button with progress.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/restore/RestoreConfirmStep.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "4.6",
+          "title": "Create RestoreProgress component",
+          "description": "Real-time restore progress similar to BackupProgress. Show stopping services, extracting files, applying configs, restarting services phases.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/restore/RestoreProgress.tsx"
+          ],
+          "estimated_time": "1h"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Backup Management Dashboard",
+      "description": "Create backup history and management interface",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "title": "Create BackupDashboard component",
+          "description": "Main dashboard showing: last backup status, next scheduled backup, backup history list, storage usage, quick actions (backup now, restore, manage schedules).",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/BackupDashboard.tsx"
+          ],
+          "estimated_time": "2h"
+        },
+        {
+          "id": "5.2",
+          "title": "Create BackupHistoryList component",
+          "description": "Paginated list of past backups with: date, size, status, contents summary. Actions: restore, download, delete. Filter by date range.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/BackupHistoryList.tsx"
+          ],
+          "estimated_time": "1h"
+        },
+        {
+          "id": "5.3",
+          "title": "Create ScheduleManager component",
+          "description": "Manage backup schedules: view active schedules, edit schedule settings, enable/disable schedules, view schedule history.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/backup/ScheduleManager.tsx"
+          ],
+          "estimated_time": "1h"
+        }
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Integration and Navigation",
+      "description": "Integrate backup features into the main app",
+      "subtasks": [
+        {
+          "id": "6.1",
+          "title": "Add backup routes to App.tsx",
+          "description": "Add React Router routes for /backup (dashboard), /backup/new (wizard), /backup/restore (restore wizard). Update navigation.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/App.tsx"
+          ],
+          "estimated_time": "30min"
+        },
+        {
+          "id": "6.2",
+          "title": "Add backup to sidebar navigation",
+          "description": "Add Backup section to ModernSidebar with links to dashboard, create backup, and restore. Include status indicator for scheduled backups.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/ModernSidebar.tsx"
+          ],
+          "estimated_time": "30min"
+        },
+        {
+          "id": "6.3",
+          "title": "Add backup widget to HealthDashboard",
+          "description": "Add backup status card to main health dashboard showing: last backup time, next scheduled, health status. Quick backup button.",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/HealthDashboard.tsx"
+          ],
+          "estimated_time": "45min"
+        }
+      ]
+    },
+    {
+      "id": "phase-7",
+      "name": "Testing and Documentation",
+      "description": "Add tests and finalize implementation",
+      "subtasks": [
+        {
+          "id": "7.1",
+          "title": "Add backend unit tests",
+          "description": "Create vitest tests for backup service, encryption utilities, and destination adapters. Mock Docker commands and filesystem operations.",
+          "status": "pending",
+          "files": [
+            "control-server/tests/backup.test.ts"
+          ],
+          "estimated_time": "2h"
+        },
+        {
+          "id": "7.2",
+          "title": "Add frontend smoke tests",
+          "description": "Create Playwright tests for backup wizard flow: destination setup, item selection, encryption config, schedule config, backup execution.",
+          "status": "pending",
+          "files": [
+            "docs-site/tests/backup.spec.ts"
+          ],
+          "estimated_time": "1.5h"
+        },
+        {
+          "id": "7.3",
+          "title": "Verify all acceptance criteria",
+          "description": "Manual testing to verify: one-click backup, compression, encryption, all destination types, integrity validation, scheduled backups, progress display with ETA.",
+          "status": "pending",
+          "files": [],
+          "estimated_time": "1h"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "ac-1",
+      "description": "Users can backup all service configs and databases with one click",
+      "related_subtasks": [
+        "3.1",
+        "3.3",
+        "3.6",
+        "1.2",
+        "1.5"
+      ]
+    },
+    {
+      "id": "ac-2",
+      "description": "Backups are compressed and optionally encrypted",
+      "related_subtasks": [
+        "1.2",
+        "1.3",
+        "3.4"
+      ]
+    },
+    {
+      "id": "ac-3",
+      "description": "Support for local directory, S3, and rclone destinations",
+      "related_subtasks": [
+        "1.4",
+        "3.2"
+      ]
+    },
+    {
+      "id": "ac-4",
+      "description": "Restore wizard validates backup integrity before restoring",
+      "related_subtasks": [
+        "1.6",
+        "4.1",
+        "4.3"
+      ]
+    },
+    {
+      "id": "ac-5",
+      "description": "Scheduled automated backups with configurable retention",
+      "related_subtasks": [
+        "1.7",
+        "3.5",
+        "5.3"
+      ]
+    },
+    {
+      "id": "ac-6",
+      "description": "Backup progress shown with estimated time remaining",
+      "related_subtasks": [
+        "3.7",
+        "4.6",
+        "2.2"
+      ]
+    }
+  ],
+  "dependencies": {
+    "npm_packages": {
+      "control-server": [
+        "@aws-sdk/client-s3",
+        "node-cron",
+        "archiver",
+        "extract-zip"
+      ],
+      "docs-site": []
+    },
+    "system_requirements": [
+      "tar (for compression)",
+      "rclone (optional, for rclone destinations)"
+    ]
+  },
+  "estimated_total_time": "32h",
+  "qa_status": {
+    "status": "pending",
+    "issues": "",
+    "tests_passed": ""
+  },
+  "last_updated": "2026-01-05T17:42:34.518895+00:00"
+}

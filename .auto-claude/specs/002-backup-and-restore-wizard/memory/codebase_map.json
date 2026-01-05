@@ -1,0 +1,10 @@
+{
+  "discovered_files": {
+    "./.auto-claude/specs/002-backup-and-restore-wizard/implementation_plan.json": {
+      "description": "Implementation plan created with 7 phases and 32 subtasks covering backend infrastructure (backup service, encryption, destination adapters, scheduler), frontend state management (Zustand store, API hooks), backup wizard UI (5 steps), restore wizard UI (5 steps), dashboard, integration, and testing. Total estimated time: 32 hours.",
+      "category": "architecture",
+      "discovered_at": "2026-01-05T17:34:37.544253+00:00"
+    }
+  },
+  "last_updated": "2026-01-05T17:34:37.544267+00:00"
+}
