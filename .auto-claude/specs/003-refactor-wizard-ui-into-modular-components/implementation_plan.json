@@ -212,11 +212,12 @@
           "id": "4.3",
           "title": "Extract LocalAccessGuide component",
           "description": "Extract the local mode access guide table from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx"
           ],
-          "notes": "Shows app URLs table for local deployment, with host input"
+          "notes": "Successfully extracted LocalAccessGuide component from ReviewGenerateStep.tsx. Component includes server IP/hostname input with quick-select buttons (localhost, LAN IP), app URL table with filtering based on selected services, automatic LAN IPv4 detection via controlServer.getNetworkInfo(), localStorage persistence for access host preference, and helper tip text. Reduced ReviewGenerateStep from ~1100 lines to 864 lines. Exported helper functions (buildLocalHttpUrl, isLoopbackHost, LOCAL_ACCESS_APPS) for reuse in deploy modal. Component follows established patterns with proper TypeScript interfaces and JSDoc documentation. Committed in 15c318a.",
+          "updated_at": "2026-01-05T19:49:33.426652+00:00"
         },
         {
           "id": "4.4",
@@ -329,5 +330,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:44:29.153888+00:00"
+  "last_updated": "2026-01-05T19:49:33.426660+00:00"
 }
