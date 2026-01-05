@@ -59,7 +59,27 @@
       "description": "Settings endpoints are defined in ai.ts (lines 784-890): GET/POST/DELETE /api/settings/openai-key, GET /api/settings/openai-key/status, GET /api/settings/stt, GET /api/settings/tts, GET /api/settings/tts/status. All 7 endpoints respond correctly with HTTP 200. Test coverage gap: voice.test.ts only covers /api/settings/stt and /api/settings/tts - missing tests for /api/settings/openai-key endpoints.",
       "category": "api",
       "discovered_at": "2026-01-05T17:42:44.441854+00:00"
+    },
+    "docs-site/src/main.tsx": {
+      "description": "/settings route is correctly configured with lazy loading (lines 119-135). SettingsPage component loaded via React.lazy() with proper Suspense fallback showing loading spinner. Route matches smoke test expectations (main element visible).",
+      "category": "routing",
+      "discovered_at": "2026-01-05T17:50:54.522163+00:00"
+    },
+    "docs-site/src/pages/SettingsPage.tsx": {
+      "description": "SettingsPage has all required test IDs for cockpit test: cockpit-restart (line 518), cockpit-recheck (line 528), 'Last checked:' label (line 511). Renders <main> as root element (line 456) matching smoke test assertion. StatusBadge component includes status-badge testId.",
+      "category": "testing",
+      "discovered_at": "2026-01-05T17:50:54.558164+00:00"
+    },
+    "docs-site/src/components/SetupWizard.tsx": {
+      "description": "Wizard has 6 steps (0-5): Welcome, Basic Config, Stack Selection, Service Config, Advanced, Review. Navigation handled by handleNextStep() with validation for steps 1, 2, and 4. Generates 4 files: .env, authelia-configuration.yml, cloudflare-config.yml, docker-compose.yml. Full E2E test coverage in smoke.spec.ts line 107-193.",
+      "category": "architecture",
+      "discovered_at": "2026-01-05T17:54:08.045649+00:00"
+    },
+    "docs-site/src/components/AIAssistant.tsx": {
+      "description": "AI Assistant component (1021 lines) with floating button, chat panel, streaming responses, voice I/O, agent selection, and proactive nudges. Button at fixed bottom-4 right-4 z-50 with title=\"Ask AI Assistant\". Uses streaming chat hook with fallback to non-streaming. Comprehensive E2E test coverage in smoke.spec.ts.",
+      "category": "component",
+      "discovered_at": "2026-01-05T17:56:20.846684+00:00"
     }
   },
-  "last_updated": "2026-01-05T17:42:44.441894+00:00"
+  "last_updated": "2026-01-05T17:56:20.846701+00:00"
 }

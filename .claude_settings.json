@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Write(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Edit(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Glob(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Grep(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Read(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/.auto-claude/specs/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Write(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/.auto-claude/specs/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Edit(/Users/morlock/fun/m2 copy 2/Media-stack-anti/.worktrees/001-help-me-review-the-project-and-find-issues-of-the-/.auto-claude/specs/001-help-me-review-the-project-and-find-issues-of-the-/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

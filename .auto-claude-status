@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "001-help-me-review-the-project-and-find-issues-of-the-",
+  "state": "building",
+  "subtasks": {
+    "completed": 13,
+    "total": 19,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Frontend UI Investigation",
+    "id": null,
+    "total": 5
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 14,
+    "started_at": "2026-01-05T12:26:38.400595"
+  },
+  "last_update": "2026-01-05T12:54:23.416268"
+}
