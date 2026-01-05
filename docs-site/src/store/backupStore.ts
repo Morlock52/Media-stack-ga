@@ -105,8 +105,13 @@ export interface BackupHistoryEntry {
 // ---------------------------------------------------------------------------
 // ZUSTAND STORE INTERFACE
 // ---------------------------------------------------------------------------
+export interface RestoreOptions {
+    stopServices: boolean;
+    createPreRestoreBackup: boolean;
+}
+
 export interface BackupStore {
-    // Wizard step index (0-4 for the 5 steps in the backup wizard)
+    // Backup Wizard step index (0-4 for the 5 steps in the backup wizard)
     currentStep: number;
 
     // Destination configuration
@@ -136,7 +141,26 @@ export interface BackupStore {
     // Backup name (optional user-provided name)
     backupName: string;
 
-    // ------ Actions for navigation ------
+    // ------ Restore Wizard State ------
+    // Restore wizard step index (0-4 for the 5 steps in the restore wizard)
+    restoreCurrentStep: number;
+
+    // Selected backup for restore
+    selectedBackupForRestore: BackupHistoryEntry | null;
+
+    // Validation result (null = not validated yet, true = valid, false = invalid)
+    restoreValidationResult: boolean | null;
+
+    // Selected items for restore (array of item names, empty = restore all)
+    restoreSelectedItems: string[];
+
+    // Restore options
+    restoreOptions: RestoreOptions;
+
+    // Decryption password for encrypted backups
+    restoreDecryptionPassword: string;
+
+    // ------ Actions for backup wizard navigation ------
     setCurrentStep: (step: number) => void;
     nextStep: () => void;
     prevStep: () => void;
@@ -168,8 +192,24 @@ export interface BackupStore {
     // ------ Actions for backup name ------
     setBackupName: (name: string) => void;
 
-    // ------ Reset wizard ------
+    // ------ Actions for restore wizard navigation ------
+    setRestoreCurrentStep: (step: number) => void;
+    restoreNextStep: () => void;
+    restorePrevStep: () => void;
+
+    // ------ Actions for restore wizard state ------
+    setSelectedBackupForRestore: (backup: BackupHistoryEntry | null) => void;
+    setRestoreValidationResult: (result: boolean | null) => void;
+    setRestoreSelectedItems: (items: string[]) => void;
+    toggleRestoreItem: (itemName: string) => void;
+    selectAllRestoreItems: () => void;
+    deselectAllRestoreItems: () => void;
+    setRestoreOptions: (options: RestoreOptions) => void;
+    setRestoreDecryptionPassword: (password: string) => void;
+
+    // ------ Reset wizards ------
     resetWizard: () => void;
+    resetRestoreWizard: () => void;
 }
 
 // Initial encryption config
@@ -205,11 +245,17 @@ const scrubSensitiveData = (state: Partial<BackupStore>): Partial<BackupStore> =
     };
 };
 
+// Initial restore options
+const initialRestoreOptions: RestoreOptions = {
+    stopServices: true,
+    createPreRestoreBackup: true,
+};
+
 // Main exported hook used throughout the app
 export const useBackupStore = create<BackupStore>()(
     persist(
         (set) => ({
-            // Initial state
+            // Initial backup wizard state
             currentStep: 0,
             destination: initialDestination,
             selectedItems: [],
@@ -221,7 +267,15 @@ export const useBackupStore = create<BackupStore>()(
             activeRestoreProgress: null,
             backupName: '',
 
-            // Navigation actions
+            // Initial restore wizard state
+            restoreCurrentStep: 0,
+            selectedBackupForRestore: null,
+            restoreValidationResult: null,
+            restoreSelectedItems: [],
+            restoreOptions: initialRestoreOptions,
+            restoreDecryptionPassword: '',
+
+            // Backup wizard navigation actions
             setCurrentStep: (step) => set({ currentStep: step }),
 
             nextStep: () =>
@@ -289,7 +343,54 @@ export const useBackupStore = create<BackupStore>()(
             // Backup name actions
             setBackupName: (name) => set({ backupName: name }),
 
-            // Reset wizard to initial state
+            // Restore wizard navigation actions
+            setRestoreCurrentStep: (step) => set({ restoreCurrentStep: step }),
+
+            restoreNextStep: () =>
+                set((state) => ({
+                    restoreCurrentStep: Math.min(state.restoreCurrentStep + 1, 4), // 5 steps total (0-4)
+                })),
+
+            restorePrevStep: () =>
+                set((state) => ({
+                    restoreCurrentStep: Math.max(state.restoreCurrentStep - 1, 0),
+                })),
+
+            // Restore wizard state actions
+            setSelectedBackupForRestore: (backup) => set({ selectedBackupForRestore: backup }),
+
+            setRestoreValidationResult: (result) => set({ restoreValidationResult: result }),
+
+            setRestoreSelectedItems: (items) => set({ restoreSelectedItems: items }),
+
+            toggleRestoreItem: (itemName) =>
+                set((state) => {
+                    const isSelected = state.restoreSelectedItems.includes(itemName);
+                    if (isSelected) {
+                        return {
+                            restoreSelectedItems: state.restoreSelectedItems.filter(name => name !== itemName),
+                        };
+                    } else {
+                        return {
+                            restoreSelectedItems: [...state.restoreSelectedItems, itemName],
+                        };
+                    }
+                }),
+
+            selectAllRestoreItems: () =>
+                set((state) => {
+                    // Get all item names from the selected backup
+                    const allItemNames = state.selectedBackupForRestore?.metadata?.items?.map((item: any) => item.name) || [];
+                    return { restoreSelectedItems: allItemNames };
+                }),
+
+            deselectAllRestoreItems: () => set({ restoreSelectedItems: [] }),
+
+            setRestoreOptions: (options) => set({ restoreOptions: options }),
+
+            setRestoreDecryptionPassword: (password) => set({ restoreDecryptionPassword: password }),
+
+            // Reset backup wizard to initial state
             resetWizard: () =>
                 set({
                     currentStep: 0,
@@ -300,8 +401,19 @@ export const useBackupStore = create<BackupStore>()(
                     schedule: null,
                     backupHistory: [],
                     activeBackupProgress: null,
-                    activeRestoreProgress: null,
                     backupName: '',
+                }),
+
+            // Reset restore wizard to initial state
+            resetRestoreWizard: () =>
+                set({
+                    restoreCurrentStep: 0,
+                    selectedBackupForRestore: null,
+                    restoreValidationResult: null,
+                    restoreSelectedItems: [],
+                    restoreOptions: initialRestoreOptions,
+                    restoreDecryptionPassword: '',
+                    activeRestoreProgress: null,
                 }),
         }),
         {
