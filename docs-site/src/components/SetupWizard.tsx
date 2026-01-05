@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { toast } from 'sonner'
 import {
-    ArrowRight, ArrowLeft, FileDown, FileUp, RotateCcw, Save,
+    FileDown, FileUp, RotateCcw, Save,
     Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
 } from 'lucide-react'
 import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
@@ -44,6 +44,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { WizardHeader } from './wizard/WizardHeader'
 import { WizardProgressBar } from './wizard/WizardProgressBar'
 import { WizardStepIndicator } from './wizard/WizardStepIndicator'
+import { WizardNavigation } from './wizard/WizardNavigation'
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -841,41 +842,11 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
 
                     {/* Navigation Buttons - hidden for QuickStartStep which has its own button */}
                     {currentStep > 0 && !(quickStartMode && currentStep === 1) && (
-                        <div className="sticky bottom-4 z-30 mt-8">
-                            <div className="flex justify-between items-center glass-ultra rounded-2xl border border-border/60 px-4 py-3 backdrop-blur">
-                                <Button
-                                    type="button"
-                                    onClick={prevStep}
-                                    variant="glass"
-                                    className="btn-lift px-6 py-3"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                    Back
-                                </Button>
-
-                                {currentStep < 5 ? (
-                                    <Button
-                                        type="button"
-                                        onClick={handleNextStep}
-                                        variant="gradient"
-                                        className="btn-lift px-6 py-3"
-                                    >
-                                        Next
-                                        <ArrowRight className="w-4 h-4" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        onClick={resetWizard}
-                                        variant="glass"
-                                        className="btn-lift px-6 py-3"
-                                    >
-                                        <RotateCcw className="w-4 h-4" />
-                                        Start Over
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                        <WizardNavigation
+                            onNext={handleNextStep}
+                            onPrev={prevStep}
+                            onReset={resetWizard}
+                        />
                     )}
                 </div>
 

@@ -26,21 +26,23 @@
           "id": "1.2",
           "title": "Create WizardProgressBar component",
           "description": "Extract the progress bar and step counter ('Step X of Y - N% Complete') into docs-site/src/components/wizard/WizardProgressBar.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/WizardProgressBar.tsx"
           ],
-          "notes": "Uses currentStep from store, steps array can be passed as prop or co-located"
+          "notes": "Successfully extracted WizardProgressBar component from SetupWizard.tsx. Component includes animated progress bar and step counter text ('Step X of Y - N% Complete'). Reads currentStep from store via selector. Respects reduced motion preferences. Accepts steps array as prop for calculating progress percentage. Committed in 67b4bbb.",
+          "updated_at": "2026-01-05T17:58:23.795862+00:00"
         },
         {
           "id": "1.3",
           "title": "Create WizardStepIndicator component",
           "description": "Extract the horizontal step indicator with clickable completed steps into docs-site/src/components/wizard/WizardStepIndicator.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/WizardStepIndicator.tsx"
           ],
-          "notes": "Handles navigation to completed steps, icons, connection lines. Should use store's setCurrentStep"
+          "notes": "Successfully extracted WizardStepIndicator component from SetupWizard.tsx. Component includes horizontal step indicator with clickable completed steps, step icons, animated connection lines between steps, and proper accessibility attributes. Uses store's setCurrentStep for navigation. Respects the existing visual design with green checkmarks for completed steps and pulse animation for current step. Committed in ba5c601.",
+          "updated_at": "2026-01-05T18:00:30.675231+00:00"
         },
         {
           "id": "1.4",
@@ -314,5 +316,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T17:56:32.007802+00:00"
+  "last_updated": "2026-01-05T18:00:30.675242+00:00"
 }

@@ -3,7 +3,7 @@
   "spec": "003-refactor-wizard-ui-into-modular-components",
   "state": "building",
   "subtasks": {
-    "completed": 1,
+    "completed": 3,
     "total": 25,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 5,
     "started_at": "2026-01-05T12:49:55.324634"
   },
-  "last_update": "2026-01-05T12:56:53.946329"
+  "last_update": "2026-01-05T13:00:51.942679"
 }
