@@ -166,11 +166,13 @@
           "id": "3.2",
           "title": "Create DestinationStep component",
           "description": "Step 1: Configure backup destination. Tabs for Local/S3/Rclone. Local: path input. S3: endpoint, bucket, access key, secret key. Rclone: remote name, path. Test connection button.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/backup/DestinationStep.tsx"
           ],
-          "estimated_time": "1.5h"
+          "estimated_time": "1.5h",
+          "notes": "Created comprehensive DestinationStep component for backup wizard with tabbed interface for Local/S3/Rclone destinations:\n\n**Backend Changes:**\n- Added POST /api/backup/test-connection endpoint to control-server/src/routes/backup.ts\n- Tests connectivity to local, S3, and rclone destinations\n- Returns connection status and error messages\n\n**Frontend Changes:**\n- Added useTestConnection hook in docs-site/src/hooks/useBackup.ts\n- Created docs-site/src/components/backup/DestinationStep.tsx with:\n  - Tab-based UI for selecting destination type (Local/S3/Rclone)\n  - Local tab: path input for directory backups\n  - S3 tab: endpoint, bucket, region, access key, secret key, path prefix inputs\n  - Rclone tab: remote name and remote path inputs\n  - Test connection button with loading states and success/error feedback\n- Integrated DestinationStep into BackupWizard.tsx\n- Uses Zustand store for destination state management\n- Real-time validation and updates on blur\n- Follows existing patterns: InteractiveCard, FocusRing, motion animations, toast notifications\n- Responsive design with proper form validation",
+          "updated_at": "2026-01-05T19:19:52.926041+00:00"
         },
         {
           "id": "3.3",
@@ -479,5 +481,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:15:20.115517+00:00"
+  "last_updated": "2026-01-05T19:19:52.926051+00:00"
 }
