@@ -14,6 +14,7 @@ import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { createLogger } from '../utils/logger.js';
 import { getErrorMessage } from '../utils/errors.js';
+import { matchErrorPatterns, type ErrorPattern } from '../knowledge/errorPatterns.js';
 
 const logger = createLogger('agentTools');
 
@@ -395,6 +396,10 @@ export async function analyzeLogs(
         const errors = logLines.filter(line => /error|exception|fatal|fail/i.test(line));
         const warnings = logLines.filter(line => /warn/i.test(line));
 
+        // Match against ERROR_PATTERNS database for known issues
+        const knownIssues = matchErrorPatterns(output);
+        logger.debug({ serviceName: validatedName, knownIssuesCount: knownIssues.length }, 'Matched error patterns');
+
         return {
             success: true,
             data: {
@@ -406,7 +411,17 @@ export async function analyzeLogs(
                     warnings: warnings.length,
                     hasIssues: errors.length > 0 || warnings.length > 0
                 },
-                service: validatedName
+                service: validatedName,
+                knownIssues: knownIssues.map(issue => ({
+                    id: issue.id,
+                    title: issue.title,
+                    description: issue.description,
+                    severity: issue.severity,
+                    category: issue.category,
+                    causes: issue.causes,
+                    fixes: issue.fixes,
+                    knowledgeBaseRef: issue.knowledgeBaseRef
+                }))
             }
         };
     } catch (err: unknown) {
@@ -676,7 +691,7 @@ export const TOOL_METADATA: Record<string, ToolMetadata> = {
     },
     analyze_logs: {
         name: 'analyze_logs',
-        description: 'Analyze container logs with pattern matching and severity filtering',
+        description: 'Analyze container logs with pattern matching, severity filtering, and ERROR_PATTERNS database matching for known issues',
         category: 'analysis',
         estimatedDurationMs: 5000,
         canParallelize: true,
