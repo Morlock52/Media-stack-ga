@@ -107,6 +107,9 @@ Add an OpenAI API key in Settings:
 
 ![Settings](../images/app/12-settings-desktop.png)
 
+Troubleshooting (Realtime voice):
+- If you see "Failed to exchange SDP with OpenAI", the key may lack Realtime access, the model is blocked, or the ephemeral key expired. Re-check your key, then click **Start Speaking** again or switch to Browser/Server voice modes.
+
 ### Step 6 — Open your dashboard
 
 - Home Network: `http://<server-ip>:3000`
