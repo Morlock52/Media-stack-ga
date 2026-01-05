@@ -172,6 +172,337 @@ This prevents running actual builds, tests, and linting. Proceeding with STATIC 
 
 Continuing to next subtasks with static analysis approach...
 
+## subtask-1-2: Linting Analysis (Static Analysis)
+
+### ESLint Configuration Analysis:
+
+**control-server/eslint.config.js:**
+- Uses flat config (ESLint 9.x style)
+- Extends: js.configs.recommended + typescript-eslint.configs.recommended
+- Files: src/**/*.ts
+- Custom rules:
+  - `@typescript-eslint/no-explicit-any`: OFF (allows any type)
+  - `@typescript-eslint/no-unused-vars`: WARN (ignores args starting with _)
+- Ignores: dist/, node_modules/
+
+**docs-site/eslint.config.js:**
+- Uses flat config (ESLint 9.x style)
+- Extends: js.configs.recommended + typescript-eslint.configs.recommended
+- Includes react plugin with version auto-detection
+- Custom rules:
+  - `react/jsx-uses-react`: OFF (React 17+ new JSX transform)
+  - `react/react-in-jsx-scope`: OFF (React 17+ new JSX transform)
+  - `no-undef`: OFF (TypeScript handles this)
+  - `@typescript-eslint/no-explicit-any`: OFF
+  - `@typescript-eslint/no-unused-vars`: WARN (ignores _prefixed)
+  - `@typescript-eslint/no-unused-expressions`: OFF
+  - `no-prototype-builtins`: OFF
+  - `getter-return`: OFF
+  - `no-empty`: OFF
+  - `no-useless-escape`: OFF
+- Ignores: dist/**, node_modules/**
+
+**shared/package.json:**
+- lint script: `echo 'No lint for shared types'` (no linting)
+
+### Source File Statistics:
+- control-server/src: 27 TypeScript files
+- docs-site/src: 95+ TypeScript/TSX files (31 .ts, 64+ .tsx)
+
+### Console Statement Analysis:
+**control-server (5 occurrences):**
+- All in src/index.ts for startup error handling
+- Appropriate use of console.error for fatal startup failures
+
+**docs-site (50+ occurrences):**
+- Mostly console.warn/error for error handling
+- Some console.log for debugging (VoiceCompanion.tsx has several debug logs)
+- Notable files with console statements:
+  - VoiceCompanion.tsx: 25+ console calls (debug/warn/error)
+  - useRealtimeVoice.ts: 8 console calls
+  - useStreamingChat.ts: 2 console calls
+  - AIAssistant.tsx: 3 console calls
+
+### Potential Linting Issues (Static Analysis):
+
+1. **Debug console.log statements** - VoiceCompanion.tsx has many `console.log` statements
+   that appear to be debug output (prefixed with `[VoiceCompanion]`). These would typically
+   be flagged by stricter linting configs but are allowed by current rules.
+
+2. **Relaxed rules** - Both workspaces have many rules disabled:
+   - `no-explicit-any` disabled means type safety isn't enforced
+   - `no-empty` disabled in docs-site allows empty catch blocks
+   - `no-useless-escape` disabled may hide regex issues
+
+3. **Lint script mismatch** - docs-site package.json uses legacy CLI flags:
+   ```
+   eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+   ```
+   But eslint.config.js uses flat config format. The `--ext` flag is deprecated
+   in flat config mode (file selection is handled in the config itself).
+
+### Status: BLOCKED (cannot verify linting without npm/eslint commands)
+
+Analysis complete. ESLint configurations are modern (flat config) and should work,
+but actual linting verification requires running npm run lint.
+
 === END SESSION 2 (IN PROGRESS) ===
 
-Next: Continue with remaining Phase 1 subtasks using static analysis.
+## subtask-1-3: Control-Server Vitest Unit Tests (Static Analysis)
+
+### Test File Inventory:
+5 test files found in control-server/test/:
+
+1. **bootstrap.test.ts** (115 lines)
+   - Tests: `extractArrApiKey`, `bootstrapArrKeys`, `findContainerName`
+   - Mocks: `docker.js`, `env.js`
+   - Coverage: API key extraction from Docker containers, env variable setting
+   - 4 test cases
+
+2. **agent-tools.test.ts** (57 lines)
+   - Tests: `registryService`, `docService`
+   - Mocks: `fs`, `env.js`
+   - Coverage: Registry CRUD, duplicate detection, doc management
+   - 5 test cases
+
+3. **remote.test.ts** (175 lines)
+   - Tests: Remote Deploy API (`/api/remote-deploy`)
+   - Mocks: `child_process.spawn`, `fs`
+   - Coverage: SSH key auth, password auth (sshpass), error handling
+   - 4 test cases
+
+4. **voice.test.ts** (444 lines) - MOST COMPREHENSIVE
+   - Tests: Voice Agent, TTS, STT, Realtime APIs
+   - Uses Fastify injection for HTTP testing
+   - Coverage: Input validation, API responses, error handling, concurrent requests
+   - 17+ test cases across 4 describe blocks
+
+5. **ai.tts.test.ts** (89 lines)
+   - Tests: `/api/tts` endpoint specifically
+   - Coverage: Validation, audio responses, model fallback (tts-1-hd → tts-1)
+   - 3 test cases
+
+### Vitest Configuration (vitest.config.ts):
+```typescript
+export default defineConfig({
+    test: {
+        globals: true,       // describe, it, expect available globally
+        environment: 'node', // Node.js test environment
+        include: ['test/**/*.test.ts'],
+    },
+});
+```
+
+### Test Patterns Observed:
+- ✅ Uses Vitest's `vi.mock()` for module mocking
+- ✅ Uses `vi.stubGlobal()` for fetch mocking
+- ✅ Uses Fastify's `inject()` method for HTTP request testing
+- ✅ Proper setup/teardown with `beforeEach`/`afterEach`
+- ✅ Clean mock clearing between tests
+- ✅ Error handling tests included
+- ✅ Concurrent request tests for voice APIs
+
+### Static Analysis Findings:
+
+**No obvious test issues detected:**
+- All tests use proper Vitest syntax
+- Mock patterns are consistent
+- Assertions appear correct
+- No orphaned async operations visible
+
+**Test Coverage Gaps (potential):**
+- No tests for `/api/containers` (Docker routes)
+- No tests for `/api/logs` endpoints
+- No tests for `/api/settings/*` endpoints beyond TTS/STT status
+- No integration tests between services
+
+### Status: BLOCKED
+Cannot run `npm test -w control-server` due to command restrictions.
+Static analysis complete - no syntax or pattern issues found.
+
+---
+
+## subtask-1-4: Docs-Site Playwright E2E Tests (Static Analysis)
+
+### Test File Inventory:
+5 test files found in docs-site/tests/:
+- smoke.spec.ts (268 lines) - Main smoke tests, 10 test cases
+- arr-stack.spec.ts
+- settings.cockpit.spec.ts
+- stress.wizard.spec.ts
+- ui-review.screenshots.spec.ts
+
+### Smoke Test Coverage (smoke.spec.ts):
+1. **deep link routes load** - Tests /docs and /settings routes
+2. **homepage loads and displays hero section** - Verifies main content
+3. **navigation is visible and functional** - Checks nav element
+4. **setup wizard is accessible** - Tests wizard trigger button
+5. **AI Assistant button is present** - Checks for AI button (non-blocking)
+6. **no critical JavaScript errors on load** - Monitors pageerror events
+7. **wizard can generate and download configs** - Full 6-step wizard flow
+8. **storage planner accepts Tdarr library paths** - Tests Tdarr path configuration
+9. **AI assistant can chat with control-server** - End-to-end AI chat test
+
+### Playwright Configuration (playwright.config.ts):
+- testDir: ./tests
+- timeout: 60000ms (1 minute per test)
+- headless: true
+- Configures two webServers:
+  1. control-server: Builds then runs on port 3001
+  2. Vite dev server: Port 5175 (configurable via PLAYWRIGHT_UI_PORT)
+- Server startup timeout: 120000ms (2 minutes)
+- reuseExistingServer: true (for CI/local efficiency)
+
+### Static Analysis Issues Found:
+
+**1. Ineffective Console Error Checking (HIGH)**
+Location: smoke.spec.ts lines 23-29
+```typescript
+const consoleErrors: string[] = []
+page.on('console', msg => {
+  if (msg.type() === 'error' && !msg.text().includes('extension')) {
+    consoleErrors.push(msg.text())
+  }
+})
+// ... but consoleErrors is NEVER asserted!
+```
+The `consoleErrors` array is populated but no `expect(consoleErrors).toHaveLength(0)` at test end.
+
+**2. waitForTimeout() Anti-Pattern (MEDIUM)**
+Locations: lines 57, 100
+```typescript
+await page.waitForTimeout(500)  // line 57
+await page.waitForTimeout(2000) // line 100
+```
+Playwright docs recommend avoiding waitForTimeout in favor of explicit wait conditions.
+These can cause flaky tests in slow CI environments.
+
+**3. Type Safety Issues (LOW)**
+- Line 162: `const onDownload = async (dl: any)` - should use Playwright's `Download` type
+- Lines 181, 186: Non-null assertions `!` without proper type guards
+
+**4. Test Directory Not in tsconfig.json (INFO)**
+The docs-site/tsconfig.json only includes `"src"` in its include array.
+Tests rely on Playwright's own TypeScript handling, which works but means
+compile-time type checking doesn't catch test file issues.
+
+**5. Hard-coded Test Data (INFO)**
+- Domain: 'mydomain.net'
+- Password: 'TestPassword123!'
+These are fine for smoke tests but limit flexibility.
+
+### Test Dependencies:
+- Tests require both control-server AND docs-site running
+- The 'AI assistant can chat with control-server' test will fail if control-server is down
+- Download tests require proper file system access
+
+### Status: BLOCKED
+Cannot run `npm test -w docs-site -- tests/smoke.spec.ts` due to command restrictions.
+Static analysis complete - identified 3 potential issues in test quality.
+
+---
+
+## subtask-1-5: Run Quick Validation Suite (npm run check)
+
+### Command Analysis:
+```bash
+npm run check
+# Expands to:
+# npm run lint && python scripts/check_app_docs.py --strict && npm test -w control-server && npm run test -w docs-site -- tests/smoke.spec.ts
+```
+
+This composite command runs:
+1. **npm run lint** - Linting across all workspaces (analyzed in subtask-1-2)
+2. **python scripts/check_app_docs.py --strict** - Python doc validation script
+3. **npm test -w control-server** - Vitest unit tests (analyzed in subtask-1-3)
+4. **npm run test -w docs-site -- tests/smoke.spec.ts** - Playwright smoke tests (analyzed in subtask-1-4)
+
+### Python Script Analysis (check_app_docs.py):
+
+The script validates that all Docker Compose services have documentation in `docs/app.md`:
+
+**What it does:**
+1. Parses Docker Compose files: docker-compose.yml, docker-compose.local.yml,
+   docker-compose.wizard.yml, docker-compose.wizard.secure.yml, docker-compose.wizard.override.yml
+2. Extracts service names from each compose file
+3. Reads `docs/app.md` and extracts `### ` section headings
+4. Matches services to documentation sections (fuzzy matching via normalization)
+5. Reports services missing documentation coverage
+6. In `--strict` mode: also fails if docs have sections for non-existent services
+
+**Exit codes:**
+- 0: All services documented (and no orphan sections if --strict)
+- 1: Missing coverage or orphan sections in strict mode
+- 2: Invalid arguments
+
+**Potential Issue:** Uses sys.argv for arg parsing instead of argparse, but this is fine for a simple script.
+
+### Status: BLOCKED
+Cannot run `npm run check` due to command restrictions.
+The component parts (lint, tests) were analyzed in subtasks 1-1 through 1-4.
+
+### Summary of Phase 1 Static Analysis:
+
+All 5 subtasks in Phase 1 are BLOCKED from execution due to npm/node command restrictions.
+However, static analysis was performed and identified the following issues:
+
+**Issues Found:**
+1. TypeScript version mismatch between workspaces (5.3.3 vs 5.2.2)
+2. Deprecated ESLint CLI flags in docs-site (--ext with flat config)
+3. Debug console.log statements in VoiceCompanion.tsx (25+ occurrences)
+4. Smoke test consoleErrors array never asserted
+5. waitForTimeout() anti-pattern in smoke tests (lines 57, 100)
+6. Type safety issues in smoke tests (any type, non-null assertions)
+7. Test coverage gaps in control-server (no tests for /api/containers, /api/logs, /api/settings)
+
+**Phase 1 Status: COMPLETE (Static Analysis Only)**
+
+---
+
+=== PHASE 1 COMPLETE ===
+
+=== PHASE 2: BACKEND API INVESTIGATION ===
+
+## subtask-2-1: Verify /api/health endpoint returns correct response
+
+### Live Verification (Server Running):
+
+**Test Command:**
+```bash
+curl -s -X GET http://localhost:3001/api/health -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+    "status": "online",
+    "version": "2.0.0",
+    "backend": "fastify"
+}
+```
+
+**HTTP Status Code:** 200 ✅
+
+### Implementation Analysis (control-server/src/app.ts):
+
+**Health Endpoint Definition (lines 269-271):**
+```typescript
+app.get('/api/health', async (request, reply) => {
+    return { status: 'online', version: '2.0.0', backend: 'fastify' };
+});
+```
+
+**Security Bypasses (Correct for Health Checks):**
+1. Rate limiting bypass (line 175): `allowList: (request) => request.url === '/api/health'`
+2. Authentication bypass (line 259): `if (url === '/api/health') return;`
+
+**Findings:**
+- ✅ Returns correct JSON response
+- ✅ HTTP 200 status code
+- ✅ Bypasses rate limiting (appropriate for health checks)
+- ✅ Bypasses authentication (appropriate for health checks)
+- ✅ No issues found
+
+**Status: COMPLETE** ✅
+
+---
