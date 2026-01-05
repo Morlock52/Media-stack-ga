@@ -103,12 +103,37 @@
 - Follows established patterns from ConfigSummaryCard with proper TypeScript interfaces and JSDoc
 - Committed in 39c6d77
 
-## Summary
-Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), and Phase 3 (Extract Modal Components).
+#### 4.3 - Extract LocalAccessGuide component ✅
+- Created `docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx`
+- Extracted local mode access guide table from ReviewGenerateStep.tsx
+- Component includes server IP/hostname input with quick-select buttons (localhost, LAN IP)
+- App URL table with filtering based on selected services
+- Automatic LAN IPv4 detection via controlServer.getNetworkInfo()
+- localStorage persistence for access host preference
+- Reduced ReviewGenerateStep from ~1100 lines to 864 lines
+- Exported helper functions (buildLocalHttpUrl, isLoopbackHost, LOCAL_ACCESS_APPS) for reuse in deploy modal
+- Follows established patterns with proper TypeScript interfaces and JSDoc
+- Committed in 15c318a
 
-Currently in Phase 4: Refactor Large Step Components. Breaking down the massive ReviewGenerateStep.tsx (~1100 lines) into smaller, focused components. Completed ConfigSummaryCard and StorageLayoutCard extractions.
+#### 4.4 - Extract LocalDeployModal component ✅
+- Created `docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx`
+- Extracted local deployment modal from ReviewGenerateStep.tsx
+- Component handles all three deployment states (idle, deploying, success)
+- Includes bootstrap API key extraction functionality with reveal/copy/validation UI
+- Shows container status after successful deployment
+- Displays access URLs with LAN IP detection
+- Provides error handling with manual deployment fallback
+- Reduced ReviewGenerateStep from 864 lines to 228 lines (~636 line reduction)
+- Component follows established patterns from DraftRecoveryModal with AnimatePresence wrapper
+- Proper TypeScript interfaces and JSDoc documentation
+- Committed in 3618fa2
+
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), and most of Phase 4 (Refactor Large Step Components).
+
+Phase 4 Status: Completed ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, and LocalDeployModal extractions. ReviewGenerateStep.tsx reduced from ~1100 lines to 228 lines (872 line reduction).
 
 Total reduction in SetupWizard.tsx: ~400+ lines
-Total reduction in ReviewGenerateStep.tsx: ~43 lines so far
+Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
 
-Next: Extract LocalAccessGuide, LocalDeployModal, and BootstrapKeysPanel components from ReviewGenerateStep.tsx.
+Next: Extract BootstrapKeysPanel component and refactor StackSelectionStep to use store directly.
