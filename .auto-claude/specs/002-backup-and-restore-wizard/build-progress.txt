@@ -227,3 +227,96 @@
 - Subtask 3.6: Create ReviewStep component with summary and execution
 - Subtask 3.7: Create BackupProgress component for real-time progress display
 
+---
+
+## 2026-01-05 - Subtask 3.5 Completed
+
+**Subtask:** Create ScheduleStep component for backup schedule configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive ScheduleStep component for configuring scheduled backups
+- Implemented toggle switch to enable/disable scheduled backups with visual feedback
+- Built frequency selector with daily, weekly, and monthly options in card-based UI
+- Added time picker for setting backup execution time (HTML5 time input)
+- Created retention policy input with validation (1-100 backups)
+- Implemented real-time calculation of next backup run time
+- Added helpful info banners explaining scheduled backups and retention policies
+- Created schedule summary showing frequency, retention, and next run time
+- Included recommended retention settings for different frequencies
+- Integrated component into BackupWizard.tsx replacing placeholder
+
+**Key Features:**
+- **Schedule Toggle:**
+  - Clean toggle switch with animation (green when enabled)
+  - Clock icon that changes color based on state
+  - Toast notifications when toggling on/off
+  - Summary message when disabled
+
+- **Frequency Selector:**
+  - Three options: Daily, Weekly, Monthly
+  - Card-based UI with descriptions
+  - Daily: Every day at set time
+  - Weekly: Every Sunday at set time
+  - Monthly: 1st of each month at set time
+  - Visual checkmark indicator for selected option
+  - Responsive 3-column grid layout
+
+- **Time Picker:**
+  - HTML5 time input (native picker on mobile)
+  - Real-time display of next backup time
+  - Formatted display: "in X days" or "in X hours"
+  - Local timezone handling
+
+- **Retention Policy:**
+  - Number input with min/max validation (1-100)
+  - Clear explanation of retention behavior
+  - Recommended settings section:
+    - Daily: Keep 7-14 backups (1-2 weeks)
+    - Weekly: Keep 4-12 backups (1-3 months)
+    - Monthly: Keep 6-12 backups (6-12 months)
+  - Visual tips with color-coded bullets
+
+- **Schedule Summary:**
+  - Green success banner when enabled
+  - Shows frequency, time, retention count
+  - Displays calculated next run time
+  - All information at a glance
+
+**Implementation Details:**
+- Helper functions:
+  - generateScheduleId(): Creates unique schedule IDs
+  - calculateNextRun(): Calculates next run time based on frequency and time
+  - formatNextRun(): Formats next run time for display ("in X days/hours")
+- Uses useEffect to update Zustand store in real-time
+- Follows existing patterns from EncryptionStep component
+- Uses InteractiveCard and FocusRing for consistent styling
+- Proper TypeScript types from backupStore (ScheduleFrequency, BackupSchedule)
+- Toast notifications on toggle
+- Responsive design with mobile-friendly inputs
+- Info and success banners with color coding (cyan for info, green for success)
+- Proper ARIA labels for accessibility
+
+**User Experience:**
+- Clean toggle matching encryption step pattern
+- Card-based frequency selector with hover effects
+- Native time picker for better mobile UX
+- Number spinner for retention with validation
+- Helpful tips and recommended settings
+- Real-time next run calculation and display
+- Color-coded visual feedback
+- Smooth Framer Motion animations
+- Disabled state shows summary message
+
+**Files Created:**
+- docs-site/src/components/backup/ScheduleStep.tsx (339 lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated ScheduleStep)
+
+**Commit:** adfaf06 - auto-claude: 3.5 - Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).
+
+**Next Steps:**
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+
