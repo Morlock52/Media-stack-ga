@@ -6,6 +6,7 @@ import { controlServer } from '../../../utils/controlServer'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT, STORAGE_CATEGORIES } from '../../../data/storagePlan'
 import { SetupConfig } from '../../../store/setupStore'
 import { ConfigSummaryCard } from './review/ConfigSummaryCard'
+import { StorageLayoutCard } from './review/StorageLayoutCard'
 
 type BootstrapCredentialKind = 'API key' | 'token' | 'password' | 'secret'
 
@@ -612,22 +613,7 @@ export function ReviewGenerateStep({
                 </div>
             )}
 
-            <div className="p-4 rounded-xl bg-muted/40 border border-border">
-                <h3 className="text-sm font-semibold text-foreground/80 mb-4">Storage Layout</h3>
-                <div className="space-y-2 text-xs">
-                    {storageEntries.map((entry) => (
-                        <div key={entry.id} className="flex items-start justify-between gap-3">
-                            <span className="text-muted-foreground">{entry.label}</span>
-                            <div className="text-right">
-                                <p className="font-mono text-foreground break-all">{entry.path}</p>
-                                {entry.type === 'network' && (
-                                    <span className="text-[10px] text-primary uppercase tracking-wide">Network share</span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <StorageLayoutCard storageEntries={storageEntries} />
 
             <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />

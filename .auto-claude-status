@@ -3,23 +3,23 @@
   "spec": "003-refactor-wizard-ui-into-modular-components",
   "state": "building",
   "subtasks": {
-    "completed": 13,
+    "completed": 15,
     "total": 25,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Extract Modal Components",
+    "current": "Refactor Large Step Components",
     "id": null,
-    "total": 4
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 9,
+    "number": 11,
     "started_at": "2026-01-05T14:09:51.303146"
   },
-  "last_update": "2026-01-05T14:36:53.506502"
+  "last_update": "2026-01-05T14:42:33.939713"
 }

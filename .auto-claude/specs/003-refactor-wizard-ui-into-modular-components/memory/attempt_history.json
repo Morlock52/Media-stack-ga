@@ -95,11 +95,35 @@
         }
       ],
       "status": "completed"
+    },
+    "3.4": {
+      "attempts": [
+        {
+          "session": 9,
+          "timestamp": "2026-01-05T14:39:49.738869",
+          "approach": "Implemented: Extract the floating voice companion button into docs-site/src/components/wizard/VoiceCompanionTrigg",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.1": {
+      "attempts": [
+        {
+          "session": 10,
+          "timestamp": "2026-01-05T14:42:27.617712",
+          "approach": "Implemented: Extract the configuration summary grid from ReviewGenerateStep into docs-site/src/components/wizard/",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T14:09:51.301655",
-    "last_updated": "2026-01-05T14:36:47.692251"
+    "last_updated": "2026-01-05T14:42:27.617730"
   }
 }

@@ -172,11 +172,12 @@
           "id": "3.4",
           "title": "Create VoiceCompanionTrigger component",
           "description": "Extract the floating voice companion button into docs-site/src/components/wizard/VoiceCompanionTrigger.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/VoiceCompanionTrigger.tsx"
           ],
-          "notes": "Fixed position button that appears in newbie mode. Uses scaleIn animation"
+          "notes": "Successfully extracted VoiceCompanionTrigger component from SetupWizard.tsx. Component accepts isVisible and onClick as props. Uses useWizardAnimations hook for scaleIn animation with reduced motion support. Removed unused animation variant definitions (fadeInUp, scaleIn) and related imports (useReducedMotion, useMemo, Mic icon) from SetupWizard.tsx. Component follows established patterns from DraftRecoveryModal and ToolsDialog with proper TypeScript interfaces and JSDoc documentation. Added to barrel export at docs-site/src/components/wizard/index.ts. Reduced SetupWizard.tsx by ~15 lines. Committed in 8aeb03f.",
+          "updated_at": "2026-01-05T19:39:39.152370+00:00"
         }
       ]
     },
@@ -189,11 +190,12 @@
           "id": "4.1",
           "title": "Extract ConfigSummaryCard component",
           "description": "Extract the configuration summary grid from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx"
           ],
-          "notes": "Shows deployment mode, domain, timezone, mode, service count"
+          "notes": "Successfully extracted ConfigSummaryCard component from ReviewGenerateStep.tsx. Component displays deployment mode, domain, timezone, wizard mode, and service count. Reduced ReviewGenerateStep by ~30 lines of inline JSX. Component follows established patterns with proper TypeScript interfaces and JSDoc documentation. Committed in 5313f73.",
+          "updated_at": "2026-01-05T19:42:16.550863+00:00"
         },
         {
           "id": "4.2",
@@ -326,5 +328,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:36:37.261419+00:00"
+  "last_updated": "2026-01-05T19:42:16.550870+00:00"
 }
