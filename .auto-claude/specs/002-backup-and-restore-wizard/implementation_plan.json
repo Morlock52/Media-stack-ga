@@ -245,11 +245,13 @@
           "id": "4.1",
           "title": "Create RestoreWizard main component",
           "description": "Create restore wizard with steps: Select backup, Validate integrity, Choose items, Confirm, Execute. Include pre-restore safety warnings.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/RestoreWizard.tsx"
           ],
-          "estimated_time": "1.5h"
+          "estimated_time": "1.5h",
+          "notes": "Created comprehensive RestoreWizard component following BackupWizard patterns with 5-step flow (Select Backup \u2192 Validate \u2192 Choose Items \u2192 Confirm \u2192 Execute). Includes progress indicator with clickable completed steps, step validation, GlassCard styling with Framer Motion animations, accessibility support, and prominent safety warning banner. Updated backupStore.ts to add restore wizard state and actions including: restoreCurrentStep, selectedBackupForRestore, restoreValidationResult, restoreSelectedItems, restoreOptions, restoreDecryptionPassword, and corresponding navigation/state management actions. Each step displays placeholder content with TODO comments indicating where step components will be integrated in subtasks 4.2-4.6. Ready for step component implementation.",
+          "updated_at": "2026-01-05T19:46:16.180412+00:00"
         },
         {
           "id": "4.2",
@@ -491,5 +493,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:41:42.508687+00:00"
+  "last_updated": "2026-01-05T19:46:16.180423+00:00"
 }
