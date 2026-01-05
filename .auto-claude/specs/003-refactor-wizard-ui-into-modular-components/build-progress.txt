@@ -59,14 +59,56 @@
 - Follows established component patterns with TypeScript interfaces and JSDoc
 - Committed in fb48ad8
 
+#### 3.2 - Create ProfilesPanel component ✅
+- Created `docs-site/src/components/wizard/ProfilesPanel.tsx`
+- Extracted saved profiles panel/modal from SetupWizard.tsx
+- Component manages saved profiles with save, load, and delete functionality
+- Reads savedProfiles directly from store via selectors
+- Reduced SetupWizard.tsx by ~70 lines of inline JSX
+- Added to barrel export at `docs-site/src/components/wizard/index.ts`
+- Committed in a460a97
+
+#### 3.3 - Create ToolsDialog component ✅
+- Created `docs-site/src/components/wizard/ToolsDialog.tsx`
+- Extracted the tools dialog (import/export/templates) from SetupWizard.tsx
+- Component wraps Dialog UI primitive and provides interface for template browsing, config export, and config import
+- Reduced SetupWizard.tsx by ~50 lines of inline JSX
+- Removed unused FileDown and FileUp icon imports from SetupWizard.tsx
+- Added to barrel export
+- Committed in 05d836c
+
+#### 3.4 - Create VoiceCompanionTrigger component ✅
+- Created `docs-site/src/components/wizard/VoiceCompanionTrigger.tsx`
+- Extracted floating voice companion button from SetupWizard.tsx
+- Component uses useWizardAnimations hook for scaleIn animation with reduced motion support
+- Removed unused animation variant definitions and related imports from SetupWizard.tsx
+- Added to barrel export
+- Committed in 8aeb03f
+
+### Phase 4: Refactor Large Step Components
+
+#### 4.1 - Extract ConfigSummaryCard component ✅
+- Created `docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx`
+- Extracted configuration summary grid from ReviewGenerateStep.tsx
+- Displays deployment mode, domain, timezone, wizard mode, and service count
+- Reduced ReviewGenerateStep by ~30 lines of inline JSX
+- Follows established patterns with proper TypeScript interfaces and JSDoc
+- Committed in 5313f73
+
+#### 4.2 - Extract StorageLayoutCard component ✅
+- Created `docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx`
+- Extracted storage layout summary from ReviewGenerateStep.tsx
+- Displays storage paths for selected services with category labels and optional "Network share" badge
+- Reduced ReviewGenerateStep by ~13 lines of inline JSX
+- Follows established patterns from ConfigSummaryCard with proper TypeScript interfaces and JSDoc
+- Committed in 39c6d77
+
 ## Summary
-Successfully completed Phase 2: Extract Hooks and Utilities. All wizard logic has been extracted into dedicated, reusable hooks:
-- useWizardAnimations - Animation variants with reduced motion support
-- useConfigGenerators - YAML/config file generation
-- useFileDownload - File download and clipboard utilities
-- useWizardValidation - Form validation and step navigation
-- useVoicePlanHandler - Voice companion plan application
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), and Phase 3 (Extract Modal Components).
 
-These extractions have reduced SetupWizard.tsx complexity by ~200+ lines total, improving maintainability and testability. All hooks follow consistent patterns with proper documentation and use Zustand store selectors for state management.
+Currently in Phase 4: Refactor Large Step Components. Breaking down the massive ReviewGenerateStep.tsx (~1100 lines) into smaller, focused components. Completed ConfigSummaryCard and StorageLayoutCard extractions.
 
-Started Phase 3: Extract Modal Components. Extracted DraftRecoveryModal (~57 lines removed from SetupWizard.tsx).
+Total reduction in SetupWizard.tsx: ~400+ lines
+Total reduction in ReviewGenerateStep.tsx: ~43 lines so far
+
+Next: Extract LocalAccessGuide, LocalDeployModal, and BootstrapKeysPanel components from ReviewGenerateStep.tsx.
