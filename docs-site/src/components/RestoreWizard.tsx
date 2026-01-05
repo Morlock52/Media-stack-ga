@@ -11,8 +11,8 @@ import { GlassCard } from './ui/glass-card'
 
 // Step components
 import { BackupSelector } from './restore/BackupSelector'
-// TODO: Remaining step components will be implemented in subsequent subtasks (4.3-4.6)
-// import { ValidationStep } from './restore/ValidationStep'
+import { ValidationStep } from './restore/ValidationStep'
+// TODO: Remaining step components will be implemented in subsequent subtasks (4.4-4.6)
 // import { RestoreSelectionStep } from './restore/RestoreSelectionStep'
 // import { RestoreConfirmStep } from './restore/RestoreConfirmStep'
 // import { RestoreExecutionStep } from './restore/RestoreExecutionStep'
@@ -251,16 +251,7 @@ export function RestoreWizard() {
                                     exit={{ opacity: 0, y: -20 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <div className="text-center py-12">
-                                        <ShieldCheck className="w-16 h-16 text-primary mx-auto mb-4" />
-                                        <h2 className="text-2xl font-bold mb-2">Validate Backup Integrity</h2>
-                                        <p className="text-muted-foreground">
-                                            TODO: ValidationStep component will be implemented in subtask 4.3
-                                        </p>
-                                        <p className="text-sm text-muted-foreground mt-4">
-                                            This step will check checksums and decrypt if encrypted
-                                        </p>
-                                    </div>
+                                    <ValidationStep />
                                 </motion.div>
                             )}
 

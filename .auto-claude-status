@@ -3,7 +3,7 @@
   "spec": "002-backup-and-restore-wizard",
   "state": "building",
   "subtasks": {
-    "completed": 18,
+    "completed": 19,
     "total": 32,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 10,
+    "number": 11,
     "started_at": "2026-01-05T14:09:55.412432"
   },
-  "last_update": "2026-01-05T14:48:20.085997"
+  "last_update": "2026-01-05T14:51:58.565342"
 }
