@@ -2,25 +2,19 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
     AlertTriangle,
-    CheckCircle2,
-    XCircle,
     Shield,
     Database,
     Power,
     Clock,
     Info,
     Loader2,
-    TrendingUp,
-    Timer,
-    HardDrive,
-    Cloud,
-    FolderSync,
 } from 'lucide-react'
 import { useBackupStore } from '../../store/backupStore'
 import { useRestoreExecute, useRestoreProgress, type RestoreConfig } from '../../hooks/useBackup'
 import { InteractiveCard } from '../ui/interactive-card'
 import { Button } from '../ui/button'
 import { toast } from 'sonner'
+import { RestoreProgress } from './RestoreProgress'
 
 // Utility function to format bytes to human-readable sizes
 function formatBytes(bytes: number): string {
@@ -29,50 +23,6 @@ function formatBytes(bytes: number): string {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
-}
-
-// Utility function to format transfer speed
-function formatSpeed(bytesPerSecond: number | undefined): string {
-    if (!bytesPerSecond) return 'Calculating...'
-    return `${formatBytes(bytesPerSecond)}/s`
-}
-
-// Utility function to format estimated time remaining
-function formatETA(estimatedCompletionAt: string | undefined, startedAt: string): string {
-    if (!estimatedCompletionAt) return 'Calculating...'
-
-    const now = new Date()
-    const eta = new Date(estimatedCompletionAt)
-    const started = new Date(startedAt)
-    const totalSeconds = Math.floor((eta.getTime() - now.getTime()) / 1000)
-
-    if (totalSeconds <= 0) return 'Almost done...'
-
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    if (hours > 0) {
-        return `~${hours}h ${minutes}m`
-    } else if (minutes > 0) {
-        return `~${minutes}m ${seconds}s`
-    } else {
-        return `~${seconds}s`
-    }
-}
-
-// Get icon for destination type
-function getDestinationIcon(type: string) {
-    switch (type) {
-        case 'local':
-            return HardDrive
-        case 's3':
-            return Cloud
-        case 'rclone':
-            return FolderSync
-        default:
-            return Database
-    }
 }
 
 export function RestoreConfirmStep() {
@@ -147,15 +97,6 @@ export function RestoreConfirmStep() {
             toast.error(err instanceof Error ? err.message : 'Failed to start restore')
         }
     }
-
-    // Calculate progress percentage
-    const progressPercentage = progress?.bytesTotal
-        ? Math.round((progress.bytesProcessed / progress.bytesTotal) * 100)
-        : 0
-
-    // Determine if restore is complete or failed
-    const isComplete = progress?.status === 'completed'
-    const isFailed = progress?.status === 'failed'
 
     if (!selectedBackupForRestore || !restorePreviewData) {
         return (
@@ -396,152 +337,12 @@ export function RestoreConfirmStep() {
                             </p>
                         </div>
 
-                        {progress ? (
-                            <>
-                                {/* Overall Progress Bar */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium">Overall Progress</span>
-                                        <span className="text-sm font-mono font-semibold text-primary">
-                                            {progressPercentage}%
-                                        </span>
-                                    </div>
-                                    <div className="h-3 bg-muted/40 rounded-full overflow-hidden">
-                                        <motion.div
-                                            className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500"
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${progressPercentage}%` }}
-                                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                                        />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1 text-center">
-                                        {formatBytes(progress.bytesProcessed)} / {formatBytes(progress.bytesTotal)}
-                                    </p>
-                                </div>
-
-                                {/* Status Badge */}
-                                <div className="flex justify-center">
-                                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
-                                        isComplete
-                                            ? 'bg-green-500/20 border-green-500 text-green-300'
-                                            : isFailed
-                                            ? 'bg-red-500/20 border-red-500 text-red-300'
-                                            : 'bg-primary/20 border-primary text-primary'
-                                    }`}>
-                                        {isComplete ? (
-                                            <CheckCircle2 className="w-4 h-4" />
-                                        ) : isFailed ? (
-                                            <XCircle className="w-4 h-4" />
-                                        ) : (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        )}
-                                        <span className="text-sm font-semibold capitalize">{progress.status}</span>
-                                    </div>
-                                </div>
-
-                                {/* Current Operation */}
-                                <InteractiveCard className="p-4">
-                                    <div className="text-sm text-muted-foreground mb-1">Current Operation</div>
-                                    <div className="text-lg font-semibold">{progress.currentOperation}</div>
-                                    {progress.currentItem && (
-                                        <div className="text-sm text-muted-foreground mt-2 font-mono truncate">
-                                            {progress.currentItem}
-                                        </div>
-                                    )}
-                                </InteractiveCard>
-
-                                {/* Progress Stats */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {/* Items Processed */}
-                                    <InteractiveCard className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <Database className="w-8 h-8 text-primary" />
-                                            <div className="flex-1">
-                                                <div className="text-xs text-muted-foreground">Items Processed</div>
-                                                <div className="text-xl font-bold">
-                                                    {progress.itemsProcessed}/{progress.itemsTotal}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </InteractiveCard>
-
-                                    {/* Transfer Speed */}
-                                    <InteractiveCard className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <TrendingUp className="w-8 h-8 text-primary" />
-                                            <div className="flex-1">
-                                                <div className="text-xs text-muted-foreground">Transfer Speed</div>
-                                                <div className="text-xl font-bold">
-                                                    {formatSpeed(progress.transferSpeed)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </InteractiveCard>
-
-                                    {/* Estimated Time */}
-                                    <InteractiveCard className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <Timer className="w-8 h-8 text-primary" />
-                                            <div className="flex-1">
-                                                <div className="text-xs text-muted-foreground">Estimated Time</div>
-                                                <div className="text-xl font-bold">
-                                                    {formatETA(progress.estimatedCompletionAt, progress.startedAt)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </InteractiveCard>
-                                </div>
-
-                                {/* Success Banner */}
-                                {isComplete && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="rounded-lg border border-green-500/30 bg-green-500/10 p-4"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0" />
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-green-400">
-                                                    Restore Completed Successfully!
-                                                </h3>
-                                                <p className="text-xs text-green-200/80 mt-1">
-                                                    Successfully restored {progress.itemsProcessed} item{progress.itemsProcessed !== 1 ? 's' : ''}
-                                                    {' '}({formatBytes(progress.bytesProcessed)})
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                {/* Error Banner */}
-                                {isFailed && progress.error && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <XCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
-                                            <div className="flex-1">
-                                                <h3 className="text-sm font-semibold text-red-400">
-                                                    Restore Failed
-                                                </h3>
-                                                <p className="text-xs text-red-200/80 mt-1 font-mono">
-                                                    {progress.error}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </>
-                        ) : (
-                            // Loading state
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                                <p className="text-sm text-muted-foreground">Initializing restore...</p>
-                            </div>
-                        )}
+                        {/* Restore Progress Component */}
+                        <RestoreProgress
+                            progress={progress}
+                            loading={!progress}
+                            loadingMessage="Initializing restore..."
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>
