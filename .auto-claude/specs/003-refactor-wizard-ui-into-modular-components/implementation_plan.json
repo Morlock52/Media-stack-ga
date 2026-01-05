@@ -77,11 +77,12 @@
           "id": "2.1",
           "title": "Create useWizardAnimations hook",
           "description": "Extract the animation variants (fadeInUp, scaleIn) that respect reduced motion preferences into docs-site/src/hooks/useWizardAnimations.ts",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/hooks/useWizardAnimations.ts"
           ],
-          "notes": "Uses useReducedMotion hook, returns memoized animation variants"
+          "notes": "Successfully extracted animation variants (fadeInUp, scaleIn) into docs-site/src/hooks/useWizardAnimations.ts. Hook uses useReducedMotion and returns memoized animation variants that respect reduced motion preferences. Follows existing hook patterns with proper JSDoc documentation. Committed in 7c36c29.",
+          "updated_at": "2026-01-05T19:11:23.562460+00:00"
         },
         {
           "id": "2.2",
@@ -318,5 +319,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T18:04:45.124498+00:00"
+  "last_updated": "2026-01-05T19:11:23.562471+00:00"
 }
