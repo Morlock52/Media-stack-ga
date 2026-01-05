@@ -263,11 +263,12 @@
           "id": "5.1",
           "title": "Add computed selectors to store",
           "description": "Add selector functions for commonly accessed derived state in docs-site/src/store/setupStore.ts",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/store/setupStore.ts"
           ],
-          "notes": "Add selectors like: useIsLocalMode, useSelectedServiceCount, useProgress, useCanNavigateToStep"
+          "notes": "Successfully added 11 selector hooks for commonly accessed derived state: useIsLocalMode, useSelectedServiceCount, useHasService, useWizardProgress, useCanNavigateToStep, useCurrentStepInfo, useHasTorrentWithoutVPN, useIsQuickStartMode, useWizardMode, useIsSimpleStorageMode, useDataRootPath. These provide type-safe, memoized access to reduce code duplication across components. Committed in cd50831.",
+          "updated_at": "2026-01-05T20:05:49.631407+00:00"
         },
         {
           "id": "5.2",
@@ -333,5 +334,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T20:03:41.642031+00:00"
+  "last_updated": "2026-01-05T20:05:49.631416+00:00"
 }

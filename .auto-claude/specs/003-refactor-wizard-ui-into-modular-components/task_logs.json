@@ -1,7 +1,7 @@
 {
   "spec_id": "003-refactor-wizard-ui-into-modular-components",
   "created_at": "2026-01-05T19:09:51.306057+00:00",
-  "updated_at": "2026-01-05T20:05:39.217837+00:00",
+  "updated_at": "2026-01-05T20:08:13.904860+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -9075,6 +9075,307 @@
           "tool_input": "git commit -m \"auto-claude: 5.1 - Add selector ...",
           "subtask_id": "5.1",
           "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:05:40.610652+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "5.1",
+          "session": 16,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:05:46.103441+00:00",
+          "type": "text",
+          "content": "Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:05:49.531246+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:05:50.155913+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "5.1",
+          "session": 16,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:05:53.770556+00:00",
+          "type": "text",
+          "content": "Let me update the build progress file:",
+          "phase": "coding",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:05:54.380726+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:05:54.444741+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "5.1",
+          "session": 16,
+          "detail": "     1→# Build Progress - Refactor Wizard UI into Modular Components\n     2→\n     3→## Completed Subtasks\n     4→\n     5→### Phase 2: Extract Hooks and Utilities\n     6→\n     7→#### 2.2 - Extract YAML/config generation logic ✅\n     8→- Created `docs-site/src/hooks/useConfigGenerators.ts`\n     9→- Extracted `generateAutheliaYaml` and `generateCloudflareYaml` functions\n    10→- Hook reads config and selectedServices from store via selectors\n    11→- Returns memoized generator functions with proper dependency tracking\n    12→- Updated SetupWizard.tsx to use the new hook\n    13→- Committed in aa45900\n    14→\n    15→#### 2.3 - Extract file download and clipboard utilities ✅\n    16→- Created `docs-site/src/hooks/useFileDownload.ts`\n    17→- Extracted `copyToClipboard`, `downloadFile`, `downloadAllFiles`, and `generateEnvFile` functions\n    18→- Hook manages `copied` state internally with 2-second timeout for user feedback\n    19→- All functions properly memoized with useCallback and correct dependencies\n    20→- Updated SetupWizard.tsx to use the new hook\n    21→- Removed inline implementations and unused imports (dockerComposeTemplate, dockerComposeLocalTemplate, buildEnvFile)\n    22→- Committed in 3220c06\n    23→\n    24→#### 2.4 - Extract form validation and step navigation logic ✅\n    25→- Created `docs-site/src/hooks/useWizardValidation.ts`\n    26→- Extracted `handleNextStep` logic including form validation, error scrolling, and toast messages\n    27→- Hook handles validation for Basic Config (step 1) and Advanced Settings (step 4) forms\n    28→- Manages `shakeField` state for error field shake animations\n    29→- Includes `scrollToElement` and `scrollToFirstError` helper functions\n    30→- Updated SetupWizard.tsx to use the new hook\n    31→- Removed inline handleNextStep function and helper functions (~70 lines)\n    32→- Follows established pattern from useConfigGenerators and useFileDownload hooks\n    33→- Committed in 176330f\n    34→\n    35→#### 2.5 - Extract voice plan application logic ✅\n    36→- Created `docs-site/src/hooks/useVoicePlanHandler.ts`\n    37→- Extracted `handleApplyVoicePlan` function that applies voice companion suggestions to wizard state\n    38→- Hook handles applying services, domain, and storage paths from AI-generated voice plans\n    39→- Provides undo support via toast action button\n    40→- Includes automatic navigation to Stack Selection step after applying plan\n    41→- Updated SetupWizard.tsx to use the new hook with onClose callback support\n    42→- Removed inline handleApplyVoicePlan function (~50 lines)\n    43→- Cleaned up unused imports: setSelectedServices, setCurrentStep, updateServiceConfig, updateStoragePath, VoicePlanSummary type\n    44→- Follows established pattern with proper JSDoc documentation and store selectors\n    45→- Committed in 071c6fb\n    46→\n    47→### Phase 3: Extract Modal Components\n    48→\n    49→#### 3.1 - Create DraftRecoveryModal component ✅\n    50→- Created `docs-site/src/components/wizard/DraftRecoveryModal.tsx`\n    51→- Extracted the auto-save draft recovery modal from SetupWizard.tsx\n    52→- Component accepts `isOpen`, `draftInfo`, `onRestore`, and `onDismiss` as props\n    53→- Uses AnimatePresence internally for smooth enter/exit animations\n    54→- Modal displays draft metadata (savedAt timestamp and service count)\n    55→- Provides Resume/Start Fresh action buttons\n    56→- Added to barrel export at `docs-site/src/components/wizard/index.ts`\n    57→- Removed 57 lines of inline JSX from SetupWizard.tsx\n    58→- Cleaned up unused Save icon import from SetupWizard.tsx\n    59→- Follows established component patterns with TypeScript interfaces and JSDoc\n    60→- Committed in fb48ad8\n    61→\n    62→#### 3.2 - Create ProfilesPanel component ✅\n    63→- Created `docs-site/src/components/wizard/ProfilesPanel.tsx`\n    64→- Extracted saved profiles panel/modal from SetupWizard.tsx\n    65→- Component manages saved profiles with save, load, and delete functionality\n    66→- Reads savedProfiles directly from store via selectors\n    67→- Reduced SetupWizard.tsx by ~70 lines of inline JSX\n    68→- Added to barrel export at `docs-site/src/components/wizard/index.ts`\n    69→- Committed in a460a97\n    70→\n    71→#### 3.3 - Create ToolsDialog component ✅\n    72→- Created `docs-site/src/components/wizard/ToolsDialog.tsx`\n    73→- Extracted the tools dialog (import/export/templates) from SetupWizard.tsx\n    74→- Component wraps Dialog UI primitive and provides interface for template browsing, config export, and config import\n    75→- Reduced SetupWizard.tsx by ~50 lines of inline JSX\n    76→- Removed unused FileDown and FileUp icon imports from SetupWizard.tsx\n    77→- Added to barrel export\n    78→- Committed in 05d836c\n    79→\n    80→#### 3.4 - Create VoiceCompanionTrigger component ✅\n    81→- Created `docs-site/src/components/wizard/VoiceCompanionTrigger.tsx`\n    82→- Extracted floating voice companion button from SetupWizard.tsx\n    83→- Component uses useWizardAnimations hook for scaleIn animation with reduced motion support\n    84→- Removed unused animation variant definitions and related imports from SetupWizard.tsx\n    85→- Added to barrel export\n    86→- Committed in 8aeb03f\n    87→\n    88→### Phase 4: Refactor Large Step Components\n    89→\n    90→#### 4.1 - Extract ConfigSummaryCard component ✅\n    91→- Created `docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx`\n    92→- Extracted configuration summary grid from ReviewGenerateStep.tsx\n    93→- Displays deployment mode, domain, timezone, wizard mode, and service count\n    94→- Reduced ReviewGenerateStep by ~30 lines of inline JSX\n    95→- Follows established patterns with proper TypeScript interfaces and JSDoc\n    96→- Committed in 5313f73\n    97→\n    98→#### 4.2 - Extract StorageLayoutCard component ✅\n    99→- Created `docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx`\n   100→- Extracted storage layout summary from ReviewGenerateStep.tsx\n   101→- Displays storage paths for selected services with category labels and optional \"Network share\" badge\n   102→- Reduced ReviewGenerateStep by ~13 lines of inline JSX\n   103→- Follows established patterns from ConfigSummaryCard with proper TypeScript interfaces and JSDoc\n   104→- Committed in 39c6d77\n   105→\n   106→#### 4.3 - Extract LocalAccessGuide component ✅\n   107→- Created `docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx`\n   108→- Extracted local mode access guide table from ReviewGenerateStep.tsx\n   109→- Component includes server IP/hostname input with quick-select buttons (localhost, LAN IP)\n   110→- App URL table with filtering based on selected services\n   111→- Automatic LAN IPv4 detection via controlServer.getNetworkInfo()\n   112→- localStorage persistence for access host preference\n   113→- Reduced ReviewGenerateStep from ~1100 lines to 864 lines\n   114→- Exported helper functions (buildLocalHttpUrl, isLoopbackHost, LOCAL_ACCESS_APPS) for reuse in deploy modal\n   115→- Follows established patterns with proper TypeScript interfaces and JSDoc\n   116→- Committed in 15c318a\n   117→\n   118→#### 4.4 - Extract LocalDeployModal component ✅\n   119→- Created `docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx`\n   120→- Extracted local deployment modal from ReviewGenerateStep.tsx\n   121→- Component handles all three deployment states (idle, deploying, success)\n   122→- Includes bootstrap API key extraction functionality with reveal/copy/validation UI\n   123→- Shows container status after successful deployment\n   124→- Displays access URLs with LAN IP detection\n   125→- Provides error handling with manual deployment fallback\n   126→- Reduced ReviewGenerateStep from 864 lines to 228 lines (~636 line reduction)\n   127→- Component follows established patterns from DraftRecoveryModal with AnimatePresence wrapper\n   128→- Proper TypeScript interfaces and JSDoc documentation\n   129→- Committed in 3618fa2\n   130→\n   131→#### 4.5 - Extract BootstrapKeysPanel component ✅\n   132→- Created `docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx`\n   133→- Extracted API key bootstrap panel from LocalDeployModal.tsx\n   134→- Component includes API key extraction button, polling progress, reveal/copy functionality for keys, and validation status display\n   135→- Reduced LocalDeployModal from 682 lines to 379 lines (~303 line reduction)\n   136→- Follows established patterns with proper TypeScript interfaces and JSDoc\n   137→- Committed in b35039f\n   138→\n   139→#### 4.6 - Refactor StackSelectionStep to use store directly ✅\n   140→- Updated `docs-site/src/components/wizard/steps/StackSelectionStep.tsx` to read from store instead of receiving props\n   141→- Component now uses `useSetupStore()` hook to access mode, setMode, selectedServices, and toggleService\n   142→- Removed props interface (StackSelectionStepProps) and all prop drilling\n   143→- Imports `services` array directly from data/services.ts\n   144→- Updated SetupWizard.tsx to call `<StackSelectionStep />` without props\n   145→- Removed unused destructured values (setMode, toggleService) from SetupWizard.tsx\n   146→- Follows pattern established by QuickStartStep and BasicConfigurationStep\n   147→\n   148→## Summary\n   149→Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), and Phase 4 (Refactor Large Step Components).\n   150→\n   151→Phase 4 Status: All subtasks completed! Extracted ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, LocalDeployModal, and BootstrapKeysPanel. Refactored StackSelectionStep to use store directly. ReviewGenerateStep.tsx reduced from ~1100 lines to 228 lines (872 line reduction). LocalDeployModal reduced by 303 lines.\n   152→\n   153→Total reduction in SetupWizard.tsx: ~400+ lines\n   154→Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)\n   155→Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)\n   156→\n   157→Next: Phase 5 - Store Improvements (add computed selectors and documentation).\n   158→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide \n\n... [truncated - full output was 10447 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:06:14.324824+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...d-ui-into-modular-components/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...d-ui-into-modular-components/build-progress.txt",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:06:14.380924+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "5.1",
+          "session": 16,
+          "detail": "The file ./.auto-claude/specs/003-refactor-wizard-ui-into-modular-components/build-progress.txt has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   153→Total reduction in SetupWizard.tsx: ~400+ lines\n   154→Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)\n   155→Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)\n   156→\n   157→### Phase 5: Store Improvements\n   158→\n   159→#### 5.1 - Add computed selectors to store ✅\n   160→- Added 11 selector hooks to `docs-site/src/store/setupStore.ts` for commonly accessed derived state\n   161→- Selector functions provide type-safe, memoized access to reduce code duplication across components:\n   162→  - `useIsLocalMode`: Check if deployment mode is 'local' (LAN-only, no cloud access)\n   163→  - `useSelectedServiceCount`: Returns count of currently selected services\n   164→  - `useHasService`: Check if a specific service is selected (e.g., 'plex', 'arr', 'vpn')\n   165→  - `useWizardProgress`: Calculate wizard progress as percentage (0-100)\n   166→  - `useCanNavigateToStep`: Check if user can navigate to a specific step (respects quick start mode)\n   167→  - `useCurrentStepInfo`: Get current step info with title, icon, and total steps\n   168→  - `useHasTorrentWithoutVPN`: Security check for torrent without VPN warning\n   169→  - `useIsQuickStartMode`: Check if wizard is in simplified 2-step quick start flow\n   170→  - `useWizardMode`: Get current wizard mode ('newbie', 'expert', or null)\n   171→  - `useIsSimpleStorageMode`: Check if storage mode is 'simple' (single root path)\n   172→  - `useDataRootPath`: Get data root path from storage plan with fallback to default\n   173→- All selectors include JSDoc documentation with usage examples\n   174→- Selectors leverage Zustand's built-in memoization for optimal performance\n   175→- Ready for component refactoring to use these selectors instead of inline state access\n   176→- Committed in cd50831\n   177→\n   178→## Summary\n   179→Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), and started Phase 5 (Store Improvements).\n   180→\n   181→Phase 5 Status: Subtask 5.1 completed (computed selectors). Next: Subtask 5.2 (document store slices).\n   182→\n   183→Total reduction in SetupWizard.tsx: ~400+ lines\n   184→Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)\n   185→Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)\n   186→\n   187→Next: Phase 5.2 - Document store slices with JSDoc comments.\n   188→",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:06:19.442753+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git add .auto-claude/specs/003-refactor-wizard-...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git add .auto-claude/specs/003-refactor-wizard-...",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:06:20.860876+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "5.1",
+          "session": 16,
+          "detail": "[auto-claude/003-refactor-wizard-ui-into-modular-components 9419421] auto-claude: Update build-progress.txt for subtask 5.1\n 1 file changed, 31 insertions(+), 1 deletion(-)",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:06:33.844566+00:00",
+          "type": "text",
+          "content": "Perfect! I've successfully completed subtask 5.1. Here's a summary of what was implemented:\n\n## ✅ Subtask 5.1 Complete: Add Selector Functions for Commonly Accessed Derived State\n\n### What Was Added\n\nI've added **11 selector hooks** to `docs-site/src/store/setupStore.ts` that provide type-safe, memoized access to commonly accessed derived state:\n\n1. **`useIsLocalMode`** - Check if deployment mode is 'local' (LAN-only)\n2. **`useSelectedServiceCount`** - Get count of selected services\n3. **`useHasService(serviceId)`** - Check if a specific service is selected\n4. **`useWizardProgress(totalSteps)`** - Calculate wizard progress percentage (0-100)\n5. **`useCanNavigateToStep(targetStep)`** - Check navigation permissions (respects quick start mode)\n6. **`useCurrentStepInfo(steps)`** - Get current step info with title, icon, and metadata\n7. **`useHasTorrentWithoutVPN`** - Security check for torrent without VPN warning\n8. **`useIsQuickStartMode`** - Check if in simplified 2-step quick start flow\n9. **`useWizardMode`** - Get wizard mode ('newbie', 'expert', or null)\n10. **`useIsSimpleStorageMode`** - Check if storage mode is 'simple'\n11. **`useDataRootPath`** - Get data root path with fallback to default\n\n### Benefits\n\n- **Reduced code duplication** - Components can use these selectors instead of inline state access\n- **Type-safe** - Full TypeScript support with proper types\n- **Optimized performance** - Leverage Zustand's built-in memoization\n- **Better maintainability** - Centralized logic for derived state calculations\n- **Well-documented** - All selectors include JSDoc comments with usage examples\n\n### Commits\n\n- **cd50831** - Main implementation with all 11 selector functions\n- **9419421** - Updated build-progress.txt documentation\n\nThe implementation follows the existing patterns in the codebase and is ready for components to start using these selectors in future refactoring work.",
+          "phase": "coding",
+          "subtask_id": "5.1",
+          "session": 16
+        },
+        {
+          "timestamp": "2026-01-05T20:06:46.313883+00:00",
+          "type": "text",
+          "content": "I'll help you implement subtask 5.2 by adding JSDoc comments to document each slice/section of the store interface. Let me start by reading the relevant files to understand the current implementation.",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:06:46.978619+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...actor-wizard-ui-into-modular-components/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...actor-wizard-ui-into-modular-components/spec.md",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:06:47.583845+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...nto-modular-components/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...nto-modular-components/implementation_plan.json",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:06:47.937055+00:00",
+          "type": "tool_start",
+          "content": "[Glob] pattern: **/setupStore.ts",
+          "phase": "coding",
+          "tool_name": "Glob",
+          "tool_input": "pattern: **/setupStore.ts",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:06:48.113654+00:00",
+          "type": "tool_end",
+          "content": "[Glob] Done",
+          "phase": "coding",
+          "tool_name": "Glob",
+          "subtask_id": "5.2",
+          "session": 17,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:06:52.169655+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/store/setupStore.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/store/setupStore.ts",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:06:52.412697+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "     1→import { create } from 'zustand'\n     2→import { persist } from 'zustand/middleware'\n     3→import {\n     4→    createDefaultStoragePlan,\n     5→    DEFAULT_DATA_ROOT,\n     6→    type StoragePathSetting,\n     7→    type StoragePlan,\n     8→} from '../data/storagePlan'\n     9→\n    10→// Auto-save configuration\n    11→const AUTO_SAVE_KEY = 'setup-wizard-autosave'\n    12→const AUTO_SAVE_DEBOUNCE_MS = 2000 // Save after 2 seconds of inactivity\n    13→\n    14→// ---------------------------------------------------------------------------\n    15→// SHAPE OF THE WIZARD CONFIGURATION\n    16→// ---------------------------------------------------------------------------\n    17→// SetupConfig is the single source of truth for all values that drive the\n    18→// compose generator, .env output, and various helper components.\n    19→//\n    20→// Comments here are intentionally user-facing (for future devs and power\n    21→// users reading the code) and match the guidance in the docs + wizard UI.\n    22→export interface SetupConfig {\n    23→    // DEPLOYMENT MODE: 'local' uses just Traefik, 'cloud' adds Cloudflare + Authelia\n    24→    // Local mode: Access via LAN IP/hostname, no external dependencies\n    25→    // Cloud mode: Access via Cloudflare Tunnel with Authelia SSO\n    26→    deploymentMode: 'local' | 'cloud'\n    27→\n    28→    // MAIN DOMAIN for your stack (no protocol), e.g. \"media.example.com\".\n    29→    // Used by reverse proxy examples and any generated URLs.\n    30→    domain: string\n    31→\n    32→    // TIMEZONE in IANA format (\"America/New_York\", \"Europe/Berlin\", etc.).\n    33→    // Passed through to all containers so logs/schedules line up.\n    34→    timezone: string\n    35→\n    36→    // FILE PERMISSIONS: user/group IDs on the Docker host.\n    37→    // Recommended: run `id -u` and `id -g` on the host and paste here.\n    38→    puid: string\n    39→    pgid: string\n    40→\n    41→    // MASTER PASSWORD: used for some default credentials in generated files\n    42→    // (e.g. dashboards, internal UIs). You can later change it per-service.\n    43→    password: string\n    44→\n    45→    // Cloudflare API token (if using Cloudflare DNS/Tunnels examples).\n    46→    cloudflareToken: string\n    47→\n    48→    // Plex claim token from https://plex.tv/claim (only needed on first run).\n    49→    plexClaim: string\n    50→\n    51→    // WireGuard settings for the Gluetun VPN container.\n    52→    wireguardPrivateKey: string\n    53→    wireguardAddresses: string\n    54→\n    55→    // Per-service extra config blobs (key/value maps per service ID).\n    56→    // Example:\n    57→    //   serviceConfigs: {\n    58→    //     plex: { advertiseUrl: 'https://plex.example.com' },\n    59→    //     overseerr: { applicationUrl: 'https://requests.example.com' }\n    60→    //   }\n    61→    serviceConfigs: Record<string, Record<string, string>>\n    62→\n    63→    // Storage plan that ties library/download paths to selected services.\n    64→    storagePlan?: StoragePlan\n    65→}\n    66→\n    67→// ---------------------------------------------------------------------------\n    68→// ZUSTAND STORE INTERFACE\n    69→// ---------------------------------------------------------------------------\n    70→export interface SetupStore {\n    71→    // Wizard step index (0–5 for the 6 steps in the UI).\n    72→    currentStep: number\n    73→\n    74→    // Quick Start mode: simplified 2-step flow for beginners\n    75→    quickStartMode: boolean\n    76→\n    77→    // Mode influences defaults: \"newbie\" pre-selects a safe stack.\n    78→    mode: 'newbie' | 'expert' | null\n    79→    // Storage planner mode toggles between single-root (simple) and per-path (advanced).\n    80→    storageMode: 'simple' | 'advanced'\n    81→\n    82→    // IDs of all services selected in the Stack Selection step.\n    83→    selectedServices: string[]\n    84→\n    85→    // The full config object the rest of the app reads from.\n    86→    config: SetupConfig\n    87→    // Cached advanced plan so we can restore expert overrides after switching back from simple mode.\n    88→    advancedPlanCache?: StoragePlan\n    89→\n    90→    // Track which template was applied (null if none or reset).\n    91→    appliedTemplateId: string | null\n    92→\n    93→    // ------ Actions for navigation & selection ------\n    94→    setCurrentStep: (step: number) => void\n    95→    setQuickStartMode: (enabled: boolean) => void\n    96→    setMode: (mode: 'newbie' | 'expert') => void\n    97→    setSelectedServices: (services: string[]) => void\n    98→    toggleService: (service: string) => void\n    99→\n   100→    // Update top-level config (domain, timezone, PUID, etc.).\n   101→    updateConfig: (config: Partial<SetupConfig>) => void\n   102→\n   103→    // Update a specific service's custom config map.\n   104→    updateServiceConfig: (serviceId: string, config: Record<string, string>) => void\n   105→\n   106→    // Update a storage path/type pairing.\n   107→    updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void\n   108→    // Toggle between simple (single data root) and advanced per-path editing.\n   109→    setStorageMode: (mode: 'simple' | 'advanced') => void\n   110→\n   111→    // Reset wizard back to initial state.\n   112→    resetWizard: () => void\n   113→\n   114→    // Move forward/backwards between steps.\n   115→    nextStep: () => void\n   116→    prevStep: () => void\n   117→\n   118→    // ------ Template & Export/Import ------\n   119→    // Load a pre-defined template (sets services + maybe config overrides).\n   120→    loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void\n   121→\n   122→    // Export current config (including selected services) as JSON string.\n   123→    exportConfig: () => string\n   124→\n   125→    // Import previously exported JSON config and reset wizard to step 0.\n   126→    importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) => void\n   127→\n   128→    // ------ Profile Management ------\n   129→    // Saved named profiles (e.g. \"Home Server\", \"Laptop Lab\").\n   130→    savedProfiles: Record<string, { config: SetupConfig; selectedServices: string[]; mode: string | null }>\n   131→    saveProfile: (name: string) => void\n   132→    deleteProfile: (name: string) => void\n   133→    loadProfile: (name: string) => void\n   134→\n   135→    // ------ Auto-Save Draft ------\n   136→    // Track last auto-save timestamp\n   137→    lastAutoSaveAt: number | null\n   138→    // Check if there's a recoverable draft\n   139→    hasRecoverableDraft: () => boolean\n   140→    // Get the recoverable draft data\n   141→    getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null\n   142→    // Dismiss/clear the auto-saved draft\n   143→    dismissDraft: () => void\n   144→    // Restore from auto-saved draft\n   145→    restoreDraft: () => void\n   146→}\n   147→\n   148→const scrubSecrets = (config: SetupConfig): SetupConfig => {\n   149→    const { openaiApiKey: _legacyOpenAiKey, ...rest } = (config as any) || {}\n   150→    return {\n   151→        ...rest,\n   152→    password: '',\n   153→    cloudflareToken: '',\n   154→    plexClaim: '',\n   155→    wireguardPrivateKey: '',\n   156→    wireguardAddresses: '',\n   157→    } as SetupConfig\n   158→}\n   159→\n   160→// Auto-save helper functions\n   161→interface AutoSaveDraft {\n   162→    config: SetupConfig\n   163→    selectedServices: string[]\n   164→    mode: string | null\n   165→    currentStep: number\n   166→    savedAt: number\n   167→}\n   168→\n   169→let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null\n   170→\n   171→const saveAutoSaveDraft = (state: Pick<SetupStore, 'config' | 'selectedServices' | 'mode' | 'currentStep'>) => {\n   172→    // Don't save if on welcome step with no meaningful data\n   173→    if (state.currentStep === 0 && state.selectedServices.length === 0) {\n   174→        return\n   175→    }\n   176→\n   177→    const draft: AutoSaveDraft = {\n   178→        config: scrubSecrets(state.config),\n   179→        selectedServices: state.selectedServices,\n   180→        mode: state.mode,\n   181→        currentStep: state.currentStep,\n   182→        savedAt: Date.now(),\n   183→    }\n   184→\n   185→    try {\n   186→        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft))\n   187→    } catch (e) {\n   188→        // localStorage might be full or unavailable\n   189→        console.warn('Failed to auto-save draft:', e)\n   190→    }\n   191→}\n   192→\n   193→const getAutoSaveDraft = (): AutoSaveDraft | null => {\n   194→    try {\n   195→        const saved = localStorage.getItem(AUTO_SAVE_KEY)\n   196→        if (!saved) return null\n   197→\n   198→        const draft = JSON.parse(saved) as AutoSaveDraft\n   199→\n   200→        // Draft is valid for 7 days\n   201→        const DRAFT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000\n   202→        if (Date.now() - draft.savedAt > DRAFT_EXPIRY_MS) {\n   203→            localStorage.removeItem(AUTO_SAVE_KEY)\n   204→            return null\n   205→        }\n   206→\n   207→        // Only return if there's meaningful data (at least one service selected or past welcome step)\n   208→        if (draft.selectedServices.length > 0 || draft.currentStep > 0) {\n   209→            return draft\n   210→        }\n   211→\n   212→        return null\n   213→    } catch {\n   214→        return null\n   215→    }\n   216→}\n   217→\n   218→const clearAutoSaveDraft = () => {\n   219→    try {\n   220→        localStorage.removeItem(AUTO_SAVE_KEY)\n   221→    } catch {\n   222→        // Ignore\n   223→    }\n   224→}\n   225→\n   226→const debouncedAutoSave = (state: Pick<SetupStore, 'config' | 'selectedServices' | 'mode' | 'currentStep'>) => {\n   227→    if (autoSaveTimeout) {\n   228→        clearTimeout(autoSaveTimeout)\n   229→    }\n   230→    autoSaveTimeout = setTimeout(() => {\n   231→        saveAutoSaveDraft(state)\n   232→    }, AUTO_SAVE_DEBOUNCE_MS)\n   233→}\n   234→\n   235→const mergeStoragePlan = (plan?: StoragePlan, rootOverride?: string): StoragePlan => {\n   236→    const root = rootOverride || plan?.dataRoot?.path || DEFAULT_DATA_ROOT\n   237→    const defaults = createDefaultSt\n\n... [truncated - full output was 33555 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:07:13.396775+00:00",
+          "type": "text",
+          "content": "Now let me read the file and add JSDoc comments to document each logical slice/section of the store interface:",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:07:47.733905+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./docs-site/src/store/setupStore.ts",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./docs-site/src/store/setupStore.ts",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:07:47.812960+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "The file ./docs-site/src/store/setupStore.ts has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n    63→    // Storage plan that ties library/download paths to selected services.\n    64→    storagePlan?: StoragePlan\n    65→}\n    66→\n    67→// ---------------------------------------------------------------------------\n    68→// ZUSTAND STORE INTERFACE\n    69→// ---------------------------------------------------------------------------\n    70→/**\n    71→ * Main Zustand store for the Setup Wizard.\n    72→ *\n    73→ * The store is organized into logical slices:\n    74→ * - Wizard Navigation State: Step tracking and flow control\n    75→ * - Mode & Configuration State: User preferences and config data\n    76→ * - Navigation Actions: Step movement and wizard flow\n    77→ * - Service Selection Actions: Managing selected services\n    78→ * - Configuration Actions: Updating config and service-specific settings\n    79→ * - Storage Management Actions: Controlling storage paths and modes\n    80→ * - Wizard Control Actions: Reset and initialization\n    81→ * - Template & Import/Export Actions: Config sharing and templates\n    82→ * - Profile Management: Named config presets\n    83→ * - Auto-Save Draft: Automatic draft recovery\n    84→ */\n    85→export interface SetupStore {\n    86→    // ---------------------------------------------------------------------------\n    87→    // WIZARD NAVIGATION STATE\n    88→    // ---------------------------------------------------------------------------\n    89→    // Controls the wizard flow and current position\n    90→\n    91→    /** Current wizard step index (0–5 for the 6 steps in the UI) */\n    92→    currentStep: number\n    93→\n    94→    /** Quick Start mode: simplified 2-step flow for beginners */\n    95→    quickStartMode: boolean\n    96→\n    97→    // ---------------------------------------------------------------------------\n    98→    // MODE & CONFIGURATION STATE\n    99→    // ---------------------------------------------------------------------------\n   100→    // User preferences and the main configuration object\n   101→\n   102→    /** Mode influences defaults: \"newbie\" pre-selects a safe stack */\n   103→    mode: 'newbie' | 'expert' | null\n   104→\n   105→    /** Storage planner mode toggles between single-root (simple) and per-path (advanced) */\n   106→    storageMode: 'simple' | 'advanced'\n   107→\n   108→    /** IDs of all services selected in the Stack Selection step */\n   109→    selectedServices: string[]\n   110→\n   111→    /** The full config object that drives compose generation and .env output */\n   112→    config: SetupConfig\n   113→\n   114→    /** Cached advanced plan so we can restore expert overrides after switching back from simple mode */\n   115→    advancedPlanCache?: StoragePlan\n   116→\n   117→    /** Track which template was applied (null if none or reset) */\n   118→    appliedTemplateId: string | null\n   119→\n   120→    // ---------------------------------------------------------------------------\n   121→    // NAVIGATION ACTIONS\n   122→    // ---------------------------------------------------------------------------\n   123→    // Actions for controlling wizard flow and step movement\n   124→\n   125→    /** Set the current wizard step directly */\n   126→    setCurrentStep: (step: number) => void\n   127→\n   128→    /** Toggle Quick Start mode on/off */\n   129→    setQuickStartMode: (enabled: boolean) => void\n   130→\n   131→    /** Move to the next wizard step */\n   132→    nextStep: () => void\n   133→\n   134→    /** Move back to the previous wizard step */\n   135→    prevStep: () => void\n   136→\n   137→    // ---------------------------------------------------------------------------\n   138→    // SERVICE SELECTION ACTIONS\n   139→    // ---------------------------------------------------------------------------\n   140→    // Actions for managing which services are selected\n   141→\n   142→    /** Set wizard mode (newbie auto-selects a starter stack) */\n   143→    setMode: (mode: 'newbie' | 'expert') => void\n   144→\n   145→    /** Replace the entire selected services array */\n   146→    setSelectedServices: (services: string[]) => void\n   147→\n   148→    /** Toggle a single service on/off in the selection */\n   149→    toggleService: (service: string) => void\n   150→\n   151→    // ---------------------------------------------------------------------------\n   152→    // CONFIGURATION ACTIONS\n   153→    // ---------------------------------------------------------------------------\n   154→    // Actions for updating the main config and service-specific settings\n   155→\n   156→    /** Update top-level config fields (domain, timezone, PUID, etc.) */\n   157→    updateConfig: (config: Partial<SetupConfig>) => void\n   158→\n   159→    /** Update a specific service's custom config map */\n   160→    updateServiceConfig: (serviceId: string, config: Record<string, string>) => void\n   161→\n   162→    // ---------------------------------------------------------------------------\n   163→    // STORAGE MANAGEMENT ACTIONS\n   164→    // ---------------------------------------------------------------------------\n   165→    // Actions for managing storage paths and storage mode\n   166→\n   167→    /** Update a storage path/type pairing for a specific category */\n   168→    updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void\n   169→\n   170→    /** Toggle between simple (single data root) and advanced per-path editing */\n   171→    setStorageMode: (mode: 'simple' | 'advanced') => void\n   172→\n   173→    // ---------------------------------------------------------------------------\n   174→    // WIZARD CONTROL ACTIONS\n   175→    // ---------------------------------------------------------------------------\n   176→    // Actions for resetting and controlling the wizard lifecycle\n   177→\n   178→    /** Reset wizard back to initial state (clears all config and selections) */\n   179→    resetWizard: () => void\n   180→\n   181→    // ---------------------------------------------------------------------------\n   182→    // TEMPLATE & IMPORT/EXPORT ACTIONS\n   183→    // ---------------------------------------------------------------------------\n   184→    // Actions for sharing configs and using templates\n   185→\n   186→    /** Load a pre-defined template (sets services + maybe config overrides) */\n   187→    loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void\n   188→\n   189→    /** Export current config (including selected services) as JSON string */\n   190→    exportConfig: () => string\n   191→\n   192→    /** Import previously exported JSON config and reset wizard to step 0 */\n   193→    importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) => void\n   194→\n   195→    // ---------------------------------------------------------------------------\n   196→    // PROFILE MANAGEMENT\n   197→    // ---------------------------------------------------------------------------\n   198→    // Named config presets that users can save, load, and delete\n   199→\n   200→    /** Saved named profiles (e.g. \"Home Server\", \"Laptop Lab\") */\n   201→    savedProfiles: Record<string, { config: SetupConfig; selectedServices: string[]; mode: string | null }>\n   202→\n   203→    /** Save current config as a named profile */\n   204→    saveProfile: (name: string) => void\n   205→\n   206→    /** Delete a saved profile by name */\n   207→    deleteProfile: (name: string) => void\n   208→\n   209→    /** Load a saved profile and reset wizard to step 0 */\n   210→    loadProfile: (name: string) => void\n   211→\n   212→    // ---------------------------------------------------------------------------\n   213→    // AUTO-SAVE DRAFT\n   214→    // ---------------------------------------------------------------------------\n   215→    // Automatic draft recovery for resuming interrupted wizard sessions\n   216→\n   217→    /** Track last auto-save timestamp */\n   218→    lastAutoSaveAt: number | null\n   219→\n   220→    /** Check if there's a recoverable draft (valid for 7 days) */\n   221→    hasRecoverableDraft: () => boolean\n   222→\n   223→    /** Get the recoverable draft data with metadata */\n   224→    getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null\n   225→\n   226→    /** Dismiss/clear the auto-saved draft */\n   227→    dismissDraft: () => void\n   228→\n   229→    /** Restore from auto-saved draft */\n   230→    restoreDraft: () => void\n   231→}\n   232→\n   233→const scrubSecrets = (config: SetupConfig): SetupConfig => {\n   234→    const { openaiApiKey: _legacyOpenAiKey, ...rest } = (config as any) || {}\n   235→    return {",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:07:57.573967+00:00",
+          "type": "text",
+          "content": "Perfect! I've successfully added comprehensive JSDoc comments to document each logical slice/section of the store interface. Let me verify the changes are valid by running the linter:",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:07:58.855651+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd docs-site && npm run lint -- --max-warnings=...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd docs-site && npm run lint -- --max-warnings=...",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:07:58.919957+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Error: Command 'npm' is not in the allowed commands for this project",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "Command 'npm' is not in the allowed commands for this project",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:03.793728+00:00",
+          "type": "text",
+          "content": "Let me verify the changes look good by reading the modified section:",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:04.761149+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./docs-site/src/store/setupStore.ts",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./docs-site/src/store/setupStore.ts",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:04.825430+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "5.2",
+          "session": 17,
+          "detail": "    67→// ---------------------------------------------------------------------------\n    68→// ZUSTAND STORE INTERFACE\n    69→// ---------------------------------------------------------------------------\n    70→/**\n    71→ * Main Zustand store for the Setup Wizard.\n    72→ *\n    73→ * The store is organized into logical slices:\n    74→ * - Wizard Navigation State: Step tracking and flow control\n    75→ * - Mode & Configuration State: User preferences and config data\n    76→ * - Navigation Actions: Step movement and wizard flow\n    77→ * - Service Selection Actions: Managing selected services\n    78→ * - Configuration Actions: Updating config and service-specific settings\n    79→ * - Storage Management Actions: Controlling storage paths and modes\n    80→ * - Wizard Control Actions: Reset and initialization\n    81→ * - Template & Import/Export Actions: Config sharing and templates\n    82→ * - Profile Management: Named config presets\n    83→ * - Auto-Save Draft: Automatic draft recovery\n    84→ */\n    85→export interface SetupStore {\n    86→    // ---------------------------------------------------------------------------\n    87→    // WIZARD NAVIGATION STATE\n    88→    // ---------------------------------------------------------------------------\n    89→    // Controls the wizard flow and current position\n    90→\n    91→    /** Current wizard step index (0–5 for the 6 steps in the UI) */\n    92→    currentStep: number\n    93→\n    94→    /** Quick Start mode: simplified 2-step flow for beginners */\n    95→    quickStartMode: boolean\n    96→\n    97→    // ---------------------------------------------------------------------------\n    98→    // MODE & CONFIGURATION STATE\n    99→    // ---------------------------------------------------------------------------\n   100→    // User preferences and the main configuration object\n   101→\n   102→    /** Mode influences defaults: \"newbie\" pre-selects a safe stack */\n   103→    mode: 'newbie' | 'expert' | null\n   104→\n   105→    /** Storage planner mode toggles between single-root (simple) and per-path (advanced) */\n   106→    storageMode: 'simple' | 'advanced'\n   107→\n   108→    /** IDs of all services selected in the Stack Selection step */\n   109→    selectedServices: string[]\n   110→\n   111→    /** The full config object that drives compose generation and .env output */\n   112→    config: SetupConfig\n   113→\n   114→    /** Cached advanced plan so we can restore expert overrides after switching back from simple mode */\n   115→    advancedPlanCache?: StoragePlan\n   116→\n   117→    /** Track which template was applied (null if none or reset) */\n   118→    appliedTemplateId: string | null\n   119→\n   120→    // ---------------------------------------------------------------------------\n   121→    // NAVIGATION ACTIONS\n   122→    // ---------------------------------------------------------------------------\n   123→    // Actions for controlling wizard flow and step movement\n   124→\n   125→    /** Set the current wizard step directly */\n   126→    setCurrentStep: (step: number) => void\n   127→\n   128→    /** Toggle Quick Start mode on/off */\n   129→    setQuickStartMode: (enabled: boolean) => void\n   130→\n   131→    /** Move to the next wizard step */\n   132→    nextStep: () => void\n   133→\n   134→    /** Move back to the previous wizard step */\n   135→    prevStep: () => void\n   136→\n   137→    // ---------------------------------------------------------------------------\n   138→    // SERVICE SELECTION ACTIONS\n   139→    // ---------------------------------------------------------------------------\n   140→    // Actions for managing which services are selected\n   141→\n   142→    /** Set wizard mode (newbie auto-selects a starter stack) */\n   143→    setMode: (mode: 'newbie' | 'expert') => void\n   144→\n   145→    /** Replace the entire selected services array */\n   146→    setSelectedServices: (services: string[]) => void\n   147→\n   148→    /** Toggle a single service on/off in the selection */\n   149→    toggleService: (service: string) => void\n   150→\n   151→    // ---------------------------------------------------------------------------\n   152→    // CONFIGURATION ACTIONS\n   153→    // ---------------------------------------------------------------------------\n   154→    // Actions for updating the main config and service-specific settings\n   155→\n   156→    /** Update top-level config fields (domain, timezone, PUID, etc.) */\n   157→    updateConfig: (config: Partial<SetupConfig>) => void\n   158→\n   159→    /** Update a specific service's custom config map */\n   160→    updateServiceConfig: (serviceId: string, config: Record<string, string>) => void\n   161→\n   162→    // ---------------------------------------------------------------------------\n   163→    // STORAGE MANAGEMENT ACTIONS\n   164→    // ---------------------------------------------------------------------------\n   165→    // Actions for managing storage paths and storage mode\n   166→\n   167→    /** Update a storage path/type pairing for a specific category */\n   168→    updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void\n   169→\n   170→    /** Toggle between simple (single data root) and advanced per-path editing */\n   171→    setStorageMode: (mode: 'simple' | 'advanced') => void\n   172→\n   173→    // ---------------------------------------------------------------------------\n   174→    // WIZARD CONTROL ACTIONS\n   175→    // ---------------------------------------------------------------------------\n   176→    // Actions for resetting and controlling the wizard lifecycle\n   177→\n   178→    /** Reset wizard back to initial state (clears all config and selections) */\n   179→    resetWizard: () => void\n   180→\n   181→    // ---------------------------------------------------------------------------\n   182→    // TEMPLATE & IMPORT/EXPORT ACTIONS\n   183→    // ---------------------------------------------------------------------------\n   184→    // Actions for sharing configs and using templates\n   185→\n   186→    /** Load a pre-defined template (sets services + maybe config overrides) */\n   187→    loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void\n   188→\n   189→    /** Export current config (including selected services) as JSON string */\n   190→    exportConfig: () => string\n   191→\n   192→    /** Import previously exported JSON config and reset wizard to step 0 */\n   193→    importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) => void\n   194→\n   195→    // ---------------------------------------------------------------------------\n   196→    // PROFILE MANAGEMENT\n   197→    // ---------------------------------------------------------------------------\n   198→    // Named config presets that users can save, load, and delete\n   199→\n   200→    /** Saved named profiles (e.g. \"Home Server\", \"Laptop Lab\") */\n   201→    savedProfiles: Record<string, { config: SetupConfig; selectedServices: string[]; mode: string | null }>\n   202→\n   203→    /** Save current config as a named profile */\n   204→    saveProfile: (name: string) => void\n   205→\n   206→    /** Delete a saved profile by name */\n   207→    deleteProfile: (name: string) => void\n   208→\n   209→    /** Load a saved profile and reset wizard to step 0 */\n   210→    loadProfile: (name: string) => void\n   211→\n   212→    // ---------------------------------------------------------------------------\n   213→    // AUTO-SAVE DRAFT\n   214→    // ---------------------------------------------------------------------------\n   215→    // Automatic draft recovery for resuming interrupted wizard sessions\n   216→\n   217→    /** Track last auto-save timestamp */\n   218→    lastAutoSaveAt: number | null\n   219→\n   220→    /** Check if there's a recoverable draft (valid for 7 days) */\n   221→    hasRecoverableDraft: () => boolean\n   222→\n   223→    /** Get the recoverable draft data with metadata */\n   224→    getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null\n   225→\n   226→    /** Dismiss/clear the auto-saved draft */\n   227→    dismissDraft: () => void\n   228→\n   229→    /** Restore from auto-saved draft */\n   230→    restoreDraft: () => void\n   231→}\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T20:08:11.814542+00:00",
+          "type": "text",
+          "content": "Perfect! The changes look excellent. The store interface is now well-documented with:\n\n1. A comprehensive JSDoc comment at the interface level explaining the overall organization\n2. Clear section headers separating logical slices\n3. JSDoc comments for each property and method\n\nNow let me commit these changes:",
+          "phase": "coding",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:12.401353+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git add -A",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git add -A",
+          "subtask_id": "5.2",
+          "session": 17
+        },
+        {
+          "timestamp": "2026-01-05T20:08:13.904828+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git commit -m \"auto-claude: 5.2 - Add JSDoc com...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git commit -m \"auto-claude: 5.2 - Add JSDoc com...",
+          "subtask_id": "5.2",
+          "session": 17
         }
       ]
     },

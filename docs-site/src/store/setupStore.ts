@@ -67,81 +67,166 @@ export interface SetupConfig {
 // ---------------------------------------------------------------------------
 // ZUSTAND STORE INTERFACE
 // ---------------------------------------------------------------------------
+/**
+ * Main Zustand store for the Setup Wizard.
+ *
+ * The store is organized into logical slices:
+ * - Wizard Navigation State: Step tracking and flow control
+ * - Mode & Configuration State: User preferences and config data
+ * - Navigation Actions: Step movement and wizard flow
+ * - Service Selection Actions: Managing selected services
+ * - Configuration Actions: Updating config and service-specific settings
+ * - Storage Management Actions: Controlling storage paths and modes
+ * - Wizard Control Actions: Reset and initialization
+ * - Template & Import/Export Actions: Config sharing and templates
+ * - Profile Management: Named config presets
+ * - Auto-Save Draft: Automatic draft recovery
+ */
 export interface SetupStore {
-    // Wizard step index (0–5 for the 6 steps in the UI).
+    // ---------------------------------------------------------------------------
+    // WIZARD NAVIGATION STATE
+    // ---------------------------------------------------------------------------
+    // Controls the wizard flow and current position
+
+    /** Current wizard step index (0–5 for the 6 steps in the UI) */
     currentStep: number
 
-    // Quick Start mode: simplified 2-step flow for beginners
+    /** Quick Start mode: simplified 2-step flow for beginners */
     quickStartMode: boolean
 
-    // Mode influences defaults: "newbie" pre-selects a safe stack.
+    // ---------------------------------------------------------------------------
+    // MODE & CONFIGURATION STATE
+    // ---------------------------------------------------------------------------
+    // User preferences and the main configuration object
+
+    /** Mode influences defaults: "newbie" pre-selects a safe stack */
     mode: 'newbie' | 'expert' | null
-    // Storage planner mode toggles between single-root (simple) and per-path (advanced).
+
+    /** Storage planner mode toggles between single-root (simple) and per-path (advanced) */
     storageMode: 'simple' | 'advanced'
 
-    // IDs of all services selected in the Stack Selection step.
+    /** IDs of all services selected in the Stack Selection step */
     selectedServices: string[]
 
-    // The full config object the rest of the app reads from.
+    /** The full config object that drives compose generation and .env output */
     config: SetupConfig
-    // Cached advanced plan so we can restore expert overrides after switching back from simple mode.
+
+    /** Cached advanced plan so we can restore expert overrides after switching back from simple mode */
     advancedPlanCache?: StoragePlan
 
-    // Track which template was applied (null if none or reset).
+    /** Track which template was applied (null if none or reset) */
     appliedTemplateId: string | null
 
-    // ------ Actions for navigation & selection ------
+    // ---------------------------------------------------------------------------
+    // NAVIGATION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for controlling wizard flow and step movement
+
+    /** Set the current wizard step directly */
     setCurrentStep: (step: number) => void
+
+    /** Toggle Quick Start mode on/off */
     setQuickStartMode: (enabled: boolean) => void
-    setMode: (mode: 'newbie' | 'expert') => void
-    setSelectedServices: (services: string[]) => void
-    toggleService: (service: string) => void
 
-    // Update top-level config (domain, timezone, PUID, etc.).
-    updateConfig: (config: Partial<SetupConfig>) => void
-
-    // Update a specific service's custom config map.
-    updateServiceConfig: (serviceId: string, config: Record<string, string>) => void
-
-    // Update a storage path/type pairing.
-    updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void
-    // Toggle between simple (single data root) and advanced per-path editing.
-    setStorageMode: (mode: 'simple' | 'advanced') => void
-
-    // Reset wizard back to initial state.
-    resetWizard: () => void
-
-    // Move forward/backwards between steps.
+    /** Move to the next wizard step */
     nextStep: () => void
+
+    /** Move back to the previous wizard step */
     prevStep: () => void
 
-    // ------ Template & Export/Import ------
-    // Load a pre-defined template (sets services + maybe config overrides).
+    // ---------------------------------------------------------------------------
+    // SERVICE SELECTION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for managing which services are selected
+
+    /** Set wizard mode (newbie auto-selects a starter stack) */
+    setMode: (mode: 'newbie' | 'expert') => void
+
+    /** Replace the entire selected services array */
+    setSelectedServices: (services: string[]) => void
+
+    /** Toggle a single service on/off in the selection */
+    toggleService: (service: string) => void
+
+    // ---------------------------------------------------------------------------
+    // CONFIGURATION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for updating the main config and service-specific settings
+
+    /** Update top-level config fields (domain, timezone, PUID, etc.) */
+    updateConfig: (config: Partial<SetupConfig>) => void
+
+    /** Update a specific service's custom config map */
+    updateServiceConfig: (serviceId: string, config: Record<string, string>) => void
+
+    // ---------------------------------------------------------------------------
+    // STORAGE MANAGEMENT ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for managing storage paths and storage mode
+
+    /** Update a storage path/type pairing for a specific category */
+    updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void
+
+    /** Toggle between simple (single data root) and advanced per-path editing */
+    setStorageMode: (mode: 'simple' | 'advanced') => void
+
+    // ---------------------------------------------------------------------------
+    // WIZARD CONTROL ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for resetting and controlling the wizard lifecycle
+
+    /** Reset wizard back to initial state (clears all config and selections) */
+    resetWizard: () => void
+
+    // ---------------------------------------------------------------------------
+    // TEMPLATE & IMPORT/EXPORT ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for sharing configs and using templates
+
+    /** Load a pre-defined template (sets services + maybe config overrides) */
     loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void
 
-    // Export current config (including selected services) as JSON string.
+    /** Export current config (including selected services) as JSON string */
     exportConfig: () => string
 
-    // Import previously exported JSON config and reset wizard to step 0.
+    /** Import previously exported JSON config and reset wizard to step 0 */
     importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) => void
 
-    // ------ Profile Management ------
-    // Saved named profiles (e.g. "Home Server", "Laptop Lab").
+    // ---------------------------------------------------------------------------
+    // PROFILE MANAGEMENT
+    // ---------------------------------------------------------------------------
+    // Named config presets that users can save, load, and delete
+
+    /** Saved named profiles (e.g. "Home Server", "Laptop Lab") */
     savedProfiles: Record<string, { config: SetupConfig; selectedServices: string[]; mode: string | null }>
+
+    /** Save current config as a named profile */
     saveProfile: (name: string) => void
+
+    /** Delete a saved profile by name */
     deleteProfile: (name: string) => void
+
+    /** Load a saved profile and reset wizard to step 0 */
     loadProfile: (name: string) => void
 
-    // ------ Auto-Save Draft ------
-    // Track last auto-save timestamp
+    // ---------------------------------------------------------------------------
+    // AUTO-SAVE DRAFT
+    // ---------------------------------------------------------------------------
+    // Automatic draft recovery for resuming interrupted wizard sessions
+
+    /** Track last auto-save timestamp */
     lastAutoSaveAt: number | null
-    // Check if there's a recoverable draft
+
+    /** Check if there's a recoverable draft (valid for 7 days) */
     hasRecoverableDraft: () => boolean
-    // Get the recoverable draft data
+
+    /** Get the recoverable draft data with metadata */
     getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null
-    // Dismiss/clear the auto-saved draft
+
+    /** Dismiss/clear the auto-saved draft */
     dismissDraft: () => void
-    // Restore from auto-saved draft
+
+    /** Restore from auto-saved draft */
     restoreDraft: () => void
 }
 
