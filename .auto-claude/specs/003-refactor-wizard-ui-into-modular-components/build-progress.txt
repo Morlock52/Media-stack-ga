@@ -21,5 +21,16 @@
 - Removed inline implementations and unused imports (dockerComposeTemplate, dockerComposeLocalTemplate, buildEnvFile)
 - Committed in 3220c06
 
+#### 2.4 - Extract form validation and step navigation logic ✅
+- Created `docs-site/src/hooks/useWizardValidation.ts`
+- Extracted `handleNextStep` logic including form validation, error scrolling, and toast messages
+- Hook handles validation for Basic Config (step 1) and Advanced Settings (step 4) forms
+- Manages `shakeField` state for error field shake animations
+- Includes `scrollToElement` and `scrollToFirstError` helper functions
+- Updated SetupWizard.tsx to use the new hook
+- Removed inline handleNextStep function and helper functions (~70 lines)
+- Follows established pattern from useConfigGenerators and useFileDownload hooks
+- Committed in 176330f
+
 ## Summary
-Successfully extracted file download and clipboard utilities into a reusable hook following the established pattern from useConfigGenerators.ts. The hook consolidates all file download operations and clipboard functionality, reducing SetupWizard.tsx complexity by ~30 lines. All functions are properly memoized and the copied state is managed internally for better encapsulation.
+Successfully extracted form validation and step navigation logic into a reusable hook. The useWizardValidation hook consolidates all step navigation, form validation (for steps 1 and 4), error handling with smooth scrolling, shake animations, and toast notifications. This reduces SetupWizard.tsx complexity by ~70 lines and follows the established hook pattern for better code organization and testability.
