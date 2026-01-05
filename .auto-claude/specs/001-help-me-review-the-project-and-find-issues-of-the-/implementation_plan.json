@@ -189,7 +189,9 @@
             "expected_status": 200
           },
           "expected_output": "Document settings endpoint responses and verify OpenAI key status format",
-          "status": "pending"
+          "status": "completed",
+          "notes": "All 7 /api/settings/* endpoints verified working correctly (HTTP 200). Tested GET/POST/DELETE operations on openai-key, GET on stt, tts, and status endpoints. POST validation works correctly (rejects invalid keys). Identified test coverage gap: no tests for /api/settings/openai-key endpoints in voice.test.ts.",
+          "updated_at": "2026-01-05T17:43:28.086154+00:00"
         }
       ]
     },
@@ -582,5 +584,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2026-01-05T17:40:34.503653+00:00"
+  "last_updated": "2026-01-05T17:43:28.086161+00:00"
 }

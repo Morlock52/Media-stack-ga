@@ -588,3 +588,53 @@ x-ratelimit-reset: 35
 **Status: COMPLETE** ✅
 
 ---
+
+## subtask-2-4: Verify /api/settings/* endpoints respond correctly
+
+### Live Verification (Server Running):
+
+**Settings Endpoints Tested:**
+
+| Endpoint | Method | Status | Response |
+|----------|--------|--------|----------|
+| /api/settings/openai-key | GET | 200 ✅ | `{"hasKey":true,"model":"gpt-4o","ttsModel":"tts-1-hd","ttsVoice":"alloy"}` |
+| /api/settings/openai-key | POST | 200 ✅ | `{"success":true}` (with valid key) |
+| /api/settings/openai-key | POST | 400 ✅ | `{"error":"Invalid API key format..."}` (validation works) |
+| /api/settings/openai-key | DELETE | 200 ✅ | `{"success":true}` |
+| /api/settings/openai-key/status | GET | 200 ✅ | `{"hasKey":true,"model":"gpt-4o"}` |
+| /api/settings/stt | GET | 200 ✅ | `{"hasKey":true,"model":"gpt-4o-transcribe","fallbackModel":"whisper-1",...}` |
+| /api/settings/tts | GET | 200 ✅ | `{"provider":"openai","hasKey":true,"ttsModel":"tts-1-hd","ttsVoice":"alloy"}` |
+| /api/settings/tts/status | GET | 200 ✅ | `{"provider":"openai","hasKey":true,"model":"tts-1-hd","voice":"alloy"}` |
+
+### POST Validation Testing:
+
+1. **Empty body:** Returns 400 with `"error":"OpenAI API key is required."` ✅
+2. **Invalid prefix:** Returns 400 with `"error":"Invalid API key format: must start with \"sk-\""` ✅
+3. **Valid format:** Returns 200 with `{"success":true}` ✅
+
+### Implementation Location:
+All settings endpoints defined in `control-server/src/routes/ai.ts` (lines 784-890):
+- GET /api/settings/stt (lines 784-792)
+- GET /api/settings/tts (lines 794-802)
+- GET /api/settings/openai-key (lines 805-814)
+- POST /api/settings/openai-key (lines 816-856)
+- DELETE /api/settings/openai-key (lines 858-871)
+- GET /api/settings/openai-key/status (lines 874-880)
+- GET /api/settings/tts/status (lines 882-890)
+
+### Test Coverage Gap Confirmed:
+- ❌ No unit tests for /api/settings/openai-key endpoints in control-server/test/
+- ✅ Tests exist for /api/settings/stt and /api/settings/tts in voice.test.ts (lines 205-233)
+
+### Findings:
+- ✅ All 7 settings endpoints respond correctly with HTTP 200
+- ✅ POST validation works correctly (rejects invalid keys, accepts valid format)
+- ✅ DELETE works correctly (removes key from env)
+- ⚠️ DELETE with Content-Type: application/json and empty body returns 400 (Fastify behavior, not a bug)
+- ❌ Missing test coverage for /api/settings/openai-key GET/POST/DELETE/status endpoints
+
+**Status: COMPLETE** ✅
+
+---
+
+=== PHASE 2 COMPLETE ===
