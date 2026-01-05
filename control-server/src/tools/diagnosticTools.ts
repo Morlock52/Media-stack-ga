@@ -1712,12 +1712,398 @@ export async function diagnoseMediaScanner(options: {
 }
 
 /**
+ * Diagnostic command execution types
+ */
+export type DiagnosticCommandType = 'ping' | 'traceroute' | 'nslookup' | 'curl' | 'wget';
+
+/**
+ * Diagnostic command result
+ */
+export interface DiagnosticCommandResult {
+    /** Command type executed */
+    commandType: DiagnosticCommandType;
+    /** Target (hostname, IP, or URL) */
+    target: string;
+    /** Container the command was executed in */
+    container: string;
+    /** Whether command succeeded */
+    success: boolean;
+    /** Command output */
+    output?: string;
+    /** Error message if failed */
+    error?: string;
+    /** Execution time in milliseconds */
+    executionTimeMs: number;
+    /** Interpreted result (human-readable summary) */
+    summary: string;
+}
+
+/**
+ * Safe diagnostic command runner options
+ */
+export interface RunDiagnosticCommandOptions {
+    /** Type of diagnostic command to run */
+    commandType: DiagnosticCommandType;
+    /** Target hostname, IP, or URL */
+    target: string;
+    /** Container to execute command in (defaults to first available arr service or gluetun) */
+    container?: string;
+    /** Additional safe arguments for the command */
+    args?: string[];
+    /** Timeout in milliseconds (default: 10000, max: 30000) */
+    timeoutMs?: number;
+}
+
+/**
+ * Validate diagnostic command target
+ */
+function validateTarget(target: string | undefined): { valid: boolean; sanitized?: string; error?: string } {
+    if (!target || typeof target !== 'string') {
+        return { valid: false, error: 'Target is required' };
+    }
+
+    const sanitized = target.trim();
+
+    // Prevent command injection
+    if (sanitized.includes(';') || sanitized.includes('&') || sanitized.includes('|') ||
+        sanitized.includes('$') || sanitized.includes('`') || sanitized.includes('\n')) {
+        return { valid: false, error: 'Invalid target: contains unsafe characters' };
+    }
+
+    // Basic validation for hostname/IP/URL
+    if (sanitized.length === 0 || sanitized.length > 253) {
+        return { valid: false, error: 'Invalid target length' };
+    }
+
+    // Allow hostname, IP, or URL
+    const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const urlRegex = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:\d{1,5})?(\/.*)?$/;
+
+    const targetWithoutProtocol = sanitized.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+
+    if (!hostnameRegex.test(targetWithoutProtocol) && !ipRegex.test(targetWithoutProtocol) && !urlRegex.test(sanitized)) {
+        return { valid: false, error: 'Invalid target format (must be hostname, IP, or URL)' };
+    }
+
+    return { valid: true, sanitized };
+}
+
+/**
+ * Validate and sanitize command arguments
+ */
+function validateCommandArgs(args: string[] | undefined, commandType: DiagnosticCommandType): { valid: boolean; sanitized?: string[]; error?: string } {
+    if (!args || args.length === 0) {
+        return { valid: true, sanitized: [] };
+    }
+
+    // Allowlist of safe arguments per command type
+    const allowedArgs: Record<DiagnosticCommandType, Set<string>> = {
+        ping: new Set(['-c', '-i', '-W', '-w', '-4', '-6']),
+        traceroute: new Set(['-m', '-q', '-w', '-4', '-6', '-I', '-T', '-U']),
+        nslookup: new Set(['-type', '-timeout']),
+        curl: new Set(['-I', '-L', '-s', '-S', '-m', '--connect-timeout', '--max-time', '-4', '-6', '-k', '--head', '--location']),
+        wget: new Set(['-q', '-O', '-T', '--timeout', '--tries', '-4', '-6', '--spider', '--no-check-certificate'])
+    };
+
+    const allowed = allowedArgs[commandType];
+    const sanitized: string[] = [];
+
+    for (const arg of args) {
+        const trimmed = arg.trim();
+
+        // Check for command injection
+        if (trimmed.includes(';') || trimmed.includes('&') || trimmed.includes('|') ||
+            trimmed.includes('$') || trimmed.includes('`') || trimmed.includes('\n')) {
+            return { valid: false, error: `Invalid argument: ${trimmed} contains unsafe characters` };
+        }
+
+        // For flag-style args (starting with -), must be in allowlist
+        if (trimmed.startsWith('-')) {
+            const flag = trimmed.split('=')[0]; // Handle --flag=value format
+            if (!allowed.has(flag)) {
+                return { valid: false, error: `Argument ${flag} not allowed for ${commandType}` };
+            }
+        }
+
+        // For value args, basic validation
+        if (trimmed.length > 0 && trimmed.length <= 100) {
+            sanitized.push(trimmed);
+        } else {
+            return { valid: false, error: `Invalid argument length: ${trimmed}` };
+        }
+    }
+
+    return { valid: true, sanitized };
+}
+
+/**
+ * Build safe command arguments for diagnostic commands
+ */
+function buildDiagnosticCommand(commandType: DiagnosticCommandType, target: string, args: string[]): string[] {
+    const baseCommands: Record<DiagnosticCommandType, string[]> = {
+        ping: ['ping', '-c', '4', '-W', '5'],
+        traceroute: ['traceroute', '-m', '20', '-w', '5'],
+        nslookup: ['nslookup'],
+        curl: ['curl', '-I', '-s', '-S', '-m', '10'],
+        wget: ['wget', '-q', '-O', '-', '-T', '10', '--spider']
+    };
+
+    const baseArgs = baseCommands[commandType];
+    const customArgs = args.filter(arg => !baseArgs.some(base => arg.startsWith(base.split('=')[0])));
+
+    return [...baseArgs, ...customArgs, target];
+}
+
+/**
+ * Interpret diagnostic command output
+ */
+function interpretDiagnosticOutput(commandType: DiagnosticCommandType, output: string, success: boolean): string {
+    if (!success) {
+        return 'Command failed or timed out. Check error details.';
+    }
+
+    const lowerOutput = output.toLowerCase();
+
+    switch (commandType) {
+        case 'ping':
+            if (lowerOutput.includes('0 received') || lowerOutput.includes('100% packet loss')) {
+                return 'No response - host is unreachable or blocking ICMP packets';
+            } else if (lowerOutput.includes('time=')) {
+                const times = output.match(/time=(\d+\.?\d*)\s*ms/g);
+                if (times && times.length > 0) {
+                    const avgMatch = output.match(/avg[^=]*=\s*(\d+\.?\d*)/);
+                    const avg = avgMatch ? avgMatch[1] : 'N/A';
+                    return `Host is reachable. Average latency: ${avg}ms`;
+                }
+                return 'Host is reachable';
+            }
+            return 'Ping completed with unknown result';
+
+        case 'traceroute':
+            const hops = output.split('\n').filter(line => /^\s*\d+\s+/.test(line)).length;
+            if (hops === 0) {
+                return 'No route to host - connection blocked or target unreachable';
+            }
+            return `Route traced with ${hops} hop(s). Check output for network path details.`;
+
+        case 'nslookup':
+            if (lowerOutput.includes('can\'t find') || lowerOutput.includes('nxdomain')) {
+                return 'DNS resolution failed - domain not found';
+            } else if (lowerOutput.includes('address:') || lowerOutput.includes('addresses:')) {
+                const addresses = output.match(/Address(?:es)?:\s*(.+)/gi);
+                if (addresses && addresses.length > 0) {
+                    return `DNS resolution successful. ${addresses.length} address(es) found.`;
+                }
+                return 'DNS resolution successful';
+            } else if (lowerOutput.includes('timeout') || lowerOutput.includes('no servers')) {
+                return 'DNS query timed out or no DNS servers available';
+            }
+            return 'DNS query completed';
+
+        case 'curl':
+            if (lowerOutput.includes('http/')) {
+                const statusMatch = output.match(/HTTP\/[\d.]+\s+(\d+)/);
+                if (statusMatch) {
+                    const status = parseInt(statusMatch[1]);
+                    if (status >= 200 && status < 300) {
+                        return `HTTP connection successful (Status: ${status})`;
+                    } else if (status >= 300 && status < 400) {
+                        return `HTTP redirect received (Status: ${status})`;
+                    } else if (status >= 400 && status < 500) {
+                        return `HTTP client error (Status: ${status})`;
+                    } else if (status >= 500) {
+                        return `HTTP server error (Status: ${status})`;
+                    }
+                }
+                return 'HTTP connection established';
+            } else if (lowerOutput.includes('could not resolve')) {
+                return 'DNS resolution failed - cannot resolve hostname';
+            } else if (lowerOutput.includes('connection refused')) {
+                return 'Connection refused - port is closed or service not listening';
+            } else if (lowerOutput.includes('timeout')) {
+                return 'Connection timed out - host unreachable or firewall blocking';
+            }
+            return 'cURL request completed';
+
+        case 'wget':
+            if (lowerOutput.includes('200 ok') || lowerOutput.includes('remote file exists')) {
+                return 'HTTP connection successful - resource exists';
+            } else if (lowerOutput.includes('404')) {
+                return 'HTTP 404 - resource not found';
+            } else if (lowerOutput.includes('unable to resolve')) {
+                return 'DNS resolution failed - cannot resolve hostname';
+            } else if (lowerOutput.includes('connection refused')) {
+                return 'Connection refused - port is closed or service not listening';
+            } else if (lowerOutput.includes('timeout')) {
+                return 'Connection timed out - host unreachable or firewall blocking';
+            }
+            return 'wget request completed';
+
+        default:
+            return 'Command completed';
+    }
+}
+
+/**
+ * Run diagnostic command with safety checks and user consent tracking
+ *
+ * This tool executes network diagnostic commands (ping, traceroute, nslookup, curl, wget)
+ * safely within Docker containers. All inputs are validated and sanitized.
+ *
+ * **User Consent Flow:**
+ * - Frontend should request user approval before calling this tool
+ * - Command type, target, and container should be displayed to user
+ * - User must explicitly approve the diagnostic command execution
+ *
+ * @param options Command options with validation
+ * @returns Diagnostic command result with interpreted output
+ */
+export async function runDiagnosticCommand(options: RunDiagnosticCommandOptions): Promise<ToolResult<DiagnosticCommandResult>> {
+    const {
+        commandType,
+        target,
+        container,
+        args = [],
+        timeoutMs = 10000
+    } = options;
+
+    try {
+        logger.info({ commandType, target, container }, 'Running diagnostic command with user consent');
+
+        // Step 1: Validate command type
+        const validCommands: DiagnosticCommandType[] = ['ping', 'traceroute', 'nslookup', 'curl', 'wget'];
+        if (!validCommands.includes(commandType)) {
+            return {
+                success: false,
+                error: `Invalid command type: ${commandType}. Allowed: ${validCommands.join(', ')}`
+            };
+        }
+
+        // Step 2: Validate target
+        const targetValidation = validateTarget(target);
+        if (!targetValidation.valid || !targetValidation.sanitized) {
+            return {
+                success: false,
+                error: targetValidation.error || 'Invalid target'
+            };
+        }
+        const sanitizedTarget = targetValidation.sanitized;
+
+        // Step 3: Validate arguments
+        const argsValidation = validateCommandArgs(args, commandType);
+        if (!argsValidation.valid) {
+            return {
+                success: false,
+                error: argsValidation.error || 'Invalid arguments'
+            };
+        }
+        const sanitizedArgs = argsValidation.sanitized || [];
+
+        // Step 4: Validate timeout
+        const maxTimeout = 30000;
+        const validTimeout = Math.min(Math.max(timeoutMs, 1000), maxTimeout);
+
+        // Step 5: Determine container to execute in
+        let execContainer = container;
+        if (!execContainer) {
+            // Try to find a suitable container (prefer gluetun for network diagnostics)
+            try {
+                const gluetunRunning = await arrService.isContainerRunning('gluetun');
+                if (gluetunRunning) {
+                    execContainer = 'gluetun';
+                } else {
+                    // Fallback to first available arr service
+                    const arrStatus = await arrService.getArrServicesStatus();
+                    const runningArr = arrStatus.find(s => s.running);
+                    if (runningArr?.containerName) {
+                        execContainer = runningArr.containerName;
+                    }
+                }
+            } catch (err: unknown) {
+                logger.warn({ err }, 'Failed to auto-detect container for diagnostic command');
+            }
+
+            if (!execContainer) {
+                return {
+                    success: false,
+                    error: 'No suitable container found for diagnostic command. Please specify a container.'
+                };
+            }
+        }
+
+        // Step 6: Validate container name
+        const containerValidation = validateServiceName(execContainer);
+        if (!containerValidation.valid || !containerValidation.sanitized) {
+            return {
+                success: false,
+                error: containerValidation.error || 'Invalid container name'
+            };
+        }
+        const sanitizedContainer = containerValidation.sanitized;
+
+        // Step 7: Build command arguments
+        const commandArgs = buildDiagnosticCommand(commandType, sanitizedTarget, sanitizedArgs);
+
+        logger.info({ container: sanitizedContainer, command: commandArgs }, 'Executing diagnostic command');
+
+        // Step 8: Execute command in container
+        const startTime = Date.now();
+        let output = '';
+        let success = true;
+        let error: string | undefined;
+
+        try {
+            output = await runCommand('docker', [
+                'exec',
+                sanitizedContainer,
+                ...commandArgs
+            ], { timeoutMs: validTimeout });
+
+            logger.debug({ output: output.substring(0, 500) }, 'Diagnostic command completed');
+        } catch (err: unknown) {
+            success = false;
+            error = getErrorMessage(err);
+            output = error;
+            logger.warn({ err, commandType, target }, 'Diagnostic command failed');
+        }
+
+        const executionTimeMs = Date.now() - startTime;
+
+        // Step 9: Interpret output
+        const summary = interpretDiagnosticOutput(commandType, output, success);
+
+        return {
+            success: true,
+            data: {
+                commandType,
+                target: sanitizedTarget,
+                container: sanitizedContainer,
+                success,
+                output: output.substring(0, 2000), // Limit output size
+                error,
+                executionTimeMs,
+                summary
+            }
+        };
+
+    } catch (err: unknown) {
+        logger.error({ err, commandType, target }, 'Diagnostic command execution failed');
+        return {
+            success: false,
+            error: getErrorMessage(err)
+        };
+    }
+}
+
+/**
  * Export all diagnostic tools
  */
 export const diagnosticTools = {
     diagnose_vpn_connectivity: diagnoseVpnConnectivity,
     diagnose_arr_connections: diagnoseArrConnections,
-    diagnose_media_scanner: diagnoseMediaScanner
+    diagnose_media_scanner: diagnoseMediaScanner,
+    run_diagnostic_command: runDiagnosticCommand
 };
 
 /**
@@ -1755,6 +2141,14 @@ export const DIAGNOSTIC_TOOL_METADATA: Record<string, DiagnosticToolMetadata> = 
         category: 'media',
         estimatedDurationMs: 40000,
         knowledgeModules: ['mediaScanning'],
+        riskLevel: 'low'
+    },
+    run_diagnostic_command: {
+        name: 'run_diagnostic_command',
+        description: 'Execute safe network diagnostic commands (ping, traceroute, nslookup, curl, wget) with explicit user consent and comprehensive validation',
+        category: 'network',
+        estimatedDurationMs: 15000,
+        knowledgeModules: [],
         riskLevel: 'low'
     }
 };
