@@ -80,3 +80,64 @@
 - Subtask 3.5: Create ScheduleStep component with frequency and retention config
 - Subtask 3.6: Create ReviewStep component with summary and execution
 
+
+## 2026-01-05 - Subtask 3.3 Completed
+
+**Subtask:** Create SelectionStep component for backup item selection
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive SelectionStep component with intelligent item grouping and selection UI
+- Auto-discovers backup targets on mount using useBackupDiscover() hook
+- Groups items by type (Config, Database, Metadata, Volume) for better organization
+- Shows estimated size for each item and category using formatBytes() utility
+- Implemented checkboxes for individual items with service tags and path display
+- Type-level selection headers (click to select/deselect entire category)
+- Global actions: Select All, Deselect All, Refresh buttons
+- Real-time summary showing selected count and total size
+- Integrated into BackupWizard.tsx replacing placeholder
+
+**Key Features:**
+- **Auto-Discovery:** Component calls /api/backup/discover on mount to find all backup targets
+- **Loading States:** Shows spinner during initial discovery and refresh operations
+- **Item Grouping:** Organizes items by type with collapsible sections:
+  - Configuration Files (FileCode icon)
+  - Databases (Database icon)
+  - Metadata (Clapperboard icon)
+  - Docker Volumes (HardDrive icon)
+- **Size Display:** formatBytes() utility converts bytes to human-readable format (B, KB, MB, GB, TB)
+- **Selection UI:**
+  - Individual checkboxes for each item with service badges
+  - Type header checkboxes to select/deselect all items of that type
+  - Select All / Deselect All buttons for quick actions
+  - Visual feedback with checkmarks and color coding
+- **Summary Bar:** Shows "X / Y items" and "size / total" at top
+- **Empty States:** Helpful message when no containers are running
+- **Warning States:** Alert when no items selected
+- **Refresh Button:** Manual re-scan of running containers
+- **Responsive Design:** Grid layout adapts to screen size
+
+**Implementation Details:**
+- Uses useBackupStore for state management (availableItems, selectedItems, toggleItem, selectAllItems, deselectAllItems)
+- Uses useBackupDiscover hook to fetch targets from GET /api/backup/discover
+- Follows existing patterns: InteractiveCard, motion animations, toast notifications, Button variants
+- Type-safe with BackupItem and BackupItemType interfaces from store
+- Helper functions: formatBytes(), groupItemsByType(), getTypeIcon(), getTypeName(), isItemSelected(), isTypeFullySelected(), toggleTypeGroup()
+- Clean checkbox styling matching existing SettingsPage patterns
+- Proper truncation for long paths and service names
+- Loading state on initial mount and manual refresh
+
+**Files Created:**
+- docs-site/src/components/backup/SelectionStep.tsx (370+ lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated SelectionStep)
+
+**Commit:** 051bb8a - auto-claude: 3.3 - Step 2: Select what to backup. Checkboxes for: All
+
+**Next Steps:**
+- Subtask 3.4: Create EncryptionStep component with password and strength indicator
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+

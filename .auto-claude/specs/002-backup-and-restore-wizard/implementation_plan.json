@@ -178,11 +178,13 @@
           "id": "3.3",
           "title": "Create SelectionStep component",
           "description": "Step 2: Select what to backup. Checkboxes for: All configs, Individual service configs, Docker volumes, Databases (*Arr SQLite, etc.), Plex/Jellyfin metadata. Show estimated size for each.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/backup/SelectionStep.tsx"
           ],
-          "estimated_time": "1.5h"
+          "estimated_time": "1.5h",
+          "notes": "Created comprehensive SelectionStep component for backup wizard:\n\n**Component Features:**\n- Auto-discovers backup targets on mount using useBackupDiscover() hook\n- Groups items by type (Config, Database, Metadata, Volume) with separate sections\n- Shows estimated size for each item using formatBytes() utility function\n- Individual item checkboxes with service tags and path display\n- Type-level selection headers (click to select/deselect all items of that type)\n- Global actions: Select All, Deselect All, Refresh buttons\n- Real-time summary showing selected count and total size (X / Y items, size/total)\n- Loading state during discovery with animated spinner\n- Empty state when no targets found with refresh button\n- Warning banner when no items selected\n- Integrated into BackupWizard.tsx replacing placeholder\n\n**Implementation Details:**\n- Uses useBackupStore for state management (availableItems, selectedItems, toggleItem, etc.)\n- Uses useBackupDiscover hook to fetch targets from /api/backup/discover endpoint\n- Follows existing patterns: InteractiveCard, motion animations, toast notifications\n- Responsive grid layout with proper truncation for long paths\n- Icons for each type: FileCode (config), Database (database), Clapperboard (metadata), HardDrive (volume)\n- Type badges showing item counts and sizes\n- Clean checkbox styling matching SettingsPage patterns\n- formatBytes() utility handles B/KB/MB/GB/TB formatting\n\n**User Experience:**\n- Automatic discovery on first load with loading feedback\n- Manual refresh button to re-scan containers\n- Visual feedback for selection state with checkmarks\n- Type grouping makes large backup sets manageable\n- Size information helps users understand backup impact\n- Warning alerts guide users to select at least one item\n\nThe component is production-ready and fully integrated into the backup wizard flow.",
+          "updated_at": "2026-01-05T19:24:24.436976+00:00"
         },
         {
           "id": "3.4",
@@ -481,5 +483,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:19:52.926051+00:00"
+  "last_updated": "2026-01-05T19:24:24.436990+00:00"
 }
