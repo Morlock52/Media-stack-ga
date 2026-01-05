@@ -10,9 +10,9 @@
 | Phase | Name | Subtasks | Status |
 |-------|------|----------|--------|
 | 1 | Knowledge Modules & Error Pattern Database | 6 | ✅ Complete (6/6) |
-| 2 | Enhanced Diagnostic Tools | 5 | Pending |
-| 3 | Troubleshooting History & Context | 3 | Pending |
-| 4 | Configuration Fix Suggestions & Application | 4 | Pending |
+| 2 | Enhanced Diagnostic Tools | 5 | ✅ Complete (5/5) |
+| 3 | Troubleshooting History & Context | 3 | ✅ Complete (3/3) |
+| 4 | Configuration Fix Suggestions & Application | 4 | In Progress (1/4) |
 | 5 | Enhanced Troubleshoot Agent | 3 | Pending |
 | 6 | Frontend Integration | 3 | Pending |
 | 7 | Testing & Documentation | 3 | Pending |
@@ -280,9 +280,47 @@ All 5 enhanced diagnostic tools subtasks completed:
   - Follows conversationStore.ts patterns: file-based storage, index with metrics, automatic cleanup
   - Commit: ca17905
 
+- [x] **Subtask 3.2 COMPLETED** - Integrate troubleshooting context with AI chat
+  - Commit: e90154d
+
+- [x] **Subtask 3.3 COMPLETED** - Add troubleshooting session API endpoints
+  - Commit: 0d99ee8
+
+**Phase 3 Complete! ✅**
+
+All 3 troubleshooting history & context subtasks completed:
+- ✅ Troubleshooting session store
+- ✅ AI chat context injection
+- ✅ REST API endpoints for session management
+
+**Phase 4 In Progress**
+
+### Session 5 - 2026-01-05 (Phase 4: Configuration Fix Suggestions & Application)
+- [x] **Subtask 4.1 COMPLETED** - Created configuration fix generator service
+  - File: `control-server/src/services/configFixGenerator.ts` (700 lines)
+  - Analyzes detected issues and generates specific, actionable configuration fixes
+  - Core types: ConfigChange, ConfigFix, BackupStrategy, RollbackPlan, GeneratedFixSummary
+  - Main functions:
+    - solutionToConfigFix() - Converts Solution objects from knowledge base into ConfigFix
+    - generateVpnFixes() - Generate fixes from VPN diagnostic results
+    - generateArrFixes() - Generate fixes from Arr diagnostic results
+    - generateMediaScannerFixes() - Generate fixes from Media Scanner diagnostic results
+    - generateFixSummary() - Comprehensive fix generation from all diagnostic types
+  - Helper functions: formatConfigFix(), generateConfigDiff(), createCustomConfigFix()
+  - Features: Parses envVars and configExample, extracts docker-compose changes (network_mode,
+    environment, volumes), risk assessment (low/medium/high/critical), automatic backup strategy,
+    rollback plan with validation, step-by-step apply instructions, service restart detection,
+    estimated time calculation
+  - Filtering options: lowRiskOnly, specific services, exclude change types
+  - Statistics: fixes by category, by risk level, critical fixes
+  - Integration: Works with all knowledge base modules (VPN, Docker, Arr, Media)
+  - Security: All changes require explicit user review, backup strategies, rollback plans
+  - Commit: 668827e
+
 **Next Steps:**
-- Subtask 3.2: Integrate troubleshooting context with AI chat
-- Subtask 3.3: Add troubleshooting session API endpoints
+- Subtask 4.2: Build configApplier service to safely apply configuration fixes
+- Subtask 4.3: Create AI tool to suggest fixes to users
+- Subtask 4.4: Add endpoint for applying fixes with user consent
 
 ---
 
@@ -296,9 +334,9 @@ All 5 enhanced diagnostic tools subtasks completed:
 - Troubleshoot agent "Dr. Debug" with basic expertise
 
 ### Acceptance Criteria from Spec:
-- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Knowledge base + diagnostic tool created)
-- [x] AI can analyze Docker logs and identify common error patterns ✅ (Knowledge base created with log pattern matching)
-- [x] AI can guide users through Arr service interconnection troubleshooting ✅ (Knowledge base created - 8 patterns covering all common issues)
-- [x] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent ✅ (VPN diagnostic tool runs docker exec, wget, nslookup commands)
-- [ ] Troubleshooting history saved for context in follow-up questions (Phase 3)
-- [ ] AI can suggest configuration fixes and offer to apply them (Phase 4 - recommendations are generated, but application pending)
+- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Phase 1-2: Knowledge base + diagnostic tool created)
+- [x] AI can analyze Docker logs and identify common error patterns ✅ (Phase 1-2: Knowledge base with log pattern matching, enhanced analyzeLogs())
+- [x] AI can guide users through Arr service interconnection troubleshooting ✅ (Phase 1-2: Knowledge base with 8 patterns + diagnostic tool)
+- [x] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent ✅ (Phase 2: runDiagnosticCommand() with 5 command types)
+- [x] Troubleshooting history saved for context in follow-up questions ✅ (Phase 3: troubleshootingStore + AI chat context injection)
+- [ ] AI can suggest configuration fixes and offer to apply them (Phase 4: Fix generator created, applier and endpoint pending)
