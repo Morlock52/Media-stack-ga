@@ -29,6 +29,9 @@ import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'
 import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
+import { ValidationBadge } from './ValidationBadge'
+import { useValidation } from '../hooks/useValidation'
+import type { ValidationRequest } from '../types/validation'
 
 import { Button } from './ui/button'
 import { GlassCard } from './ui/glass-card'
@@ -74,6 +77,12 @@ export function SetupWizard() {
     // Accessibility: Respect user's reduced motion preference
     const prefersReducedMotion = useReducedMotion()
 
+    // Validation state - persists across steps
+    const { result: validationResult, isValidating, error: validationError, validate } = useValidation({
+        autoValidate: false,
+        debounceMs: 500,
+    })
+
     // Proactive suggestions based on current step and config
     const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)
 
@@ -105,6 +114,47 @@ export function SetupWizard() {
             setVoiceHelperInitialized(true)
         }
     }, [mode, voiceHelperInitialized])
+
+    // Trigger validation when reaching review step or when config changes significantly
+    useEffect(() => {
+        // Only validate on review step or advanced settings step
+        if (currentStep !== 4 && currentStep !== 5) {
+            return
+        }
+
+        // Build validation request based on current config
+        const validators: ValidationRequest['validators'] = ['docker', 'path']
+
+        // Add port validation if services are selected
+        if (selectedServices.length > 0) {
+            validators.push('port')
+        }
+
+        // Add VPN validation if VPN/torrent service is selected
+        if (selectedServices.includes('vpn') || selectedServices.includes('torrent')) {
+            validators.push('vpn')
+        }
+
+        // Add Cloudflare validation if in cloud mode
+        if (config.deploymentMode === 'cloud' && config.cloudflareToken) {
+            validators.push('cloudflare')
+        }
+
+        const validationRequest: ValidationRequest = {
+            config: {
+                dataRoot: config.storagePlan?.dataRoot || '/mnt/media',
+                configRoot: config.storagePlan?.configRoot || '/opt/media-stack',
+                domain: config.domain,
+                cloudflareToken: config.cloudflareToken,
+                wireguardPrivateKey: config.wireguardPrivateKey,
+                wireguardAddresses: config.wireguardAddresses,
+                selectedServices,
+            },
+            validators,
+        }
+
+        validate(validationRequest)
+    }, [currentStep, config.storagePlan?.dataRoot, config.storagePlan?.configRoot, config.domain, config.cloudflareToken, config.wireguardPrivateKey, config.wireguardAddresses, config.deploymentMode, selectedServices, validate])
 
     // Apply voice plan to wizard
     const handleApplyVoicePlan = (plan: VoicePlanSummary) => {
@@ -821,9 +871,40 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                                 transition={{ duration: 0.5, ease: 'easeOut' }}
                             />
                         </div>
-                        <p className="text-center mt-2 text-sm text-muted-foreground">
-                            Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
-                        </p>
+                        <div className="flex items-center justify-center gap-3 mt-2">
+                            <p className="text-sm text-muted-foreground">
+                                Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
+                            </p>
+                            {/* Show validation status badge on advanced and review steps */}
+                            {(currentStep === 4 || currentStep === 5) && (
+                                <ValidationBadge
+                                    result={validationResult}
+                                    isValidating={isValidating}
+                                    error={validationError}
+                                    onValidate={() => {
+                                        // Re-trigger validation on click
+                                        const validators: ValidationRequest['validators'] = ['docker', 'path']
+                                        if (selectedServices.length > 0) validators.push('port')
+                                        if (selectedServices.includes('vpn') || selectedServices.includes('torrent')) validators.push('vpn')
+                                        if (config.deploymentMode === 'cloud' && config.cloudflareToken) validators.push('cloudflare')
+
+                                        validate({
+                                            config: {
+                                                dataRoot: config.storagePlan?.dataRoot || '/mnt/media',
+                                                configRoot: config.storagePlan?.configRoot || '/opt/media-stack',
+                                                domain: config.domain,
+                                                cloudflareToken: config.cloudflareToken,
+                                                wireguardPrivateKey: config.wireguardPrivateKey,
+                                                wireguardAddresses: config.wireguardAddresses,
+                                                selectedServices,
+                                            },
+                                            validators,
+                                        })
+                                    }}
+                                    compact
+                                />
+                            )}
+                        </div>
                     </div>
 
                     {/* Progress Steps - Click to navigate to completed steps */}
@@ -835,6 +916,27 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                                 const isComplete = index < currentStep
                                 const isClickable = isComplete // Can click on completed steps
 
+                                // Determine if this step has validation issues
+                                const hasStepValidationIssues = validationResult && !validationResult.passed && (() => {
+                                    // Step 1 (Basic Config) - path and environment issues
+                                    if (index === 1) {
+                                        return validationResult.results.some(r =>
+                                            (r.validator === 'path' || r.validator === 'environment') && !r.passed
+                                        )
+                                    }
+                                    // Step 4 (Advanced Settings) - VPN and Cloudflare issues
+                                    if (index === 4) {
+                                        return validationResult.results.some(r =>
+                                            (r.validator === 'vpn' || r.validator === 'cloudflare') && !r.passed
+                                        )
+                                    }
+                                    // Step 5 (Review) - any validation issues
+                                    if (index === 5) {
+                                        return validationResult.errorCount > 0
+                                    }
+                                    return false
+                                })()
+
                                 return (
                                     <div key={index} className="flex items-center flex-1">
                                         <div className="flex flex-col items-center flex-1">
@@ -842,9 +944,10 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                                                 type="button"
                                                 onClick={() => isClickable && setCurrentStep(index)}
                                                 disabled={!isClickable}
-                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${isActive
-                                                    ? 'bg-primary/20 border-primary text-primary animate-pulse-glow'
-                                                    : isComplete
+                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all relative ${
+                                                    isActive
+                                                        ? 'bg-primary/20 border-primary text-primary animate-pulse-glow'
+                                                        : isComplete
                                                         ? 'bg-green-500/20 border-green-500 text-green-300 hover:bg-green-500/30 hover:scale-105 cursor-pointer'
                                                         : 'bg-muted/40 border-border text-muted-foreground cursor-not-allowed'
                                                     }`}
@@ -854,13 +957,25 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                                                 aria-label={isClickable ? `Navigate to ${step.title}` : step.title}
                                             >
                                                 {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                                                {/* Validation issue indicator */}
+                                                {hasStepValidationIssues && (
+                                                    <span
+                                                        className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-background"
+                                                        title="This step has validation issues"
+                                                    />
+                                                )}
                                             </motion.button>
                                             <button
                                                 type="button"
                                                 onClick={() => isClickable && setCurrentStep(index)}
                                                 disabled={!isClickable}
-                                                className={`mt-2 text-xs font-medium hidden md:block transition-colors ${isActive ? 'text-primary' : isComplete ? 'text-green-300 hover:text-green-200 cursor-pointer' : 'text-muted-foreground cursor-not-allowed'
-                                                }`}
+                                                className={`mt-2 text-xs font-medium hidden md:block transition-colors ${
+                                                    isActive
+                                                        ? 'text-primary'
+                                                        : isComplete
+                                                        ? 'text-green-300 hover:text-green-200 cursor-pointer'
+                                                        : 'text-muted-foreground cursor-not-allowed'
+                                                    }`}
                                             >
                                                 {step.title}
                                             </button>
