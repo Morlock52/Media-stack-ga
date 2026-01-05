@@ -324,11 +324,13 @@
           "id": "5.1",
           "title": "Create BackupDashboard component",
           "description": "Main dashboard showing: last backup status, next scheduled backup, backup history list, storage usage, quick actions (backup now, restore, manage schedules).",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/BackupDashboard.tsx"
           ],
-          "estimated_time": "2h"
+          "estimated_time": "2h",
+          "notes": "Created comprehensive BackupDashboard component following HealthDashboard patterns with the following features:\n\n**Main Dashboard Card:**\n- Collapsible header with expand/collapse functionality\n- Summary badges showing total, successful, and failed backups\n- Real-time refresh button with loading state\n- Last updated timestamp\n- Visibility-aware polling (30-second intervals)\n\n**Statistics Grid (4 cards):**\n1. **Last Backup Status:**\n   - Shows time since last backup (relative format)\n   - Visual status indicator (green=success, red=failed, gray=none)\n   - Item count and size display\n   - Color-coded border based on status\n\n2. **Next Scheduled Backup:**\n   - Shows time until next backup (relative format)\n   - Displays schedule frequency and time\n   - Color-coded (cyan when enabled, gray when disabled)\n   - Calendar icon indicator\n\n3. **Total Storage Used:**\n   - Aggregated size of all backups\n   - Total backup count\n   - Hard drive icon\n   - Formatted bytes display (B/KB/MB/GB/TB)\n\n4. **Success Rate:**\n   - Percentage of successful backups\n   - Success/total count display\n   - Trending up icon\n   - N/A when no backups exist\n\n**Quick Actions:**\n- Backup Now button (navigates to /backup/new)\n- Restore button (navigates to /backup/restore)\n- Manage Schedules button (navigates to /backup/schedules)\n- All buttons with appropriate icons\n\n**Active Progress Display:**\n- Shows BackupProgress component when backup is in progress\n- Shows warning banner when restore is in progress\n- Auto-polls backup progress at 2-second intervals\n- Auto-stops polling when completed or failed\n\n**Backup History Section:**\n- Collapsible list of all backups\n- Show 5 backups by default with \"Show all\" button\n- Each backup shows:\n  - Status icon (green checkmark or red X)\n  - Name or ID with truncation\n  - Encryption status (Shield or ShieldOff icon)\n  - Relative timestamp\n  - Item count and compressed size\n  - Success/Failed badge\n- Loading state with spinner\n- Empty state with \"Create Your First Backup\" button\n- Scrollable list (max 500px height)\n\n**No Destination State:**\n- Full-screen message when no destination configured\n- \"Configure Backup\" button to navigate to wizard\n- Database icon with helpful text\n\n**Warning Banner:**\n- Shows when backups exist but no schedule configured\n- Amber/orange warning theme\n- \"Configure Schedule\" button\n- Alert triangle icon\n\n**Implementation Details:**\n- Uses useBackupStore for state management (destination, schedule, activeBackupProgress, activeRestoreProgress)\n- Uses useBackupList hook to fetch backup history\n- Uses useBackupProgress hook with automatic polling\n- Uses usePageVisibility for visibility-aware polling\n- Uses useNavigate for routing to other pages\n- Follows HealthDashboard patterns exactly (collapsible sections, status cards, action buttons)\n- Utility functions: formatBytes(), formatRelativeTime(), formatNextRun()\n- AnimatePresence for smooth expand/collapse animations\n- Responsive grid layout (1 column on mobile, 2-4 columns on desktop)\n- Proper error handling with error banner display\n- Color-coded visual feedback throughout\n- Consistent with existing component patterns\n\n**Files Created:**\n- docs-site/src/components/BackupDashboard.tsx (711 lines)\n\n**Commit:** 8a7e07f - auto-claude: 5.1 - Main dashboard showing: last backup status, next s\n\nThe dashboard provides a comprehensive overview of the backup system with quick access to all major features, real-time progress tracking, and helpful guidance for users.",
+          "updated_at": "2026-01-05T20:17:35.503207+00:00"
         },
         {
           "id": "5.2",
@@ -503,5 +505,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T20:13:27.287799+00:00"
+  "last_updated": "2026-01-05T20:17:35.503215+00:00"
 }

@@ -973,3 +973,125 @@
 
 ---
 
+
+## 2026-01-05 - Subtask 5.1 Completed
+
+**Subtask:** Create BackupDashboard component
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive BackupDashboard component following HealthDashboard patterns
+- Implemented collapsible main dashboard with real-time statistics
+- Built statistics grid showing last backup status, next scheduled backup, storage usage, and success rate
+- Added quick action buttons for Backup Now, Restore, and Manage Schedules
+- Implemented active backup/restore progress display
+- Created collapsible backup history section with show all/show less functionality
+- Added warning banner when no schedule is configured
+- Integrated with useBackupStore, useBackupList, and useBackupProgress hooks
+- Visibility-aware polling with automatic refresh every 30 seconds
+
+**Main Dashboard Card:**
+- Collapsible header with expand/collapse functionality
+- Summary badges showing total, successful, and failed backups
+- Real-time refresh button with loading state
+- Last updated timestamp display
+- Automatic polling when page is visible
+
+**Statistics Grid (4 cards):**
+1. **Last Backup Status:**
+   - Relative time display ("X days ago", "X hours ago", etc.)
+   - Visual status indicator (green checkmark for success, red X for failed, gray alert for none)
+   - Item count and compressed size
+   - Color-coded border (green for success, red for failed, gray for none)
+
+2. **Next Scheduled Backup:**
+   - Relative time until next backup ("in X days", "in X hours", etc.)
+   - Displays schedule frequency and time
+   - Color-coded (cyan when enabled, gray when disabled)
+   - Calendar icon indicator
+
+3. **Total Storage Used:**
+   - Aggregated size of all backups with formatBytes utility
+   - Total backup count
+   - Hard drive icon
+   - Formatted as B/KB/MB/GB/TB
+
+4. **Success Rate:**
+   - Percentage of successful backups
+   - Success/total count display (X of Y successful)
+   - Trending up icon
+   - Shows "N/A" when no backups exist
+
+**Quick Actions Section:**
+- "Backup Now" button navigates to /backup/new with Plus icon
+- "Restore" button navigates to /backup/restore with RotateCcw icon
+- "Manage Schedules" button navigates to /backup/schedules with Settings icon
+- All buttons use shadcn Button component with appropriate variants
+
+**Active Progress Display:**
+- Shows BackupProgress component when backup is actively running
+- Auto-polls backup progress at 2-second intervals
+- Shows warning banner when restore is in progress (links to Restore Wizard)
+- Auto-stops polling when status is 'completed' or 'failed'
+- Integration with global store's activeBackupProgress and activeRestoreProgress
+
+**Backup History Section:**
+- Collapsible list showing all backup history
+- Shows 5 backups by default with "Show all" / "Show less" toggle
+- Each backup card displays:
+  - Status icon (green CheckCircle or red XCircle)
+  - Backup name or ID with truncation
+  - Encryption status (Shield icon when encrypted, ShieldOff when not)
+  - Relative timestamp using formatRelativeTime utility
+  - Item count and compressed size
+  - Success/Failed status badge
+- Color-coded borders (green for success, red for failed)
+- Scrollable list with max height of 500px
+- Loading state with spinner and "Loading backups..." message
+- Empty state with "Create Your First Backup" button and Database icon
+
+**No Destination State:**
+- Full placeholder when no destination is configured
+- Large Database icon with helpful message
+- "Configure Backup" button to start setup
+- Clean empty state design
+
+**Warning Banner:**
+- Shows amber/orange warning when backups exist but no schedule is configured
+- AlertTriangle icon with warning message
+- Explains importance of automated backups
+- "Configure Schedule" button to navigate to schedule management
+- Only shows when backups exist but schedule is disabled
+
+**Utility Functions:**
+- `formatBytes(bytes)`: Converts bytes to human-readable sizes (B, KB, MB, GB, TB)
+- `formatRelativeTime(dateString)`: Formats timestamps as "X days/hours/minutes ago" or "Just now"
+- `formatNextRun(nextRunString)`: Formats next scheduled run as "in X days/hours/minutes"
+
+**Implementation Details:**
+- Uses useBackupStore for state management (destination, schedule, activeBackupProgress, activeRestoreProgress)
+- Uses useBackupList hook to fetch backup history from destination
+- Uses useBackupProgress hook with automatic polling for active backups
+- Uses usePageVisibility hook for visibility-aware polling (pauses when tab hidden)
+- Uses useNavigate for routing to other pages
+- Follows HealthDashboard patterns exactly (collapsible sections, stats cards, action buttons)
+- AnimatePresence for smooth expand/collapse animations
+- Responsive grid layout (1 column on mobile, 2-4 columns on desktop)
+- Proper error handling with error banner display
+- Color-coded visual feedback throughout (green=success, red=error, amber=warning, cyan=info)
+- Consistent with existing component patterns (InteractiveCard, Button, motion animations)
+- 30-second polling interval for dashboard refresh (less frequent than health dashboard's 15s)
+- 2-second polling interval for active backup progress
+
+**Files Created:**
+- docs-site/src/components/BackupDashboard.tsx (711 lines)
+
+**Commit:** 8a7e07f - auto-claude: 5.1 - Main dashboard showing: last backup status, next s
+
+**Next Steps:**
+- Subtask 5.2: Create BackupHistoryList component for paginated backup list with actions
+- Subtask 5.3: Create ScheduleManager component for managing backup schedules
+- Phase 6: Integration and Navigation
+
+---
+
