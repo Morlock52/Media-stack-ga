@@ -32,5 +32,41 @@
 - Follows established pattern from useConfigGenerators and useFileDownload hooks
 - Committed in 176330f
 
+#### 2.5 - Extract voice plan application logic ✅
+- Created `docs-site/src/hooks/useVoicePlanHandler.ts`
+- Extracted `handleApplyVoicePlan` function that applies voice companion suggestions to wizard state
+- Hook handles applying services, domain, and storage paths from AI-generated voice plans
+- Provides undo support via toast action button
+- Includes automatic navigation to Stack Selection step after applying plan
+- Updated SetupWizard.tsx to use the new hook with onClose callback support
+- Removed inline handleApplyVoicePlan function (~50 lines)
+- Cleaned up unused imports: setSelectedServices, setCurrentStep, updateServiceConfig, updateStoragePath, VoicePlanSummary type
+- Follows established pattern with proper JSDoc documentation and store selectors
+- Committed in 071c6fb
+
+### Phase 3: Extract Modal Components
+
+#### 3.1 - Create DraftRecoveryModal component ✅
+- Created `docs-site/src/components/wizard/DraftRecoveryModal.tsx`
+- Extracted the auto-save draft recovery modal from SetupWizard.tsx
+- Component accepts `isOpen`, `draftInfo`, `onRestore`, and `onDismiss` as props
+- Uses AnimatePresence internally for smooth enter/exit animations
+- Modal displays draft metadata (savedAt timestamp and service count)
+- Provides Resume/Start Fresh action buttons
+- Added to barrel export at `docs-site/src/components/wizard/index.ts`
+- Removed 57 lines of inline JSX from SetupWizard.tsx
+- Cleaned up unused Save icon import from SetupWizard.tsx
+- Follows established component patterns with TypeScript interfaces and JSDoc
+- Committed in fb48ad8
+
 ## Summary
-Successfully extracted form validation and step navigation logic into a reusable hook. The useWizardValidation hook consolidates all step navigation, form validation (for steps 1 and 4), error handling with smooth scrolling, shake animations, and toast notifications. This reduces SetupWizard.tsx complexity by ~70 lines and follows the established hook pattern for better code organization and testability.
+Successfully completed Phase 2: Extract Hooks and Utilities. All wizard logic has been extracted into dedicated, reusable hooks:
+- useWizardAnimations - Animation variants with reduced motion support
+- useConfigGenerators - YAML/config file generation
+- useFileDownload - File download and clipboard utilities
+- useWizardValidation - Form validation and step navigation
+- useVoicePlanHandler - Voice companion plan application
+
+These extractions have reduced SetupWizard.tsx complexity by ~200+ lines total, improving maintainability and testability. All hooks follow consistent patterns with proper documentation and use Zustand store selectors for state management.
+
+Started Phase 3: Extract Modal Components. Extracted DraftRecoveryModal (~57 lines removed from SetupWizard.tsx).

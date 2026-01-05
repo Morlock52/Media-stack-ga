@@ -110,21 +110,23 @@
           "id": "2.4",
           "title": "Create useWizardValidation hook",
           "description": "Extract form validation and step navigation logic into docs-site/src/hooks/useWizardValidation.ts",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/hooks/useWizardValidation.ts"
           ],
-          "notes": "Handles handleNextStep logic including form validation, error scrolling, and toast messages"
+          "notes": "Successfully extracted form validation and step navigation logic into docs-site/src/hooks/useWizardValidation.ts. Hook handles handleNextStep logic including form validation for Basic Config (step 1) and Advanced Settings (step 4), manages shakeField state for error animations, scrolls to error fields with focus, and displays toast notifications. Includes scrollToElement and scrollToFirstError helper functions. Updated SetupWizard.tsx to use the new hook, reducing complexity by ~70 lines. Follows established pattern from useConfigGenerators and useFileDownload hooks. Committed in 176330f.",
+          "updated_at": "2026-01-05T19:22:37.402797+00:00"
         },
         {
           "id": "2.5",
           "title": "Create useVoicePlanHandler hook",
           "description": "Extract voice plan application logic (handleApplyVoicePlan) into docs-site/src/hooks/useVoicePlanHandler.ts",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/hooks/useVoicePlanHandler.ts"
           ],
-          "notes": "Handles applying voice companion suggestions to wizard state with undo support"
+          "notes": "Successfully extracted voice plan application logic (handleApplyVoicePlan) into docs-site/src/hooks/useVoicePlanHandler.ts. Hook handles applying voice companion suggestions to wizard state with undo support, including services, domain, and storage paths. Updated SetupWizard.tsx to use the new hook, removing ~50 lines of inline logic. Hook properly manages state updates via store selectors and provides onClose callback support for modal management. Removed unused imports (setSelectedServices, setCurrentStep, updateServiceConfig, updateStoragePath, VoicePlanSummary type) from SetupWizard.tsx. Follows established patterns from useConfigGenerators, useFileDownload, and useWizardValidation hooks with proper JSDoc documentation. Committed in 071c6fb.",
+          "updated_at": "2026-01-05T19:27:42.910865+00:00"
         }
       ]
     },
@@ -137,11 +139,12 @@
           "id": "3.1",
           "title": "Create DraftRecoveryModal component",
           "description": "Extract the auto-save draft recovery modal into docs-site/src/components/wizard/DraftRecoveryModal.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/DraftRecoveryModal.tsx"
           ],
-          "notes": "Props: isOpen, draftInfo, onRestore, onDismiss. Uses AnimatePresence for animations"
+          "notes": "Successfully extracted DraftRecoveryModal component from SetupWizard.tsx. Component accepts isOpen, draftInfo, onRestore, and onDismiss as props. Uses AnimatePresence internally for animations. Modal shows draft metadata (savedAt timestamp and service count) and provides Resume/Start Fresh buttons. Removed 57 lines of inline JSX from SetupWizard.tsx and cleaned up unused Save icon import. Component follows established patterns with proper TypeScript interfaces and JSDoc documentation. Added to barrel export at docs-site/src/components/wizard/index.ts. Committed in fb48ad8.",
+          "updated_at": "2026-01-05T19:31:07.517448+00:00"
         },
         {
           "id": "3.2",
@@ -321,5 +324,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:18:54.541959+00:00"
+  "last_updated": "2026-01-05T19:31:07.517457+00:00"
 }
