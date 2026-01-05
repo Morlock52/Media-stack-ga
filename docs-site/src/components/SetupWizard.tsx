@@ -61,7 +61,7 @@ export function SetupWizard() {
     const {
         currentStep, mode, selectedServices, config, appliedTemplateId,
         quickStartMode,
-        setMode, toggleService, updateConfig,
+        updateConfig,
         nextStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
         hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
@@ -366,13 +366,7 @@ export function SetupWizard() {
 
                                 {/* Step 2: Stack Selection */}
                                 {currentStep === 2 && (
-                                    <StackSelectionStep
-                                        mode={mode}
-                                        setMode={setMode}
-                                        selectedServices={selectedServices}
-                                        services={services}
-                                        toggleService={toggleService}
-                                    />
+                                    <StackSelectionStep />
                                 )}
 
                                 {/* Step 3: Service Configuration */}

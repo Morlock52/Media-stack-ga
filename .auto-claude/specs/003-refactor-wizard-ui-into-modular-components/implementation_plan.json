@@ -223,21 +223,23 @@
           "id": "4.4",
           "title": "Extract LocalDeployModal component",
           "description": "Extract the local deployment modal (idle/deploying/success states) from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx"
           ],
-          "notes": "Large component handling deploy flow. Should use the bootstrap key extraction UI internally"
+          "notes": "Successfully extracted LocalDeployModal component from ReviewGenerateStep.tsx. Component handles all three deployment states (idle, deploying, success), includes bootstrap API key extraction functionality with reveal/copy/validation UI, shows container status, displays access URLs with LAN IP detection, and provides error handling with manual deployment fallback. Reduced ReviewGenerateStep from 864 lines to 228 lines (~636 line reduction). Component follows established patterns from DraftRecoveryModal with AnimatePresence wrapper, proper TypeScript interfaces, and JSDoc documentation. Committed in 3618fa2.",
+          "updated_at": "2026-01-05T19:55:13.553985+00:00"
         },
         {
           "id": "4.5",
           "title": "Extract BootstrapKeysPanel component",
           "description": "Extract the API key bootstrap panel from LocalDeployModal into docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx"
           ],
-          "notes": "Shows extracted *arr API keys with reveal/copy functionality"
+          "notes": "Successfully extracted BootstrapKeysPanel component from LocalDeployModal.tsx. Component includes API key extraction button, polling progress, reveal/copy functionality for keys, and validation status display. Reduced LocalDeployModal from 682 lines to 379 lines (~303 line reduction). Component follows established patterns with proper TypeScript interfaces and JSDoc documentation. Committed in b35039f.",
+          "updated_at": "2026-01-05T20:00:07.403745+00:00"
         },
         {
           "id": "4.6",
@@ -330,5 +332,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:49:33.426660+00:00"
+  "last_updated": "2026-01-05T20:00:07.403756+00:00"
 }

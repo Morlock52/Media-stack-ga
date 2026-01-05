@@ -128,12 +128,30 @@
 - Proper TypeScript interfaces and JSDoc documentation
 - Committed in 3618fa2
 
-## Summary
-Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), and most of Phase 4 (Refactor Large Step Components).
+#### 4.5 - Extract BootstrapKeysPanel component ✅
+- Created `docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx`
+- Extracted API key bootstrap panel from LocalDeployModal.tsx
+- Component includes API key extraction button, polling progress, reveal/copy functionality for keys, and validation status display
+- Reduced LocalDeployModal from 682 lines to 379 lines (~303 line reduction)
+- Follows established patterns with proper TypeScript interfaces and JSDoc
+- Committed in b35039f
 
-Phase 4 Status: Completed ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, and LocalDeployModal extractions. ReviewGenerateStep.tsx reduced from ~1100 lines to 228 lines (872 line reduction).
+#### 4.6 - Refactor StackSelectionStep to use store directly ✅
+- Updated `docs-site/src/components/wizard/steps/StackSelectionStep.tsx` to read from store instead of receiving props
+- Component now uses `useSetupStore()` hook to access mode, setMode, selectedServices, and toggleService
+- Removed props interface (StackSelectionStepProps) and all prop drilling
+- Imports `services` array directly from data/services.ts
+- Updated SetupWizard.tsx to call `<StackSelectionStep />` without props
+- Removed unused destructured values (setMode, toggleService) from SetupWizard.tsx
+- Follows pattern established by QuickStartStep and BasicConfigurationStep
+
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), and Phase 4 (Refactor Large Step Components).
+
+Phase 4 Status: All subtasks completed! Extracted ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide, LocalDeployModal, and BootstrapKeysPanel. Refactored StackSelectionStep to use store directly. ReviewGenerateStep.tsx reduced from ~1100 lines to 228 lines (872 line reduction). LocalDeployModal reduced by 303 lines.
 
 Total reduction in SetupWizard.tsx: ~400+ lines
 Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
+Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
 
-Next: Extract BootstrapKeysPanel component and refactor StackSelectionStep to use store directly.
+Next: Phase 5 - Store Improvements (add computed selectors and documentation).
