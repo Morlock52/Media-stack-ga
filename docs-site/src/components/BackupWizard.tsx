@@ -12,7 +12,7 @@ import { GlassCard } from './ui/glass-card'
 // Step components will be imported here as they are created in subsequent tasks
 import { DestinationStep } from './backup/DestinationStep'
 import { SelectionStep } from './backup/SelectionStep'
-// TODO: Import EncryptionStep (3.4)
+import { EncryptionStep } from './backup/EncryptionStep'
 // TODO: Import ScheduleStep (3.5)
 // TODO: Import ReviewStep (3.6)
 
@@ -204,22 +204,8 @@ export function BackupWizard() {
                             {/* Step 1: Selection */}
                             {currentStep === 1 && <SelectionStep />}
 
-                            {/* Step 2: Encryption (TODO: Implement in 3.4) */}
-                            {currentStep === 2 && (
-                                <motion.div
-                                    key="encryption"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="text-center py-12">
-                                        <Shield className="w-16 h-16 mx-auto mb-4 text-primary" />
-                                        <h2 className="text-2xl font-bold mb-2">Configure Encryption</h2>
-                                        <p className="text-muted-foreground">Step component will be implemented in subtask 3.4</p>
-                                    </div>
-                                </motion.div>
-                            )}
+                            {/* Step 2: Encryption */}
+                            {currentStep === 2 && <EncryptionStep />}
 
                             {/* Step 3: Schedule (TODO: Implement in 3.5) */}
                             {currentStep === 3 && (
