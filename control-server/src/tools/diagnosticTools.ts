@@ -27,6 +27,15 @@ import {
     type ArrService,
     type DownloadClient
 } from '../knowledge/arrInterconnection.js';
+import {
+    MEDIA_SCANNING_KB,
+    matchLogPatterns as matchMediaLogPatterns,
+    getIssueById as getMediaIssueById,
+    getScanningIssues,
+    getPermissionIssues,
+    type MediaScanningIssuePattern,
+    type MediaServer
+} from '../knowledge/mediaScanning.js';
 import { checkServiceHealth, type ServiceHealth, type ToolResult } from './agentTools.js';
 import * as arrService from '../services/arrService.js';
 
@@ -161,6 +170,59 @@ export interface ArrDiagnosticData {
         issue: string;
         severity: 'critical' | 'high' | 'medium' | 'low';
     }>;
+}
+
+/**
+ * Media scanner diagnostic result data
+ */
+export interface MediaScannerDiagnosticData {
+    /** Overall health of media server scanning */
+    healthy: boolean;
+    /** Media servers detected and their status */
+    servers: Array<{
+        name: MediaServer;
+        running: boolean;
+        containerName?: string;
+        issues?: string[];
+    }>;
+    /** Library path checks */
+    libraryPaths: Array<{
+        path: string;
+        accessible: boolean;
+        hasMedia?: boolean;
+        fileCount?: number;
+        issues?: string[];
+    }>;
+    /** File permission checks */
+    permissions: {
+        puid?: string;
+        pgid?: string;
+        configured: boolean;
+        issues?: string[];
+    };
+    /** File naming convention checks */
+    namingConventions: {
+        checked: boolean;
+        sampleFiles?: string[];
+        issues?: string[];
+    };
+    /** Diagnostic checks performed */
+    checks: DiagnosticCheck[];
+    /** Matched issue patterns from knowledge base */
+    matchedIssues: Array<{
+        issue: MediaScanningIssuePattern;
+        confidence: 'high' | 'medium' | 'low';
+        reason: string;
+    }>;
+    /** Recommended solutions */
+    recommendations: Array<{
+        title: string;
+        description: string;
+        priority: 'critical' | 'high' | 'medium' | 'low';
+        solution: Solution;
+    }>;
+    /** Summary message */
+    summary: string;
 }
 
 /**
@@ -1147,11 +1209,515 @@ export async function diagnoseArrConnections(options: {
 }
 
 /**
+ * Diagnose Plex/Jellyfin/Emby media scanning issues
+ *
+ * This tool checks:
+ * - Media server container health and logs
+ * - Library path accessibility and mounts
+ * - File permissions (PUID/PGID configuration)
+ * - File naming conventions
+ * - Sample media file detection
+ *
+ * @param options Diagnostic options
+ * @returns Detailed media scanner diagnostic analysis with recommendations
+ */
+export async function diagnoseMediaScanner(options: {
+    /** Specific media servers to check (defaults to plex, jellyfin, emby) */
+    servers?: MediaServer[];
+    /** Library paths to check inside containers (e.g., /data/movies, /data/tv) */
+    libraryPaths?: string[];
+    /** Include detailed log analysis */
+    includeLogAnalysis?: boolean;
+    /** Number of log lines to analyze per server */
+    logLines?: number;
+    /** Check file naming conventions */
+    checkNaming?: boolean;
+} = {}): Promise<ToolResult<MediaScannerDiagnosticData>> {
+    const {
+        servers: requestedServers = ['plex', 'jellyfin', 'emby'] as MediaServer[],
+        libraryPaths = ['/data/movies', '/data/tv', '/data/media'],
+        includeLogAnalysis = true,
+        logLines = 100,
+        checkNaming = true
+    } = options;
+
+    try {
+        logger.info({ servers: requestedServers, libraryPaths }, 'Starting media scanner diagnosis');
+
+        const checks: DiagnosticCheck[] = [];
+        const matchedIssues: MediaScannerDiagnosticData['matchedIssues'] = [];
+        const recommendations: MediaScannerDiagnosticData['recommendations'] = [];
+        const serversData: MediaScannerDiagnosticData['servers'] = [];
+        const libraryPathsData: MediaScannerDiagnosticData['libraryPaths'] = [];
+        const permissionsData: MediaScannerDiagnosticData['permissions'] = {
+            configured: false,
+            issues: []
+        };
+        const namingConventionsData: MediaScannerDiagnosticData['namingConventions'] = {
+            checked: false,
+            issues: []
+        };
+
+        // Step 1: Check which media servers are running
+        logger.info('Step 1: Checking media server status');
+        for (const serverName of requestedServers) {
+            const validation = validateServiceName(serverName);
+            if (!validation.valid || !validation.sanitized) {
+                continue;
+            }
+
+            const isRunning = await arrService.isContainerRunning(validation.sanitized);
+
+            const serverData: MediaScannerDiagnosticData['servers'][0] = {
+                name: serverName,
+                running: isRunning,
+                containerName: isRunning ? validation.sanitized : undefined,
+                issues: []
+            };
+
+            checks.push({
+                check: `${serverName} Service Status`,
+                status: isRunning ? 'pass' : 'skip',
+                message: isRunning
+                    ? `${serverName} is running`
+                    : `${serverName} container not found`,
+                actual: isRunning ? 'running' : 'not running'
+            });
+
+            if (!isRunning) {
+                serverData.issues?.push('Container not running');
+            }
+
+            serversData.push(serverData);
+        }
+
+        const runningServers = serversData.filter(s => s.running);
+
+        if (runningServers.length === 0) {
+            return {
+                success: false,
+                data: {
+                    healthy: false,
+                    servers: serversData,
+                    libraryPaths: [],
+                    permissions: permissionsData,
+                    namingConventions: namingConventionsData,
+                    checks,
+                    matchedIssues: [],
+                    recommendations: [{
+                        title: 'Start media server',
+                        description: 'No media servers (Plex, Jellyfin, Emby) are currently running.',
+                        priority: 'critical',
+                        solution: {
+                            title: 'Deploy media server',
+                            description: 'Start a media server container to scan and organize your media',
+                            steps: [
+                                'Configure media server in docker-compose.yml',
+                                'Run: docker-compose up -d plex (or jellyfin/emby)',
+                                'Access web UI to complete initial setup',
+                                'Add library paths and configure scanning'
+                            ],
+                            requiresRestart: true
+                        }
+                    }],
+                    summary: 'No media servers found. Deploy Plex, Jellyfin, or Emby to get started.'
+                }
+            };
+        }
+
+        // Use first running server for subsequent checks
+        const primaryServer = runningServers[0];
+        const containerName = primaryServer.containerName!;
+
+        // Step 2: Check PUID/PGID configuration
+        logger.info('Step 2: Checking file permission configuration (PUID/PGID)');
+        try {
+            const puidResult = await runCommand('docker', [
+                'exec',
+                containerName,
+                'printenv',
+                'PUID'
+            ], { timeoutMs: 3000 });
+
+            const pgidResult = await runCommand('docker', [
+                'exec',
+                containerName,
+                'printenv',
+                'PGID'
+            ], { timeoutMs: 3000 });
+
+            permissionsData.puid = puidResult.trim();
+            permissionsData.pgid = pgidResult.trim();
+            permissionsData.configured = true;
+
+            checks.push({
+                check: 'PUID/PGID Configuration',
+                status: 'pass',
+                message: `PUID=${permissionsData.puid}, PGID=${permissionsData.pgid}`,
+                actual: `PUID=${permissionsData.puid}, PGID=${permissionsData.pgid}`
+            });
+        } catch (err: unknown) {
+            permissionsData.configured = false;
+            permissionsData.issues?.push('PUID/PGID environment variables not set');
+
+            checks.push({
+                check: 'PUID/PGID Configuration',
+                status: 'fail',
+                message: 'PUID/PGID not configured - may cause permission issues',
+                expected: 'PUID and PGID environment variables should be set'
+            });
+
+            // Match against permission-denied issue
+            const permissionIssue = getMediaIssueById('permission-denied');
+            if (permissionIssue && !matchedIssues.find(m => m.issue.id === permissionIssue.id)) {
+                matchedIssues.push({
+                    issue: permissionIssue,
+                    confidence: 'medium',
+                    reason: 'PUID/PGID not configured - potential permission issues'
+                });
+            }
+        }
+
+        // Step 3: Check library paths
+        logger.info('Step 3: Checking library path accessibility');
+        for (const libPath of libraryPaths) {
+            try {
+                // Check if path exists
+                const lsResult = await runCommand('docker', [
+                    'exec',
+                    containerName,
+                    'ls',
+                    '-la',
+                    libPath
+                ], { timeoutMs: 8000 });
+
+                const pathData: MediaScannerDiagnosticData['libraryPaths'][0] = {
+                    path: libPath,
+                    accessible: true,
+                    issues: []
+                };
+
+                // Check if path has media files
+                try {
+                    const findResult = await runCommand('docker', [
+                        'exec',
+                        containerName,
+                        'find',
+                        libPath,
+                        '-type',
+                        'f',
+                        '-regex',
+                        '.*\\.(mkv|mp4|avi|mov|m4v|wmv|flv)$',
+                        '-print'
+                    ], { timeoutMs: 15000 });
+
+                    const files = findResult.trim().split('\n').filter(f => f.length > 0).slice(0, 20);
+                    pathData.hasMedia = files.length > 0;
+                    pathData.fileCount = files.length;
+
+                    if (files.length > 0) {
+                        checks.push({
+                            check: `Library Path: ${libPath}`,
+                            status: 'pass',
+                            message: `Path accessible with ${files.length} media file(s) detected`,
+                            output: files.slice(0, 5).join('\n')
+                        });
+                    } else {
+                        checks.push({
+                            check: `Library Path: ${libPath}`,
+                            status: 'pass',
+                            message: 'Path accessible but no media files found',
+                            output: lsResult.substring(0, 300)
+                        });
+                        pathData.issues?.push('No media files found');
+                    }
+                } catch (findErr: unknown) {
+                    // Find command failed, but path is accessible
+                    checks.push({
+                        check: `Library Path: ${libPath}`,
+                        status: 'pass',
+                        message: 'Path accessible (could not scan for media files)',
+                        output: lsResult.substring(0, 300)
+                    });
+                }
+
+                libraryPathsData.push(pathData);
+
+            } catch (err: unknown) {
+                const errorMsg = getErrorMessage(err);
+                const isPermissionDenied = errorMsg.toLowerCase().includes('permission denied');
+                const isNotFound = errorMsg.toLowerCase().includes('no such file') ||
+                                   errorMsg.toLowerCase().includes('not found');
+
+                libraryPathsData.push({
+                    path: libPath,
+                    accessible: false,
+                    issues: [isPermissionDenied ? 'Permission denied' : isNotFound ? 'Path not found' : 'Cannot access path']
+                });
+
+                checks.push({
+                    check: `Library Path: ${libPath}`,
+                    status: 'fail',
+                    message: isPermissionDenied
+                        ? 'Permission denied - cannot read library path'
+                        : isNotFound
+                            ? 'Path not found - volume not mounted or incorrect path'
+                            : `Cannot access path: ${errorMsg}`,
+                    expected: 'Path should be readable'
+                });
+
+                // Match against known issues
+                if (isPermissionDenied) {
+                    const permissionIssue = getMediaIssueById('permission-denied');
+                    if (permissionIssue && !matchedIssues.find(m => m.issue.id === permissionIssue.id)) {
+                        matchedIssues.push({
+                            issue: permissionIssue,
+                            confidence: 'high',
+                            reason: `Permission denied accessing ${libPath}`
+                        });
+                    }
+                } else if (isNotFound) {
+                    const libraryIssue = getMediaIssueById('library-not-updating');
+                    if (libraryIssue && !matchedIssues.find(m => m.issue.id === libraryIssue.id)) {
+                        matchedIssues.push({
+                            issue: libraryIssue,
+                            confidence: 'high',
+                            reason: `Library path ${libPath} not found - volume mount issue`
+                        });
+                    }
+                }
+            }
+        }
+
+        // Step 4: Check file naming conventions if requested
+        if (checkNaming) {
+            logger.info('Step 4: Checking file naming conventions');
+            namingConventionsData.checked = true;
+
+            const accessiblePaths = libraryPathsData.filter(p => p.accessible && p.hasMedia);
+
+            if (accessiblePaths.length > 0) {
+                const samplePath = accessiblePaths[0].path;
+
+                try {
+                    const sampleFiles = await runCommand('docker', [
+                        'exec',
+                        containerName,
+                        'find',
+                        samplePath,
+                        '-type',
+                        'f',
+                        '-regex',
+                        '.*\\.(mkv|mp4|avi|mov)$'
+                    ], { timeoutMs: 15000 });
+
+                    const files = sampleFiles.trim().split('\n').filter(f => f.length > 0).slice(0, 10);
+                    namingConventionsData.sampleFiles = files;
+
+                    // Check for common naming issues
+                    const namingIssues: string[] = [];
+
+                    for (const file of files) {
+                        const basename = file.split('/').pop() || '';
+
+                        // Check for year in movies (should have (YYYY))
+                        if (samplePath.toLowerCase().includes('movie')) {
+                            if (!/\(\d{4}\)/.test(basename)) {
+                                namingIssues.push(`Missing year: ${basename}`);
+                            }
+                        }
+
+                        // Check for TV show format (should have SxxExx)
+                        if (samplePath.toLowerCase().includes('tv') || samplePath.toLowerCase().includes('show')) {
+                            if (!/[Ss]\d{2}[Ee]\d{2}/.test(basename)) {
+                                namingIssues.push(`Missing episode format: ${basename}`);
+                            }
+                        }
+
+                        // Check for problematic characters
+                        if (/[^\x00-\x7F]/.test(basename)) {
+                            namingIssues.push(`Non-ASCII characters: ${basename}`);
+                        }
+                    }
+
+                    if (namingIssues.length > 0) {
+                        namingConventionsData.issues = namingIssues;
+
+                        checks.push({
+                            check: 'File Naming Conventions',
+                            status: 'fail',
+                            message: `${namingIssues.length} naming issue(s) detected`,
+                            output: namingIssues.slice(0, 3).join('\n')
+                        });
+
+                        const namingIssue = getMediaIssueById('file-naming-incorrect');
+                        if (namingIssue && !matchedIssues.find(m => m.issue.id === namingIssue.id)) {
+                            matchedIssues.push({
+                                issue: namingIssue,
+                                confidence: 'medium',
+                                reason: `${namingIssues.length} file(s) with naming convention issues`
+                            });
+                        }
+                    } else {
+                        checks.push({
+                            check: 'File Naming Conventions',
+                            status: 'pass',
+                            message: 'Sample files follow naming conventions',
+                            output: files.slice(0, 3).join('\n')
+                        });
+                    }
+                } catch (err: unknown) {
+                    checks.push({
+                        check: 'File Naming Conventions',
+                        status: 'skip',
+                        message: `Could not check naming: ${getErrorMessage(err)}`
+                    });
+                }
+            } else {
+                checks.push({
+                    check: 'File Naming Conventions',
+                    status: 'skip',
+                    message: 'No accessible media files to check'
+                });
+            }
+        }
+
+        // Step 5: Analyze logs if requested
+        if (includeLogAnalysis) {
+            logger.info('Step 5: Analyzing media server logs');
+
+            for (const server of runningServers) {
+                try {
+                    const logs = await runCommand('docker', [
+                        'logs',
+                        '--tail',
+                        logLines.toString(),
+                        server.containerName!
+                    ], { timeoutMs: 15000 });
+
+                    const logMatches = matchMediaLogPatterns(logs);
+
+                    if (logMatches.length > 0) {
+                        checks.push({
+                            check: `${server.name} Log Analysis`,
+                            status: 'pass',
+                            message: `Found ${logMatches.length} matching issue pattern(s) in logs`,
+                            output: logMatches.slice(0, 3).map(issue => issue.title).join(', ')
+                        });
+
+                        // Add matched issues
+                        for (const issue of logMatches) {
+                            if (!matchedIssues.find(m => m.issue.id === issue.id)) {
+                                matchedIssues.push({
+                                    issue,
+                                    confidence: 'high',
+                                    reason: `Log patterns matched in ${server.name} logs`
+                                });
+                            }
+                        }
+                    } else {
+                        checks.push({
+                            check: `${server.name} Log Analysis`,
+                            status: 'pass',
+                            message: 'No known error patterns found in logs'
+                        });
+                    }
+                } catch (err: unknown) {
+                    checks.push({
+                        check: `${server.name} Log Analysis`,
+                        status: 'skip',
+                        message: `Failed to retrieve logs: ${getErrorMessage(err)}`
+                    });
+                }
+            }
+        }
+
+        // Step 6: Generate recommendations based on matched issues
+        logger.info('Step 6: Generating recommendations');
+        for (const matched of matchedIssues) {
+            for (const solution of matched.issue.solutions) {
+                // Determine priority based on issue severity and confidence
+                let priority: MediaScannerDiagnosticData['recommendations'][0]['priority'] = 'medium';
+                if (matched.issue.severity === 'critical') {
+                    priority = 'critical';
+                } else if (matched.issue.severity === 'high' && matched.confidence === 'high') {
+                    priority = 'high';
+                } else if (matched.issue.severity === 'medium') {
+                    priority = 'medium';
+                } else {
+                    priority = 'low';
+                }
+
+                // Avoid duplicate recommendations
+                if (!recommendations.find(r => r.title === solution.title)) {
+                    recommendations.push({
+                        title: solution.title,
+                        description: solution.description,
+                        priority,
+                        solution
+                    });
+                }
+            }
+        }
+
+        // Step 7: Determine overall health
+        const failedChecks = checks.filter(c => c.status === 'fail').length;
+        const criticalIssues = matchedIssues.filter(m => m.issue.severity === 'critical').length;
+        const highIssues = matchedIssues.filter(m => m.issue.severity === 'high').length;
+
+        const healthy = failedChecks === 0 && criticalIssues === 0;
+
+        // Generate summary
+        let summary = '';
+        const runningCount = runningServers.length;
+        const accessiblePaths = libraryPathsData.filter(p => p.accessible).length;
+        const pathsWithMedia = libraryPathsData.filter(p => p.hasMedia).length;
+
+        if (healthy) {
+            summary = `Media server healthy. ${runningCount} server(s) running, ${pathsWithMedia}/${libraryPaths.length} library path(s) with media detected.`;
+        } else if (criticalIssues > 0) {
+            summary = `Critical issues detected: ${criticalIssues} critical problem(s). ${runningCount} server(s) running, ${accessiblePaths}/${libraryPaths.length} path(s) accessible. Immediate attention required.`;
+        } else if (highIssues > 0 || failedChecks > 2) {
+            summary = `Issues detected: ${failedChecks} check(s) failed. ${runningCount} server(s) running, ${accessiblePaths}/${libraryPaths.length} path(s) accessible. Review recommendations.`;
+        } else {
+            summary = `${runningCount} server(s) running with minor issues. ${accessiblePaths}/${libraryPaths.length} path(s) accessible, ${pathsWithMedia} with media.`;
+        }
+
+        // Sort recommendations by priority
+        const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+        recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+        return {
+            success: true,
+            data: {
+                healthy,
+                servers: serversData,
+                libraryPaths: libraryPathsData,
+                permissions: permissionsData,
+                namingConventions: namingConventionsData,
+                checks,
+                matchedIssues,
+                recommendations,
+                summary
+            }
+        };
+
+    } catch (err: unknown) {
+        logger.error({ err }, 'Media scanner diagnosis failed');
+        return {
+            success: false,
+            error: getErrorMessage(err)
+        };
+    }
+}
+
+/**
  * Export all diagnostic tools
  */
 export const diagnosticTools = {
     diagnose_vpn_connectivity: diagnoseVpnConnectivity,
-    diagnose_arr_connections: diagnoseArrConnections
+    diagnose_arr_connections: diagnoseArrConnections,
+    diagnose_media_scanner: diagnoseMediaScanner
 };
 
 /**
@@ -1181,6 +1747,14 @@ export const DIAGNOSTIC_TOOL_METADATA: Record<string, DiagnosticToolMetadata> = 
         category: 'arr',
         estimatedDurationMs: 45000,
         knowledgeModules: ['arrInterconnection', 'dockerNetworking'],
+        riskLevel: 'low'
+    },
+    diagnose_media_scanner: {
+        name: 'diagnose_media_scanner',
+        description: 'Comprehensive Plex/Jellyfin/Emby media scanning diagnosis including library paths, file permissions, naming conventions, and log analysis',
+        category: 'media',
+        estimatedDurationMs: 40000,
+        knowledgeModules: ['mediaScanning'],
         riskLevel: 'low'
     }
 };
