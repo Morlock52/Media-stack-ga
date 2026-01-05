@@ -320,3 +320,95 @@
 - Subtask 3.6: Create ReviewStep component with summary and execution
 - Subtask 3.7: Create BackupProgress component for real-time progress display
 
+---
+
+## 2026-01-05 - Subtask 3.6 Completed
+
+**Subtask:** Create ReviewStep component for backup review and execution
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive ReviewStep component as the final step of the backup wizard
+- Implemented two-phase UI: Configuration Summary (pre-backup) and Progress Display (during backup)
+- Integrated useBackupCreate hook to initiate backups and useBackupProgress for real-time tracking
+- Built detailed configuration summary showing all wizard settings at a glance
+- Created animated progress display with percentage, stats, and estimated completion time
+- Added success/error states with appropriate messaging and visual feedback
+- Updated BackupWizard navigation to remove duplicate "Start Backup" button
+
+**Configuration Summary Phase:**
+- **Destination Summary Card:** Shows backup destination with appropriate icon (HardDrive/Cloud/FolderSync), displays detailed config for S3 (endpoint, region, prefix)
+- **Selected Items Summary Card:** Lists all selected items with service name, item name, and size; scrollable list with checkmarks; shows total count and size
+- **Encryption Summary Card:** Displays encryption status (enabled/disabled), shows AES-256-GCM note when enabled, warning icon when disabled
+- **Schedule Summary Card:** Shows schedule config (frequency, time, retention) or "One-time manual backup" when disabled
+- **Backup Name Card:** Displays optional backup name if user provided one
+- **Start Backup Button:** Full-width gradient button with loading state and Database icon
+
+**Progress Display Phase:**
+- **Overall Progress Bar:** Animated bar showing percentage complete, displays bytes processed/total below
+- **Status Badge:** Centered badge with appropriate icon (spinner/checkmark/error), color-coded by status (green=success, red=error, primary=in-progress), displays capitalized status text
+- **Current Operation Card:** Shows what's happening now (e.g., "Archiving volumes"), displays current item being processed, truncates long paths
+- **Progress Stats Grid:** Three-column responsive grid showing:
+  - Items Processed: "X/Y" counter with Database icon
+  - Transfer Speed: Formatted as MB/s or KB/s with TrendingUp icon
+  - Estimated Time: "~Xh Ym" or "~Xm Ys" with Timer icon
+- **Success Banner:** Green banner with CheckCircle2 icon when backup completes, confirmation message with total items processed
+- **Error Banner:** Red banner with XCircle icon when backup fails, displays error message in monospace font
+
+**Utility Functions:**
+- formatBytes(bytes): Converts bytes to human-readable sizes (B, KB, MB, GB, TB) using 1024 base
+- formatSpeed(bytesPerSecond): Formats transfer speed by appending "/s" to formatBytes output
+- formatETA(estimatedCompletionAt, startedAt): Calculates time remaining and formats as "~Xh Ym" or "~Xm Ys" or "~Xs", returns "Calculating..." or "Almost done..." when appropriate
+- getDestinationName(destination): Returns friendly display string for each destination type
+- getDestinationIcon(type): Returns appropriate Lucide icon component for destination type
+
+**Progress Tracking:**
+- Uses useBackupCreate to start backup and receive backupId
+- Automatically starts polling with useBackupProgress at 1-second intervals
+- Updates Zustand store's activeBackupProgress for global state access
+- Calculates progress percentage from bytesProcessed/bytesTotal
+- Polling automatically stops when status is 'completed' or 'failed'
+- Cleanup of polling interval on component unmount
+- Loading state shown while waiting for initial progress data
+
+**Implementation Details:**
+- Follows existing patterns: InteractiveCard, Button, motion animations, toast notifications
+- Uses AnimatePresence for smooth transitions between summary/progress phases
+- Local state tracks: backupStarted (boolean), backupId (string | null)
+- useEffect hook updates global store when progress changes
+- useEffect cleanup stops polling on unmount
+- Responsive grid: 1 column on mobile, 3 columns on desktop for stats
+- Color coding: green for success, red for failure, amber for warnings, primary for active states
+- Proper error handling with try/catch and toast error notifications
+- All icons imported from lucide-react (CheckCircle2, Database, HardDrive, Shield, Clock, etc.)
+
+**BackupWizard Integration:**
+- Imported ReviewStep into BackupWizard.tsx
+- Replaced placeholder Step 4 content with <ReviewStep />
+- Removed "Start Backup" button from wizard navigation (now internal to ReviewStep)
+- Navigation now only shows "Next" button for steps 0-3
+- Step 4 has no bottom navigation button, uses ReviewStep's internal button
+
+**User Experience:**
+- Clear separation between review (static) and execution (dynamic) phases
+- All configuration summarized in one view before committing to backup
+- Real-time progress updates every second with visual feedback
+- Progress bar animation provides sense of movement
+- Estimated time remaining helps set user expectations
+- Transfer speed shows current performance
+- Success/error states provide clear outcomes
+- Can still use Back button to navigate to previous steps before starting
+
+**Files Created:**
+- docs-site/src/components/backup/ReviewStep.tsx (569 lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported ReviewStep, simplified navigation)
+
+**Commit:** 94029ef - auto-claude: 3.6 - Step 5: Review and execute. Summary of all setting
+
+**Next Steps:**
+- Subtask 3.7: Create BackupProgress component for real-time progress display (may be redundant given ReviewStep's progress display)
+- Subtask 4.1: Create RestoreWizard main component
+- Continue with Phase 4: Restore Wizard UI
+

@@ -1,7 +1,7 @@
 {
   "spec_id": "002-backup-and-restore-wizard",
   "created_at": "2026-01-05T19:09:55.417731+00:00",
-  "updated_at": "2026-01-05T19:35:39.405527+00:00",
+  "updated_at": "2026-01-05T19:37:16.924638+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -3570,6 +3570,151 @@
         },
         {
           "timestamp": "2026-01-05T19:35:39.405489+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:35:40.869780+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "3.6",
+          "session": 7,
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:35:46.243009+00:00",
+          "type": "text",
+          "content": "Perfect! Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:36:07.301939+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:36:07.362533+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "subtask_id": "3.6",
+          "session": 7,
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:36:11.429413+00:00",
+          "type": "text",
+          "content": "Now let me update the build-progress.txt to document the completion:",
+          "phase": "coding",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:36:12.434944+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...02-backup-and-restore-wizard/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...02-backup-and-restore-wizard/build-progress.txt",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:36:12.507695+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "subtask_id": "3.6",
+          "session": 7,
+          "detail": "     1→\n     2→## 2026-01-05 - Subtask 3.1 Completed\n     3→\n     4→**Subtask:** Create BackupWizard main component with step navigation\n     5→**Status:** ✅ Completed\n     6→\n     7→**What Was Done:**\n     8→- Created comprehensive BackupWizard.tsx component following SetupWizard patterns\n     9→- Implemented 5-step wizard flow (Destination → Selection → Encryption → Schedule → Review)\n    10→- Added progress indicator with clickable completed steps for navigation\n    11→- Implemented step validation before advancing to next step\n    12→- Used GlassCard styling with Framer Motion animations\n    13→- Added accessibility support with reduced motion preference\n    14→- Implemented auto-scrolling and focus management on step changes\n    15→\n    16→**Key Features:**\n    17→- Progress bar showing completion percentage (step X of 5 • Y% Complete)\n    18→- Step indicators with icons that change to checkmarks when completed\n    19→- Navigation buttons (Back/Next/Start Backup) with proper state management\n    20→- Validation for each step (destination required, items required, encryption password if enabled)\n    21→- Placeholder content for each step with TODO comments for future step components\n    22→- Responsive design following existing Matrix theme and glass-card styling\n    23→\n    24→**Files Created:**\n    25→- docs-site/src/components/BackupWizard.tsx (329 lines)\n    26→\n    27→**Commit:** f17587f - auto-claude: 3.1 - Create main wizard component with step navigation\n    28→\n    29→---\n    30→\n    31→## 2026-01-05 - Subtask 3.2 Completed\n    32→\n    33→**Subtask:** Create DestinationStep component with Local/S3/Rclone configuration\n    34→**Status:** ✅ Completed\n    35→\n    36→**What Was Done:**\n    37→\n    38→**Backend Changes:**\n    39→- Added POST /api/backup/test-connection endpoint to control-server/src/routes/backup.ts\n    40→- Endpoint tests connectivity to local, S3, and rclone destinations\n    41→- Returns connection status with success/error messages\n    42→- Uses existing adapter testConnection() methods\n    43→\n    44→**Frontend Changes:**\n    45→- Added useTestConnection hook in docs-site/src/hooks/useBackup.ts\n    46→  - Handles connection testing with loading/error states\n    47→  - Returns connection result with message\n    48→- Created docs-site/src/components/backup/DestinationStep.tsx\n    49→  - Tab-based UI for selecting destination type (Local/S3/Rclone)\n    50→  - Local tab: single path input for directory backups\n    51→  - S3 tab: endpoint, bucket, region, access key ID, secret access key, path prefix\n    52→  - Rclone tab: remote name and remote path inputs with helpful note\n    53→  - Test connection button with loading spinner and visual feedback\n    54→  - Real-time validation and state updates on blur\n    55→  - Success/error toast notifications\n    56→- Integrated DestinationStep into BackupWizard.tsx replacing placeholder\n    57→- Uses Zustand store for persistent destination configuration\n    58→\n    59→**Key Features:**\n    60→- Clean tabbed interface with icons (HardDrive, Cloud, FolderSync)\n    61→- All inputs use InteractiveCard and FocusRing for consistent styling\n    62→- Form state initializes from Zustand store if destination is already configured\n    63→- Test connection provides visual feedback with colored status badges\n    64→- Follows existing patterns: motion animations, toast notifications, button variants\n    65→- Responsive grid layout for S3 fields (2 columns on desktop)\n    66→- Password input type for S3 secret access key\n    67→- Helper text under each field explaining its purpose\n    68→\n    69→**Files Created/Modified:**\n    70→- control-server/src/routes/backup.ts (added test-connection endpoint)\n    71→- docs-site/src/hooks/useBackup.ts (added useTestConnection hook)\n    72→- docs-site/src/components/backup/DestinationStep.tsx (new component, 450+ lines)\n    73→- docs-site/src/components/BackupWizard.tsx (integrated DestinationStep)\n    74→\n    75→**Commit:** ce113b8 - auto-claude: 3.2 - Step 1: Configure backup destination\n    76→\n    77→**Next Steps:**\n    78→- Subtask 3.3: Create SelectionStep component for item selection with size estimates\n    79→- Subtask 3.4: Create EncryptionStep component with password and strength indicator\n    80→- Subtask 3.5: Create ScheduleStep component with frequency and retention config\n    81→- Subtask 3.6: Create ReviewStep component with summary and execution\n    82→\n    83→\n    84→## 2026-01-05 - Subtask 3.3 Completed\n    85→\n    86→**Subtask:** Create SelectionStep component for backup item selection\n    87→**Status:** ✅ Completed\n    88→\n    89→**What Was Done:**\n    90→- Created comprehensive SelectionStep component with intelligent item grouping and selection UI\n    91→- Auto-discovers backup targets on mount using useBackupDiscover() hook\n    92→- Groups items by type (Config, Database, Metadata, Volume) for better organization\n    93→- Shows estimated size for each item and category using formatBytes() utility\n    94→- Implemented checkboxes for individual items with service tags and path display\n    95→- Type-level selection headers (click to select/deselect entire category)\n    96→- Global actions: Select All, Deselect All, Refresh buttons\n    97→- Real-time summary showing selected count and total size\n    98→- Integrated into BackupWizard.tsx replacing placeholder\n    99→\n   100→**Key Features:**\n   101→- **Auto-Discovery:** Component calls /api/backup/discover on mount to find all backup targets\n   102→- **Loading States:** Shows spinner during initial discovery and refresh operations\n   103→- **Item Grouping:** Organizes items by type with collapsible sections:\n   104→  - Configuration Files (FileCode icon)\n   105→  - Databases (Database icon)\n   106→  - Metadata (Clapperboard icon)\n   107→  - Docker Volumes (HardDrive icon)\n   108→- **Size Display:** formatBytes() utility converts bytes to human-readable format (B, KB, MB, GB, TB)\n   109→- **Selection UI:**\n   110→  - Individual checkboxes for each item with service badges\n   111→  - Type header checkboxes to select/deselect all items of that type\n   112→  - Select All / Deselect All buttons for quick actions\n   113→  - Visual feedback with checkmarks and color coding\n   114→- **Summary Bar:** Shows \"X / Y items\" and \"size / total\" at top\n   115→- **Empty States:** Helpful message when no containers are running\n   116→- **Warning States:** Alert when no items selected\n   117→- **Refresh Button:** Manual re-scan of running containers\n   118→- **Responsive Design:** Grid layout adapts to screen size\n   119→\n   120→**Implementation Details:**\n   121→- Uses useBackupStore for state management (availableItems, selectedItems, toggleItem, selectAllItems, deselectAllItems)\n   122→- Uses useBackupDiscover hook to fetch targets from GET /api/backup/discover\n   123→- Follows existing patterns: InteractiveCard, motion animations, toast notifications, Button variants\n   124→- Type-safe with BackupItem and BackupItemType interfaces from store\n   125→- Helper functions: formatBytes(), groupItemsByType(), getTypeIcon(), getTypeName(), isItemSelected(), isTypeFullySelected(), toggleTypeGroup()\n   126→- Clean checkbox styling matching existing SettingsPage patterns\n   127→- Proper truncation for long paths and service names\n   128→- Loading state on initial mount and manual refresh\n   129→\n   130→**Files Created:**\n   131→- docs-site/src/components/backup/SelectionStep.tsx (370+ lines)\n   132→\n   133→**Files Modified:**\n   134→- docs-site/src/components/BackupWizard.tsx (imported and integrated SelectionStep)\n   135→\n   136→**Commit:** 051bb8a - auto-claude: 3.3 - Step 2: Select what to backup. Checkboxes for: All\n   137→\n   138→**Next Steps:**\n   139→- Subtask 3.4: Create EncryptionStep component with password and strength indicator\n   140→- Subtask 3.5: Create ScheduleStep component with frequency and retention config\n   141→- Subtask 3.6: Create ReviewStep component with summary and execution\n   142→- Subtask 3.7: Create BackupProgress component for real-time progress display\n   143→\n   144→---\n   145→\n   146→## 2026-01-05 - Subtask 3.4 Completed\n   147→\n   148→**Subtask:** Create EncryptionStep component for encryption configuration\n   149→**Status:** ✅ Completed\n   150→\n   151→**What Was Done:**\n   152→- Created comprehensive EncryptionStep component for backup encryption configuration\n   153→- Implemented toggle switch to enable/disable encryption with visual feedback\n   154→- Built password and confirm password inputs with show/hide functionality\n   155→- Created password strength indicator with visual progress bar and requirements checklist\n   156→- Added critical warning banner about password recovery (no recovery possible)\n   157→- Included security best practices section for password management\n   158→- Integrated component into BackupWizard.tsx replacing placeholder\n   159→- Real-time password validation with 5 strength levels (Very Weak to Excellent)\n   160→\n   161→**Key Features:**\n   162→- **Encryption Toggle:**\n   163→  - Clean toggle switch with animation (green when enabled)\n   164→  - Shield icon that changes color based on state\n   165→  - Clears password fields when disabled\n   166→  - Toast notifications on toggle\n   167→\n   168→- **Password Strength Indicator:**\n   169→  - Visual strength bar (0-100% width) with color coding\n   170→  - Text labels: Very Weak, Weak, Fair, Good, Excellent\n   171→  - Requirements checklist with checkmarks/crosses:\n   172→    - At least 12 characters\n   173→    - Uppercase letter\n   174→    - Lowercase letter\n   175→    - Number\n   176→    - Special character (!@#$%^&*, etc.)\n   177→  - Real-time updates as user types\n   178→  - Color-coded feedback (red, orange, yellow, green, emerald)\n   179→\n   180→- **Password Confirmation:**\n   181→  - Separate confirm password input field\n   182→  - Show/hide toggle buttons on both fields\n   183→  - Real-time validation showing match/mismatch status\n   184→  - Border color changes (green for match, red for mismatch)\n   185→  - Visual feedback with CheckCircle2 or XCircle icons\n   186→\n   187→- **Security Warnings:**\n   188→  - Prominent amber warning banner at the top\n   189→  - Bold text emphasizing NO password rec\n\n... [truncated - full output was 17109 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:36:58.585499+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...02-backup-and-restore-wizard/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...02-backup-and-restore-wizard/build-progress.txt",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:36:58.647815+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "subtask_id": "3.6",
+          "session": 7,
+          "detail": "The file ./.auto-claude/specs/002-backup-and-restore-wizard/build-progress.txt has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   315→- docs-site/src/components/BackupWizard.tsx (imported and integrated ScheduleStep)\n   316→\n   317→**Commit:** adfaf06 - auto-claude: 3.5 - Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).\n   318→\n   319→**Next Steps:**\n   320→- Subtask 3.6: Create ReviewStep component with summary and execution\n   321→- Subtask 3.7: Create BackupProgress component for real-time progress display\n   322→\n   323→---\n   324→\n   325→## 2026-01-05 - Subtask 3.6 Completed\n   326→\n   327→**Subtask:** Create ReviewStep component for backup review and execution\n   328→**Status:** ✅ Completed\n   329→\n   330→**What Was Done:**\n   331→- Created comprehensive ReviewStep component as the final step of the backup wizard\n   332→- Implemented two-phase UI: Configuration Summary (pre-backup) and Progress Display (during backup)\n   333→- Integrated useBackupCreate hook to initiate backups and useBackupProgress for real-time tracking\n   334→- Built detailed configuration summary showing all wizard settings at a glance\n   335→- Created animated progress display with percentage, stats, and estimated completion time\n   336→- Added success/error states with appropriate messaging and visual feedback\n   337→- Updated BackupWizard navigation to remove duplicate \"Start Backup\" button\n   338→\n   339→**Configuration Summary Phase:**\n   340→- **Destination Summary Card:** Shows backup destination with appropriate icon (HardDrive/Cloud/FolderSync), displays detailed config for S3 (endpoint, region, prefix)\n   341→- **Selected Items Summary Card:** Lists all selected items with service name, item name, and size; scrollable list with checkmarks; shows total count and size\n   342→- **Encryption Summary Card:** Displays encryption status (enabled/disabled), shows AES-256-GCM note when enabled, warning icon when disabled\n   343→- **Schedule Summary Card:** Shows schedule config (frequency, time, retention) or \"One-time manual backup\" when disabled\n   344→- **Backup Name Card:** Displays optional backup name if user provided one\n   345→- **Start Backup Button:** Full-width gradient button with loading state and Database icon\n   346→\n   347→**Progress Display Phase:**\n   348→- **Overall Progress Bar:** Animated bar showing percentage complete, displays bytes processed/total below\n   349→- **Status Badge:** Centered badge with appropriate icon (spinner/checkmark/error), color-coded by status (green=success, red=error, primary=in-progress), displays capitalized status text\n   350→- **Current Operation Card:** Shows what's happening now (e.g., \"Archiving volumes\"), displays current item being processed, truncates long paths\n   351→- **Progress Stats Grid:** Three-column responsive grid showing:\n   352→  - Items Processed: \"X/Y\" counter with Database icon\n   353→  - Transfer Speed: Formatted as MB/s or KB/s with TrendingUp icon\n   354→  - Estimated Time: \"~Xh Ym\" or \"~Xm Ys\" with Timer icon\n   355→- **Success Banner:** Green banner with CheckCircle2 icon when backup completes, confirmation message with total items processed\n   356→- **Error Banner:** Red banner with XCircle icon when backup fails, displays error message in monospace font\n   357→\n   358→**Utility Functions:**\n   359→- formatBytes(bytes): Converts bytes to human-readable sizes (B, KB, MB, GB, TB) using 1024 base\n   360→- formatSpeed(bytesPerSecond): Formats transfer speed by appending \"/s\" to formatBytes output\n   361→- formatETA(estimatedCompletionAt, startedAt): Calculates time remaining and formats as \"~Xh Ym\" or \"~Xm Ys\" or \"~Xs\", returns \"Calculating...\" or \"Almost done...\" when appropriate\n   362→- getDestinationName(destination): Returns friendly display string for each destination type\n   363→- getDestinationIcon(type): Returns appropriate Lucide icon component for destination type\n   364→\n   365→**Progress Tracking:**\n   366→- Uses useBackupCreate to start backup and receive backupId\n   367→- Automatically starts polling with useBackupProgress at 1-second intervals\n   368→- Updates Zustand store's activeBackupProgress for global state access\n   369→- Calculates progress percentage from bytesProcessed/bytesTotal\n   370→- Polling automatically stops when status is 'completed' or 'failed'\n   371→- Cleanup of polling interval on component unmount\n   372→- Loading state shown while waiting for initial progress data\n   373→\n   374→**Implementation Details:**\n   375→- Follows existing patterns: InteractiveCard, Button, motion animations, toast notifications\n   376→- Uses AnimatePresence for smooth transitions between summary/progress phases\n   377→- Local state tracks: backupStarted (boolean), backupId (string | null)\n   378→- useEffect hook updates global store when progress changes\n   379→- useEffect cleanup stops polling on unmount\n   380→- Responsive grid: 1 column on mobile, 3 columns on desktop for stats\n   381→- Color coding: green for success, red for failure, amber for warnings, primary for active states\n   382→- Proper error handling with try/catch and toast error notifications\n   383→- All icons imported from lucide-react (CheckCircle2, Database, HardDrive, Shield, Clock, etc.)\n   384→\n   385→**BackupWizard Integration:**\n   386→- Imported ReviewStep into BackupWizard.tsx\n   387→- Replaced placeholder Step 4 content with <ReviewStep />\n   388→- Removed \"Start Backup\" button from wizard navigation (now internal to ReviewStep)\n   389→- Navigation now only shows \"Next\" button for steps 0-3\n   390→- Step 4 has no bottom navigation button, uses ReviewStep's internal button\n   391→\n   392→**User Experience:**\n   393→- Clear separation between review (static) and execution (dynamic) phases\n   394→- All configuration summarized in one view before committing to backup\n   395→- Real-time progress updates every second with visual feedback\n   396→- Progress bar animation provides sense of movement\n   397→- Estimated time remaining helps set user expectations\n   398→- Transfer speed shows current performance\n   399→- Success/error states provide clear outcomes\n   400→- Can still use Back button to navigate to previous steps before starting\n   401→\n   402→**Files Created:**\n   403→- docs-site/src/components/backup/ReviewStep.tsx (569 lines)\n   404→\n   405→**Files Modified:**\n   406→- docs-site/src/components/BackupWizard.tsx (imported ReviewStep, simplified navigation)\n   407→\n   408→**Commit:** 94029ef - auto-claude: 3.6 - Step 5: Review and execute. Summary of all setting\n   409→\n   410→**Next Steps:**\n   411→- Subtask 3.7: Create BackupProgress component for real-time progress display (may be redundant given ReviewStep's progress display)\n   412→- Subtask 4.1: Create RestoreWizard main component\n   413→- Continue with Phase 4: Restore Wizard UI\n   414→\n   415→",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:37:08.013241+00:00",
+          "type": "text",
+          "content": "Perfect! Let me verify the commit was successful:",
+          "phase": "coding",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:37:10.115636+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:37:10.722016+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:37:11.119844+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "subtask_id": "3.6",
+          "session": 7,
+          "detail": "94029ef auto-claude: 3.6 - Step 5: Review and execute. Summary of all setting\n0f77759 docs: Update build-progress.txt for subtask 3.5\nadfaf06 auto-claude: 3.5 - Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).\n4fef312 docs: Update build-progress.txt with subtask 3.4 completion\n390bc46 auto-claude: 3.4 - Step 3: Configure encryption. Toggle for encryptio",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-05T19:37:15.356944+00:00",
+          "type": "text",
+          "content": "Let me commit the updated documentation files:",
+          "phase": "coding",
+          "subtask_id": "3.6",
+          "session": 7
+        },
+        {
+          "timestamp": "2026-01-05T19:37:16.924540+00:00",
           "type": "tool_start",
           "content": "[Bash] cd /Users/morlock/fun/m2\\ copy\\ 2/Media-stack-a...",
           "phase": "coding",
