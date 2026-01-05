@@ -161,11 +161,12 @@
           "id": "3.3",
           "title": "Create ToolsDialog component",
           "description": "Extract the tools dialog (import/export/templates) into docs-site/src/components/wizard/ToolsDialog.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/ToolsDialog.tsx"
           ],
-          "notes": "Wraps existing Dialog component. Handles export, import, and template browser navigation"
+          "notes": "Successfully extracted ToolsDialog component from SetupWizard.tsx. Component wraps Dialog UI primitive and provides interface for template browsing, config export, and config import. Accepts isOpen, onClose, onTemplatesClick, onExportClick, and onImportClick as props. Reduced SetupWizard.tsx by ~50 lines of inline JSX. Removed unused FileDown and FileUp icon imports from SetupWizard.tsx. Added to barrel export at docs-site/src/components/wizard/index.ts. Follows established pattern from DraftRecoveryModal and ProfilesPanel with proper TypeScript interfaces and JSDoc documentation. Committed in 05d836c.",
+          "updated_at": "2026-01-05T19:36:37.261410+00:00"
         },
         {
           "id": "3.4",
@@ -325,5 +326,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:34:16.086596+00:00"
+  "last_updated": "2026-01-05T19:36:37.261419+00:00"
 }

@@ -8,6 +8,7 @@ export { WizardNavigation } from './WizardNavigation'
 export { DraftRecoveryModal } from './DraftRecoveryModal'
 export { ProfilesPanel } from './ProfilesPanel'
 export { ToolsDialog } from './ToolsDialog'
+export { VoiceCompanionTrigger } from './VoiceCompanionTrigger'
 
 // Wizard Step Components
 export { QuickStartStep } from './steps/QuickStartStep'

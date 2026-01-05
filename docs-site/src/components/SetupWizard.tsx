@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'motion/react'
-import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useConfigGenerators } from '../hooks/useConfigGenerators'
 import { useFileDownload } from '../hooks/useFileDownload'
 import { useWizardValidation } from '../hooks/useWizardValidation'
@@ -10,7 +9,7 @@ import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
 import { toast } from 'sonner'
 import {
     RotateCcw,
-    Sparkles, Mic, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
+    Sparkles, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
 } from 'lucide-react'
 import { useSetupStore, initialConfig } from '../store/setupStore'
 
@@ -47,6 +46,7 @@ import { WizardNavigation } from './wizard/WizardNavigation'
 import { DraftRecoveryModal } from './wizard/DraftRecoveryModal'
 import { ProfilesPanel } from './wizard/ProfilesPanel'
 import { ToolsDialog } from './wizard/ToolsDialog'
+import { VoiceCompanionTrigger } from './wizard/VoiceCompanionTrigger'
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -72,9 +72,6 @@ export function SetupWizard() {
     const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)
     const [toolsOpen, setToolsOpen] = useState(false)
 
-    // Accessibility: Respect user's reduced motion preference
-    const prefersReducedMotion = useReducedMotion()
-
     // Proactive suggestions based on current step and config
     const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)
 
@@ -94,19 +91,6 @@ export function SetupWizard() {
             description: suggestion.description
         })
     }, [])
-
-    // Animation variants that respect reduced motion
-    const fadeInUp = useMemo(() => prefersReducedMotion
-        ? { initial: {}, animate: {}, transition: { duration: 0 } }
-        : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },
-        [prefersReducedMotion]
-    )
-
-    const scaleIn = useMemo(() => prefersReducedMotion
-        ? { initial: {}, animate: {}, exit: {}, transition: { duration: 0 } }
-        : { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 } },
-        [prefersReducedMotion]
-    )
 
     // Auto-open voice companion for newbie mode
     useEffect(() => {
@@ -297,16 +281,10 @@ export function SetupWizard() {
             </Suspense>
 
             {/* Floating Voice Companion Trigger */}
-            {mode === 'newbie' && !showVoiceCompanion && (
-                <motion.button
-                    {...scaleIn}
-                    onClick={() => setShowVoiceCompanion(true)}
-                    className="fixed bottom-24 right-6 z-40 p-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-2xl shadow-emerald-500/30 hover:scale-105 transition-transform"
-                    title="Talk through my setup with AI"
-                >
-                    <Mic className="w-6 h-6" />
-                </motion.button>
-            )}
+            <VoiceCompanionTrigger
+                isVisible={mode === 'newbie' && !showVoiceCompanion}
+                onClick={() => setShowVoiceCompanion(true)}
+            />
 
             {/* Proactive Suggestions - Agentic AI assistance */}
             <ProactiveSuggestionCard
