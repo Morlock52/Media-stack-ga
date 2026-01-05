@@ -9,7 +9,7 @@
 
 | Phase | Name | Subtasks | Status |
 |-------|------|----------|--------|
-| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (4/6) |
+| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (5/6) |
 | 2 | Enhanced Diagnostic Tools | 5 | Pending |
 | 3 | Troubleshooting History & Context | 3 | Pending |
 | 4 | Configuration Fix Suggestions & Application | 4 | Pending |
@@ -109,9 +109,31 @@
   - Helper functions: search, filter by server/media type/severity, log matching
   - Commit: dd23b37
 
+- [x] **Subtask 1.5 COMPLETED** - Created common error patterns database
+  - File: `control-server/src/knowledge/errorPatterns.ts` (1,194 lines)
+  - 30+ comprehensive error patterns covering all service categories
+  - Categories: VPN (5 patterns), Docker networking (6 patterns), Arr stack (6 patterns),
+    media servers (6 patterns), download clients (2 patterns), general errors (5 patterns)
+  - Each pattern includes: regex matching, severity level, causes, quick fixes, KB references
+  - Patterns: vpn-auth-failed, vpn-connection-timeout, vpn-dns-leak, vpn-port-forwarding-failed,
+    vpn-kill-switch-blocking, docker-dns-resolution-failed, docker-port-conflict,
+    docker-network-not-found, docker-container-network-mode-invalid, docker-no-internet-access,
+    docker-inter-container-dns-failed, arr-api-unauthorized, arr-connection-refused,
+    arr-download-client-unreachable, arr-import-failed-no-files, arr-prowlarr-sync-failed,
+    arr-category-mismatch, media-permission-denied, media-library-not-updating,
+    media-transcoding-failed, media-codec-not-supported, plex-claim-failed,
+    media-metadata-not-loading, qbittorrent-webui-unreachable,
+    qbittorrent-connection-status-firewalled, general-out-of-memory, general-disk-full,
+    general-file-not-found, general-timeout, general-ssl-certificate-error
+  - Helper functions: matchErrorPatterns() for log analysis with category filtering,
+    searchErrorPatterns() for keyword search with relevance scoring,
+    analyzeLogOutput() for comprehensive analysis with grouping and summary generation
+  - Supports filtering by category, severity, service name, and pattern ID
+  - Each pattern links back to detailed knowledge base modules for deep troubleshooting
+  - Commit: 93ae474
+
 **Next Steps:**
-- Subtask 1.5: Create common error patterns database
-- Subtask 1.6: Create knowledge base index and search
+- Subtask 1.6: Create knowledge base index and search (last subtask in Phase 1)
 
 ---
 
