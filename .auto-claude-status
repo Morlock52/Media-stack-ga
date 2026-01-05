@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "006-ai-powered-troubleshooting-expansion",
+  "state": "building",
+  "subtasks": {
+    "completed": 1,
+    "total": 27,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Knowledge Modules & Error Pattern Database",
+    "id": 1,
+    "total": 6
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 3,
+    "started_at": "2026-01-05T14:34:04.369491"
+  },
+  "last_update": "2026-01-05T14:42:53.121558"
+}

@@ -1,0 +1,93 @@
+# AI-Powered Troubleshooting Expansion - Build Progress
+
+## Status: In Progress - Phase 1
+**Last Updated:** 2026-01-05
+
+---
+
+## Phase Summary
+
+| Phase | Name | Subtasks | Status |
+|-------|------|----------|--------|
+| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (1/6) |
+| 2 | Enhanced Diagnostic Tools | 5 | Pending |
+| 3 | Troubleshooting History & Context | 3 | Pending |
+| 4 | Configuration Fix Suggestions & Application | 4 | Pending |
+| 5 | Enhanced Troubleshoot Agent | 3 | Pending |
+| 6 | Frontend Integration | 3 | Pending |
+| 7 | Testing & Documentation | 3 | Pending |
+
+**Total Subtasks:** 27
+
+---
+
+## Implementation Plan Created
+
+### Key Architecture Decisions:
+1. **Knowledge Modules** - Separate TypeScript modules for each troubleshooting domain (VPN, Docker networking, Arr services, media scanning)
+2. **Error Pattern Database** - Regex-based pattern matching with severity levels and solution mappings
+3. **Diagnostic Tools** - New tools in `diagnosticTools.ts` extending existing `agentTools.ts`
+4. **Troubleshooting History** - New store service persisting diagnostic sessions
+5. **Configuration Applier** - Safe config changes with backup/rollback
+
+### Files to Create:
+- `control-server/src/knowledge/vpnTroubleshooting.ts`
+- `control-server/src/knowledge/dockerNetworking.ts`
+- `control-server/src/knowledge/arrInterconnection.ts`
+- `control-server/src/knowledge/mediaScanning.ts`
+- `control-server/src/knowledge/errorPatterns.ts`
+- `control-server/src/knowledge/index.ts`
+- `control-server/src/tools/diagnosticTools.ts`
+- `control-server/src/services/troubleshootingStore.ts`
+- `control-server/src/services/configFixGenerator.ts`
+- `control-server/src/services/configApplier.ts`
+- `control-server/src/orchestrator/troubleshootingWorkflow.ts`
+
+### Files to Modify:
+- `control-server/src/routes/ai.ts` - Add new endpoints and tools
+- `control-server/src/agents.ts` - Update troubleshoot agent
+- `control-server/src/tools/agentTools.ts` - Enhance log analysis
+- `docs-site/src/components/AIAssistant.tsx` - Add troubleshooting UI
+
+---
+
+## Session Log
+
+### Session 1 - 2026-01-05 (Planning)
+- [x] Read spec.md and analyzed requirements
+- [x] Explored existing codebase (ai.ts, agents.ts, agentTools.ts, AIAssistant.tsx)
+- [x] Created implementation_plan.json with 7 phases and 27 subtasks
+- [x] Created build-progress.txt
+
+### Session 2 - 2026-01-05 (Phase 1 Implementation)
+- [x] **Subtask 1.1 COMPLETED** - Created VPN troubleshooting knowledge module
+  - File: `control-server/src/knowledge/vpnTroubleshooting.ts` (883 lines)
+  - 7 comprehensive issue patterns with diagnostics and solutions
+  - Patterns: vpn-healthy-but-no-connection, kill-switch-blocking, auth-failed,
+    dns-leak, port-forwarding-failed, connection-timeout, local-network-unreachable
+  - Support for multiple VPN providers (NordVPN, Mullvad, ProtonVPN, Surfshark, PIA)
+  - Search functions and log pattern matching utilities
+  - Commit: 37f5f96
+
+**Next Steps:**
+- Subtask 1.2: Create Docker networking knowledge module
+- Subtask 1.3: Create Arr interconnection knowledge module
+
+---
+
+## Notes
+
+### Existing Capabilities to Build On:
+- `analyzeLogs()` in agentTools.ts - basic log analysis
+- `networkDiagnostics()` in agentTools.ts - DNS/VPN/port checks
+- `checkServiceHealth()` - Docker container status
+- `conversationStore.ts` - existing conversation persistence
+- Troubleshoot agent "Dr. Debug" with basic expertise
+
+### Acceptance Criteria from Spec:
+- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Knowledge base created)
+- [ ] AI can analyze Docker logs and identify common error patterns (In progress)
+- [ ] AI can guide users through Arr service interconnection troubleshooting
+- [ ] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent
+- [ ] Troubleshooting history saved for context in follow-up questions
+- [ ] AI can suggest configuration fixes and offer to apply them
