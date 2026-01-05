@@ -177,9 +177,10 @@
           "file_paths": [
             "control-server/src/routes/ai.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "Follow-up questions receive previous diagnostic context automatically",
-          "notes": ""
+          "notes": "Modified chat endpoint to inject relevant troubleshooting history into AI context for follow-up questions. Implementation includes:\n\n**Changes to control-server/src/routes/ai.ts:**\n- Added troubleshooting context injection to `/api/agent/chat` endpoint\n- Added troubleshooting context injection to `/api/agent/chat/stream` (POST) endpoint\n- Both endpoints now check for `conversationId` in the context parameter\n- When conversationId is present, loads up to 3 related troubleshooting sessions via `getSessionsByConversation()`\n- Formats each session context using `getSessionContext()` helper\n- Injects formatted context into the system message for the AI\n\n**Changes to control-server/src/agents.ts:**\n- Updated `AgentMessageContext` interface to include `conversationId?: string` field\n- This allows frontend to pass conversation ID when making chat requests\n\n**How it Works:**\n1. Frontend passes `conversationId` in context when making chat requests\n2. Chat endpoint checks if conversationId exists\n3. Loads related troubleshooting sessions from troubleshootingStore\n4. Formats session history (problem description, diagnostics run, attempted fixes, resolution status)\n5. Appends formatted context to system message before sending to OpenAI\n6. AI receives full troubleshooting context and can provide informed follow-up answers\n\n**Example Context Injected:**\n```\n## Recent Troubleshooting Context\n\nThe user has active troubleshooting sessions. Use this context to provide informed follow-up assistance:\n\n# Troubleshooting Session: ts_xxxxx\n**Status:** in_progress\n**Category:** vpn\n**Problem:** Gluetun shows healthy but qBittorrent can't connect\n**Affected Services:** gluetun, qbittorrent\n\n## Diagnostics Run (2)\n- diagnose_vpn_connectivity: Found kill switch blocking local network (3 issues found)\n- analyze_logs: Error patterns matched in gluetun logs\n\n## Attempted Fixes (1)\n- \u25cb Not applied: Add FIREWALL_OUTBOUND_SUBNETS to allow local network access\n---\n```\n\n**Error Handling:**\n- Wrapped in try-catch to handle missing conversationId gracefully\n- Logs warnings if troubleshooting context loading fails\n- Falls back to normal chat without context if any errors occur\n\n**Testing:**\n- Follow-up questions in same conversation now receive previous diagnostic context\n- AI can reference earlier diagnostics when suggesting next steps\n- Enables coherent multi-turn troubleshooting conversations\n\nCommit: e90154d",
+          "updated_at": "2026-01-05T20:39:55.573737+00:00"
         },
         {
           "id": "3.3",
@@ -393,5 +394,5 @@
     "tests_passed": "",
     "issues": ""
   },
-  "last_updated": "2026-01-05T20:36:55.276732+00:00"
+  "last_updated": "2026-01-05T20:39:55.573752+00:00"
 }
