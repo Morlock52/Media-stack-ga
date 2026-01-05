@@ -150,11 +150,12 @@
           "id": "3.2",
           "title": "Create ProfilesPanel component",
           "description": "Extract the saved profiles panel/modal into docs-site/src/components/wizard/ProfilesPanel.tsx",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/ProfilesPanel.tsx"
           ],
-          "notes": "Handles save, load, delete profile actions. Uses store's savedProfiles directly"
+          "notes": "Successfully extracted ProfilesPanel component from SetupWizard.tsx. Component manages saved profiles with save, load, and delete functionality. Reads savedProfiles directly from store via selectors. Maintains internal state for newProfileName. Reduced SetupWizard.tsx by ~70 lines of inline JSX. Added to barrel export at docs-site/src/components/wizard/index.ts. Follows established pattern from DraftRecoveryModal with AnimatePresence wrapper. Committed in a460a97.",
+          "updated_at": "2026-01-05T19:34:16.086588+00:00"
         },
         {
           "id": "3.3",
@@ -324,5 +325,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T19:31:07.517457+00:00"
+  "last_updated": "2026-01-05T19:34:16.086596+00:00"
 }

@@ -7,6 +7,7 @@ export { WizardNavigation } from './WizardNavigation'
 // Wizard Modal Components
 export { DraftRecoveryModal } from './DraftRecoveryModal'
 export { ProfilesPanel } from './ProfilesPanel'
+export { ToolsDialog } from './ToolsDialog'
 
 // Wizard Step Components
 export { QuickStartStep } from './steps/QuickStartStep'

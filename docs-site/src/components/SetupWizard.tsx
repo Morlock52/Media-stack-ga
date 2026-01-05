@@ -9,7 +9,7 @@ import { useWizardValidation } from '../hooks/useWizardValidation'
 import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
 import { toast } from 'sonner'
 import {
-    FileDown, FileUp, RotateCcw,
+    RotateCcw,
     Sparkles, Mic, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
 } from 'lucide-react'
 import { useSetupStore, initialConfig } from '../store/setupStore'
@@ -40,13 +40,13 @@ import { StackSelectionStep } from './wizard/steps/StackSelectionStep'
 import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'
 import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
 import { QuickStartStep } from './wizard/steps/QuickStartStep'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { WizardHeader } from './wizard/WizardHeader'
 import { WizardProgressBar } from './wizard/WizardProgressBar'
 import { WizardStepIndicator } from './wizard/WizardStepIndicator'
 import { WizardNavigation } from './wizard/WizardNavigation'
 import { DraftRecoveryModal } from './wizard/DraftRecoveryModal'
 import { ProfilesPanel } from './wizard/ProfilesPanel'
+import { ToolsDialog } from './wizard/ToolsDialog'
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -334,60 +334,13 @@ export function SetupWizard() {
                     />
 
                     {/* Tools Dialog */}
-                    <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
-                        <DialogContent className="max-w-xl">
-                            <DialogHeader>
-                                <DialogTitle>Wizard Tools</DialogTitle>
-                                <DialogDescription>
-                                    Import/export your configuration or start from a curated template.
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <div className="grid gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="justify-start"
-                                    onClick={() => {
-                                        setToolsOpen(false)
-                                        setShowTemplates(true)
-                                    }}
-                                >
-                                    <Sparkles className="w-4 h-4" />
-                                    Browse Templates
-                                </Button>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() => {
-                                            setToolsOpen(false)
-                                            handleExport()
-                                        }}
-                                        title="Export current configuration"
-                                    >
-                                        <FileDown className="w-4 h-4" />
-                                        Export Config
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() => {
-                                            setToolsOpen(false)
-                                            handleImport()
-                                        }}
-                                        title="Import a saved configuration"
-                                    >
-                                        <FileUp className="w-4 h-4" />
-                                        Import Config
-                                    </Button>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <ToolsDialog
+                        isOpen={toolsOpen}
+                        onClose={() => setToolsOpen(false)}
+                        onTemplatesClick={() => setShowTemplates(true)}
+                        onExportClick={handleExport}
+                        onImportClick={handleImport}
+                    />
 
                     {/* Profiles Panel */}
                     <ProfilesPanel
