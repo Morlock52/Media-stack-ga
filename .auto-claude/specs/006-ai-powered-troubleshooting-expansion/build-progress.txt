@@ -186,9 +186,51 @@ Total: 36+ issue patterns + 30+ error patterns = 66+ troubleshooting entries
   - Follows patterns from agentTools.ts: ToolResult return type, error handling, logging
   - Commit: e6ccb0c
 
+- [x] **Subtask 2.2 COMPLETED** - Created Arr interconnection diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (567 lines of new code)
+  - Implemented `diagnose_arr_connections()` function with comprehensive Arr diagnostics
+  - Performs 7 diagnostic checks:
+    1. Check Arr service status (running/ready) for Sonarr, Radarr, Prowlarr, etc.
+    2. Extract and validate API keys against live services
+    3. Test service-to-service connectivity (DNS and HTTP) between all running Arr services
+    4. Check download client connectivity and network mode (VPN detection)
+    5. Analyze logs with pattern matching against ARR_INTERCONNECTION_KB
+    6. Generate prioritized recommendations
+    7. Determine overall health
+  - Returns detailed `ArrDiagnosticData` with service status, download client status, checks, matched issues, recommendations
+  - Security: Service name validation with allowlist
+  - Detects VPN network mode and adjusts connectivity tests accordingly
+  - Commit: 9ca22a5
+
+- [x] **Subtask 2.3 COMPLETED** - Created media scanner diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (575 lines of new code)
+  - Implemented `diagnoseMediaScanner()` function with comprehensive media scanning diagnostics
+  - Performs 7 diagnostic steps:
+    1. Check media server status (Plex/Jellyfin/Emby running)
+    2. Validate PUID/PGID configuration for file permissions
+    3. Test library path accessibility and scan for media files (mkv, mp4, avi, mov, m4v, wmv, flv)
+    4. Check file naming conventions (movie year format, TV SxxExx format, special characters)
+    5. Analyze server logs with pattern matching against MEDIA_SCANNING_KB
+    6. Generate prioritized recommendations from matched issues
+    7. Determine overall health status
+  - Returns detailed `MediaScannerDiagnosticData` including:
+    - Health status boolean
+    - Per-server status (running, containerName, issues)
+    - Library paths array (path, accessible, hasMedia, fileCount, issues)
+    - Permissions data (puid, pgid, configured, issues)
+    - Naming conventions (checked, sampleFiles, issues)
+    - Array of DiagnosticCheck results
+    - Matched issue patterns with confidence scores
+    - Prioritized recommendations with Solution objects
+    - Summary message
+  - Security: Service name validation with allowlist
+  - Tool metadata: 40s estimated duration, uses mediaScanning knowledge module
+  - Detects permission issues (PUID/PGID missing), path mount issues (volume not accessible), file naming issues
+  - Generates specific recommendations from matched knowledge base patterns (library-not-updating, permission-denied, file-naming-incorrect)
+  - Follows patterns from diagnoseVpnConnectivity and diagnoseArrConnections
+  - Commit: f200d29
+
 **Next Steps:**
-- Subtask 2.2: Create Arr interconnection diagnostic tool
-- Subtask 2.3: Create media scanner diagnostic tool
 - Subtask 2.4: Enhance log analysis with error pattern matching
 - Subtask 2.5: Create diagnostic command runner with user consent
 
