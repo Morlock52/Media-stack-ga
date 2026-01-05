@@ -247,8 +247,42 @@ Total: 36+ issue patterns + 30+ error patterns = 66+ troubleshooting entries
   - Enables AI assistant to provide targeted, context-aware troubleshooting guidance
   - Commit: d901654
 
+- [x] **Subtask 2.5 COMPLETED** - Created diagnostic command runner with user consent
+  - File: `control-server/src/tools/diagnosticTools.ts` (393 lines)
+  - Implemented `runDiagnosticCommand()` function with explicit user consent flow
+  - Supports 5 diagnostic command types: ping, traceroute, nslookup, curl, wget
+  - Security features: command allowlist, target validation, argument allowlisting, injection prevention
+  - Auto-detects best container (prefers gluetun, falls back to arr services)
+  - User consent flow documented in JSDoc
+  - Commit: 34cfcb6
+
+**Phase 2 Complete! ✅**
+
+All 5 enhanced diagnostic tools subtasks completed:
+- ✅ VPN connectivity diagnostic tool
+- ✅ Arr interconnection diagnostic tool
+- ✅ Media scanner diagnostic tool
+- ✅ Enhanced log analysis with error pattern matching
+- ✅ Diagnostic command runner with user consent
+
+**Phase 3 In Progress**
+
+### Session 4 - 2026-01-05 (Phase 3: Troubleshooting History & Context)
+- [x] **Subtask 3.1 COMPLETED** - Created troubleshooting session store
+  - File: `control-server/src/services/troubleshootingStore.ts` (679 lines)
+  - Core session management: createSession, getSession, saveSession, deleteSession, updateSessionStatus
+  - Diagnostic & fix tracking: addDiagnostic, addAttemptedFix
+  - Stores full diagnostic data (VpnDiagnosticData, ArrDiagnosticData, MediaScannerDiagnosticData)
+  - Session data structure: problem details, diagnostics array, attempted fixes, resolution
+  - Query & search: listSessions, getRecentSessionsForService, getSessionsByConversation, searchSessions
+  - Context generation: getSessionContext for AI prompt injection
+  - Analytics: getSessionMetrics with resolution rates and statistics
+  - Follows conversationStore.ts patterns: file-based storage, index with metrics, automatic cleanup
+  - Commit: ca17905
+
 **Next Steps:**
-- Subtask 2.5: Create diagnostic command runner with user consent
+- Subtask 3.2: Integrate troubleshooting context with AI chat
+- Subtask 3.3: Add troubleshooting session API endpoints
 
 ---
 
