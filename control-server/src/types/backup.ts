@@ -271,3 +271,9 @@ export const BackupListRequestSchema = z.object({
     limit: z.number().int().min(1).max(1000).optional(),
     offset: z.number().int().min(0).optional(),
 });
+
+export const RestorePreviewRequestSchema = z.object({
+    backupId: z.string().min(1).max(255),
+    destination: BackupDestinationSchema,
+    decryptionPassword: z.string().min(8).max(255).optional(),
+});

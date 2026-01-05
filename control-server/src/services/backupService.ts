@@ -633,3 +633,117 @@ export async function cleanupTempFiles(backupId: string): Promise<void> {
         logger.warn({ backupId }, 'Failed to clean up temporary files');
     }
 }
+
+/**
+ * Extract backup archive to a directory
+ */
+export async function extractBackupArchive(archivePath: string, targetDir: string): Promise<void> {
+    logger.info({ archivePath, targetDir }, 'Extracting backup archive...');
+
+    try {
+        await mkdir(targetDir, { recursive: true });
+
+        await runCommand(
+            'tar',
+            ['-xzf', archivePath, '-C', targetDir],
+            { timeoutMs: 300_000, label: 'tar:extract' }
+        );
+
+        logger.info({ archivePath, targetDir }, 'Archive extracted successfully');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message, archivePath }, 'Failed to extract archive');
+        throw new Error(`Failed to extract archive: ${message}`);
+    }
+}
+
+/**
+ * Restore files to a Docker volume
+ */
+export async function restoreToVolume(volumeName: string, sourcePath: string): Promise<void> {
+    logger.info({ volumeName, sourcePath }, 'Restoring to Docker volume...');
+
+    try {
+        await runCommand(
+            'docker',
+            [
+                'run',
+                '--rm',
+                '-v', `${volumeName}:/target`,
+                '-v', `${sourcePath}:/source:ro`,
+                'alpine',
+                'sh', '-c', 'cp -a /source/. /target/',
+            ],
+            { timeoutMs: 600_000, label: `docker:restore:volume:${volumeName}` }
+        );
+
+        logger.info({ volumeName }, 'Volume restored successfully');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message, volumeName }, 'Failed to restore volume');
+        throw new Error(`Failed to restore volume ${volumeName}: ${message}`);
+    }
+}
+
+/**
+ * Restore files to a container path
+ */
+export async function restoreToContainerPath(containerName: string, containerPath: string, sourcePath: string): Promise<void> {
+    logger.info({ containerName, containerPath, sourcePath }, 'Restoring to container path...');
+
+    try {
+        await runCommand(
+            'docker',
+            ['cp', `${sourcePath}/.`, `${containerName}:${containerPath}`],
+            { timeoutMs: 600_000, label: `docker:restore:container:${containerName}` }
+        );
+
+        logger.info({ containerName, containerPath }, 'Container path restored successfully');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message, containerName, containerPath }, 'Failed to restore container path');
+        throw new Error(`Failed to restore to container ${containerName}:${containerPath}: ${message}`);
+    }
+}
+
+/**
+ * Stop a Docker container
+ */
+export async function stopContainer(containerName: string): Promise<void> {
+    logger.info({ containerName }, 'Stopping container...');
+
+    try {
+        await runCommand(
+            'docker',
+            ['stop', containerName],
+            { timeoutMs: 60_000, label: `docker:stop:${containerName}` }
+        );
+
+        logger.info({ containerName }, 'Container stopped successfully');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message, containerName }, 'Failed to stop container');
+        throw new Error(`Failed to stop container ${containerName}: ${message}`);
+    }
+}
+
+/**
+ * Start a Docker container
+ */
+export async function startContainer(containerName: string): Promise<void> {
+    logger.info({ containerName }, 'Starting container...');
+
+    try {
+        await runCommand(
+            'docker',
+            ['start', containerName],
+            { timeoutMs: 60_000, label: `docker:start:${containerName}` }
+        );
+
+        logger.info({ containerName }, 'Container started successfully');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message, containerName }, 'Failed to start container');
+        throw new Error(`Failed to start container ${containerName}: ${message}`);
+    }
+}

@@ -35,11 +35,35 @@
         }
       ],
       "status": "completed"
+    },
+    "1.4": {
+      "attempts": [
+        {
+          "session": 5,
+          "timestamp": "2026-01-05T12:49:35.166591",
+          "approach": "Implemented: Create adapter pattern for backup destinations: LocalAdapter (filesystem), S3Adapter (AWS SDK), Rclo",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "1.5": {
+      "attempts": [
+        {
+          "session": 6,
+          "timestamp": "2026-01-05T12:52:39.435072",
+          "approach": "Implemented: Implement Fastify routes: POST /api/backup/create (start backup), GET /api/backup/status/:id (progre",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T12:31:17.502829",
-    "last_updated": "2026-01-05T12:45:53.484270"
+    "last_updated": "2026-01-05T12:52:39.435090"
   }
 }
