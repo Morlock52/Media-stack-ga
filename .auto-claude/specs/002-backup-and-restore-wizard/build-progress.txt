@@ -698,3 +698,117 @@
 
 ---
 
+## 2026-01-05 - Subtask 4.3 Completed
+
+**Subtask:** Create ValidationStep component for backup integrity validation
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive ValidationStep component for restore wizard Step 2
+- Implemented backup validation with checksum verification and decryption support
+- Auto-validates non-encrypted backups on component mount for seamless UX
+- Password input for encrypted backups with show/hide toggle and validation reset on change
+- Integrated with useRestorePreview hook calling POST /api/restore/preview endpoint
+- Displays detailed validation results with backup contents and statistics
+- Blocks wizard progression if validation fails via Zustand store
+
+**Validation Flow:**
+1. Component auto-detects if backup is encrypted
+2. For encrypted backups: password input required before validation
+3. For non-encrypted backups: auto-validates on mount
+4. Validate button triggers API call with backup ID, destination, and password
+5. API downloads manifest, verifies checksums, decrypts if needed
+6. Success: displays validated backup contents with full item list
+7. Failure: shows detailed error with retry option and common causes
+
+**Validation Success Display:**
+- Green success banner with ✅ checkmarks
+- "Backup Validated Successfully" heading with summary stats
+- Full scrollable list of validated items:
+  - Item name with service tag
+  - Type icon (Config/Database/Metadata/Volume)
+  - Path with truncation
+  - Individual item sizes
+  - Checkmark icon for each validated item
+- Summary statistics cards (3-column grid):
+  - Total items count
+  - Total uncompressed size
+  - Total compressed size
+- Next step hint banner encouraging user to proceed
+
+**Validation Failure Display:**
+- Red error banner with detailed explanation
+- Common failure reasons:
+  - Incorrect decryption password
+  - Corrupted backup files or checksums
+  - Missing or incomplete backup data
+  - Network issues during download
+- Error details displayed in monospace font
+- Retry validation button
+- Validation state resets when password changes
+
+**Password Management:**
+- Password input field for encrypted backups only
+- Eye/EyeOff toggle for password visibility
+- Warning icon when password is required but not entered
+- Automatic reset of validation state on password change
+- Stores validated password in Zustand (restoreDecryptionPassword)
+- Password requirement check before allowing validation
+
+**State Management:**
+- Uses Zustand store for global state:
+  - restoreValidationResult: boolean | null (null=not validated, true=valid, false=invalid)
+  - restoreDecryptionPassword: string (stored after successful validation)
+  - selectedBackupForRestore: BackupHistoryEntry | null
+  - destination: BackupDestination
+- Local state for:
+  - password: current password input value
+  - showPassword: visibility toggle state
+  - validationAttempted: boolean flag
+  - validationError: string | null
+  - preview: BackupPreview | null (from API response)
+
+**Integration:**
+- Imported into RestoreWizard.tsx as Step 1 component
+- Replaced placeholder content with <ValidationStep />
+- RestoreWizard enforces validation before allowing "Next":
+  - Checks restoreValidationResult === true
+  - Checks decryption password exists for encrypted backups
+  - Shows toast error if validation failed or incomplete
+- Auto-scrolls to content on step change
+
+**User Experience Enhancements:**
+- Auto-validation for non-encrypted backups (no manual action needed)
+- Loading state with spinner and descriptive text during validation
+- Info banner before validation explaining the process
+- Password reset detection prevents using stale validation results
+- Scrollable item list for large backups (max-h-96)
+- Responsive layout adapting to mobile and desktop
+- Toast notifications for all state changes
+- Helpful error messages with actionable guidance
+
+**Implementation Details:**
+- Follows existing patterns from BackupSelector and EncryptionStep
+- Uses InteractiveCard, FocusRing, Button components
+- Framer Motion animations with initial/animate/exit
+- Utility functions: formatBytes(), getTypeIcon()
+- TypeScript types from useBackup and backupStore
+- Proper error handling with try/catch
+- Cleanup and state management with useEffect
+- All imports use .js extensions (ES modules)
+
+**Files Created:**
+- docs-site/src/components/restore/ValidationStep.tsx (485 lines)
+
+**Files Modified:**
+- docs-site/src/components/RestoreWizard.tsx (imported ValidationStep, replaced placeholder)
+
+**Commit:** 59dcde4 - auto-claude: 4.3 - Step 2: Validate backup integrity. Check checksums
+
+**Next Steps:**
+- Subtask 4.4: Create RestoreSelectionStep component for selective item restore
+- Subtask 4.5: Create RestoreConfirmStep component for restore confirmation with safety options
+- Subtask 4.6: Create RestoreProgress component for real-time restore progress display
+
+---
+
