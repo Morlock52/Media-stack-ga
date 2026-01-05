@@ -257,11 +257,13 @@
           "id": "4.2",
           "title": "Create BackupSelector component",
           "description": "Step 1: List available backups from destination. Show date, size, contents summary. Support filtering and sorting. Allow selecting backup to restore.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/restore/BackupSelector.tsx"
           ],
-          "estimated_time": "1h"
+          "estimated_time": "1h",
+          "notes": "Created comprehensive BackupSelector component for listing and selecting backups from destination:\n\n**Component Features:**\n- Auto-fetches backup list on mount using useBackupList() hook\n- Lists all available backups with metadata display\n- Shows date (with relative formatting: \"Today\", \"Yesterday\", \"X days ago\")\n- Shows compressed size in human-readable format\n- Shows item count for each backup\n- Shows encryption status (encrypted/not encrypted)\n- Shows backup status (completed/failed) with color-coded badges\n- Displays backup ID in monospace font\n- Click to select backup for restoration\n\n**Search and Filtering:**\n- Real-time search by name, ID, or date\n- Search input with magnifying glass icon\n- Filters backups as user types\n\n**Sorting Options:**\n- Newest First (default)\n- Oldest First\n- Largest First\n- Smallest First\n- Name A-Z\n- Name Z-A\n- Dropdown selector with ArrowUpDown icon\n\n**User Experience:**\n- Loading state with spinner during initial fetch\n- Refresh button to re-fetch backup list\n- Destination info banner showing configured backup source\n- Selected backup highlighted with green border and checkmark\n- Green success banner when backup is selected\n- Info tip banner when no backup selected\n- Empty state when no backups found\n- No destination state when destination not configured\n- Toast notifications for all actions (success, error, info)\n- Responsive grid layout\n- Hover effects on backup cards\n\n**Implementation Details:**\n- Follows existing patterns: InteractiveCard, Button, motion animations, toast notifications\n- Uses useBackupStore for state management (destination, selectedBackupForRestore)\n- Uses useBackupList hook from hooks/useBackup.ts\n- Utility functions: formatBytes(), formatDate(), getDestinationIcon(), getDestinationName()\n- TypeScript types match backupStore interfaces\n- Clean component structure with helper functions at top\n- Proper loading and error states\n- Search state managed locally\n- Sort state managed locally\n- Integrated into RestoreWizard.tsx replacing placeholder\n\n**Files Created:**\n- docs-site/src/components/restore/BackupSelector.tsx (422 lines)\n\n**Files Modified:**\n- docs-site/src/components/RestoreWizard.tsx (imported and integrated BackupSelector)\n\nThe component is production-ready and provides a complete backup selection UI with search, sort, and visual feedback.",
+          "updated_at": "2026-01-05T19:50:53.240698+00:00"
         },
         {
           "id": "4.3",
@@ -493,5 +495,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:46:16.180423+00:00"
+  "last_updated": "2026-01-05T19:50:53.240707+00:00"
 }
