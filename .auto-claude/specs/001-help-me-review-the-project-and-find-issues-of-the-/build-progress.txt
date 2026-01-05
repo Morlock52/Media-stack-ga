@@ -638,3 +638,91 @@ All settings endpoints defined in `control-server/src/routes/ai.ts` (lines 784-8
 ---
 
 === PHASE 2 COMPLETE ===
+
+=== PHASE 3: FRONTEND UI INVESTIGATION ===
+
+## subtask-3-1: Verify homepage loads without JavaScript errors
+
+### Environment Status:
+- npm commands: BLOCKED (restricted in this environment)
+- Dev server (port 5173): NOT RUNNING
+- Verification method: STATIC ANALYSIS ONLY
+
+### Static Analysis Results:
+
+#### index.html ✅
+- Valid HTML5 structure with proper DOCTYPE
+- Root div element for React mounting
+- Theme initialization script (dark mode default)
+- Logo preload for performance optimization
+
+#### main.tsx (Entry Point) ✅
+- Renders App component at "/" route
+- RootErrorBoundary for top-level error catching
+- Global error handlers for `window.error` and `unhandledrejection`
+- React.StrictMode enabled for development checks
+- BrowserRouter for client-side routing
+- All routes properly defined: /, /docs, /settings, /* (catch-all)
+
+#### App.tsx (Main Component) ✅
+- Uses ErrorBoundary component for crash recovery
+- Properly imports: HeroSection, ModernNavigation, SetupWizard
+- Lazy loads heavy components with proper fallbacks:
+  - RemoteDeployModal
+  - AIAssistant
+  - TopologyMap
+  - SidebarLayout
+- All Suspense boundaries have loading fallbacks
+- Accessibility: skip-to-content link for keyboard navigation
+
+#### HeroSection.tsx ✅
+- Uses motion/react (Framer Motion) for animations
+- Health check API call (`/api/health-snapshot`) with graceful error handling
+- Properly handles offline state (doesn't crash if server unavailable)
+- IntersectionObserver with cleanup function
+- No debug console.log statements
+
+#### ModernNavigation.tsx ✅
+- Health check polling every 15s with cleanup
+- Keyboard shortcut handling (1-2 keys for navigation)
+- Proper accessibility attributes (title, aria-*)
+- Theme toggle functionality
+
+#### ErrorBoundary.tsx ✅
+- Proper React Error Boundary implementation
+- User-friendly error UI with reload option
+- Error details collapsible for debugging
+- Copy error button for bug reports
+
+### Expected Smoke Test Behavior (from smoke.spec.ts):
+1. `<main>` element should be visible
+2. h1 or hero element should be present
+3. Navigation (nav/header) should be visible
+4. No `pageerror` events should fire
+
+### Components Verified to Exist:
+- ✅ docs-site/src/App.tsx
+- ✅ docs-site/src/main.tsx
+- ✅ docs-site/index.html
+- ✅ docs-site/src/components/modern/HeroSection.tsx
+- ✅ docs-site/src/components/modern/ModernNavigation.tsx
+- ✅ docs-site/src/components/ErrorBoundary.tsx
+- ✅ docs-site/src/store/setupStore.ts
+
+### Findings:
+- ✅ All critical imports resolved (no missing modules)
+- ✅ Error boundaries in place at multiple levels
+- ✅ Lazy loading with proper Suspense fallbacks
+- ✅ Graceful degradation when backend is offline
+- ✅ No obvious runtime errors in static analysis
+
+### Known Issues (Previously Documented):
+1. **Console error collector in smoke test never asserted** (lines 24-28)
+   - The `consoleErrors` array is populated but `expect(consoleErrors).toHaveLength(0)` is missing
+
+**Status: COMPLETE (Static Analysis Only)** ✅
+
+Cannot run live browser verification due to npm command restrictions.
+Based on static analysis, homepage should load without JavaScript errors.
+
+---
