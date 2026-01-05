@@ -1155,3 +1155,134 @@
 
 ---
 
+
+
+## 2026-01-05 - Subtask 5.3 Completed
+
+**Subtask:** Create ScheduleManager component for managing backup schedules
+**Status:** ✅ Completed
+
+**What Was Done:**
+
+**Backend Changes:**
+- Added 6 new schedule management API routes to control-server/src/routes/backup.ts:
+  1. GET /api/backup/schedules - List all schedules with health status
+  2. GET /api/backup/schedules/:id - Get specific schedule details
+  3. POST /api/backup/schedules - Create new backup schedule
+  4. PUT /api/backup/schedules/:id - Update schedule settings
+  5. DELETE /api/backup/schedules/:id - Delete schedule
+  6. POST /api/backup/schedules/:id/trigger - Manually trigger scheduled backup
+- All routes integrate with existing backupScheduler.ts service functions (getSchedules, getSchedule, addSchedule, updateSchedule, deleteSchedule, triggerSchedule, getScheduleHealth)
+- Returns health status with each schedule showing last attempt, last success, last error, and consecutive failures
+- Proper error handling with 404 for not found, 400 for validation errors, 500 for server errors, 202 for accepted triggers
+
+**Frontend Hooks Added (docs-site/src/hooks/useBackup.ts):**
+1. **useScheduleList()** - Fetch all schedules with health data
+   - Returns: schedules array, health object
+   - States: loading, error, data
+2. **useScheduleCreate()** - Create new backup schedule
+   - Accepts: CreateScheduleData (destination, items, enabled, frequency, time, retentionCount, encryption, name)
+   - Returns: created BackupSchedule
+3. **useScheduleUpdate()** - Update existing schedule
+   - Accepts: schedule ID + partial updates
+   - Returns: updated BackupSchedule
+4. **useScheduleDelete()** - Delete schedule
+   - Accepts: schedule ID
+   - Returns: void on success
+5. **useScheduleTrigger()** - Manually trigger scheduled backup
+   - Accepts: schedule ID
+   - Returns: void on success (202 accepted)
+
+**ScheduleManager Component Features:**
+- **Schedule List View:**
+  - Lists all backup schedules with comprehensive details
+  - Shows frequency (Daily, Weekly, Monthly) with time
+  - Displays enabled/disabled status with badges
+  - Health status indicators with color coding (green/amber/red/gray)
+  - Last run and next run times with relative formatting
+  - Item count and encryption status display
+  - Retention count showing how many backups to keep
+
+- **Enable/Disable Toggle:**
+  - One-click button to enable or disable schedules
+  - Updates schedule immediately via API
+  - Updates global Zustand store if only one schedule
+  - Toast notifications for success/failure
+  - Loading state during update
+
+- **Inline Edit Mode:**
+  - Click "Edit" to enter edit mode with form fields
+  - Frequency selector (daily/weekly/monthly dropdown)
+  - Time picker (HTML5 time input)
+  - Retention count input (1-100 with validation)
+  - Save/Cancel buttons with loading states
+  - Smooth AnimatePresence transitions
+  - Updates global store if editing the active schedule
+
+- **Delete with Confirmation:**
+  - Click "Delete" shows confirmation dialog
+  - Displays schedule details before deletion (frequency, time, retention)
+  - Warning about permanent deletion
+  - Cancel/Confirm buttons with loading states
+  - Removes from list and updates global store on success
+
+- **Manual Trigger:**
+  - "Run Now" button to manually trigger scheduled backup
+  - Disabled when schedule is disabled
+  - Loading state during trigger
+  - Toast notification on success/failure
+
+- **Health Status Tracking:**
+  - Success (green checkmark): Healthy schedules with no failures
+  - Warning (amber alert): 1-2 consecutive failures
+  - Error (red X): 3+ consecutive failures
+  - Unknown (gray alert): Not yet run
+  - Shows failure count in message
+
+**Empty States:**
+1. No destination configured - Shows message with "Configure Backup Destination" button
+2. No schedules exist - Shows message with "Create Schedule" button
+3. Loading state - Shows spinner with "Loading schedules..." message
+
+**Implementation Details:**
+- Uses AnimatePresence for smooth transitions between view/edit/delete modes
+- Follows existing patterns: InteractiveCard, Button, FocusRing components
+- Toast notifications for all user actions (success, error, info)
+- Updates global Zustand store (setSchedule) when modifying the active schedule
+- Responsive grid layout: 1 column on mobile, 3 columns on desktop for stats
+- Color-coded health indicators matching HealthDashboard patterns
+- Disabled state styling (opacity 60%) for inactive schedules
+- Helper functions:
+  - formatNextRun(): "in X days/hours/minutes"
+  - formatLastRun(): "X days/hours/minutes ago" or "Never run"
+  - getFrequencyName(): "Daily", "Weekly (Sunday)", "Monthly (1st)"
+  - getHealthStatus(): Returns status object with color and message
+
+**User Experience:**
+- Clear visual indicators for all schedule states
+- Inline editing without navigation to other pages
+- Confirmation dialogs prevent accidental deletions
+- Real-time updates after all operations
+- Helpful empty states guide users to next actions
+- Loading states provide feedback during operations
+- Error messages displayed via toast notifications
+- Disabled schedules visually muted to show inactive state
+
+**Files Created:**
+- docs-site/src/components/backup/ScheduleManager.tsx (685 lines)
+
+**Files Modified:**
+- control-server/src/routes/backup.ts (added 6 schedule routes, +226 lines)
+- docs-site/src/hooks/useBackup.ts (added 5 schedule hooks, +287 lines)
+
+**Commit:** 747bfdf - auto-claude: 5.3 - Manage backup schedules: view active schedules, ed
+
+**Next Steps:**
+- Phase 5 (Backup Management Dashboard) is now complete! ✅
+- Move to Phase 6: Integration and Navigation
+- Subtask 6.1: Add backup routes to App.tsx
+- Subtask 6.2: Add backup to sidebar navigation
+- Subtask 6.3: Add backup widget to HealthDashboard
+
+---
+

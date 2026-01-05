@@ -348,11 +348,13 @@
           "id": "5.3",
           "title": "Create ScheduleManager component",
           "description": "Manage backup schedules: view active schedules, edit schedule settings, enable/disable schedules, view schedule history.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/backup/ScheduleManager.tsx"
           ],
-          "estimated_time": "1h"
+          "estimated_time": "1h",
+          "notes": "Created comprehensive ScheduleManager component for managing backup schedules with the following features:\n\n**Backend Changes:**\n- Added schedule management API routes to control-server/src/routes/backup.ts:\n  - GET /api/backup/schedules - Get all schedules with health status\n  - GET /api/backup/schedules/:id - Get specific schedule\n  - POST /api/backup/schedules - Create new schedule\n  - PUT /api/backup/schedules/:id - Update schedule\n  - DELETE /api/backup/schedules/:id - Delete schedule\n  - POST /api/backup/schedules/:id/trigger - Manually trigger scheduled backup\n- All routes integrate with backupScheduler.ts service functions\n- Returns health status with each schedule (last attempt, last success, consecutive failures)\n\n**Frontend Hooks (docs-site/src/hooks/useBackup.ts):**\n- useScheduleList() - Fetch all schedules with health data\n- useScheduleCreate() - Create new backup schedule\n- useScheduleUpdate() - Update existing schedule settings\n- useScheduleDelete() - Delete schedule\n- useScheduleTrigger() - Manually trigger scheduled backup\n- ScheduleHealth interface for health tracking\n\n**Component Features:**\n- Lists all active backup schedules with comprehensive details\n- Enable/disable schedules with toggle button\n- Edit schedule settings inline (frequency, time, retention count)\n- Delete schedules with confirmation dialog\n- Manually trigger scheduled backups with \"Run Now\" button\n- Health status tracking with color-coded indicators:\n  - Success (green): Healthy schedules\n  - Warning (amber): Recent failures (1-2)\n  - Error (red): Multiple consecutive failures (3+)\n  - Unknown (gray): Not yet run\n\n**Schedule Display:**\n- Frequency badge showing daily/weekly/monthly\n- Enabled/disabled status indicator\n- Last run time with relative formatting (\"X hours ago\")\n- Next run time with relative formatting (\"in X hours\")\n- Health status card with failure tracking\n- Item count and encryption status\n- Retention count display\n\n**Edit Mode:**\n- Inline editing with form fields for:\n  - Frequency selector (daily/weekly/monthly)\n  - Time picker for schedule time\n  - Retention count input (1-100 backups)\n- Save/Cancel buttons with loading states\n- Updates global store if editing the active schedule\n\n**Delete Confirmation:**\n- Modal confirmation showing schedule details\n- Warning about permanent deletion\n- Displays frequency, time, and retention settings\n- Cancel/Confirm buttons with loading states\n\n**Empty States:**\n- No destination configured state with setup button\n- No schedules state with create button\n- Loading state with spinner\n\n**Implementation Details:**\n- Uses AnimatePresence for smooth view/edit/delete transitions\n- Follows existing patterns: InteractiveCard, Button, FocusRing, toast notifications\n- Health status from backend scheduler service\n- Real-time updates after enable/disable/edit/delete operations\n- Updates global Zustand store when modifying schedules\n- Responsive grid layout for schedule details (1 column mobile, 3 columns desktop)\n- Color-coded health indicators matching HealthDashboard patterns\n- Disabled state styling for inactive schedules\n- Helper functions: formatNextRun(), formatLastRun(), getFrequencyName(), getHealthStatus()\n\n**User Experience:**\n- Clear status indicators (enabled/disabled badges)\n- One-click enable/disable toggle\n- Inline editing without navigation\n- Confirmation before destructive actions\n- Manual trigger for immediate backups\n- Visual feedback for all operations (loading, success, error)\n- Helpful empty states with action buttons\n\nThe component provides production-ready schedule management UI with comprehensive features following all project patterns and conventions.",
+          "updated_at": "2026-01-05T20:28:17.114892+00:00"
         }
       ]
     },
@@ -507,5 +509,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T20:22:47.409316+00:00"
+  "last_updated": "2026-01-05T20:28:17.114901+00:00"
 }
