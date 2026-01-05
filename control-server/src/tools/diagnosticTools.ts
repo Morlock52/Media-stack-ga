@@ -20,12 +20,15 @@ import {
     type DiagnosticStep,
     type Solution
 } from '../knowledge/vpnTroubleshooting.js';
-// Docker networking imports - will be used in future diagnostic tools
-// import {
-//     DOCKER_NETWORKING_KB,
-//     searchDockerNetworkingKnowledge
-// } from '../knowledge/dockerNetworking.js';
+import {
+    ARR_INTERCONNECTION_KB,
+    matchLogPatterns as matchArrLogPatterns,
+    type ArrInterconnectionIssuePattern,
+    type ArrService,
+    type DownloadClient
+} from '../knowledge/arrInterconnection.js';
 import { checkServiceHealth, type ServiceHealth, type ToolResult } from './agentTools.js';
+import * as arrService from '../services/arrService.js';
 
 const logger = createLogger('diagnosticTools');
 
@@ -111,6 +114,53 @@ export interface VpnDiagnosticData {
     summary: string;
     /** Related services that may be affected */
     affectedServices?: string[];
+}
+
+/**
+ * Arr interconnection diagnostic result data
+ */
+export interface ArrDiagnosticData {
+    /** Overall health of Arr interconnections */
+    healthy: boolean;
+    /** Status of each Arr service */
+    services: Array<{
+        name: string;
+        running: boolean;
+        apiKeyValid?: boolean;
+        reachable?: boolean;
+        issues?: string[];
+    }>;
+    /** Download client connectivity */
+    downloadClients: Array<{
+        name: string;
+        running: boolean;
+        reachable?: boolean;
+        configured?: boolean;
+        issues?: string[];
+    }>;
+    /** Diagnostic checks performed */
+    checks: DiagnosticCheck[];
+    /** Matched issue patterns from knowledge base */
+    matchedIssues: Array<{
+        issue: ArrInterconnectionIssuePattern;
+        confidence: 'high' | 'medium' | 'low';
+        reason: string;
+    }>;
+    /** Recommended solutions */
+    recommendations: Array<{
+        title: string;
+        description: string;
+        priority: 'critical' | 'high' | 'medium' | 'low';
+        solution: Solution;
+    }>;
+    /** Summary message */
+    summary: string;
+    /** Configuration issues detected */
+    configurationIssues?: Array<{
+        service: string;
+        issue: string;
+        severity: 'critical' | 'high' | 'medium' | 'low';
+    }>;
 }
 
 /**
@@ -565,10 +615,543 @@ export async function diagnoseVpnConnectivity(options: {
 }
 
 /**
+ * Diagnose Arr service interconnection issues
+ *
+ * This tool checks:
+ * - Arr service health and running status
+ * - API key validity
+ * - Service-to-service connectivity (DNS, HTTP)
+ * - Download client connectivity
+ * - Network mode configuration (especially VPN)
+ * - Path permissions and import issues
+ *
+ * @param options Diagnostic options
+ * @returns Detailed Arr interconnection diagnostic analysis with recommendations
+ */
+export async function diagnoseArrConnections(options: {
+    /** Specific Arr services to check (defaults to common ones) */
+    arrServices?: ArrService[];
+    /** Specific download clients to check */
+    downloadClients?: DownloadClient[];
+    /** Include detailed log analysis */
+    includeLogAnalysis?: boolean;
+    /** Number of log lines to analyze per service */
+    logLines?: number;
+} = {}): Promise<ToolResult<ArrDiagnosticData>> {
+    const {
+        arrServices: requestedArrServices = ['sonarr', 'radarr', 'prowlarr'] as ArrService[],
+        downloadClients: requestedDownloadClients = ['qbittorrent', 'transmission', 'deluge'] as DownloadClient[],
+        includeLogAnalysis = true,
+        logLines = 100
+    } = options;
+
+    try {
+        logger.info({ arrServices: requestedArrServices, downloadClients: requestedDownloadClients }, 'Starting Arr interconnection diagnosis');
+
+        const checks: DiagnosticCheck[] = [];
+        const matchedIssues: ArrDiagnosticData['matchedIssues'] = [];
+        const recommendations: ArrDiagnosticData['recommendations'] = [];
+        const configurationIssues: ArrDiagnosticData['configurationIssues'] = [];
+        const servicesData: ArrDiagnosticData['services'] = [];
+        const downloadClientsData: ArrDiagnosticData['downloadClients'] = [];
+
+        // Step 1: Check Arr service status
+        logger.info('Step 1: Checking Arr service status');
+        const arrServicesStatus = await arrService.getArrServicesStatus();
+
+        for (const serviceName of requestedArrServices) {
+            const serviceStatus = arrServicesStatus.find(s => s.id === serviceName);
+            const running = serviceStatus?.running ?? false;
+            const ready = serviceStatus?.ready ?? false;
+
+            checks.push({
+                check: `${serviceName} Service Status`,
+                status: running ? 'pass' : 'fail',
+                message: running
+                    ? (ready ? `${serviceName} is running and ready` : `${serviceName} is running but not ready`)
+                    : `${serviceName} container not found or not running`,
+                actual: running ? 'running' : 'not running'
+            });
+
+            servicesData.push({
+                name: serviceName,
+                running,
+                issues: running ? [] : ['Service not running']
+            });
+
+            if (!running) {
+                configurationIssues.push({
+                    service: serviceName,
+                    issue: 'Service not running',
+                    severity: 'high'
+                });
+            }
+        }
+
+        // Step 2: Extract and validate API keys
+        logger.info('Step 2: Validating API keys');
+        let extractedKeys: Record<string, string> = {};
+        try {
+            extractedKeys = await arrService.extractArrKeys();
+
+            if (Object.keys(extractedKeys).length > 0) {
+                const validations = await arrService.validateArrKeys(extractedKeys, arrServicesStatus);
+
+                for (const [envKey, validation] of Object.entries(validations)) {
+                    const serviceName = envKey.replace('_API_KEY', '').toLowerCase();
+
+                    if (!requestedArrServices.includes(serviceName as ArrService)) {
+                        continue;
+                    }
+
+                    const serviceData = servicesData.find(s => s.name === serviceName);
+
+                    if (validation.tested) {
+                        checks.push({
+                            check: `${serviceName} API Key Validation`,
+                            status: validation.ok ? 'pass' : 'fail',
+                            message: validation.ok
+                                ? 'API key is valid and accepted'
+                                : `API key validation failed: ${validation.error || 'Unauthorized'}`,
+                            expected: 'HTTP 200 with valid response',
+                            actual: validation.status ? `HTTP ${validation.status}` : validation.error
+                        });
+
+                        if (serviceData) {
+                            serviceData.apiKeyValid = validation.ok;
+                            if (!validation.ok) {
+                                serviceData.issues?.push('Invalid API key');
+                                configurationIssues.push({
+                                    service: serviceName,
+                                    issue: 'API key validation failed',
+                                    severity: 'high'
+                                });
+
+                                // Match against knowledge base
+                                const apiKeyIssue = ARR_INTERCONNECTION_KB.find(kb => kb.id === 'api-key-invalid');
+                                if (apiKeyIssue && !matchedIssues.find(m => m.issue.id === apiKeyIssue.id)) {
+                                    matchedIssues.push({
+                                        issue: apiKeyIssue,
+                                        confidence: 'high',
+                                        reason: `API key validation failed for ${serviceName}`
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        checks.push({
+                            check: `${serviceName} API Key Validation`,
+                            status: 'skip',
+                            message: `Could not test API key: ${validation.error || 'Service not accessible'}`
+                        });
+
+                        if (serviceData && !serviceData.apiKeyValid) {
+                            serviceData.apiKeyValid = false;
+                        }
+                    }
+                }
+            } else {
+                checks.push({
+                    check: 'API Key Extraction',
+                    status: 'fail',
+                    message: 'No API keys could be extracted from running services'
+                });
+            }
+        } catch (err: unknown) {
+            checks.push({
+                check: 'API Key Extraction',
+                status: 'fail',
+                message: `Failed to extract API keys: ${getErrorMessage(err)}`
+            });
+        }
+
+        // Step 3: Test service-to-service connectivity (DNS and HTTP)
+        logger.info('Step 3: Testing service-to-service connectivity');
+        const runningArrServices = arrServicesStatus.filter(s =>
+            s.running && requestedArrServices.includes(s.id as ArrService)
+        );
+
+        for (let i = 0; i < runningArrServices.length; i++) {
+            const sourceService = runningArrServices[i];
+
+            for (let j = i + 1; j < runningArrServices.length; j++) {
+                const targetService = runningArrServices[j];
+
+                // Test DNS resolution
+                try {
+                    const dnsResult = await runCommand('docker', [
+                        'exec',
+                        sourceService.containerName!,
+                        'nslookup',
+                        targetService.id
+                    ], { timeoutMs: 5000 });
+
+                    const dnsWorking = dnsResult.toLowerCase().includes('address') ||
+                                      dnsResult.toLowerCase().includes('name:');
+
+                    checks.push({
+                        check: `DNS: ${sourceService.id} → ${targetService.id}`,
+                        status: dnsWorking ? 'pass' : 'fail',
+                        message: dnsWorking
+                            ? 'DNS resolution successful'
+                            : 'DNS resolution failed',
+                        output: dnsResult.substring(0, 200)
+                    });
+
+                    if (!dnsWorking) {
+                        const urlIssue = ARR_INTERCONNECTION_KB.find(kb => kb.id === 'url-connection-failed');
+                        if (urlIssue && !matchedIssues.find(m => m.issue.id === urlIssue.id)) {
+                            matchedIssues.push({
+                                issue: urlIssue,
+                                confidence: 'high',
+                                reason: `DNS resolution failed between ${sourceService.id} and ${targetService.id}`
+                            });
+                        }
+
+                        configurationIssues.push({
+                            service: `${sourceService.id}-${targetService.id}`,
+                            issue: 'DNS resolution failed - services may not be on same network',
+                            severity: 'high'
+                        });
+                    }
+                } catch (err: unknown) {
+                    checks.push({
+                        check: `DNS: ${sourceService.id} → ${targetService.id}`,
+                        status: 'fail',
+                        message: `DNS test failed: ${getErrorMessage(err)}`
+                    });
+                }
+
+                // Test HTTP connectivity (common ports)
+                const portMap: Record<string, number> = {
+                    sonarr: 8989,
+                    radarr: 7878,
+                    prowlarr: 9696,
+                    lidarr: 8686,
+                    readarr: 8787,
+                    bazarr: 6767
+                };
+
+                const targetPort = portMap[targetService.id];
+                if (targetPort) {
+                    try {
+                        const httpResult = await runCommand('docker', [
+                            'exec',
+                            sourceService.containerName!,
+                            'curl',
+                            '-I',
+                            '-s',
+                            '--connect-timeout', '5',
+                            `http://${targetService.id}:${targetPort}`
+                        ], { timeoutMs: 8000 });
+
+                        const httpWorking = httpResult.toLowerCase().includes('http/');
+
+                        checks.push({
+                            check: `HTTP: ${sourceService.id} → ${targetService.id}:${targetPort}`,
+                            status: httpWorking ? 'pass' : 'fail',
+                            message: httpWorking
+                                ? 'HTTP connectivity successful'
+                                : 'HTTP connectivity failed',
+                            output: httpResult.substring(0, 200)
+                        });
+
+                        const serviceData = servicesData.find(s => s.name === targetService.id);
+                        if (serviceData) {
+                            serviceData.reachable = httpWorking;
+                            if (!httpWorking) {
+                                serviceData.issues?.push(`Not reachable from ${sourceService.id}`);
+                            }
+                        }
+
+                        if (!httpWorking) {
+                            const urlIssue = ARR_INTERCONNECTION_KB.find(kb => kb.id === 'url-connection-failed');
+                            if (urlIssue && !matchedIssues.find(m => m.issue.id === urlIssue.id)) {
+                                matchedIssues.push({
+                                    issue: urlIssue,
+                                    confidence: 'high',
+                                    reason: `HTTP connectivity failed from ${sourceService.id} to ${targetService.id}`
+                                });
+                            }
+                        }
+                    } catch (err: unknown) {
+                        checks.push({
+                            check: `HTTP: ${sourceService.id} → ${targetService.id}:${targetPort}`,
+                            status: 'fail',
+                            message: `HTTP test failed: ${getErrorMessage(err)}`
+                        });
+                    }
+                }
+            }
+        }
+
+        // Step 4: Check download client connectivity
+        logger.info('Step 4: Checking download client connectivity');
+        for (const clientName of requestedDownloadClients) {
+            const validation = validateServiceName(clientName);
+            if (!validation.valid || !validation.sanitized) {
+                continue;
+            }
+
+            const clientRunning = await arrService.isContainerRunning(validation.sanitized);
+
+            const clientData: ArrDiagnosticData['downloadClients'][0] = {
+                name: clientName,
+                running: clientRunning,
+                issues: []
+            };
+
+            checks.push({
+                check: `${clientName} Status`,
+                status: clientRunning ? 'pass' : 'skip',
+                message: clientRunning
+                    ? `${clientName} is running`
+                    : `${clientName} container not found`
+            });
+
+            if (clientRunning) {
+                // Check if client is reachable from Arr services
+                const portMap: Record<string, number> = {
+                    qbittorrent: 8080,
+                    transmission: 9091,
+                    deluge: 8112,
+                    sabnzbd: 8080,
+                    nzbget: 6789
+                };
+
+                const clientPort = portMap[clientName];
+
+                // Determine the correct hostname (might be gluetun if using VPN)
+                let targetHostname = clientName;
+                try {
+                    const networkMode = await runCommand('docker', [
+                        'inspect',
+                        validation.sanitized,
+                        '--format',
+                        '{{.HostConfig.NetworkMode}}'
+                    ], { timeoutMs: 5000 });
+
+                    if (networkMode.trim().includes('gluetun') || networkMode.trim().includes('container:gluetun')) {
+                        targetHostname = 'gluetun';
+                        clientData.issues?.push('Using VPN network mode - must be accessed via gluetun');
+
+                        checks.push({
+                            check: `${clientName} Network Mode`,
+                            status: 'pass',
+                            message: `Using VPN network mode (access via ${targetHostname})`,
+                            expected: 'container:gluetun or service:gluetun',
+                            actual: networkMode.trim()
+                        });
+                    } else {
+                        checks.push({
+                            check: `${clientName} Network Mode`,
+                            status: 'pass',
+                            message: 'Using standard network mode',
+                            actual: networkMode.trim()
+                        });
+                    }
+                } catch (err: unknown) {
+                    checks.push({
+                        check: `${clientName} Network Mode`,
+                        status: 'skip',
+                        message: `Could not determine network mode: ${getErrorMessage(err)}`
+                    });
+                }
+
+                // Test connectivity from first available Arr service
+                if (runningArrServices.length > 0 && clientPort) {
+                    const testService = runningArrServices[0];
+
+                    try {
+                        const httpResult = await runCommand('docker', [
+                            'exec',
+                            testService.containerName!,
+                            'curl',
+                            '-I',
+                            '-s',
+                            '--connect-timeout', '5',
+                            `http://${targetHostname}:${clientPort}`
+                        ], { timeoutMs: 8000 });
+
+                        const reachable = httpResult.toLowerCase().includes('http/');
+
+                        checks.push({
+                            check: `Download Client: ${testService.id} → ${targetHostname}:${clientPort}`,
+                            status: reachable ? 'pass' : 'fail',
+                            message: reachable
+                                ? `Download client reachable from ${testService.id}`
+                                : `Download client NOT reachable from ${testService.id}`,
+                            output: httpResult.substring(0, 200)
+                        });
+
+                        clientData.reachable = reachable;
+
+                        if (!reachable) {
+                            clientData.issues?.push(`Not reachable from ${testService.id}`);
+                            configurationIssues.push({
+                                service: clientName,
+                                issue: `Download client not reachable from Arr services`,
+                                severity: 'high'
+                            });
+
+                            const downloadClientIssue = ARR_INTERCONNECTION_KB.find(kb => kb.id === 'download-client-unreachable');
+                            if (downloadClientIssue && !matchedIssues.find(m => m.issue.id === downloadClientIssue.id)) {
+                                matchedIssues.push({
+                                    issue: downloadClientIssue,
+                                    confidence: 'high',
+                                    reason: `Download client ${clientName} not reachable from ${testService.id}`
+                                });
+                            }
+                        }
+                    } catch (err: unknown) {
+                        checks.push({
+                            check: `Download Client: ${testService.id} → ${targetHostname}:${clientPort}`,
+                            status: 'fail',
+                            message: `Connectivity test failed: ${getErrorMessage(err)}`
+                        });
+
+                        clientData.reachable = false;
+                        clientData.issues?.push('Connectivity test failed');
+                    }
+                }
+            }
+
+            downloadClientsData.push(clientData);
+        }
+
+        // Step 5: Analyze logs if requested
+        if (includeLogAnalysis) {
+            logger.info('Step 5: Analyzing service logs');
+
+            for (const service of runningArrServices) {
+                try {
+                    const logs = await runCommand('docker', [
+                        'logs',
+                        '--tail',
+                        logLines.toString(),
+                        service.containerName!
+                    ], { timeoutMs: 15000 });
+
+                    const logMatches = matchArrLogPatterns(logs);
+
+                    if (logMatches.length > 0) {
+                        checks.push({
+                            check: `${service.id} Log Analysis`,
+                            status: 'pass',
+                            message: `Found ${logMatches.length} matching issue pattern(s) in logs`,
+                            output: logMatches.slice(0, 3).map(issue => issue.title).join(', ')
+                        });
+
+                        // Add matched issues
+                        for (const issue of logMatches) {
+                            if (!matchedIssues.find(m => m.issue.id === issue.id)) {
+                                matchedIssues.push({
+                                    issue,
+                                    confidence: 'high',
+                                    reason: `Log patterns matched in ${service.id} logs`
+                                });
+                            }
+                        }
+                    } else {
+                        checks.push({
+                            check: `${service.id} Log Analysis`,
+                            status: 'pass',
+                            message: 'No known error patterns found in logs'
+                        });
+                    }
+                } catch (err: unknown) {
+                    checks.push({
+                        check: `${service.id} Log Analysis`,
+                        status: 'skip',
+                        message: `Failed to retrieve logs: ${getErrorMessage(err)}`
+                    });
+                }
+            }
+        }
+
+        // Step 6: Generate recommendations based on matched issues
+        logger.info('Step 6: Generating recommendations');
+        for (const matched of matchedIssues) {
+            for (const solution of matched.issue.solutions) {
+                // Determine priority based on issue severity and confidence
+                let priority: ArrDiagnosticData['recommendations'][0]['priority'] = 'medium';
+                if (matched.issue.severity === 'critical') {
+                    priority = 'critical';
+                } else if (matched.issue.severity === 'high' && matched.confidence === 'high') {
+                    priority = 'high';
+                } else if (matched.issue.severity === 'medium') {
+                    priority = 'medium';
+                } else {
+                    priority = 'low';
+                }
+
+                // Avoid duplicate recommendations
+                if (!recommendations.find(r => r.title === solution.title)) {
+                    recommendations.push({
+                        title: solution.title,
+                        description: solution.description,
+                        priority,
+                        solution
+                    });
+                }
+            }
+        }
+
+        // Step 7: Determine overall health
+        const failedChecks = checks.filter(c => c.status === 'fail').length;
+        const criticalIssues = configurationIssues.filter(i => i.severity === 'critical').length;
+        const highIssues = configurationIssues.filter(i => i.severity === 'high').length;
+
+        const healthy = failedChecks === 0 && criticalIssues === 0;
+
+        // Generate summary
+        let summary = '';
+        const runningCount = servicesData.filter(s => s.running).length;
+        const totalRequested = requestedArrServices.length;
+
+        if (healthy) {
+            summary = `All Arr services are healthy. ${runningCount}/${totalRequested} services running with no connectivity issues detected.`;
+        } else if (criticalIssues > 0) {
+            summary = `Critical issues detected: ${criticalIssues} critical problem(s). ${runningCount}/${totalRequested} services running. Immediate attention required.`;
+        } else if (highIssues > 0) {
+            summary = `Configuration issues detected: ${highIssues} high-severity problem(s). ${runningCount}/${totalRequested} services running. Review recommendations.`;
+        } else {
+            summary = `${runningCount}/${totalRequested} services running with ${failedChecks} check(s) failed. Review recommendations for improvements.`;
+        }
+
+        // Sort recommendations by priority
+        const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+        recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+        return {
+            success: true,
+            data: {
+                healthy,
+                services: servicesData,
+                downloadClients: downloadClientsData,
+                checks,
+                matchedIssues,
+                recommendations,
+                summary,
+                configurationIssues: configurationIssues.length > 0 ? configurationIssues : undefined
+            }
+        };
+
+    } catch (err: unknown) {
+        logger.error({ err }, 'Arr interconnection diagnosis failed');
+        return {
+            success: false,
+            error: getErrorMessage(err)
+        };
+    }
+}
+
+/**
  * Export all diagnostic tools
  */
 export const diagnosticTools = {
-    diagnose_vpn_connectivity: diagnoseVpnConnectivity
+    diagnose_vpn_connectivity: diagnoseVpnConnectivity,
+    diagnose_arr_connections: diagnoseArrConnections
 };
 
 /**
@@ -590,6 +1173,14 @@ export const DIAGNOSTIC_TOOL_METADATA: Record<string, DiagnosticToolMetadata> = 
         category: 'vpn',
         estimatedDurationMs: 30000,
         knowledgeModules: ['vpnTroubleshooting', 'dockerNetworking'],
+        riskLevel: 'low'
+    },
+    diagnose_arr_connections: {
+        name: 'diagnose_arr_connections',
+        description: 'Comprehensive Arr service interconnection diagnosis including API keys, service connectivity, and download client configuration',
+        category: 'arr',
+        estimatedDurationMs: 45000,
+        knowledgeModules: ['arrInterconnection', 'dockerNetworking'],
         riskLevel: 'low'
     }
 };
