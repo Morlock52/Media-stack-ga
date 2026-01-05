@@ -1095,3 +1095,63 @@
 
 ---
 
+
+## 2026-01-05 - Subtask 5.2 Completed
+
+**Subtask:** Create BackupHistoryList component for paginated backup list
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive BackupHistoryList component with pagination and filtering
+- Added useBackupDelete hook to hooks/useBackup.ts for backup deletion
+- Implemented date range filtering with collapsible filter panel
+- Built expandable backup details showing complete contents summary
+- Added action buttons: restore, download, delete with confirmation dialogs
+
+**Component Features:**
+- **Paginated List:** Configurable page size (10, 25, 50, 100), smart pagination UI
+- **Backup Cards:** Status icon, name/ID, encryption status, date, size, item count, status badge
+- **Date Range Filter:** From/to date inputs with visual filter panel and active filter indicator
+- **Expandable Contents:** Lazy-loaded backup preview with caching, scrollable item list
+- **Actions:**
+  - Restore: Navigates to restore wizard with selected backup
+  - Download: Info toast + navigate to restore wizard (download via preview)
+  - Delete: Confirmation dialog showing backup details, then deletes and refreshes list
+- **Pagination:** Previous/Next buttons, page number buttons (sliding window), page size selector
+- **Empty States:** No destination configured, no backups found, filtered results empty
+- **Visual Feedback:** Loading spinners, toast notifications, color-coded status badges
+
+**useBackupDelete Hook:**
+- DELETE /api/backup/:id endpoint integration
+- Returns deletedFiles array and errors array from API
+- Proper loading, error, and data state management
+- Follows existing hook patterns from useBackup.ts
+
+**Implementation Details:**
+- Uses useBackupStore for destination and restore navigation
+- Uses useBackupList for fetching paginated backups
+- Uses useBackupDelete for deletion operations
+- Uses useRestorePreview for expandable contents with lazy loading
+- Map-based caching for backup previews to avoid duplicate API calls
+- Client-side date filtering (API does not support date range filtering)
+- AnimatePresence for smooth filter panel and contents expansion
+- Responsive grid layout adapting to mobile and desktop
+- Confirmation dialog before deletion with backup details
+- Proper error handling with try/catch and toast messages
+- Color-coded visual feedback throughout
+
+**Files Created:**
+- docs-site/src/components/backup/BackupHistoryList.tsx (650 lines)
+
+**Files Modified:**
+- docs-site/src/hooks/useBackup.ts (added useBackupDelete hook)
+
+**Commit:** fcf9d0e - auto-claude: 5.2 - Paginated list of past backups with: date, size, s
+
+**Next Steps:**
+- Subtask 5.3: Create ScheduleManager component for managing backup schedules
+- Phase 6: Integration and Navigation (add routes, sidebar, dashboard widget)
+- Phase 7: Testing and Documentation
+
+---
+

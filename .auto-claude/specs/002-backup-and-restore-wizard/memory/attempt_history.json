@@ -179,11 +179,23 @@
         }
       ],
       "status": "completed"
+    },
+    "5.2": {
+      "attempts": [
+        {
+          "session": 16,
+          "timestamp": "2026-01-05T15:23:41.514942",
+          "approach": "Implemented: Paginated list of past backups with: date, size, status, contents summary. Actions: restore, downloa",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
     }
   },
   "stuck_subtasks": [],
   "metadata": {
     "created_at": "2026-01-05T14:09:55.411917",
-    "last_updated": "2026-01-05T15:18:38.243053"
+    "last_updated": "2026-01-05T15:23:41.514961"
   }
 }

@@ -21,6 +21,7 @@ import type {
     BackupProgress,
     BackupManifest,
     BackupHistoryEntry,
+    BackupSchedule,
 } from '../types/backup.js';
 import {
     discoverBackupTargets,
@@ -30,6 +31,15 @@ import {
 } from '../services/backupService.js';
 import { createAdapter } from '../services/backup/destinationAdapter.js';
 import { encryptFile, decryptFile } from '../utils/encryption.js';
+import {
+    getSchedules,
+    getSchedule,
+    addSchedule,
+    updateSchedule,
+    deleteSchedule,
+    triggerSchedule,
+    getScheduleHealth,
+} from '../services/backupScheduler.js';
 
 const logger = createLogger('backupRoutes');
 
@@ -474,6 +484,191 @@ export async function backupRoutes(fastify: FastifyInstance) {
             return reply.status(500).send({
                 success: false,
                 connected: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * GET /api/backup/schedules
+     * Get all backup schedules
+     */
+    fastify.get('/api/backup/schedules', async (_request, reply) => {
+        try {
+            const schedules = getSchedules();
+            const health = getScheduleHealth();
+
+            // Convert health map to object for JSON serialization
+            const healthObj: Record<string, any> = {};
+            health.forEach((value, key) => {
+                healthObj[key] = value;
+            });
+
+            return reply.status(200).send({
+                success: true,
+                schedules,
+                health: healthObj,
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error }, '[backup/schedules] failed to get schedules');
+            return reply.status(500).send({
+                success: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * GET /api/backup/schedules/:id
+     * Get a specific backup schedule
+     */
+    fastify.get<{
+        Params: { id: string };
+    }>('/api/backup/schedules/:id', async (request, reply) => {
+        const { id } = request.params;
+
+        try {
+            const schedule = getSchedule(id);
+
+            if (!schedule) {
+                return reply.status(404).send({
+                    success: false,
+                    error: 'Schedule not found',
+                });
+            }
+
+            return reply.status(200).send({
+                success: true,
+                schedule,
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error, scheduleId: id }, '[backup/schedules/:id] failed to get schedule');
+            return reply.status(500).send({
+                success: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * POST /api/backup/schedules
+     * Create a new backup schedule
+     */
+    fastify.post<{
+        Body: Omit<BackupSchedule, 'id' | 'lastRun' | 'nextRun'>;
+    }>('/api/backup/schedules', async (request, reply) => {
+        try {
+            const scheduleData = request.body;
+
+            // Validate required fields
+            if (!scheduleData.destination || !scheduleData.items || !scheduleData.frequency || !scheduleData.time) {
+                return reply.status(400).send({
+                    success: false,
+                    error: 'Missing required fields: destination, items, frequency, time',
+                });
+            }
+
+            const schedule = await addSchedule(scheduleData);
+
+            return reply.status(201).send({
+                success: true,
+                schedule,
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error }, '[backup/schedules] failed to create schedule');
+            return reply.status(500).send({
+                success: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * PUT /api/backup/schedules/:id
+     * Update a backup schedule
+     */
+    fastify.put<{
+        Params: { id: string };
+        Body: Partial<BackupSchedule>;
+    }>('/api/backup/schedules/:id', async (request, reply) => {
+        const { id } = request.params;
+        const updates = request.body;
+
+        try {
+            const schedule = await updateSchedule(id, updates);
+
+            if (!schedule) {
+                return reply.status(404).send({
+                    success: false,
+                    error: 'Schedule not found',
+                });
+            }
+
+            return reply.status(200).send({
+                success: true,
+                schedule,
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error, scheduleId: id }, '[backup/schedules/:id] failed to update schedule');
+            return reply.status(500).send({
+                success: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * DELETE /api/backup/schedules/:id
+     * Delete a backup schedule
+     */
+    fastify.delete<{
+        Params: { id: string };
+    }>('/api/backup/schedules/:id', async (request, reply) => {
+        const { id } = request.params;
+
+        try {
+            const deleted = await deleteSchedule(id);
+
+            if (!deleted) {
+                return reply.status(404).send({
+                    success: false,
+                    error: 'Schedule not found',
+                });
+            }
+
+            return reply.status(200).send({
+                success: true,
+                message: 'Schedule deleted successfully',
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error, scheduleId: id }, '[backup/schedules/:id] failed to delete schedule');
+            return reply.status(500).send({
+                success: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
+
+    /**
+     * POST /api/backup/schedules/:id/trigger
+     * Manually trigger a scheduled backup
+     */
+    fastify.post<{
+        Params: { id: string };
+    }>('/api/backup/schedules/:id/trigger', async (request, reply) => {
+        const { id } = request.params;
+
+        try {
+            await triggerSchedule(id);
+
+            return reply.status(202).send({
+                success: true,
+                message: 'Scheduled backup triggered',
+            });
+        } catch (error: unknown) {
+            logger.error({ err: error, scheduleId: id }, '[backup/schedules/:id/trigger] failed to trigger schedule');
+            return reply.status(500).send({
+                success: false,
                 error: getErrorMessage(error),
             });
         }

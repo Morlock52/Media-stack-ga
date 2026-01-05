@@ -12,6 +12,7 @@ import type {
     BackupProgress,
     RestoreProgress,
     BackupHistoryEntry,
+    BackupSchedule,
 } from '../store/backupStore';
 
 // ---------------------------------------------------------------------------
@@ -728,4 +729,288 @@ export function useBackupDelete(): UseBackupDeleteResult {
     }, []);
 
     return { deleteBackup, loading, error, data };
+}
+
+// ---------------------------------------------------------------------------
+// SCHEDULE MANAGEMENT
+// ---------------------------------------------------------------------------
+
+export interface ScheduleHealth {
+    lastAttempt: string;
+    lastSuccess?: string;
+    lastError?: string;
+    consecutiveFailures: number;
+}
+
+export interface GetSchedulesResult {
+    schedules: BackupSchedule[];
+    health: Record<string, ScheduleHealth>;
+}
+
+export interface UseScheduleListResult {
+    getSchedules: () => Promise<GetSchedulesResult>;
+    loading: boolean;
+    error: string | null;
+    data: GetSchedulesResult | null;
+}
+
+/**
+ * Hook for getting all backup schedules
+ */
+export function useScheduleList(): UseScheduleListResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [data, setData] = useState<GetSchedulesResult | null>(null);
+
+    const getSchedules = useCallback(async (): Promise<GetSchedulesResult> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl('/api/backup/schedules'), {
+                headers: { ...controlServerAuthHeaders() },
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to get schedules (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to get schedules');
+            }
+
+            const scheduleResult: GetSchedulesResult = {
+                schedules: result.schedules || [],
+                health: result.health || {},
+            };
+
+            setData(scheduleResult);
+            return scheduleResult;
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { getSchedules, loading, error, data };
+}
+
+export interface CreateScheduleData {
+    destination: BackupDestination;
+    items: BackupItem[];
+    enabled: boolean;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    time: string;
+    retentionCount: number;
+    encryption?: {
+        enabled: boolean;
+        password?: string;
+    };
+    name?: string;
+}
+
+export interface UseScheduleCreateResult {
+    createSchedule: (data: CreateScheduleData) => Promise<BackupSchedule>;
+    loading: boolean;
+    error: string | null;
+    data: BackupSchedule | null;
+}
+
+/**
+ * Hook for creating a new backup schedule
+ */
+export function useScheduleCreate(): UseScheduleCreateResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [data, setData] = useState<BackupSchedule | null>(null);
+
+    const createSchedule = useCallback(async (scheduleData: CreateScheduleData): Promise<BackupSchedule> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl('/api/backup/schedules'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...controlServerAuthHeaders(),
+                },
+                body: JSON.stringify(scheduleData),
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to create schedule (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to create schedule');
+            }
+
+            const schedule: BackupSchedule = result.schedule;
+            setData(schedule);
+            return schedule;
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { createSchedule, loading, error, data };
+}
+
+export interface UseScheduleUpdateResult {
+    updateSchedule: (id: string, updates: Partial<BackupSchedule>) => Promise<BackupSchedule>;
+    loading: boolean;
+    error: string | null;
+    data: BackupSchedule | null;
+}
+
+/**
+ * Hook for updating a backup schedule
+ */
+export function useScheduleUpdate(): UseScheduleUpdateResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [data, setData] = useState<BackupSchedule | null>(null);
+
+    const updateSchedule = useCallback(async (id: string, updates: Partial<BackupSchedule>): Promise<BackupSchedule> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl(`/api/backup/schedules/${id}`), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...controlServerAuthHeaders(),
+                },
+                body: JSON.stringify(updates),
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to update schedule (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update schedule');
+            }
+
+            const schedule: BackupSchedule = result.schedule;
+            setData(schedule);
+            return schedule;
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { updateSchedule, loading, error, data };
+}
+
+export interface UseScheduleDeleteResult {
+    deleteSchedule: (id: string) => Promise<void>;
+    loading: boolean;
+    error: string | null;
+}
+
+/**
+ * Hook for deleting a backup schedule
+ */
+export function useScheduleDelete(): UseScheduleDeleteResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const deleteSchedule = useCallback(async (id: string): Promise<void> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl(`/api/backup/schedules/${id}`), {
+                method: 'DELETE',
+                headers: { ...controlServerAuthHeaders() },
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to delete schedule (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete schedule');
+            }
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { deleteSchedule, loading, error };
+}
+
+export interface UseScheduleTriggerResult {
+    triggerSchedule: (id: string) => Promise<void>;
+    loading: boolean;
+    error: string | null;
+}
+
+/**
+ * Hook for manually triggering a scheduled backup
+ */
+export function useScheduleTrigger(): UseScheduleTriggerResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const triggerSchedule = useCallback(async (id: string): Promise<void> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl(`/api/backup/schedules/${id}/trigger`), {
+                method: 'POST',
+                headers: { ...controlServerAuthHeaders() },
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to trigger schedule (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to trigger schedule');
+            }
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { triggerSchedule, loading, error };
 }
