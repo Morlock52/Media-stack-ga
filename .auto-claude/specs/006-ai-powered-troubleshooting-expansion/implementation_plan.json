@@ -110,9 +110,10 @@
           "file_paths": [
             "control-server/src/tools/diagnosticTools.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "diagnose_arr_connections() tool identifies broken connections between services",
-          "notes": ""
+          "notes": "Created comprehensive Arr interconnection diagnostic tool in diagnosticTools.ts (567 lines of new code). The diagnose_arr_connections() function performs 7 diagnostic steps: (1) Check Arr service status (running/ready), (2) Extract and validate API keys against live services, (3) Test service-to-service connectivity (DNS and HTTP) between all running Arr services, (4) Check download client connectivity and network mode (VPN detection), (5) Analyze logs with pattern matching against ARR_INTERCONNECTION_KB, (6) Generate prioritized recommendations, (7) Determine overall health. Returns detailed ArrDiagnosticData with: health status, per-service status (running, apiKeyValid, reachable, issues), download client status (running, reachable, configured, network mode), array of DiagnosticCheck results, matched issue patterns with confidence scores, prioritized recommendations with Solution objects, configuration issues with severity, and summary message. Security: Service name validation with allowlist. Tool metadata exported for orchestration. Follows patterns from diagnoseVpnConnectivity with ToolResult return type and comprehensive error handling. Imports and uses arrService functions for container management, API key extraction/validation. Detects VPN network mode and adjusts connectivity tests accordingly. Commit: 9ca22a5",
+          "updated_at": "2026-01-05T20:22:39.350400+00:00"
         },
         {
           "id": "2.3",
@@ -121,9 +122,10 @@
           "file_paths": [
             "control-server/src/tools/diagnosticTools.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "diagnose_media_scanner() tool identifies why media isn't being detected",
-          "notes": ""
+          "notes": "Created comprehensive media scanner diagnostic tool in diagnosticTools.ts (575 lines of new code). The diagnoseMediaScanner() function performs 7 diagnostic steps: (1) Check media server status (Plex/Jellyfin/Emby running), (2) Validate PUID/PGID configuration for permissions, (3) Test library path accessibility and scan for media files (mkv, mp4, avi, mov, m4v, wmv, flv), (4) Check file naming conventions (movie year format, TV SxxExx format, special characters), (5) Analyze logs with pattern matching against MEDIA_SCANNING_KB, (6) Generate prioritized recommendations, (7) Determine overall health. Returns detailed MediaScannerDiagnosticData with: health status, per-server status (running, containerName, issues), library paths array (path, accessible, hasMedia, fileCount, issues), permissions data (puid, pgid, configured, issues), naming conventions (checked, sampleFiles, issues), array of DiagnosticCheck results, matched issue patterns with confidence scores, prioritized recommendations with Solution objects, and summary message. Security: Service name validation with allowlist. Tool metadata exported for orchestration. Follows patterns from diagnoseVpnConnectivity and diagnoseArrConnections with ToolResult return type and comprehensive error handling. Imports and uses functions from mediaScanning knowledge module: matchLogPatterns, getIssueById, getScanningIssues, getPermissionIssues. Detects permission issues (PUID/PGID missing), path mount issues (volume not accessible), file naming issues (missing year/episode format), and generates specific recommendations from matched knowledge base patterns (library-not-updating, permission-denied, file-naming-incorrect). Commit: f200d29",
+          "updated_at": "2026-01-05T20:26:40.165748+00:00"
         },
         {
           "id": "2.4",
@@ -132,9 +134,10 @@
           "file_paths": [
             "control-server/src/tools/agentTools.ts"
           ],
-          "status": "pending",
+          "status": "completed",
           "acceptance": "analyze_logs() returns knownIssues array with matched patterns and solutions",
-          "notes": ""
+          "notes": "Enhanced analyzeLogs() function in agentTools.ts to match log output against ERROR_PATTERNS database. The function now:\n- Imports matchErrorPatterns from errorPatterns knowledge module\n- Calls matchErrorPatterns(output) on the full log output\n- Returns knownIssues array with matched patterns containing: id, title, description, severity, category, causes, fixes, and knowledgeBaseRef\n- Provides actionable solutions from the comprehensive ERROR_PATTERNS database (30+ patterns)\n- Updated TOOL_METADATA description to reflect new capability\n- Added debug logging for diagnostics\n\nThe analyze_logs() tool now automatically identifies known error patterns and provides specific solutions, linking back to detailed knowledge base modules for deep troubleshooting. This enables the AI assistant to provide targeted, context-aware troubleshooting guidance based on actual log analysis. Commit: d901654",
+          "updated_at": "2026-01-05T20:29:33.348451+00:00"
         },
         {
           "id": "2.5",
@@ -388,5 +391,5 @@
     "tests_passed": "",
     "issues": ""
   },
-  "last_updated": "2026-01-05T20:17:26.203678+00:00"
+  "last_updated": "2026-01-05T20:29:33.348460+00:00"
 }

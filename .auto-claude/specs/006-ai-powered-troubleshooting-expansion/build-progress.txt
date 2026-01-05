@@ -230,8 +230,24 @@ Total: 36+ issue patterns + 30+ error patterns = 66+ troubleshooting entries
   - Follows patterns from diagnoseVpnConnectivity and diagnoseArrConnections
   - Commit: f200d29
 
+- [x] **Subtask 2.4 COMPLETED** - Enhanced log analysis with error pattern matching
+  - File: `control-server/src/tools/agentTools.ts` (enhanced existing function)
+  - Enhanced `analyzeLogs()` function to match log output against ERROR_PATTERNS database
+  - Function now calls `matchErrorPatterns(output)` on full log output
+  - Returns `knownIssues` array containing matched error patterns with:
+    - id, title, description, severity, category
+    - causes array with common root causes
+    - fixes array with quick fix suggestions
+    - knowledgeBaseRef linking to detailed troubleshooting modules
+  - Automatically identifies known patterns from 30+ error patterns across all service categories
+  - Provides actionable solutions directly from comprehensive ERROR_PATTERNS database
+  - Updated TOOL_METADATA description to reflect enhanced capability
+  - Added debug logging for matched error patterns count
+  - Follows existing patterns: ToolResult return type, error handling, logging
+  - Enables AI assistant to provide targeted, context-aware troubleshooting guidance
+  - Commit: d901654
+
 **Next Steps:**
-- Subtask 2.4: Enhance log analysis with error pattern matching
 - Subtask 2.5: Create diagnostic command runner with user consent
 
 ---
