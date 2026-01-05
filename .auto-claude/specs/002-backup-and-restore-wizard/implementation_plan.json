@@ -367,21 +367,25 @@
           "id": "6.1",
           "title": "Add backup routes to App.tsx",
           "description": "Add React Router routes for /backup (dashboard), /backup/new (wizard), /backup/restore (restore wizard). Update navigation.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/App.tsx"
           ],
-          "estimated_time": "30min"
+          "estimated_time": "30min",
+          "notes": "Added React Router routes for backup features and updated ModernSidebar navigation:\n\n**Routes Added (docs-site/src/main.tsx):**\n- /backup - BackupDashboard component (lazy loaded)\n- /backup/new - BackupWizard component (lazy loaded)\n- /backup/restore - RestoreWizard component (lazy loaded)\n- /backup/schedules - ScheduleManager component (lazy loaded)\n- All routes use consistent Suspense fallback with loading spinners\n\n**Navigation Updates (docs-site/src/components/ModernSidebar.tsx):**\n- Added \"Backup & Restore\" section to sidebar navigation\n- Four navigation items:\n  - Dashboard (Database icon) \u2192 /backup\n  - Create Backup (Plus icon) \u2192 /backup/new\n  - Restore (RotateCcw icon) \u2192 /backup/restore\n  - Schedules (Clock icon) \u2192 /backup/schedules\n- Added status indicator (green dot) on Schedules item when schedule is enabled\n- Uses React Router Link component for client-side navigation\n- Integrated with useBackupStore to check schedule status\n\n**Implementation Details:**\n- Follows existing patterns from /docs and /settings routes\n- Consistent lazy loading with Suspense fallback UI\n- Sidebar section positioned between Setup Steps and Resources sections\n- Status indicator uses same pattern as completed steps (green dot)\n- All imports use proper ES module syntax (.js extensions)\n\nThe backup feature is now fully integrated into the main application navigation and routing system.",
+          "updated_at": "2026-01-05T20:32:30.538326+00:00"
         },
         {
           "id": "6.2",
           "title": "Add backup to sidebar navigation",
           "description": "Add Backup section to ModernSidebar with links to dashboard, create backup, and restore. Include status indicator for scheduled backups.",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/ModernSidebar.tsx"
           ],
-          "estimated_time": "30min"
+          "estimated_time": "30min",
+          "notes": "Subtask 6.2 was already completed as part of subtask 6.1. The ModernSidebar.tsx already includes the complete Backup & Restore section with:\n- Navigation section with \"Backup & Restore\" label\n- Dashboard link (Database icon) pointing to /backup\n- Create Backup link (Plus icon) pointing to /backup/new\n- Restore link (RotateCcw icon) pointing to /backup/restore\n- Schedules link (Clock icon) pointing to /backup/schedules\n- Status indicator (green dot) on Schedules item when schedule is enabled\n- Proper integration with useBackupStore for schedule status\n- Consistent styling with other navigation sections\n\nAll requirements from subtask 6.2 are fully implemented. No additional changes needed.",
+          "updated_at": "2026-01-05T20:35:57.092572+00:00"
         },
         {
           "id": "6.3",
@@ -509,5 +513,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T20:28:17.114901+00:00"
+  "last_updated": "2026-01-05T20:35:57.092585+00:00"
 }
