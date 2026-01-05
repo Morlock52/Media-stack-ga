@@ -9,7 +9,7 @@
 
 | Phase | Name | Subtasks | Status |
 |-------|------|----------|--------|
-| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (1/6) |
+| 1 | Knowledge Modules & Error Pattern Database | 6 | In Progress (2/6) |
 | 2 | Enhanced Diagnostic Tools | 5 | Pending |
 | 3 | Troubleshooting History & Context | 3 | Pending |
 | 4 | Configuration Fix Suggestions & Application | 4 | Pending |
@@ -69,9 +69,23 @@
   - Search functions and log pattern matching utilities
   - Commit: 37f5f96
 
+- [x] **Subtask 1.2 COMPLETED** - Created Docker networking knowledge module
+  - File: `control-server/src/knowledge/dockerNetworking.ts` (1,084 lines)
+  - 11 comprehensive issue patterns covering Docker networking problems
+  - Patterns: container-no-internet, inter-container-dns-failed, port-conflict,
+    network-mode-misconfigured, localhost-not-working, dns-resolution-failed,
+    port-mapping-not-working, bridge-network-mtu-issue, ipv6-connectivity-issue,
+    container-network-isolation
+  - Detailed diagnostics with commands and expected results
+  - Solutions with docker-compose examples and configuration best practices
+  - Coverage of network modes (bridge, host, container, custom)
+  - Special focus on *arr stack inter-container communication and VPN integration
+  - Search functions and log pattern matching utilities
+  - Commit: e3aa9e2
+
 **Next Steps:**
-- Subtask 1.2: Create Docker networking knowledge module
 - Subtask 1.3: Create Arr interconnection knowledge module
+- Subtask 1.4: Create media scanning knowledge module
 
 ---
 
@@ -86,8 +100,8 @@
 
 ### Acceptance Criteria from Spec:
 - [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Knowledge base created)
-- [ ] AI can analyze Docker logs and identify common error patterns (In progress)
-- [ ] AI can guide users through Arr service interconnection troubleshooting
+- [x] AI can analyze Docker logs and identify common error patterns ✅ (Knowledge base created with log pattern matching)
+- [ ] AI can guide users through Arr service interconnection troubleshooting (In progress - next subtask)
 - [ ] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent
 - [ ] Troubleshooting history saved for context in follow-up questions
 - [ ] AI can suggest configuration fixes and offer to apply them
