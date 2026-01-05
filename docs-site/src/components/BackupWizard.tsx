@@ -9,12 +9,12 @@ import { useBackupStore } from '../store/backupStore'
 import { Button } from './ui/button'
 import { GlassCard } from './ui/glass-card'
 
-// Step components will be imported here as they are created in subsequent tasks
+// Step components
 import { DestinationStep } from './backup/DestinationStep'
 import { SelectionStep } from './backup/SelectionStep'
 import { EncryptionStep } from './backup/EncryptionStep'
 import { ScheduleStep } from './backup/ScheduleStep'
-// TODO: Import ReviewStep (3.6)
+import { ReviewStep } from './backup/ReviewStep'
 
 const steps = [
     { title: 'Destination', icon: HardDrive },
@@ -210,22 +210,8 @@ export function BackupWizard() {
                             {/* Step 3: Schedule */}
                             {currentStep === 3 && <ScheduleStep />}
 
-                            {/* Step 4: Review (TODO: Implement in 3.6) */}
-                            {currentStep === 4 && (
-                                <motion.div
-                                    key="review"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="text-center py-12">
-                                        <FileCheck className="w-16 h-16 mx-auto mb-4 text-primary" />
-                                        <h2 className="text-2xl font-bold mb-2">Review & Execute</h2>
-                                        <p className="text-muted-foreground">Step component will be implemented in subtask 3.6</p>
-                                    </div>
-                                </motion.div>
-                            )}
+                            {/* Step 4: Review */}
+                            {currentStep === 4 && <ReviewStep />}
                         </AnimatePresence>
                     </GlassCard>
                 </div>
@@ -244,7 +230,7 @@ export function BackupWizard() {
                             Back
                         </Button>
 
-                        {currentStep < 4 ? (
+                        {currentStep < 4 && (
                             <Button
                                 type="button"
                                 onClick={handleNextStep}
@@ -253,16 +239,6 @@ export function BackupWizard() {
                             >
                                 Next
                                 <ArrowRight className="w-4 h-4" />
-                            </Button>
-                        ) : (
-                            <Button
-                                type="button"
-                                onClick={() => toast.info('Backup execution will be implemented in step component')}
-                                variant="gradient"
-                                className="btn-lift px-6 py-3"
-                            >
-                                <Database className="w-4 h-4" />
-                                Start Backup
                             </Button>
                         )}
                     </div>

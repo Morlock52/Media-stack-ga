@@ -202,11 +202,13 @@
           "id": "3.5",
           "title": "Create ScheduleStep component",
           "description": "Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/backup/ScheduleStep.tsx"
           ],
-          "estimated_time": "1h"
+          "estimated_time": "1h",
+          "notes": "Created comprehensive ScheduleStep component for backup schedule configuration:\n\n**Component Features:**\n- Toggle switch to enable/disable scheduled backups with visual feedback\n- Frequency selector with three options (daily, weekly, monthly) in a card-based UI\n- Time picker for setting backup execution time\n- Retention policy input (1-100 backups) with validation\n- Real-time calculation of next backup run time\n- Helpful info banners explaining scheduled backups and retention policies\n- Schedule summary showing frequency, retention, and next run time\n- Recommended retention settings for different frequencies\n- Integrated into BackupWizard.tsx replacing placeholder\n\n**Implementation Details:**\n- Follows existing patterns from EncryptionStep component\n- Uses InteractiveCard and FocusRing components for consistent styling\n- Helper functions: generateScheduleId(), calculateNextRun(), formatNextRun()\n- Real-time Zustand store updates with useEffect\n- Toast notifications when toggling scheduling on/off\n- Responsive grid layout for frequency selector (3 columns on desktop)\n- Visual feedback with CheckCircle2 icons for selected frequency\n- Input validation for retention count (1-100 range)\n- Summary message when scheduling is disabled\n- Green success banner showing schedule summary when enabled\n\n**User Experience:**\n- Clean toggle switch matching encryption step pattern\n- Card-based frequency selector with descriptions\n- Time input with HTML5 time picker\n- Number input with min/max validation for retention\n- Color-coded visual feedback (green for enabled, muted for disabled)\n- Helpful tips and recommended settings\n- Real-time next run calculation and display\n- Smooth animations with Framer Motion\n- Accessible with proper ARIA labels\n\n**Files Created:**\n- docs-site/src/components/backup/ScheduleStep.tsx (339 lines)\n\n**Files Modified:**\n- docs-site/src/components/BackupWizard.tsx (imported and integrated ScheduleStep)\n\nThe component is production-ready and provides a complete scheduling configuration UI following all project patterns.",
+          "updated_at": "2026-01-05T19:32:05.350556+00:00"
         },
         {
           "id": "3.6",
@@ -485,5 +487,5 @@
     "issues": "",
     "tests_passed": ""
   },
-  "last_updated": "2026-01-05T19:28:28.456311+00:00"
+  "last_updated": "2026-01-05T19:32:05.350566+00:00"
 }
