@@ -1,0 +1,177 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: Media Stack - Project Review and Issue Discovery
+Workspace: /Users/morlock/fun/m2 copy 2/Media-stack-anti
+Started: 2026-01-05
+
+Workflow Type: investigation
+Rationale: Systematic review task to discover bugs and discrepancies between documented behavior and actual implementation. No fixes will be made - only documentation of discovered issues.
+
+Session 1 (Planner):
+- Created implementation_plan.json with 5 phases and 16 subtasks
+- Updated context.json with investigation context and patterns
+- Created init.sh for environment setup
+- Analyzed existing test files and documentation
+
+=== PHASE SUMMARY ===
+
+Phase 1: Environment Setup & Test Execution (5 subtasks)
+  - Build both workspaces (TypeScript compilation)
+  - Run linting
+  - Run control-server Vitest unit tests
+  - Run docs-site Playwright E2E tests
+  - Run quick validation suite (npm run check)
+  Depends on: None
+  Status: PENDING
+
+Phase 2: Backend API Investigation (4 subtasks)
+  - Verify /api/health endpoint
+  - Verify root endpoint (/)
+  - Test /api/containers (Docker integration)
+  - Verify /api/settings/* endpoints
+  Depends on: Phase 1
+  Status: PENDING
+
+Phase 3: Frontend UI Investigation (5 subtasks)
+  - Verify homepage loads without JS errors
+  - Verify /docs deep-link route
+  - Verify /settings deep-link route
+  - Test wizard flow end-to-end (6 steps)
+  - Verify AI Assistant functionality
+  Depends on: Phase 1
+  Status: PENDING
+
+Phase 4: Integration Investigation (3 subtasks)
+  - Verify API proxy (frontend → backend)
+  - Verify AI chat integration
+  - Verify Settings cockpit integration
+  Depends on: Phase 2, Phase 3
+  Status: PENDING
+
+Phase 5: Issue Documentation (2 subtasks)
+  - Create ISSUES_FOUND.md
+  - Update build-progress.txt with summary
+  Depends on: Phase 4
+  Status: PENDING
+
+=== SERVICES INVOLVED ===
+
+- docs-site: React frontend wizard UI (port 5173)
+  - Framework: React + Vite + TypeScript
+  - State: Zustand
+  - Testing: Playwright E2E
+
+- control-server: Fastify backend API (port 3001)
+  - Framework: Fastify + TypeScript
+  - Testing: Vitest unit tests
+
+- shared: Common types library
+
+=== PARALLELISM ANALYSIS ===
+
+Max parallel phases: 2
+Parallel groups:
+  - Phase 2 (Backend) + Phase 3 (Frontend) can run in parallel
+    Reason: Both depend only on Phase 1, different services, no file conflicts
+
+Recommended workers: 1 (investigation workflow, conservative)
+Speedup estimate: 1.5x faster than sequential for phases 2-3
+
+=== KEY FILES TO REFERENCE ===
+
+Documentation:
+- CLAUDE.md - Project documentation and expected behavior
+- spec.md - Task specification with QA criteria
+
+Test Files (define expected behavior):
+- docs-site/tests/smoke.spec.ts - Wizard flow expectations
+- docs-site/tests/settings.cockpit.spec.ts - Settings page behavior
+- control-server/test/*.test.ts - Backend unit tests
+
+Previous Review:
+- issues.md - Last review (January 2026): All tests passing, no blocking issues
+
+=== STARTUP COMMAND ===
+
+To start the investigation, run:
+
+  cd "/Users/morlock/fun/m2 copy 2/Media-stack-anti/.auto-claude/specs/001-help-me-review-the-project-and-find-issues-of-the-"
+  ./init.sh
+
+Or start manually:
+
+  cd "/Users/morlock/fun/m2 copy 2/Media-stack-anti"
+  npm run dev
+
+Then run tests:
+
+  npm run check              # Quick validation
+  npm test -w control-server # Unit tests
+  npm test -w docs-site      # E2E tests
+
+=== INVESTIGATION CHECKLIST ===
+
+[ ] Build completes without errors
+[ ] Linting passes
+[ ] Control-server unit tests pass
+[ ] Docs-site Playwright tests pass
+[ ] npm run check passes
+[ ] Homepage loads without console errors
+[ ] /docs route renders correctly
+[ ] /settings route renders correctly
+[ ] Wizard flow completes end-to-end
+[ ] AI Assistant responds to messages
+[ ] All issues documented with reproduction steps
+
+=== END SESSION 1 (PLANNER) ===
+
+=== SESSION 2 (CODER - INVESTIGATION) ===
+Started: 2026-01-05
+
+## BLOCKER: Command Restrictions
+
+The following commands are blocked in this review environment:
+- npm
+- node
+
+This prevents running actual builds, tests, and linting. Proceeding with STATIC ANALYSIS only.
+
+## subtask-1-1: Build Verification (Static Analysis)
+
+### TypeScript Configuration Analysis:
+
+**control-server/tsconfig.json:**
+- Target: ES2022, Module: NodeNext
+- Strict mode enabled
+- Output: ./dist
+- Appears properly configured for Node.js backend
+
+**docs-site/tsconfig.json:**
+- Target: ES2020, Module: ESNext
+- Bundler mode resolution (for Vite)
+- noEmit: true (Vite handles build)
+- Strict mode + noUnusedLocals/Parameters
+- Path alias: @/* → ./src/*
+- References tsconfig.node.json for Vite config
+
+**shared/package.json:**
+- No build step - exports raw .ts files directly
+- Relies on consumers having TypeScript support
+- This works but is unconventional
+
+### Workspace Structure:
+- shared: Type definitions only (@media-stack/shared)
+- control-server: Fastify backend, builds with tsc
+- docs-site: React frontend, builds with tsc + vite build
+
+### Potential Issues Identified (Static Analysis):
+1. **shared package exports .ts directly** - May cause issues in non-TypeScript environments
+2. **TypeScript version mismatch**: control-server uses ^5.3.3, docs-site uses ^5.2.2
+
+### Status: BLOCKED (cannot verify build without npm/node commands)
+
+Continuing to next subtasks with static analysis approach...
+
+=== END SESSION 2 (IN PROGRESS) ===
+
+Next: Continue with remaining Phase 1 subtasks using static analysis.
