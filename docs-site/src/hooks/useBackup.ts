@@ -656,3 +656,76 @@ export function useRestoreProgress(): UseRestoreProgressResult {
 
     return { progress, loading, error, startPolling, stopPolling, isPolling };
 }
+
+// ---------------------------------------------------------------------------
+// BACKUP DELETE
+// ---------------------------------------------------------------------------
+
+export interface DeleteBackupOptions {
+    backupId: string;
+    destination: BackupDestination;
+}
+
+export interface DeleteBackupResult {
+    deletedFiles: string[];
+    errors: string[];
+}
+
+export interface UseBackupDeleteResult {
+    deleteBackup: (options: DeleteBackupOptions) => Promise<DeleteBackupResult>;
+    loading: boolean;
+    error: string | null;
+    data: DeleteBackupResult | null;
+}
+
+/**
+ * Hook for deleting a backup from destination
+ */
+export function useBackupDelete(): UseBackupDeleteResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [data, setData] = useState<DeleteBackupResult | null>(null);
+
+    const deleteBackup = useCallback(async (options: DeleteBackupOptions): Promise<DeleteBackupResult> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl(`/api/backup/${options.backupId}`), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...controlServerAuthHeaders(),
+                },
+                body: JSON.stringify({ destination: options.destination }),
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to delete backup (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete backup');
+            }
+
+            const deleteResult: DeleteBackupResult = {
+                deletedFiles: result.deletedFiles || [],
+                errors: result.errors || [],
+            };
+
+            setData(deleteResult);
+            return deleteResult;
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { deleteBackup, loading, error, data };
+}
