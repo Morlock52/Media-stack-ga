@@ -141,3 +141,89 @@
 - Subtask 3.6: Create ReviewStep component with summary and execution
 - Subtask 3.7: Create BackupProgress component for real-time progress display
 
+---
+
+## 2026-01-05 - Subtask 3.4 Completed
+
+**Subtask:** Create EncryptionStep component for encryption configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive EncryptionStep component for backup encryption configuration
+- Implemented toggle switch to enable/disable encryption with visual feedback
+- Built password and confirm password inputs with show/hide functionality
+- Created password strength indicator with visual progress bar and requirements checklist
+- Added critical warning banner about password recovery (no recovery possible)
+- Included security best practices section for password management
+- Integrated component into BackupWizard.tsx replacing placeholder
+- Real-time password validation with 5 strength levels (Very Weak to Excellent)
+
+**Key Features:**
+- **Encryption Toggle:**
+  - Clean toggle switch with animation (green when enabled)
+  - Shield icon that changes color based on state
+  - Clears password fields when disabled
+  - Toast notifications on toggle
+
+- **Password Strength Indicator:**
+  - Visual strength bar (0-100% width) with color coding
+  - Text labels: Very Weak, Weak, Fair, Good, Excellent
+  - Requirements checklist with checkmarks/crosses:
+    - At least 12 characters
+    - Uppercase letter
+    - Lowercase letter
+    - Number
+    - Special character (!@#$%^&*, etc.)
+  - Real-time updates as user types
+  - Color-coded feedback (red, orange, yellow, green, emerald)
+
+- **Password Confirmation:**
+  - Separate confirm password input field
+  - Show/hide toggle buttons on both fields
+  - Real-time validation showing match/mismatch status
+  - Border color changes (green for match, red for mismatch)
+  - Visual feedback with CheckCircle2 or XCircle icons
+
+- **Security Warnings:**
+  - Prominent amber warning banner at the top
+  - Bold text emphasizing NO password recovery
+  - Recommendations to use password managers
+  - Tip about keeping unencrypted backup copy as failsafe
+  - Security best practices section with bullet points
+
+- **User Experience:**
+  - Interactive cards for consistent styling
+  - Focus rings for accessibility
+  - Smooth animations with Framer Motion
+  - Responsive design (grid layout on desktop for checklist)
+  - Eye icons for show/hide password functionality
+  - Auto-complete attributes for password managers
+  - Summary message when encryption disabled
+
+**Implementation Details:**
+- calculatePasswordStrength() function with comprehensive scoring algorithm
+  - Checks 5 requirements (length, uppercase, lowercase, number, special)
+  - Assigns score 0-4 based on met requirements
+  - Returns PasswordStrength interface with score, label, color, requirements
+- Uses useEffect hooks for real-time validation and store updates
+- Updates Zustand store automatically with encryption config
+- Follows existing patterns from DestinationStep and SelectionStep
+- TypeScript interfaces for type safety (PasswordStrength)
+- Proper state management with React hooks
+- Password inputs use type="password" by default with toggle
+- Border colors dynamically change based on validation state
+- Proper ARIA labels for accessibility
+
+**Files Created:**
+- docs-site/src/components/backup/EncryptionStep.tsx (406 lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated EncryptionStep)
+
+**Commit:** 390bc46 - auto-claude: 3.4 - Step 3: Configure encryption. Toggle for encryptio
+
+**Next Steps:**
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+
