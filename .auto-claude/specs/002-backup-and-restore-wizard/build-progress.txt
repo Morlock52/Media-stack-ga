@@ -26,8 +26,55 @@
 
 **Commit:** f17587f - auto-claude: 3.1 - Create main wizard component with step navigation
 
+---
+
+## 2026-01-05 - Subtask 3.2 Completed
+
+**Subtask:** Create DestinationStep component with Local/S3/Rclone configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+
+**Backend Changes:**
+- Added POST /api/backup/test-connection endpoint to control-server/src/routes/backup.ts
+- Endpoint tests connectivity to local, S3, and rclone destinations
+- Returns connection status with success/error messages
+- Uses existing adapter testConnection() methods
+
+**Frontend Changes:**
+- Added useTestConnection hook in docs-site/src/hooks/useBackup.ts
+  - Handles connection testing with loading/error states
+  - Returns connection result with message
+- Created docs-site/src/components/backup/DestinationStep.tsx
+  - Tab-based UI for selecting destination type (Local/S3/Rclone)
+  - Local tab: single path input for directory backups
+  - S3 tab: endpoint, bucket, region, access key ID, secret access key, path prefix
+  - Rclone tab: remote name and remote path inputs with helpful note
+  - Test connection button with loading spinner and visual feedback
+  - Real-time validation and state updates on blur
+  - Success/error toast notifications
+- Integrated DestinationStep into BackupWizard.tsx replacing placeholder
+- Uses Zustand store for persistent destination configuration
+
+**Key Features:**
+- Clean tabbed interface with icons (HardDrive, Cloud, FolderSync)
+- All inputs use InteractiveCard and FocusRing for consistent styling
+- Form state initializes from Zustand store if destination is already configured
+- Test connection provides visual feedback with colored status badges
+- Follows existing patterns: motion animations, toast notifications, button variants
+- Responsive grid layout for S3 fields (2 columns on desktop)
+- Password input type for S3 secret access key
+- Helper text under each field explaining its purpose
+
+**Files Created/Modified:**
+- control-server/src/routes/backup.ts (added test-connection endpoint)
+- docs-site/src/hooks/useBackup.ts (added useTestConnection hook)
+- docs-site/src/components/backup/DestinationStep.tsx (new component, 450+ lines)
+- docs-site/src/components/BackupWizard.tsx (integrated DestinationStep)
+
+**Commit:** ce113b8 - auto-claude: 3.2 - Step 1: Configure backup destination
+
 **Next Steps:**
-- Subtask 3.2: Create DestinationStep component with Local/S3/Rclone configuration
 - Subtask 3.3: Create SelectionStep component for item selection with size estimates
 - Subtask 3.4: Create EncryptionStep component with password and strength indicator
 - Subtask 3.5: Create ScheduleStep component with frequency and retention config
