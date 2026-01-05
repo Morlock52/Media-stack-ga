@@ -1,8 +1,8 @@
-# Specification: Project Review and Issue Discovery
+# Project Review and Issue Discovery
 
 ## Overview
+Help me review the project and find issues of the app that us not working as designed or discribed
 
-This task involves a systematic review of the Media Stack project to identify bugs, discrepancies between documented behavior and actual implementation, and issues that prevent the application from working as designed. Media Stack is a self-hosted media platform with a Matrix HUD wizard UI that generates Docker Compose configurations for Plex, Jellyfin, and the *Arr stack with Cloudflare Tunnel and Authelia SSO integration.
 
 ## Workflow Type
 
