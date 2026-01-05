@@ -1,0 +1,47 @@
+# Build Progress: Refactor Wizard UI into Modular Components
+
+## Status: Planning Complete
+
+## Summary
+Created comprehensive implementation plan with 6 phases and 23 subtasks to refactor the monolithic SetupWizard.tsx (~1000 lines) into modular, reusable components.
+
+## Current State Analysis
+- SetupWizard.tsx: ~1000 lines (needs significant decomposition)
+- ReviewGenerateStep.tsx: ~1100 lines (largest step component, needs decomposition)  
+- Some step components already extracted to wizard/steps/ folder
+- Zustand store (setupStore.ts) is well-organized but could benefit from selectors
+
+## Implementation Plan Overview
+
+### Phase 1: Extract Wizard Shell Components (5 subtasks)
+- WizardHeader, WizardProgressBar, WizardStepIndicator, WizardNavigation
+- Create barrel export file
+
+### Phase 2: Extract Hooks and Utilities (5 subtasks)
+- useWizardAnimations, useConfigGenerators, useFileDownload
+- useWizardValidation, useVoicePlanHandler
+
+### Phase 3: Extract Modal Components (4 subtasks)
+- DraftRecoveryModal, ProfilesPanel, ToolsDialog, VoiceCompanionTrigger
+
+### Phase 4: Refactor Large Step Components (6 subtasks)
+- ConfigSummaryCard, StorageLayoutCard, LocalAccessGuide
+- LocalDeployModal, BootstrapKeysPanel
+- Refactor StackSelectionStep to use store directly
+
+### Phase 5: Store Improvements (2 subtasks)
+- Add computed selectors
+- Document store slices
+
+### Phase 6: Integration and Cleanup (3 subtasks)
+- Refactor SetupWizard.tsx to use new components
+- Create architecture documentation
+- Verify no regression with smoke tests
+
+## Next Steps
+Begin Phase 1: Extract Wizard Shell Components
+
+## Progress Log
+- [2025-01-05] Created implementation plan with 6 phases, 23 subtasks
+- [2025-01-05] Analyzed current codebase structure
+- [2025-01-05] ✅ Completed 1.1: Created WizardHeader component - extracted header with title, badge, and action buttons

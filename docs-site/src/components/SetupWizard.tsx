@@ -42,6 +42,7 @@ import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
 import { QuickStartStep } from './wizard/steps/QuickStartStep'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { WizardHeader } from './wizard/WizardHeader'
+import { WizardProgressBar } from './wizard/WizardProgressBar'
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -521,8 +522,6 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
             })
     }
 
-    const progress = ((currentStep + 1) / steps.length) * 100
-
     return (
         <>
             <Suspense fallback={
@@ -758,19 +757,7 @@ ${selectedServices.includes('photoprism') ? `  - hostname: photoprism.${config.d
                     </AnimatePresence>
 
                     {/* Progress Bar */}
-                    <div className="mb-8">
-                        <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
-                            <motion.div
-                                className="progress-bar h-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progress}%` }}
-                                transition={{ duration: 0.5, ease: 'easeOut' }}
-                            />
-                        </div>
-                        <p className="text-center mt-2 text-sm text-muted-foreground">
-                            Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
-                        </p>
-                    </div>
+                    <WizardProgressBar steps={steps} />
 
                     {/* Progress Steps - Click to navigate to completed steps */}
                     <div className="mb-12">

@@ -1,0 +1,318 @@
+{
+  "feature": "Refactor Wizard UI into Modular Components",
+  "description": "Break down the large monolithic SetupWizard.tsx (~1000 lines) into smaller, reusable components with clear responsibilities. Improve state management boundaries and code organization for easier maintenance and contributor onboarding.",
+  "created_at": "2026-01-05T17:30:46.652Z",
+  "updated_at": "2026-01-05T18:00:00.000Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Extract Wizard Shell Components",
+      "description": "Extract the wizard's structural/layout components from SetupWizard.tsx into dedicated files",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "title": "Create WizardHeader component",
+          "description": "Extract the header section with title, badge, and action buttons (Reset, Profiles, Tools) from SetupWizard.tsx into docs-site/src/components/wizard/WizardHeader.tsx",
+          "status": "completed",
+          "files": [
+            "docs-site/src/components/wizard/WizardHeader.tsx"
+          ],
+          "notes": "Successfully extracted WizardHeader component from SetupWizard.tsx. Component includes title, sparkles badge, and action buttons (Reset, Profiles, Tools). Maintains reduced motion support and animation behavior. Reset confirmation state managed by parent component to allow form resets. Committed in 7df5faf.",
+          "updated_at": "2026-01-05T17:56:32.007792+00:00"
+        },
+        {
+          "id": "1.2",
+          "title": "Create WizardProgressBar component",
+          "description": "Extract the progress bar and step counter ('Step X of Y - N% Complete') into docs-site/src/components/wizard/WizardProgressBar.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/WizardProgressBar.tsx"
+          ],
+          "notes": "Uses currentStep from store, steps array can be passed as prop or co-located"
+        },
+        {
+          "id": "1.3",
+          "title": "Create WizardStepIndicator component",
+          "description": "Extract the horizontal step indicator with clickable completed steps into docs-site/src/components/wizard/WizardStepIndicator.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/WizardStepIndicator.tsx"
+          ],
+          "notes": "Handles navigation to completed steps, icons, connection lines. Should use store's setCurrentStep"
+        },
+        {
+          "id": "1.4",
+          "title": "Create WizardNavigation component",
+          "description": "Extract the sticky bottom navigation bar with Back/Next buttons into docs-site/src/components/wizard/WizardNavigation.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/WizardNavigation.tsx"
+          ],
+          "notes": "Receives onNext, onPrev handlers. Handles conditional rendering for final step 'Start Over' button"
+        },
+        {
+          "id": "1.5",
+          "title": "Create barrel export for wizard components",
+          "description": "Create docs-site/src/components/wizard/index.ts barrel file to export all wizard components cleanly",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/index.ts"
+          ],
+          "notes": "Export WizardHeader, WizardProgressBar, WizardStepIndicator, WizardNavigation, and step components"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Extract Hooks and Utilities",
+      "description": "Move reusable logic from SetupWizard.tsx into custom hooks and utility modules",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Create useWizardAnimations hook",
+          "description": "Extract the animation variants (fadeInUp, scaleIn) that respect reduced motion preferences into docs-site/src/hooks/useWizardAnimations.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useWizardAnimations.ts"
+          ],
+          "notes": "Uses useReducedMotion hook, returns memoized animation variants"
+        },
+        {
+          "id": "2.2",
+          "title": "Create useConfigGenerators hook",
+          "description": "Extract YAML/config generation logic (generateAutheliaYaml, generateCloudflareYaml) into docs-site/src/hooks/useConfigGenerators.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useConfigGenerators.ts"
+          ],
+          "notes": "Takes config and selectedServices from store, returns generator functions. generateEnvFile already exists in utils"
+        },
+        {
+          "id": "2.3",
+          "title": "Create useFileDownload hook",
+          "description": "Extract file download and clipboard utilities into docs-site/src/hooks/useFileDownload.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useFileDownload.ts"
+          ],
+          "notes": "Includes downloadFile, copyToClipboard, downloadAllFiles functions. Returns copied state"
+        },
+        {
+          "id": "2.4",
+          "title": "Create useWizardValidation hook",
+          "description": "Extract form validation and step navigation logic into docs-site/src/hooks/useWizardValidation.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useWizardValidation.ts"
+          ],
+          "notes": "Handles handleNextStep logic including form validation, error scrolling, and toast messages"
+        },
+        {
+          "id": "2.5",
+          "title": "Create useVoicePlanHandler hook",
+          "description": "Extract voice plan application logic (handleApplyVoicePlan) into docs-site/src/hooks/useVoicePlanHandler.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/hooks/useVoicePlanHandler.ts"
+          ],
+          "notes": "Handles applying voice companion suggestions to wizard state with undo support"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Extract Modal Components",
+      "description": "Extract inline modals/dialogs from SetupWizard.tsx into standalone components",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Create DraftRecoveryModal component",
+          "description": "Extract the auto-save draft recovery modal into docs-site/src/components/wizard/DraftRecoveryModal.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/DraftRecoveryModal.tsx"
+          ],
+          "notes": "Props: isOpen, draftInfo, onRestore, onDismiss. Uses AnimatePresence for animations"
+        },
+        {
+          "id": "3.2",
+          "title": "Create ProfilesPanel component",
+          "description": "Extract the saved profiles panel/modal into docs-site/src/components/wizard/ProfilesPanel.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/ProfilesPanel.tsx"
+          ],
+          "notes": "Handles save, load, delete profile actions. Uses store's savedProfiles directly"
+        },
+        {
+          "id": "3.3",
+          "title": "Create ToolsDialog component",
+          "description": "Extract the tools dialog (import/export/templates) into docs-site/src/components/wizard/ToolsDialog.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/ToolsDialog.tsx"
+          ],
+          "notes": "Wraps existing Dialog component. Handles export, import, and template browser navigation"
+        },
+        {
+          "id": "3.4",
+          "title": "Create VoiceCompanionTrigger component",
+          "description": "Extract the floating voice companion button into docs-site/src/components/wizard/VoiceCompanionTrigger.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/VoiceCompanionTrigger.tsx"
+          ],
+          "notes": "Fixed position button that appears in newbie mode. Uses scaleIn animation"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Refactor Large Step Components",
+      "description": "Break down the massive ReviewGenerateStep.tsx (~1100 lines) and improve other step components",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Extract ConfigSummaryCard component",
+          "description": "Extract the configuration summary grid from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/review/ConfigSummaryCard.tsx"
+          ],
+          "notes": "Shows deployment mode, domain, timezone, mode, service count"
+        },
+        {
+          "id": "4.2",
+          "title": "Extract StorageLayoutCard component",
+          "description": "Extract the storage layout summary from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/review/StorageLayoutCard.tsx"
+          ],
+          "notes": "Shows storage paths for selected services"
+        },
+        {
+          "id": "4.3",
+          "title": "Extract LocalAccessGuide component",
+          "description": "Extract the local mode access guide table from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/review/LocalAccessGuide.tsx"
+          ],
+          "notes": "Shows app URLs table for local deployment, with host input"
+        },
+        {
+          "id": "4.4",
+          "title": "Extract LocalDeployModal component",
+          "description": "Extract the local deployment modal (idle/deploying/success states) from ReviewGenerateStep into docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/review/LocalDeployModal.tsx"
+          ],
+          "notes": "Large component handling deploy flow. Should use the bootstrap key extraction UI internally"
+        },
+        {
+          "id": "4.5",
+          "title": "Extract BootstrapKeysPanel component",
+          "description": "Extract the API key bootstrap panel from LocalDeployModal into docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/review/BootstrapKeysPanel.tsx"
+          ],
+          "notes": "Shows extracted *arr API keys with reveal/copy functionality"
+        },
+        {
+          "id": "4.6",
+          "title": "Refactor StackSelectionStep to use store directly",
+          "description": "Update StackSelectionStep.tsx to read from store instead of receiving many props",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/steps/StackSelectionStep.tsx"
+          ],
+          "notes": "Currently receives mode, setMode, selectedServices, services, toggleService as props. Should use useSetupStore directly"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Store Improvements",
+      "description": "Enhance the Zustand store with selectors and better organization",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "title": "Add computed selectors to store",
+          "description": "Add selector functions for commonly accessed derived state in docs-site/src/store/setupStore.ts",
+          "status": "pending",
+          "files": [
+            "docs-site/src/store/setupStore.ts"
+          ],
+          "notes": "Add selectors like: useIsLocalMode, useSelectedServiceCount, useProgress, useCanNavigateToStep"
+        },
+        {
+          "id": "5.2",
+          "title": "Document store slices",
+          "description": "Add JSDoc comments to document each slice/section of the store interface",
+          "status": "pending",
+          "files": [
+            "docs-site/src/store/setupStore.ts"
+          ],
+          "notes": "Group related actions and state, add documentation for contributor clarity"
+        }
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Integration and Cleanup",
+      "description": "Integrate all extracted components back into SetupWizard.tsx and add documentation",
+      "subtasks": [
+        {
+          "id": "6.1",
+          "title": "Refactor SetupWizard.tsx to use new components",
+          "description": "Update SetupWizard.tsx to import and use all extracted components, removing inline code",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/SetupWizard.tsx"
+          ],
+          "notes": "Should significantly reduce file size from ~1000 lines to ~200-300 lines"
+        },
+        {
+          "id": "6.2",
+          "title": "Create component architecture documentation",
+          "description": "Create docs-site/src/components/wizard/README.md documenting the component structure for contributors",
+          "status": "pending",
+          "files": [
+            "docs-site/src/components/wizard/README.md"
+          ],
+          "notes": "Document component hierarchy, props interfaces, state flow, and extension points"
+        },
+        {
+          "id": "6.3",
+          "title": "Verify no regression with smoke tests",
+          "description": "Run existing Playwright smoke tests to ensure refactoring didn't break functionality",
+          "status": "pending",
+          "files": [],
+          "notes": "Run: npm test -w docs-site -- tests/smoke.spec.ts"
+        }
+      ]
+    }
+  ],
+  "qa_status": {
+    "status": "not_started",
+    "tests_passed": "",
+    "issues": ""
+  },
+  "metadata": {
+    "estimated_complexity": "high",
+    "breaking_changes": false,
+    "dependencies": [],
+    "affected_components": [
+      "SetupWizard.tsx",
+      "setupStore.ts",
+      "wizard step components",
+      "various hooks"
+    ]
+  },
+  "last_updated": "2026-01-05T17:56:32.007802+00:00"
+}
