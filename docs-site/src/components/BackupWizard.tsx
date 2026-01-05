@@ -10,7 +10,7 @@ import { Button } from './ui/button'
 import { GlassCard } from './ui/glass-card'
 
 // Step components will be imported here as they are created in subsequent tasks
-// TODO: Import DestinationStep (3.2)
+import { DestinationStep } from './backup/DestinationStep'
 // TODO: Import SelectionStep (3.3)
 // TODO: Import EncryptionStep (3.4)
 // TODO: Import ScheduleStep (3.5)
@@ -198,22 +198,8 @@ export function BackupWizard() {
                         className="p-8 min-h-[500px] transition-all duration-300 hover:bg-white/20"
                     >
                         <AnimatePresence mode="wait">
-                            {/* Step 0: Destination (TODO: Implement in 3.2) */}
-                            {currentStep === 0 && (
-                                <motion.div
-                                    key="destination"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="text-center py-12">
-                                        <HardDrive className="w-16 h-16 mx-auto mb-4 text-primary" />
-                                        <h2 className="text-2xl font-bold mb-2">Configure Backup Destination</h2>
-                                        <p className="text-muted-foreground">Step component will be implemented in subtask 3.2</p>
-                                    </div>
-                                </motion.div>
-                            )}
+                            {/* Step 0: Destination */}
+                            {currentStep === 0 && <DestinationStep />}
 
                             {/* Step 1: Selection (TODO: Implement in 3.3) */}
                             {currentStep === 1 && (

@@ -435,6 +435,49 @@ export async function backupRoutes(fastify: FastifyInstance) {
             });
         }
     });
+
+    /**
+     * POST /api/backup/test-connection
+     * Test connection to a backup destination
+     */
+    fastify.post('/api/backup/test-connection', async (request, reply) => {
+        try {
+            const destination = request.body as any;
+
+            // Validate destination type
+            if (!destination || !destination.type) {
+                return reply.status(400).send({
+                    success: false,
+                    error: 'Invalid destination configuration',
+                });
+            }
+
+            // Create adapter and test connection
+            const adapter = await createAdapter(destination);
+            const connected = await adapter.testConnection();
+
+            if (connected) {
+                return reply.status(200).send({
+                    success: true,
+                    connected: true,
+                    message: 'Connection successful',
+                });
+            } else {
+                return reply.status(200).send({
+                    success: false,
+                    connected: false,
+                    error: 'Connection test failed',
+                });
+            }
+        } catch (error: unknown) {
+            logger.error({ err: error }, '[backup/test-connection] failed');
+            return reply.status(500).send({
+                success: false,
+                connected: false,
+                error: getErrorMessage(error),
+            });
+        }
+    });
 }
 
 /**

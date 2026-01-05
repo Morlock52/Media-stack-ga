@@ -1,149 +1,35 @@
-# Backup and Restore Wizard - Build Progress
 
-## Status: IN PROGRESS
+## 2026-01-05 - Subtask 3.1 Completed
 
-Created: 2025-01-05
-Last Updated: 2025-01-05
+**Subtask:** Create BackupWizard main component with step navigation
+**Status:** ✅ Completed
 
----
+**What Was Done:**
+- Created comprehensive BackupWizard.tsx component following SetupWizard patterns
+- Implemented 5-step wizard flow (Destination → Selection → Encryption → Schedule → Review)
+- Added progress indicator with clickable completed steps for navigation
+- Implemented step validation before advancing to next step
+- Used GlassCard styling with Framer Motion animations
+- Added accessibility support with reduced motion preference
+- Implemented auto-scrolling and focus management on step changes
 
-## Implementation Plan Summary
+**Key Features:**
+- Progress bar showing completion percentage (step X of 5 • Y% Complete)
+- Step indicators with icons that change to checkmarks when completed
+- Navigation buttons (Back/Next/Start Backup) with proper state management
+- Validation for each step (destination required, items required, encryption password if enabled)
+- Placeholder content for each step with TODO comments for future step components
+- Responsive design following existing Matrix theme and glass-card styling
 
-### Phase 1: Backend Infrastructure (8 subtasks, ~11.5h)
-- [x] 1.1 Create backup types and schemas
-- [x] 1.2 Implement backup service core
-- [ ] 1.3 Implement encryption module
-- [ ] 1.4 Implement storage destination adapters
-- [ ] 1.5 Create backup API routes
-- [ ] 1.6 Create restore API routes
-- [ ] 1.7 Implement backup scheduler
-- [ ] 1.8 Register backup routes in app
+**Files Created:**
+- docs-site/src/components/BackupWizard.tsx (329 lines)
 
-### Phase 2: Frontend Backup Store (2 subtasks, ~2h)
-- [ ] 2.1 Create backup store (Zustand)
-- [ ] 2.2 Create backup API hooks
+**Commit:** f17587f - auto-claude: 3.1 - Create main wizard component with step navigation
 
-### Phase 3: Backup Wizard UI (7 subtasks, ~9h)
-- [ ] 3.1 Create BackupWizard main component
-- [ ] 3.2 Create DestinationStep component
-- [ ] 3.3 Create SelectionStep component
-- [ ] 3.4 Create EncryptionStep component
-- [ ] 3.5 Create ScheduleStep component
-- [ ] 3.6 Create ReviewStep component
-- [ ] 3.7 Create BackupProgress component
+**Next Steps:**
+- Subtask 3.2: Create DestinationStep component with Local/S3/Rclone configuration
+- Subtask 3.3: Create SelectionStep component for item selection with size estimates
+- Subtask 3.4: Create EncryptionStep component with password and strength indicator
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
 
-### Phase 4: Restore Wizard UI (6 subtasks, ~7h)
-- [ ] 4.1 Create RestoreWizard main component
-- [ ] 4.2 Create BackupSelector component
-- [ ] 4.3 Create ValidationStep component
-- [ ] 4.4 Create RestoreSelectionStep component
-- [ ] 4.5 Create RestoreConfirmStep component
-- [ ] 4.6 Create RestoreProgress component
-
-### Phase 5: Backup Management Dashboard (3 subtasks, ~4h)
-- [ ] 5.1 Create BackupDashboard component
-- [ ] 5.2 Create BackupHistoryList component
-- [ ] 5.3 Create ScheduleManager component
-
-### Phase 6: Integration and Navigation (3 subtasks, ~1.75h)
-- [ ] 6.1 Add backup routes to App.tsx
-- [ ] 6.2 Add backup to sidebar navigation
-- [ ] 6.3 Add backup widget to HealthDashboard
-
-### Phase 7: Testing and Documentation (3 subtasks, ~4.5h)
-- [ ] 7.1 Add backend unit tests
-- [ ] 7.2 Add frontend smoke tests
-- [ ] 7.3 Verify all acceptance criteria
-
----
-
-## Acceptance Criteria
-
-1. [ ] Users can backup all service configs and databases with one click
-2. [ ] Backups are compressed and optionally encrypted
-3. [ ] Support for local directory, S3, and rclone destinations
-4. [ ] Restore wizard validates backup integrity before restoring
-5. [ ] Scheduled automated backups with configurable retention
-6. [ ] Backup progress shown with estimated time remaining
-
----
-
-## Dependencies
-
-### NPM Packages (control-server)
-- @aws-sdk/client-s3 - S3-compatible storage
-- node-cron - Scheduled backups
-- archiver - Creating compressed archives
-- extract-zip - Extracting backup archives
-
-### System Requirements
-- tar (for compression)
-- rclone (optional, for rclone destinations)
-
----
-
-## Estimated Total Time: 32 hours
-
----
-
-## Notes
-
-- Follows existing patterns from SetupWizard and RemoteDeployModal
-- Uses Zustand for state management (same as setupStore)
-- Fastify routes follow existing docker.ts and remote.ts patterns
-- UI components use existing GlassCard and motion animations
-
----
-
-## Progress Log
-
-### 2025-01-05 - Subtask 1.2 Completed
-
-**Implemented BackupService Core (control-server/src/services/backupService.ts)**
-
-Created comprehensive backup service with the following key functions:
-
-1. **Discovery Functions:**
-   - `discoverBackupTargets()` - Automatically discovers configs, databases, metadata, and volumes from running containers
-   - Supports all major media stack services: *Arr apps, Plex, Jellyfin, download clients, request management tools
-   - Intelligent container path detection with fallback patterns
-
-2. **Size Calculation:**
-   - `calculateBackupSize()` - Calculates total backup size with support for Docker volumes and container paths
-   - Uses Docker commands to get accurate size estimates before backup
-
-3. **Archive Creation:**
-   - `createBackupArchive()` - Creates compressed tar.gz archives with progress callback support
-   - `archiveVolume()` - Archives Docker volumes using alpine container
-   - `archiveContainerPath()` - Archives specific paths from containers
-   - Supports progress tracking for UI feedback
-
-4. **Manifest Generation:**
-   - `generateManifest()` - Generates backup manifests with metadata
-   - SHA256 checksum calculation for integrity verification
-   - Includes hostname, Docker version, and service information
-
-5. **Validation:**
-   - `validateBackup()` - Validates backup integrity by checking checksums
-   - Returns detailed error list for failed validations
-
-6. **Helper Functions:**
-   - `getDockerVolumes()` - Lists all Docker volumes
-   - `getRunningContainers()` - Lists running containers with IDs
-   - `getContainerVolumes()` - Gets volume mount information
-   - `containerPathExists()` - Checks if paths exist in containers
-   - `cleanupTempFiles()` - Cleanup temporary files after backup
-
-**Service Coverage:**
-- *Arr Apps: Sonarr, Radarr, Prowlarr, Lidarr, Readarr, Bazarr
-- Media Servers: Plex, Jellyfin, Emby
-- Download Clients: qBittorrent, Deluge, Transmission, SABnzbd, NZBGet
-- Indexers: Jackett
-- Request Management: Overseerr, Jellyseerr, Ombi
-- Monitoring: Tautulli
-
-**Code follows existing patterns:**
-- Uses runCommand() from docker.ts for all Docker operations
-- Follows logger pattern from metricsService.ts and arrService.ts
-- TypeScript types match backup.ts interfaces
-- Proper error handling and logging throughout

@@ -3,23 +3,23 @@
   "spec": "002-backup-and-restore-wizard",
   "state": "building",
   "subtasks": {
-    "completed": 6,
+    "completed": 11,
     "total": 32,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Backend Infrastructure",
+    "current": "Backup Wizard UI",
     "id": null,
-    "total": 8
+    "total": 7
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 8,
-    "started_at": "2026-01-05T12:31:17.503272"
+    "number": 3,
+    "started_at": "2026-01-05T14:09:55.412432"
   },
-  "last_update": "2026-01-05T12:56:42.163936"
+  "last_update": "2026-01-05T14:15:47.774592"
 }

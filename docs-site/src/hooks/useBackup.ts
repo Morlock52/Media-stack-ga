@@ -15,6 +15,70 @@ import type {
 } from '../store/backupStore';
 
 // ---------------------------------------------------------------------------
+// TEST CONNECTION
+// ---------------------------------------------------------------------------
+
+export interface TestConnectionResult {
+    connected: boolean;
+    message?: string;
+}
+
+export interface UseTestConnectionResult {
+    testConnection: (destination: BackupDestination) => Promise<TestConnectionResult>;
+    loading: boolean;
+    error: string | null;
+    data: TestConnectionResult | null;
+}
+
+/**
+ * Hook for testing connection to a backup destination
+ */
+export function useTestConnection(): UseTestConnectionResult {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [data, setData] = useState<TestConnectionResult | null>(null);
+
+    const testConnection = useCallback(async (destination: BackupDestination): Promise<TestConnectionResult> => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(buildControlServerUrl('/api/backup/test-connection'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...controlServerAuthHeaders(),
+                },
+                body: JSON.stringify(destination),
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Failed to test connection (HTTP ${res.status}): ${body || res.statusText}`);
+            }
+
+            const result = await res.json();
+
+            const testResult: TestConnectionResult = {
+                connected: result.connected || false,
+                message: result.message || result.error,
+            };
+
+            setData(testResult);
+            return testResult;
+        } catch (err) {
+            const errorMsg = getErrorMessage(err);
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { testConnection, loading, error, data };
+}
+
+// ---------------------------------------------------------------------------
 // BACKUP DISCOVER
 // ---------------------------------------------------------------------------
 
