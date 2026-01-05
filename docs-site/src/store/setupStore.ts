@@ -626,3 +626,112 @@ useSetupStore.subscribe((state, prevState) => {
         })
     }
 })
+
+// ---------------------------------------------------------------------------
+// SELECTOR FUNCTIONS
+// ---------------------------------------------------------------------------
+// Convenience hooks for commonly accessed derived state. Use these instead of
+// calculating the same values repeatedly in components.
+
+/**
+ * Returns true if deployment mode is set to 'local' (LAN-only, no cloud access).
+ * Use this to conditionally show local vs cloud UI elements.
+ */
+export const useIsLocalMode = () => useSetupStore((state) => state.config.deploymentMode === 'local')
+
+/**
+ * Returns the number of currently selected services.
+ * Useful for validation and display purposes.
+ */
+export const useSelectedServiceCount = () => useSetupStore((state) => state.selectedServices.length)
+
+/**
+ * Checks if a specific service is currently selected.
+ * @param serviceId - The service ID to check (e.g. 'plex', 'arr', 'vpn')
+ */
+export const useHasService = (serviceId: string) =>
+    useSetupStore((state) => state.selectedServices.includes(serviceId))
+
+/**
+ * Returns wizard progress as a percentage (0-100).
+ * Automatically accounts for quick start mode.
+ * @param totalSteps - Total number of steps in the wizard (default: 6)
+ */
+export const useWizardProgress = (totalSteps = 6) =>
+    useSetupStore((state) => {
+        const currentStep = state.currentStep
+        return ((currentStep + 1) / totalSteps) * 100
+    })
+
+/**
+ * Returns true if the user can navigate to a specific step.
+ * In quick start mode, only steps 0-1 are accessible. In normal mode, you can
+ * navigate to any completed step or the next uncompleted step.
+ * @param targetStep - The step index to check
+ */
+export const useCanNavigateToStep = (targetStep: number) =>
+    useSetupStore((state) => {
+        const { currentStep, quickStartMode } = state
+
+        // Quick start mode: only steps 0-1 accessible
+        if (quickStartMode) {
+            return targetStep <= 1
+        }
+
+        // Normal mode: can go to any previous step or current step
+        return targetStep <= currentStep
+    })
+
+/**
+ * Returns the current step title and icon.
+ * Useful for breadcrumbs and step indicators.
+ * Note: You still need to pass the steps array with titles/icons.
+ * @param steps - Array of step objects with title and icon
+ */
+export const useCurrentStepInfo = <T extends { title: string }>(steps: T[]) =>
+    useSetupStore((state) => {
+        const step = steps[state.currentStep]
+        return {
+            currentStep: state.currentStep,
+            totalSteps: steps.length,
+            stepInfo: step,
+        }
+    })
+
+/**
+ * Returns true if selected services include a torrent client but no VPN.
+ * Used to show security warnings about IP exposure.
+ */
+export const useHasTorrentWithoutVPN = () =>
+    useSetupStore((state) => {
+        const { selectedServices } = state
+        return selectedServices.includes('torrent') && !selectedServices.includes('vpn')
+    })
+
+/**
+ * Returns true if the wizard is in quick start mode.
+ * Quick start is a simplified 2-step flow for beginners.
+ */
+export const useIsQuickStartMode = () => useSetupStore((state) => state.quickStartMode)
+
+/**
+ * Returns the current wizard mode ('newbie', 'expert', or null).
+ * Use this to customize UI hints and defaults.
+ */
+export const useWizardMode = () => useSetupStore((state) => state.mode)
+
+/**
+ * Returns true if storage mode is set to 'simple' (single root path).
+ * Use this to show/hide advanced per-category storage path controls.
+ */
+export const useIsSimpleStorageMode = () => useSetupStore((state) => state.storageMode === 'simple')
+
+/**
+ * Returns the data root path from the storage plan.
+ * Fallback to DEFAULT_DATA_ROOT if not set.
+ */
+export const useDataRootPath = () =>
+    useSetupStore((state) => {
+        const storagePlan = state.config.storagePlan
+        return storagePlan?.dataRoot?.path || DEFAULT_DATA_ROOT
+    })

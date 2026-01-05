@@ -245,11 +245,12 @@
           "id": "4.6",
           "title": "Refactor StackSelectionStep to use store directly",
           "description": "Update StackSelectionStep.tsx to read from store instead of receiving many props",
-          "status": "pending",
+          "status": "completed",
           "files": [
             "docs-site/src/components/wizard/steps/StackSelectionStep.tsx"
           ],
-          "notes": "Currently receives mode, setMode, selectedServices, services, toggleService as props. Should use useSetupStore directly"
+          "notes": "Successfully refactored StackSelectionStep.tsx to read from store instead of receiving props. Removed StackSelectionStepProps interface and updated component to use useSetupStore() hook directly for mode, setMode, selectedServices, and toggleService. Imports services array from data/services.ts. Updated SetupWizard.tsx to call component without props and removed unused destructured values (setMode, toggleService). Follows established pattern from QuickStartStep and BasicConfigurationStep. Committed in 9188590.",
+          "updated_at": "2026-01-05T20:03:41.642023+00:00"
         }
       ]
     },
@@ -332,5 +333,5 @@
       "various hooks"
     ]
   },
-  "last_updated": "2026-01-05T20:00:07.403756+00:00"
+  "last_updated": "2026-01-05T20:03:41.642031+00:00"
 }
