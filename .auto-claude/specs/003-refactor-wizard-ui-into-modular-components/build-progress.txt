@@ -154,4 +154,34 @@ Total reduction in SetupWizard.tsx: ~400+ lines
 Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
 Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
 
-Next: Phase 5 - Store Improvements (add computed selectors and documentation).
+### Phase 5: Store Improvements
+
+#### 5.1 - Add computed selectors to store ✅
+- Added 11 selector hooks to `docs-site/src/store/setupStore.ts` for commonly accessed derived state
+- Selector functions provide type-safe, memoized access to reduce code duplication across components:
+  - `useIsLocalMode`: Check if deployment mode is 'local' (LAN-only, no cloud access)
+  - `useSelectedServiceCount`: Returns count of currently selected services
+  - `useHasService`: Check if a specific service is selected (e.g., 'plex', 'arr', 'vpn')
+  - `useWizardProgress`: Calculate wizard progress as percentage (0-100)
+  - `useCanNavigateToStep`: Check if user can navigate to a specific step (respects quick start mode)
+  - `useCurrentStepInfo`: Get current step info with title, icon, and total steps
+  - `useHasTorrentWithoutVPN`: Security check for torrent without VPN warning
+  - `useIsQuickStartMode`: Check if wizard is in simplified 2-step quick start flow
+  - `useWizardMode`: Get current wizard mode ('newbie', 'expert', or null)
+  - `useIsSimpleStorageMode`: Check if storage mode is 'simple' (single root path)
+  - `useDataRootPath`: Get data root path from storage plan with fallback to default
+- All selectors include JSDoc documentation with usage examples
+- Selectors leverage Zustand's built-in memoization for optimal performance
+- Ready for component refactoring to use these selectors instead of inline state access
+- Committed in cd50831
+
+## Summary
+Successfully completed Phase 1 (Extract Wizard Shell Components), Phase 2 (Extract Hooks and Utilities), Phase 3 (Extract Modal Components), Phase 4 (Refactor Large Step Components), and started Phase 5 (Store Improvements).
+
+Phase 5 Status: Subtask 5.1 completed (computed selectors). Next: Subtask 5.2 (document store slices).
+
+Total reduction in SetupWizard.tsx: ~400+ lines
+Total reduction in ReviewGenerateStep.tsx: ~872 lines (from 1100 to 228)
+Total reduction in LocalDeployModal.tsx: ~303 lines (from 682 to 379)
+
+Next: Phase 5.2 - Document store slices with JSDoc comments.
