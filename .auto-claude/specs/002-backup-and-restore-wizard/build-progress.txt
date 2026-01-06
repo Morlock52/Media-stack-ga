@@ -1,0 +1,622 @@
+
+## 2026-01-05 - Subtask 3.1 Completed
+
+**Subtask:** Create BackupWizard main component with step navigation
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive BackupWizard.tsx component following SetupWizard patterns
+- Implemented 5-step wizard flow (Destination → Selection → Encryption → Schedule → Review)
+- Added progress indicator with clickable completed steps for navigation
+- Implemented step validation before advancing to next step
+- Used GlassCard styling with Framer Motion animations
+- Added accessibility support with reduced motion preference
+- Implemented auto-scrolling and focus management on step changes
+
+**Key Features:**
+- Progress bar showing completion percentage (step X of 5 • Y% Complete)
+- Step indicators with icons that change to checkmarks when completed
+- Navigation buttons (Back/Next/Start Backup) with proper state management
+- Validation for each step (destination required, items required, encryption password if enabled)
+- Placeholder content for each step with TODO comments for future step components
+- Responsive design following existing Matrix theme and glass-card styling
+
+**Files Created:**
+- docs-site/src/components/BackupWizard.tsx (329 lines)
+
+**Commit:** f17587f - auto-claude: 3.1 - Create main wizard component with step navigation
+
+---
+
+## 2026-01-05 - Subtask 3.2 Completed
+
+**Subtask:** Create DestinationStep component with Local/S3/Rclone configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+
+**Backend Changes:**
+- Added POST /api/backup/test-connection endpoint to control-server/src/routes/backup.ts
+- Endpoint tests connectivity to local, S3, and rclone destinations
+- Returns connection status with success/error messages
+- Uses existing adapter testConnection() methods
+
+**Frontend Changes:**
+- Added useTestConnection hook in docs-site/src/hooks/useBackup.ts
+  - Handles connection testing with loading/error states
+  - Returns connection result with message
+- Created docs-site/src/components/backup/DestinationStep.tsx
+  - Tab-based UI for selecting destination type (Local/S3/Rclone)
+  - Local tab: single path input for directory backups
+  - S3 tab: endpoint, bucket, region, access key ID, secret access key, path prefix
+  - Rclone tab: remote name and remote path inputs with helpful note
+  - Test connection button with loading spinner and visual feedback
+  - Real-time validation and state updates on blur
+  - Success/error toast notifications
+- Integrated DestinationStep into BackupWizard.tsx replacing placeholder
+- Uses Zustand store for persistent destination configuration
+
+**Key Features:**
+- Clean tabbed interface with icons (HardDrive, Cloud, FolderSync)
+- All inputs use InteractiveCard and FocusRing for consistent styling
+- Form state initializes from Zustand store if destination is already configured
+- Test connection provides visual feedback with colored status badges
+- Follows existing patterns: motion animations, toast notifications, button variants
+- Responsive grid layout for S3 fields (2 columns on desktop)
+- Password input type for S3 secret access key
+- Helper text under each field explaining its purpose
+
+**Files Created/Modified:**
+- control-server/src/routes/backup.ts (added test-connection endpoint)
+- docs-site/src/hooks/useBackup.ts (added useTestConnection hook)
+- docs-site/src/components/backup/DestinationStep.tsx (new component, 450+ lines)
+- docs-site/src/components/BackupWizard.tsx (integrated DestinationStep)
+
+**Commit:** ce113b8 - auto-claude: 3.2 - Step 1: Configure backup destination
+
+**Next Steps:**
+- Subtask 3.3: Create SelectionStep component for item selection with size estimates
+- Subtask 3.4: Create EncryptionStep component with password and strength indicator
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
+
+
+## 2026-01-05 - Subtask 3.3 Completed
+
+**Subtask:** Create SelectionStep component for backup item selection
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive SelectionStep component with intelligent item grouping and selection UI
+- Auto-discovers backup targets on mount using useBackupDiscover() hook
+- Groups items by type (Config, Database, Metadata, Volume) for better organization
+- Shows estimated size for each item and category using formatBytes() utility
+- Implemented checkboxes for individual items with service tags and path display
+- Type-level selection headers (click to select/deselect entire category)
+- Global actions: Select All, Deselect All, Refresh buttons
+- Real-time summary showing selected count and total size
+- Integrated into BackupWizard.tsx replacing placeholder
+
+**Key Features:**
+- **Auto-Discovery:** Component calls /api/backup/discover on mount to find all backup targets
+- **Loading States:** Shows spinner during initial discovery and refresh operations
+- **Item Grouping:** Organizes items by type with collapsible sections:
+  - Configuration Files (FileCode icon)
+  - Databases (Database icon)
+  - Metadata (Clapperboard icon)
+  - Docker Volumes (HardDrive icon)
+- **Size Display:** formatBytes() utility converts bytes to human-readable format (B, KB, MB, GB, TB)
+- **Selection UI:**
+  - Individual checkboxes for each item with service badges
+  - Type header checkboxes to select/deselect all items of that type
+  - Select All / Deselect All buttons for quick actions
+  - Visual feedback with checkmarks and color coding
+- **Summary Bar:** Shows "X / Y items" and "size / total" at top
+- **Empty States:** Helpful message when no containers are running
+- **Warning States:** Alert when no items selected
+- **Refresh Button:** Manual re-scan of running containers
+- **Responsive Design:** Grid layout adapts to screen size
+
+**Implementation Details:**
+- Uses useBackupStore for state management (availableItems, selectedItems, toggleItem, selectAllItems, deselectAllItems)
+- Uses useBackupDiscover hook to fetch targets from GET /api/backup/discover
+- Follows existing patterns: InteractiveCard, motion animations, toast notifications, Button variants
+- Type-safe with BackupItem and BackupItemType interfaces from store
+- Helper functions: formatBytes(), groupItemsByType(), getTypeIcon(), getTypeName(), isItemSelected(), isTypeFullySelected(), toggleTypeGroup()
+- Clean checkbox styling matching existing SettingsPage patterns
+- Proper truncation for long paths and service names
+- Loading state on initial mount and manual refresh
+
+**Files Created:**
+- docs-site/src/components/backup/SelectionStep.tsx (370+ lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated SelectionStep)
+
+**Commit:** 051bb8a - auto-claude: 3.3 - Step 2: Select what to backup. Checkboxes for: All
+
+**Next Steps:**
+- Subtask 3.4: Create EncryptionStep component with password and strength indicator
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+
+---
+
+## 2026-01-05 - Subtask 3.4 Completed
+
+**Subtask:** Create EncryptionStep component for encryption configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive EncryptionStep component for backup encryption configuration
+- Implemented toggle switch to enable/disable encryption with visual feedback
+- Built password and confirm password inputs with show/hide functionality
+- Created password strength indicator with visual progress bar and requirements checklist
+- Added critical warning banner about password recovery (no recovery possible)
+- Included security best practices section for password management
+- Integrated component into BackupWizard.tsx replacing placeholder
+- Real-time password validation with 5 strength levels (Very Weak to Excellent)
+
+**Key Features:**
+- **Encryption Toggle:**
+  - Clean toggle switch with animation (green when enabled)
+  - Shield icon that changes color based on state
+  - Clears password fields when disabled
+  - Toast notifications on toggle
+
+- **Password Strength Indicator:**
+  - Visual strength bar (0-100% width) with color coding
+  - Text labels: Very Weak, Weak, Fair, Good, Excellent
+  - Requirements checklist with checkmarks/crosses:
+    - At least 12 characters
+    - Uppercase letter
+    - Lowercase letter
+    - Number
+    - Special character (!@#$%^&*, etc.)
+  - Real-time updates as user types
+  - Color-coded feedback (red, orange, yellow, green, emerald)
+
+- **Password Confirmation:**
+  - Separate confirm password input field
+  - Show/hide toggle buttons on both fields
+  - Real-time validation showing match/mismatch status
+  - Border color changes (green for match, red for mismatch)
+  - Visual feedback with CheckCircle2 or XCircle icons
+
+- **Security Warnings:**
+  - Prominent amber warning banner at the top
+  - Bold text emphasizing NO password recovery
+  - Recommendations to use password managers
+  - Tip about keeping unencrypted backup copy as failsafe
+  - Security best practices section with bullet points
+
+- **User Experience:**
+  - Interactive cards for consistent styling
+  - Focus rings for accessibility
+  - Smooth animations with Framer Motion
+  - Responsive design (grid layout on desktop for checklist)
+  - Eye icons for show/hide password functionality
+  - Auto-complete attributes for password managers
+  - Summary message when encryption disabled
+
+**Implementation Details:**
+- calculatePasswordStrength() function with comprehensive scoring algorithm
+  - Checks 5 requirements (length, uppercase, lowercase, number, special)
+  - Assigns score 0-4 based on met requirements
+  - Returns PasswordStrength interface with score, label, color, requirements
+- Uses useEffect hooks for real-time validation and store updates
+- Updates Zustand store automatically with encryption config
+- Follows existing patterns from DestinationStep and SelectionStep
+- TypeScript interfaces for type safety (PasswordStrength)
+- Proper state management with React hooks
+- Password inputs use type="password" by default with toggle
+- Border colors dynamically change based on validation state
+- Proper ARIA labels for accessibility
+
+**Files Created:**
+- docs-site/src/components/backup/EncryptionStep.tsx (406 lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated EncryptionStep)
+
+**Commit:** 390bc46 - auto-claude: 3.4 - Step 3: Configure encryption. Toggle for encryptio
+
+**Next Steps:**
+- Subtask 3.5: Create ScheduleStep component with frequency and retention config
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+
+---
+
+## 2026-01-05 - Subtask 3.5 Completed
+
+**Subtask:** Create ScheduleStep component for backup schedule configuration
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive ScheduleStep component for configuring scheduled backups
+- Implemented toggle switch to enable/disable scheduled backups with visual feedback
+- Built frequency selector with daily, weekly, and monthly options in card-based UI
+- Added time picker for setting backup execution time (HTML5 time input)
+- Created retention policy input with validation (1-100 backups)
+- Implemented real-time calculation of next backup run time
+- Added helpful info banners explaining scheduled backups and retention policies
+- Created schedule summary showing frequency, retention, and next run time
+- Included recommended retention settings for different frequencies
+- Integrated component into BackupWizard.tsx replacing placeholder
+
+**Key Features:**
+- **Schedule Toggle:**
+  - Clean toggle switch with animation (green when enabled)
+  - Clock icon that changes color based on state
+  - Toast notifications when toggling on/off
+  - Summary message when disabled
+
+- **Frequency Selector:**
+  - Three options: Daily, Weekly, Monthly
+  - Card-based UI with descriptions
+  - Daily: Every day at set time
+  - Weekly: Every Sunday at set time
+  - Monthly: 1st of each month at set time
+  - Visual checkmark indicator for selected option
+  - Responsive 3-column grid layout
+
+- **Time Picker:**
+  - HTML5 time input (native picker on mobile)
+  - Real-time display of next backup time
+  - Formatted display: "in X days" or "in X hours"
+  - Local timezone handling
+
+- **Retention Policy:**
+  - Number input with min/max validation (1-100)
+  - Clear explanation of retention behavior
+  - Recommended settings section:
+    - Daily: Keep 7-14 backups (1-2 weeks)
+    - Weekly: Keep 4-12 backups (1-3 months)
+    - Monthly: Keep 6-12 backups (6-12 months)
+  - Visual tips with color-coded bullets
+
+- **Schedule Summary:**
+  - Green success banner when enabled
+  - Shows frequency, time, retention count
+  - Displays calculated next run time
+  - All information at a glance
+
+**Implementation Details:**
+- Helper functions:
+  - generateScheduleId(): Creates unique schedule IDs
+  - calculateNextRun(): Calculates next run time based on frequency and time
+  - formatNextRun(): Formats next run time for display ("in X days/hours")
+- Uses useEffect to update Zustand store in real-time
+- Follows existing patterns from EncryptionStep component
+- Uses InteractiveCard and FocusRing for consistent styling
+- Proper TypeScript types from backupStore (ScheduleFrequency, BackupSchedule)
+- Toast notifications on toggle
+- Responsive design with mobile-friendly inputs
+- Info and success banners with color coding (cyan for info, green for success)
+- Proper ARIA labels for accessibility
+
+**User Experience:**
+- Clean toggle matching encryption step pattern
+- Card-based frequency selector with hover effects
+- Native time picker for better mobile UX
+- Number spinner for retention with validation
+- Helpful tips and recommended settings
+- Real-time next run calculation and display
+- Color-coded visual feedback
+- Smooth Framer Motion animations
+- Disabled state shows summary message
+
+**Files Created:**
+- docs-site/src/components/backup/ScheduleStep.tsx (339 lines)
+
+**Files Modified:**
+- docs-site/src/components/BackupWizard.tsx (imported and integrated ScheduleStep)
+
+**Commit:** adfaf06 - auto-claude: 3.5 - Step 4: Configure backup schedule. Enable/disable scheduling. Frequency selector (daily/weekly/monthly). Time picker. Retention policy (keep N backups).
+
+**Next Steps:**
+- Subtask 3.6: Create ReviewStep component with summary and execution
+- Subtask 3.7: Create BackupProgress component for real-time progress display
+
+---
+
+## 2026-01-05 - Subtask 6.1 Completed
+
+**Subtask:** Add React Router routes for backup features and update navigation
+**Status:** ✅ Completed
+
+**What Was Done:**
+
+**Routes Added (docs-site/src/main.tsx):**
+- /backup - BackupDashboard component (lazy loaded with Suspense)
+- /backup/new - BackupWizard component (lazy loaded with Suspense)
+- /backup/restore - RestoreWizard component (lazy loaded with Suspense)
+- /backup/schedules - ScheduleManager component (lazy loaded with Suspense)
+- All routes use consistent fallback UI showing loading spinner with descriptive text
+
+**Navigation Updates (docs-site/src/components/ModernSidebar.tsx):**
+- Added new "Backup & Restore" section to sidebar navigation
+- Four navigation items with icons and routes:
+  1. Dashboard (Database icon) pointing to /backup
+  2. Create Backup (Plus icon) pointing to /backup/new
+  3. Restore (RotateCcw icon) pointing to /backup/restore
+  4. Schedules (Clock icon) pointing to /backup/schedules
+- Added status indicator (green dot) on Schedules item when schedule is enabled
+- Uses React Router Link component for client-side navigation
+- Integrated with useBackupStore to check schedule status
+
+**Implementation Details:**
+- Lazy loading pattern matches existing /docs and /settings routes
+- Suspense fallback UI consistent across all new routes
+- Sidebar backup section separated by Separator components for visual clarity
+- Status indicator follows existing pattern (green dot with ml-auto positioning)
+- All components properly exported and imported with ES module syntax
+- Schedule status check uses optional chaining (schedule?.enabled) for safety
+
+**Files Modified:**
+- docs-site/src/main.tsx (added 4 routes with lazy imports)
+- docs-site/src/components/ModernSidebar.tsx (added Backup & Restore navigation section)
+
+**Commit:** fb4e7a0
+
+**Next Steps:**
+- Subtask 6.2: Already completed (navigation added to ModernSidebar in this subtask)
+- Subtask 6.3: Add backup widget to HealthDashboard
+
+---
+
+## 2026-01-05 - Subtask 6.2 Completed
+
+**Subtask:** Add Backup section to ModernSidebar with links and status indicator
+**Status:** ✅ Completed (Already Done in 6.1)
+
+**What Was Done:**
+This subtask was already completed as part of subtask 6.1. The ModernSidebar.tsx already includes all required features:
+
+**Existing Implementation (lines 64-200 of ModernSidebar.tsx):**
+- ✅ Backup & Restore section in sidebar navigation
+- ✅ Dashboard link (Database icon) → /backup
+- ✅ Create Backup link (Plus icon) → /backup/new
+- ✅ Restore link (RotateCcw icon) → /backup/restore
+- ✅ Schedules link (Clock icon) → /backup/schedules
+- ✅ Status indicator showing green dot when schedule is enabled
+- ✅ Proper integration with useBackupStore for schedule status checking
+- ✅ Consistent styling with other navigation sections
+
+**Implementation Details:**
+- Navigation data defined in navData.backup array (lines 64-90)
+- Rendered using SidebarGroup component (lines 172-200)
+- Status indicator shows on Schedules item when schedule?.enabled is true (line 181)
+- Uses React Router Link component for client-side navigation
+- Proper TypeScript typing and null-safe optional chaining
+- Follows existing patterns from Setup Steps and Resources sections
+
+**Files:**
+- docs-site/src/components/ModernSidebar.tsx (no changes needed - already complete)
+
+**Commit:** 6c5ca6a - auto-claude: 6.2 - Add Backup section to ModernSidebar (already completed in 6.1)
+
+**Note:** No code changes were required. This subtask was marked as completed to reflect the work that was done in subtask 6.1.
+
+**Next Steps:**
+- Subtask 6.3: Add backup widget to HealthDashboard
+
+---
+
+## 2026-01-05 - Subtask 6.3 Completed
+
+**Subtask:** Add backup status card to main health dashboard
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Added comprehensive backup status widget to HealthDashboard component
+- Integrated backup state management using useBackupStore and useBackupList hook
+- Implemented collapsible widget with expand/collapse functionality
+- Added utility functions for formatting (formatBytes, formatRelativeTime, formatNextRun)
+
+**Widget Features:**
+1. **Header Section:**
+   - Database icon and "Backup Status" title
+   - Status badges showing backup count and scheduled status
+   - Quick navigation button to full backup dashboard
+   - Collapsible with chevron indicator
+
+2. **Stats Grid (2 cards):**
+   - Last Backup Status card:
+     - Relative time display ("X hours ago", "X days ago")
+     - Status icon (green checkmark/red X/gray clock)
+     - Item count and size with encryption indicator
+     - Color-coded border (green=success, red=failed, gray=none)
+   - Next Scheduled Backup card:
+     - Time until next backup ("in X hours", "in X days")
+     - Schedule frequency and time display
+     - Color-coded (cyan=enabled, gray=disabled)
+     - Calendar icon
+
+3. **Quick Actions:**
+   - "Backup Now" button → navigates to /backup/new
+   - "Restore" button → navigates to /backup/restore
+   - Both use Button component with proper styling
+
+4. **State Handling:**
+   - Empty state when no destination configured
+   - Warning banner when backups exist but no schedule
+   - Loading state during initial backup list fetch
+   - Proper error handling with try/catch
+
+**Implementation Details:**
+- Follows existing HealthDashboard patterns exactly
+- Uses AnimatePresence for smooth animations
+- Responsive grid layout (1-2 columns based on screen size)
+- Fetches last 5 backups on mount when destination configured
+- Color-coded visual feedback throughout
+- Proper TypeScript types and imports
+- Clean separation of concerns with utility functions
+
+**User Experience:**
+- Quick visibility into backup health from main dashboard
+- Easy access to backup actions without navigation
+- Helpful guidance when backups not configured
+- Warning prompts for missing schedule
+- Smooth animations matching existing components
+
+**Files Modified:**
+- docs-site/src/components/HealthDashboard.tsx (282 insertions, 1 deletion)
+
+**Commit:** fa3e8a6 - auto-claude: 6.3 - Add backup status card to main health dashboard showing: last backup time, next scheduled, health status. Quick backup button.
+
+**Next Steps:**
+- Phase 6 (Integration and Navigation) is now complete
+- Phase 7: Testing and Documentation
+  - Subtask 7.1: Add backend unit tests
+  - Subtask 7.2: Add frontend smoke tests
+  - Subtask 7.3: Verify all acceptance criteria
+
+---
+
+
+## 2026-01-05 - Subtask 7.1 Completed
+
+**Subtask:** Add backend unit tests for backup service, encryption utilities, and destination adapters
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive vitest test suite in control-server/test/backup.test.ts (817 lines)
+- Implemented tests for all major backup service functions
+- Implemented tests for encryption utilities (encrypt, decrypt, verify password)
+- Implemented tests for LocalAdapter (upload, download, list, delete, testConnection)
+- All tests follow existing patterns from bootstrap.test.ts and remote.test.ts
+- Proper mocking of Docker commands, filesystem operations, and crypto functions
+
+**Test Coverage:**
+
+1. **Backup Service Tests:**
+   - discoverBackupTargets(): Discovers backup targets from running containers
+   - calculateBackupSize(): Calculates total size from estimated sizes and volumes
+   - validateBackup(): Validates checksums with matching and mismatching scenarios
+   - stopContainer() / startContainer(): Tests container lifecycle operations
+   - extractBackupArchive(): Tests tar.gz extraction to directory
+   - restoreToVolume(): Tests Docker volume restoration
+   - restoreToContainerPath(): Tests container path restoration
+
+2. **Encryption Utilities Tests:**
+   - encryptFile(): Tests AES-256-GCM encryption with PBKDF2, auth tag updates, cleanup on failure
+   - decryptFile(): Tests decryption with correct/incorrect password, invalid format detection
+   - verifyPassword(): Tests password verification without full decryption
+   - getEncryptionInfo(): Tests encryption algorithm details retrieval
+
+3. **Local Adapter Tests:**
+   - upload(): Tests file copying to local destination with progress callbacks
+   - download(): Tests file copying from local destination with progress callbacks
+   - list(): Tests listing backup files (.tar.gz and .enc), filtering, sorting
+   - delete(): Tests file deletion from local destination
+   - testConnection(): Tests path accessibility with test file creation
+
+**Mocking Strategy:**
+- Docker commands (runCommand) mocked for all container/volume operations
+- Filesystem operations (fs/promises) mocked for file I/O
+- Crypto functions mocked for encryption/decryption
+- Streams (Readable, Writable) mocked for file processing
+- All mocks follow existing vitest patterns in codebase
+
+**Error Handling Tests:**
+- Verifies proper error messages and cleanup on failures
+- Confirms partial file cleanup on encryption/decryption errors
+- Validates error propagation for Docker command failures
+
+**Files Created:**
+- control-server/test/backup.test.ts (817 lines)
+
+**Commit:** 24b57f7 - auto-claude: 7.1 - Create vitest tests for backup service, encryption
+
+**Next Steps:**
+- Subtask 7.2: Add frontend smoke tests with Playwright
+- Subtask 7.3: Verify all acceptance criteria with manual testing
+
+---
+
+
+## 2026-01-05 - Subtask 7.2 Completed
+
+**Subtask:** Add frontend smoke tests for backup wizard flow
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive Playwright test suite in docs-site/tests/backup.spec.ts (444 lines)
+- Implemented 7 test scenarios covering the complete backup wizard user journey
+- Mocked all control-server API endpoints for consistent test execution
+- Followed existing Playwright patterns from smoke.spec.ts and settings.cockpit.spec.ts
+
+**Test Coverage:**
+
+1. **Full Wizard Flow Test (test: 'navigates to backup wizard and completes full flow'):**
+   - Navigates through all 5 steps (Destination → Selection → Encryption → Schedule → Review)
+   - Tests local destination configuration with path input
+   - Tests backup discovery and item selection (Select All functionality)
+   - Tests encryption configuration with password and confirmation
+   - Tests schedule configuration with daily frequency, time, and retention settings
+   - Tests backup execution and progress tracking
+   - Verifies completion status display
+
+2. **Field Validation Tests (test: 'validates required fields at each step'):**
+   - Validates required destination configuration
+   - Validates at least one item must be selected
+   - Validates encryption password required when encryption enabled
+   - Verifies error toasts appear for validation failures
+
+3. **S3 Destination Configuration Test (test: 'supports S3 destination configuration'):**
+   - Tests S3 tab selection and form inputs
+   - Fills endpoint, bucket, access key, and secret key
+   - Verifies form values persist
+
+4. **Rclone Destination Configuration Test (test: 'supports rclone destination configuration'):**
+   - Tests Rclone tab selection and form inputs
+   - Fills remote name and remote path
+   - Verifies form values persist
+
+5. **Optional Steps Test (test: 'allows skipping optional encryption and schedule steps'):**
+   - Verifies encryption step can be skipped (toggle not enabled)
+   - Verifies schedule step can be skipped (toggle not enabled)
+   - Confirms wizard reaches review step without optional configs
+
+6. **Back Navigation Test (test: 'back navigation preserves form state'):**
+   - Tests navigation backwards through wizard steps
+   - Verifies form state is preserved when going back
+   - Checks destination path persists
+   - Checks item selections persist (3 checkboxes remain checked)
+
+7. **Password Strength Indicator Test (test: 'displays password strength indicator'):**
+   - Tests weak password shows appropriate strength level
+   - Tests strong password shows better strength level
+   - Verifies strength indicator updates in real-time
+
+**Mocking Strategy:**
+- Mocked all control-server API endpoints:
+  - GET /api/backup/discover - Returns sample backup targets (config, database, volume)
+  - POST /api/backup/test-connection - Returns successful connection
+  - POST /api/backup/create - Returns backup ID
+  - GET /api/backup/status/:id - Returns completed status with progress
+- localStorage cleared before each test for fresh wizard state
+- Uses page.route() for API interception and response mocking
+
+**Implementation Details:**
+- Uses Playwright's page.route() for API mocking
+- Proper timeout handling (120s for full flow test)
+- Accessibility-focused selectors (getByRole, getByText, getByPlaceholder)
+- Fallback logic for optional UI elements with .catch(() => false)
+- Console logging for test progress tracking with ✅ emojis
+- Error handling for graceful test degradation
+- Follows existing test patterns with proper assertions and expectations
+
+**Files Created:**
+- docs-site/tests/backup.spec.ts (444 lines)
+
+**Commit:** ba576eb - auto-claude: 7.2 - Create Playwright tests for backup wizard flow: destination setup, item selection, encryption config, schedule config, backup execution
+
+**Next Steps:**
+- Subtask 7.3: Verify all acceptance criteria with manual testing
+- Phase 7 (Testing and Documentation) will be complete after manual verification
+
+---

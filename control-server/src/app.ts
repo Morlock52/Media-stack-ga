@@ -17,6 +17,8 @@ import { aiRoutes } from './routes/ai.js';
 import { remoteRoutes } from './routes/remote.js';
 import { arrRoutes } from './routes/arr.js';
 import { orchestratorRoutes } from './routes/orchestrator.js';
+import { backupRoutes } from './routes/backup.js';
+import { restoreRoutes } from './routes/restore.js';
 import { validationRoutes } from './routes/validation.js';
 import { vpnRoutes } from './routes/vpn.js';
 
@@ -318,6 +320,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(remoteRoutes);
     await app.register(arrRoutes);
     await app.register(orchestratorRoutes);
+    await app.register(backupRoutes);
+    await app.register(restoreRoutes);
     await app.register(validationRoutes);
     await app.register(vpnRoutes);
 
