@@ -476,3 +476,147 @@ This subtask was already completed as part of subtask 6.1. The ModernSidebar.tsx
 
 ---
 
+
+## 2026-01-05 - Subtask 7.1 Completed
+
+**Subtask:** Add backend unit tests for backup service, encryption utilities, and destination adapters
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive vitest test suite in control-server/test/backup.test.ts (817 lines)
+- Implemented tests for all major backup service functions
+- Implemented tests for encryption utilities (encrypt, decrypt, verify password)
+- Implemented tests for LocalAdapter (upload, download, list, delete, testConnection)
+- All tests follow existing patterns from bootstrap.test.ts and remote.test.ts
+- Proper mocking of Docker commands, filesystem operations, and crypto functions
+
+**Test Coverage:**
+
+1. **Backup Service Tests:**
+   - discoverBackupTargets(): Discovers backup targets from running containers
+   - calculateBackupSize(): Calculates total size from estimated sizes and volumes
+   - validateBackup(): Validates checksums with matching and mismatching scenarios
+   - stopContainer() / startContainer(): Tests container lifecycle operations
+   - extractBackupArchive(): Tests tar.gz extraction to directory
+   - restoreToVolume(): Tests Docker volume restoration
+   - restoreToContainerPath(): Tests container path restoration
+
+2. **Encryption Utilities Tests:**
+   - encryptFile(): Tests AES-256-GCM encryption with PBKDF2, auth tag updates, cleanup on failure
+   - decryptFile(): Tests decryption with correct/incorrect password, invalid format detection
+   - verifyPassword(): Tests password verification without full decryption
+   - getEncryptionInfo(): Tests encryption algorithm details retrieval
+
+3. **Local Adapter Tests:**
+   - upload(): Tests file copying to local destination with progress callbacks
+   - download(): Tests file copying from local destination with progress callbacks
+   - list(): Tests listing backup files (.tar.gz and .enc), filtering, sorting
+   - delete(): Tests file deletion from local destination
+   - testConnection(): Tests path accessibility with test file creation
+
+**Mocking Strategy:**
+- Docker commands (runCommand) mocked for all container/volume operations
+- Filesystem operations (fs/promises) mocked for file I/O
+- Crypto functions mocked for encryption/decryption
+- Streams (Readable, Writable) mocked for file processing
+- All mocks follow existing vitest patterns in codebase
+
+**Error Handling Tests:**
+- Verifies proper error messages and cleanup on failures
+- Confirms partial file cleanup on encryption/decryption errors
+- Validates error propagation for Docker command failures
+
+**Files Created:**
+- control-server/test/backup.test.ts (817 lines)
+
+**Commit:** 24b57f7 - auto-claude: 7.1 - Create vitest tests for backup service, encryption
+
+**Next Steps:**
+- Subtask 7.2: Add frontend smoke tests with Playwright
+- Subtask 7.3: Verify all acceptance criteria with manual testing
+
+---
+
+
+## 2026-01-05 - Subtask 7.2 Completed
+
+**Subtask:** Add frontend smoke tests for backup wizard flow
+**Status:** ✅ Completed
+
+**What Was Done:**
+- Created comprehensive Playwright test suite in docs-site/tests/backup.spec.ts (444 lines)
+- Implemented 7 test scenarios covering the complete backup wizard user journey
+- Mocked all control-server API endpoints for consistent test execution
+- Followed existing Playwright patterns from smoke.spec.ts and settings.cockpit.spec.ts
+
+**Test Coverage:**
+
+1. **Full Wizard Flow Test (test: 'navigates to backup wizard and completes full flow'):**
+   - Navigates through all 5 steps (Destination → Selection → Encryption → Schedule → Review)
+   - Tests local destination configuration with path input
+   - Tests backup discovery and item selection (Select All functionality)
+   - Tests encryption configuration with password and confirmation
+   - Tests schedule configuration with daily frequency, time, and retention settings
+   - Tests backup execution and progress tracking
+   - Verifies completion status display
+
+2. **Field Validation Tests (test: 'validates required fields at each step'):**
+   - Validates required destination configuration
+   - Validates at least one item must be selected
+   - Validates encryption password required when encryption enabled
+   - Verifies error toasts appear for validation failures
+
+3. **S3 Destination Configuration Test (test: 'supports S3 destination configuration'):**
+   - Tests S3 tab selection and form inputs
+   - Fills endpoint, bucket, access key, and secret key
+   - Verifies form values persist
+
+4. **Rclone Destination Configuration Test (test: 'supports rclone destination configuration'):**
+   - Tests Rclone tab selection and form inputs
+   - Fills remote name and remote path
+   - Verifies form values persist
+
+5. **Optional Steps Test (test: 'allows skipping optional encryption and schedule steps'):**
+   - Verifies encryption step can be skipped (toggle not enabled)
+   - Verifies schedule step can be skipped (toggle not enabled)
+   - Confirms wizard reaches review step without optional configs
+
+6. **Back Navigation Test (test: 'back navigation preserves form state'):**
+   - Tests navigation backwards through wizard steps
+   - Verifies form state is preserved when going back
+   - Checks destination path persists
+   - Checks item selections persist (3 checkboxes remain checked)
+
+7. **Password Strength Indicator Test (test: 'displays password strength indicator'):**
+   - Tests weak password shows appropriate strength level
+   - Tests strong password shows better strength level
+   - Verifies strength indicator updates in real-time
+
+**Mocking Strategy:**
+- Mocked all control-server API endpoints:
+  - GET /api/backup/discover - Returns sample backup targets (config, database, volume)
+  - POST /api/backup/test-connection - Returns successful connection
+  - POST /api/backup/create - Returns backup ID
+  - GET /api/backup/status/:id - Returns completed status with progress
+- localStorage cleared before each test for fresh wizard state
+- Uses page.route() for API interception and response mocking
+
+**Implementation Details:**
+- Uses Playwright's page.route() for API mocking
+- Proper timeout handling (120s for full flow test)
+- Accessibility-focused selectors (getByRole, getByText, getByPlaceholder)
+- Fallback logic for optional UI elements with .catch(() => false)
+- Console logging for test progress tracking with ✅ emojis
+- Error handling for graceful test degradation
+- Follows existing test patterns with proper assertions and expectations
+
+**Files Created:**
+- docs-site/tests/backup.spec.ts (444 lines)
+
+**Commit:** ba576eb - auto-claude: 7.2 - Create Playwright tests for backup wizard flow: destination setup, item selection, encryption config, schedule config, backup execution
+
+**Next Steps:**
+- Subtask 7.3: Verify all acceptance criteria with manual testing
+- Phase 7 (Testing and Documentation) will be complete after manual verification
+
+---
