@@ -1,0 +1,59 @@
+{
+  "task_description": "Review the project to identify issues where the app is not working as designed or described",
+  "scoped_services": ["docs-site", "control-server", "shared"],
+  "files_to_modify": [],
+  "files_to_reference": [
+    "CLAUDE.md",
+    "docs-site/tests/smoke.spec.ts",
+    "docs-site/tests/settings.cockpit.spec.ts",
+    "docs-site/tests/arr-stack.spec.ts",
+    "control-server/test/agent-tools.test.ts",
+    "control-server/test/remote.test.ts",
+    "control-server/test/ai.tts.test.ts",
+    "control-server/test/voice.test.ts",
+    "control-server/test/bootstrap.test.ts",
+    "issues.md"
+  ],
+  "patterns": {
+    "test_pattern": "Tests use Playwright for E2E in docs-site, Vitest for unit tests in control-server",
+    "api_pattern": "Fastify routes registered via app.register() with prefix patterns",
+    "frontend_pattern": "React with Zustand state, lazy-loaded components, Framer Motion animations",
+    "validation_pattern": "npm run check = lint + tests + smoke, npm test = all tests"
+  },
+  "existing_implementations": {
+    "description": "Recent OpenAI-only simplification completed. ElevenLabs/Claude references removed. All tests passing as of issues.md review.",
+    "relevant_files": [
+      "issues.md",
+      "docs-site/src/components/AIAssistant.tsx",
+      "docs-site/src/components/VoiceCompanion.tsx",
+      "control-server/src/routes/ai.ts"
+    ]
+  },
+  "investigation_context": {
+    "expected_behavior_sources": [
+      "CLAUDE.md - Project documentation",
+      "spec.md - Task specification",
+      "docs-site/tests/*.spec.ts - Expected UI behavior",
+      "control-server/test/*.test.ts - Expected API behavior"
+    ],
+    "areas_to_investigate": [
+      "Build and TypeScript compilation",
+      "Linting errors",
+      "Unit test failures",
+      "E2E test failures",
+      "Console JavaScript errors",
+      "API endpoint responses",
+      "Wizard flow completion",
+      "AI Assistant functionality",
+      "Settings page cockpit",
+      "Deep-link routes (/docs, /settings)"
+    ],
+    "known_state": {
+      "last_review_date": "January 2026",
+      "tests_passing": "35/35 control-server, 9/9 smoke",
+      "known_issues": "None blocking - project working as designed per issues.md"
+    }
+  },
+  "created_at": "2026-01-05T12:19:01.438520",
+  "updated_at": "2026-01-05T12:30:00.000Z"
+}
