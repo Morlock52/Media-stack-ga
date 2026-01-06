@@ -1,0 +1,2214 @@
+{
+  "project_root": "/Users/morlock/fun/m2 copy 2/Media-stack-anti",
+  "project_type": "monorepo",
+  "services": {
+    "docs-site": {
+      "name": "docs-site",
+      "path": "/Users/morlock/fun/m2 copy 2/Media-stack-anti/docs-site",
+      "language": "TypeScript",
+      "framework": "React",
+      "type": "frontend",
+      "package_manager": "npm",
+      "default_port": 3000,
+      "build_tool": "Vite",
+      "styling": "Tailwind CSS",
+      "state_management": "Zustand",
+      "dev_command": "npm run dev",
+      "key_directories": {
+        "src": {
+          "path": "src",
+          "purpose": "Source code"
+        },
+        "tests": {
+          "path": "tests",
+          "purpose": "Tests"
+        }
+      },
+      "entry_point": "src/App.tsx",
+      "dependencies": [
+        "@hookform/resolvers",
+        "@media-stack/shared",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-icons",
+        "@radix-ui/react-label",
+        "@radix-ui/react-separator",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-tooltip",
+        "async-mutex",
+        "class-variance-authority",
+        "clsx",
+        "esbuild",
+        "framer-motion",
+        "lucide-react",
+        "motion",
+        "react",
+        "react-dom",
+        "react-hook-form",
+        "react-router-dom",
+        "sonner"
+      ],
+      "dev_dependencies": [
+        "@eslint/js",
+        "@netlify/functions",
+        "@playwright/test",
+        "@types/node",
+        "@types/react",
+        "@types/react-dom",
+        "@vitejs/plugin-react",
+        "@vitest/coverage-v8",
+        "autoprefixer",
+        "eslint"
+      ],
+      "testing": "Vitest",
+      "e2e_testing": "Playwright",
+      "test_directory": "tests",
+      "dockerfile": "Dockerfile",
+      "environment": {
+        "variables": {
+          "TIMEZONE": {
+            "value": "America/New_York",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PUID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "PGID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "DOMAIN": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_NETWORK": {
+            "value": "mediastack",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "COMPOSE_PROFILES": {
+            "value": "plex,arr,torrent",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DATA_ROOT": {
+            "value": "/Users/Shared/mediastack",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "CONFIG_ROOT": {
+            "value": "/Users/Shared/mediastack/config",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MOVIES_PATH": {
+            "value": "/Users/Shared/mediastack/media/movies",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TV_SHOWS_PATH": {
+            "value": "/Users/Shared/mediastack/media/tv",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MUSIC_PATH": {
+            "value": "/Users/Shared/mediastack/media/music",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "BOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/books",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "AUDIOBOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/audiobooks",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PHOTOS_PATH": {
+            "value": "/Users/Shared/mediastack/media/photos",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TRANSCODE_PATH": {
+            "value": "/Users/Shared/mediastack/transcode",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DOWNLOADS_PATH": {
+            "value": "/Users/Shared/mediastack/downloads",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DEPLOYMENT_MODE": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PORT": {
+            "value": "3003",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "REDIS_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PHOTOPRISM_ADMIN_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "GRAFANA_USER": {
+            "value": "admin",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "JELLYFIN_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "SONARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "RADARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PROWLARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "BAZARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "OVERSEERR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "TAUTULLI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PORTAINER_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_USERNAME": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "NOTIFIARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_CLAIM": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "OPENAI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "POSTGRES_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_HOST": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_EXTRA_OPTS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_DAYS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_WEEKS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_MONTHS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HEALTHCHECK_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTOHEAL_CONTAINER_LABEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "TZ": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_CLEANUP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_POLL_INTERVAL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_INCLUDE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_REVIVE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_METRICS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_API_VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_DOMAIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_STORAGE_ENCRYPTION_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_REDIS_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_MAIN_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "FLARESOLVERR_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "LOG_LEVEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WEBUI_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "NET_ADMIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_SERVICE_PROVIDER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_TYPE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRIVATE_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ADDRESSES": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRESHARED_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PUBLIC_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_IP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_USERS_ALLOW_SIGN_UP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SERVER_ROOT_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          }
+        },
+        "required_count": 0,
+        "optional_count": 0,
+        "detected_count": 92
+      },
+      "consumes": [
+        "control-server.api"
+      ]
+    },
+    "shared": {
+      "name": "shared",
+      "path": "/Users/morlock/fun/m2 copy 2/Media-stack-anti/shared",
+      "language": "JavaScript",
+      "framework": null,
+      "type": "library",
+      "package_manager": "npm",
+      "dependencies": [],
+      "dev_dependencies": [],
+      "environment": {
+        "variables": {
+          "TIMEZONE": {
+            "value": "America/New_York",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PUID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "PGID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "DOMAIN": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_NETWORK": {
+            "value": "mediastack",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "COMPOSE_PROFILES": {
+            "value": "plex,arr,torrent",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DATA_ROOT": {
+            "value": "/Users/Shared/mediastack",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "CONFIG_ROOT": {
+            "value": "/Users/Shared/mediastack/config",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MOVIES_PATH": {
+            "value": "/Users/Shared/mediastack/media/movies",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TV_SHOWS_PATH": {
+            "value": "/Users/Shared/mediastack/media/tv",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MUSIC_PATH": {
+            "value": "/Users/Shared/mediastack/media/music",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "BOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/books",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "AUDIOBOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/audiobooks",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PHOTOS_PATH": {
+            "value": "/Users/Shared/mediastack/media/photos",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TRANSCODE_PATH": {
+            "value": "/Users/Shared/mediastack/transcode",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DOWNLOADS_PATH": {
+            "value": "/Users/Shared/mediastack/downloads",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DEPLOYMENT_MODE": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PORT": {
+            "value": "3003",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "REDIS_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PHOTOPRISM_ADMIN_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "GRAFANA_USER": {
+            "value": "admin",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "JELLYFIN_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "SONARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "RADARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PROWLARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "BAZARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "OVERSEERR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "TAUTULLI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PORTAINER_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_USERNAME": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "NOTIFIARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_CLAIM": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "OPENAI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "POSTGRES_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_HOST": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_EXTRA_OPTS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_DAYS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_WEEKS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_MONTHS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HEALTHCHECK_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTOHEAL_CONTAINER_LABEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "TZ": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_CLEANUP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_POLL_INTERVAL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_INCLUDE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_REVIVE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_METRICS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_API_VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_DOMAIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_STORAGE_ENCRYPTION_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_REDIS_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_MAIN_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "FLARESOLVERR_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "LOG_LEVEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WEBUI_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "NET_ADMIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_SERVICE_PROVIDER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_TYPE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRIVATE_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ADDRESSES": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRESHARED_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PUBLIC_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_IP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_USERS_ALLOW_SIGN_UP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SERVER_ROOT_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          }
+        },
+        "required_count": 0,
+        "optional_count": 0,
+        "detected_count": 92
+      }
+    },
+    "control-server": {
+      "name": "control-server",
+      "path": "/Users/morlock/fun/m2 copy 2/Media-stack-anti/control-server",
+      "language": "TypeScript",
+      "framework": "Fastify",
+      "type": "backend",
+      "package_manager": "npm",
+      "default_port": 3000,
+      "dev_command": "npm run dev",
+      "key_directories": {
+        "src": {
+          "path": "src",
+          "purpose": "Source code"
+        },
+        "tests": {
+          "path": "tests",
+          "purpose": "Tests"
+        },
+        "test": {
+          "path": "test",
+          "purpose": "Tests"
+        }
+      },
+      "entry_point": "src/index.ts",
+      "dependencies": [
+        "@fastify/compress",
+        "@fastify/cors",
+        "@fastify/multipart",
+        "@fastify/rate-limit",
+        "@media-stack/shared",
+        "fastify",
+        "pino",
+        "pino-pretty",
+        "zod"
+      ],
+      "dev_dependencies": [
+        "@eslint/js",
+        "@types/node",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "eslint",
+        "globals",
+        "ts-node",
+        "tsx",
+        "typescript",
+        "typescript-eslint"
+      ],
+      "testing": "Vitest",
+      "test_directory": "tests",
+      "dockerfile": "Dockerfile",
+      "environment": {
+        "variables": {
+          "OPENAI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "ELEVENLABS_API_KEY": {
+            "value": "<REDACTED>",
+            "source": ".env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "ELEVENLABS_VOICE_ID": {
+            "value": "Xb7hH8MSUJpSbSDYk0k2",
+            "source": ".env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "ANTHROPIC_API_KEY": {
+            "value": "<REDACTED>",
+            "source": ".env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "TIMEZONE": {
+            "value": "America/New_York",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PUID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "PGID": {
+            "value": "1000",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "DOMAIN": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_NETWORK": {
+            "value": "mediastack",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "COMPOSE_PROFILES": {
+            "value": "plex,arr,torrent",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DATA_ROOT": {
+            "value": "/Users/Shared/mediastack",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "CONFIG_ROOT": {
+            "value": "/Users/Shared/mediastack/config",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MOVIES_PATH": {
+            "value": "/Users/Shared/mediastack/media/movies",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TV_SHOWS_PATH": {
+            "value": "/Users/Shared/mediastack/media/tv",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "MUSIC_PATH": {
+            "value": "/Users/Shared/mediastack/media/music",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "BOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/books",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "AUDIOBOOKS_PATH": {
+            "value": "/Users/Shared/mediastack/media/audiobooks",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "PHOTOS_PATH": {
+            "value": "/Users/Shared/mediastack/media/photos",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "TRANSCODE_PATH": {
+            "value": "/Users/Shared/mediastack/transcode",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DOWNLOADS_PATH": {
+            "value": "/Users/Shared/mediastack/downloads",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "DEPLOYMENT_MODE": {
+            "value": "local",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PORT": {
+            "value": "3003",
+            "source": "../.env",
+            "type": "number",
+            "sensitive": false,
+            "required": false
+          },
+          "REDIS_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PHOTOPRISM_ADMIN_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "GRAFANA_USER": {
+            "value": "admin",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GRAFANA_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "JELLYFIN_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "SONARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "RADARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PROWLARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "BAZARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "OVERSEERR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "TAUTULLI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PORTAINER_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_USERNAME": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "QBITTORRENT_WIDGET_PASSWORD": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "NOTIFIARR_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "PLEX_CLAIM": {
+            "value": "",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_HOST": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_EXTRA_OPTS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_DAYS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_WEEKS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "BACKUP_KEEP_MONTHS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HEALTHCHECK_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTOHEAL_CONTAINER_LABEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "TZ": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_CLEANUP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_POLL_INTERVAL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_INCLUDE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_REVIVE_STOPPED": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_SCHEDULE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_METRICS": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WATCHTOWER_HTTP_API_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DOCKER_API_VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_DOMAIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "HOMEPAGE_VAR_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_SECRET": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_STORAGE_ENCRYPTION_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "AUTHELIA_SESSION_REDIS_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VERSION": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "POSTGRES_MAIN_DB": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "FLARESOLVERR_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "LOG_LEVEL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WEBUI_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "NET_ADMIN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_SERVICE_PROVIDER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "VPN_TYPE": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRIVATE_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ADDRESSES": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PRESHARED_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_PUBLIC_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_IP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WIREGUARD_ENDPOINT_PORT": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PLEX_TOKEN": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_SONARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_RADARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_PROWLARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DN_BAZARR_0_API_KEY": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_USER": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SECURITY_ADMIN_PASSWORD": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_USERS_ALLOW_SIGN_UP": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "GF_SERVER_ROOT_URL": {
+            "value": null,
+            "source": "../docker-compose.yml",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          }
+        },
+        "required_count": 0,
+        "optional_count": 0,
+        "detected_count": 95
+      },
+      "api": {
+        "routes": [
+          {
+            "path": "/api/health",
+            "methods": [
+              "GET"
+            ],
+            "file": "dist/app.js",
+            "framework": "Express",
+            "requires_auth": false
+          },
+          {
+            "path": "/",
+            "methods": [
+              "GET"
+            ],
+            "file": "dist/app.js",
+            "framework": "Express",
+            "requires_auth": false
+          },
+          {
+            "path": "/api/health",
+            "methods": [
+              "GET"
+            ],
+            "file": "src/app.ts",
+            "framework": "Express",
+            "requires_auth": false
+          },
+          {
+            "path": "/",
+            "methods": [
+              "GET"
+            ],
+            "file": "src/app.ts",
+            "framework": "Express",
+            "requires_auth": false
+          }
+        ],
+        "total_routes": 4,
+        "methods": [
+          "GET"
+        ],
+        "protected_routes": []
+      },
+      "services": {
+        "monitoring": [
+          {
+            "type": "logging",
+            "client": "pino"
+          }
+        ]
+      },
+      "monitoring": {
+        "health_checks": [
+          "/api/health",
+          "/api/health"
+        ],
+        "apm_tools": [
+          "logging"
+        ]
+      }
+    }
+  },
+  "infrastructure": {
+    "docker_compose": "docker-compose.yml",
+    "docker_services": [
+      "postgres",
+      "postgres-backup",
+      "autoheal",
+      "traefik",
+      "cloudflared",
+      "watchtower",
+      "dozzle",
+      "homepage",
+      "portainer",
+      "authelia",
+      "redis",
+      "jellyfin",
+      "plex",
+      "sonarr",
+      "radarr",
+      "prowlarr",
+      "flaresolverr",
+      "qbittorrent",
+      "gluetun",
+      "overseerr",
+      "bazarr",
+      "tautulli",
+      "tdarr",
+      "mealie",
+      "kavita",
+      "audiobookshelf",
+      "photoprism",
+      "notifiarr",
+      "loki",
+      "promtail",
+      "grafana"
+    ],
+    "ci": "GitHub Actions",
+    "ci_workflows": [
+      "post-deploy-check.yml",
+      "check.yml",
+      "ci.yml"
+    ],
+    "deployment": "Netlify"
+  },
+  "conventions": {
+    "git_hooks": "Husky"
+  }
+}

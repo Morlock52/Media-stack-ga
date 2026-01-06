@@ -19,6 +19,8 @@ import { arrRoutes } from './routes/arr.js';
 import { orchestratorRoutes } from './routes/orchestrator.js';
 import { backupRoutes } from './routes/backup.js';
 import { restoreRoutes } from './routes/restore.js';
+import { validationRoutes } from './routes/validation.js';
+import { vpnRoutes } from './routes/vpn.js';
 
 // Secret patterns to redact in logs for security
 const SECRET_REDACT_PATHS = [
@@ -37,6 +39,15 @@ const SECRET_REDACT_PATHS = [
     // Environment secrets
     'req.body.wireguardPrivateKey',
     'req.body.authToken',
+    // VPN Credentials
+    'req.body.credentials',
+    'req.body.credentials.*',
+    'req.body.credentials.WIREGUARD_PRIVATE_KEY',
+    'req.body.credentials.WIREGUARD_PRESHARED_KEY',
+    'req.body.credentials.OPENVPN_PASSWORD',
+    'req.body.credentials.password',
+    'req.body.credentials.privateKey',
+    'req.body.credentials.presharedKey',
     // Response body secrets (if accidentally included)
     'res.body.apiKey',
     'res.body.token',
@@ -245,6 +256,21 @@ export const buildApp = async (): Promise<FastifyInstance> => {
         } as RateLimitPluginOptions);
     }, { prefix: '/api/orchestrator' });
 
+    // Rate limits for validation endpoints (moderate resource usage)
+    app.register(async (validationApp) => {
+        await validationApp.register(rateLimit, {
+            max: 50, // 50 validation requests per minute
+            timeWindow: '1 minute',
+            keyGenerator: (request: FastifyRequest) => `validation:${request.ip || 'unknown'}`,
+            errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
+                statusCode: 429,
+                error: 'Validation Rate Limit Exceeded',
+                message: `Too many validation requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
+                retryAfter: Math.ceil(context.ttl / 1000)
+            })
+        } as RateLimitPluginOptions);
+    }, { prefix: '/api/validate' });
+
     // Register multipart for file uploads (audio transcription)
     await app.register(multipart, {
         limits: {
@@ -282,7 +308,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
                 '/api/health',
                 '/api/containers',
                 '/api/agents',
-                '/api/orchestrator'
+                '/api/orchestrator',
+                '/api/validate'
             ]
         };
     });
@@ -295,6 +322,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(orchestratorRoutes);
     await app.register(backupRoutes);
     await app.register(restoreRoutes);
+    await app.register(validationRoutes);
+    await app.register(vpnRoutes);
 
     return app;
 };

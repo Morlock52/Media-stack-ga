@@ -7,6 +7,21 @@ export default {
     ],
     theme: {
     	extend: {
+    		screens: {
+    			xs: '320px',
+    		},
+    		spacing: {
+    			'touch-target-44': '44px',
+    			'touch-target-48': '48px',
+    		},
+    		minWidth: {
+    			'touch-44': '44px',
+    			'touch-48': '48px',
+    		},
+    		minHeight: {
+    			'touch-44': '44px',
+    			'touch-48': '48px',
+    		},
     		colors: {
     			background: 'hsl(var(--background))',
     			foreground: 'hsl(var(--foreground))',
