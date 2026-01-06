@@ -38,7 +38,7 @@ export function ProactiveSuggestionCard({
   if (suggestions.length === 0) return null
 
   return (
-    <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2 max-w-sm">
+    <div className="fixed z-40 flex flex-col gap-2 max-w-xs sm:max-w-sm mx-4 sm:mx-0 right-0 sm:right-4" style={{ bottom: 'calc(7rem + max(1rem, var(--safe-area-inset-bottom)))' }}>
       <AnimatePresence mode="popLayout">
         {suggestions.slice(0, 3).map((suggestion, index) => {
           const Icon = iconMap[suggestion.icon]
@@ -52,33 +52,33 @@ export function ProactiveSuggestionCard({
               transition={{ delay: index * 0.1 }}
               className={`
                 relative bg-gradient-to-r ${priorityColors[suggestion.priority]}
-                border rounded-xl p-4 shadow-lg backdrop-blur-sm
+                border rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-lg backdrop-blur-sm
               `}
             >
               {/* Dismiss button */}
               {suggestion.dismissible && (
                 <button
                   onClick={() => onDismiss(suggestion.id)}
-                  className="absolute top-2 right-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+                  className="absolute top-1 right-1 sm:top-2 sm:right-2 rounded-lg hover:bg-white/10 transition-colors touch-target-44 -m-2 p-2"
                   aria-label="Dismiss suggestion"
                 >
-                  <X className="w-3 h-3 text-muted-foreground" />
+                  <X className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 </button>
               )}
 
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-2 sm:gap-3">
                 {/* Icon */}
-                <div className={`p-2 rounded-lg bg-background/40 ${priorityIconColors[suggestion.priority]}`}>
-                  <Icon className="w-4 h-4" />
+                <div className={`p-1.5 sm:p-2 rounded-lg bg-background/40 flex-shrink-0 ${priorityIconColors[suggestion.priority]}`}>
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0 pr-4">
-                  <p className="text-sm font-medium text-foreground">
+                <div className="flex-1 min-w-0 pr-6 sm:pr-4">
+                  <p className="text-xs sm:text-sm font-medium text-foreground break-words">
                     {suggestion.text}
                   </p>
                   {suggestion.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">
                       {suggestion.description}
                     </p>
                   )}
@@ -86,7 +86,7 @@ export function ProactiveSuggestionCard({
               </div>
 
               {/* Action button */}
-              <div className="mt-3 flex justify-end">
+              <div className="mt-2 sm:mt-3 flex justify-end">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -96,9 +96,9 @@ export function ProactiveSuggestionCard({
                       onDismiss(suggestion.id)
                     }
                   }}
-                  className="text-xs gap-1 h-7 px-2"
+                  className="text-[10px] sm:text-xs gap-1 h-7 px-2 touch-target-44"
                 >
-                  Do it <ChevronRight className="w-3 h-3" />
+                  Do it <ChevronRight className="w-3 h-3 flex-shrink-0" />
                 </Button>
               </div>
 
@@ -116,7 +116,7 @@ export function ProactiveSuggestionCard({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center text-xs text-muted-foreground"
+          className="text-center text-[10px] sm:text-xs text-muted-foreground"
         >
           +{suggestions.length - 3} more suggestions
         </motion.div>

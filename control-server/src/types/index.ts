@@ -18,3 +18,21 @@ export type {
     TtsStatus,
     RealtimeStatus,
 } from '@media-stack/shared';
+
+/**
+ * Export validation types
+ */
+export type {
+    ValidationSeverity,
+    ValidatorType,
+    ValidationIssue,
+    ValidationResult,
+    ValidatorConfig,
+    AggregatedValidationResult,
+    ValidationRequest,
+    PathValidationOptions,
+    PortValidationOptions,
+    VpnValidationOptions,
+    CloudflareValidationOptions,
+    DockerValidationOptions,
+} from './validation';

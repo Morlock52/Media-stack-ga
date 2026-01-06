@@ -5,6 +5,10 @@ import { PostInstallChecklist } from '../../PostInstallChecklist'
 import { controlServer } from '../../../utils/controlServer'
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT, STORAGE_CATEGORIES } from '../../../data/storagePlan'
 import { SetupConfig } from '../../../store/setupStore'
+import { ValidationPanel } from '../../ValidationPanel'
+import { useValidation } from '../../../hooks/useValidation'
+import { hasBlockingErrors } from '../../../types/validation'
+import type { ValidationRequest } from '../../../types/validation'
 
 type BootstrapCredentialKind = 'API key' | 'token' | 'password' | 'secret'
 
@@ -204,6 +208,11 @@ export function ReviewGenerateStep({
     const [showDeployModal, setShowDeployModal] = useState(false)
     const isLocalMode = config.deploymentMode === 'local'
 
+    // Validation hook for pre-deployment checks
+    const validation = useValidation({
+        autoValidate: false, // We'll trigger manually when step becomes active
+    })
+
     // Deploy state
     const [deployStatus, setDeployStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle')
     const [deploySteps, setDeploySteps] = useState<Array<{ step: string; status: 'done' | 'error' | 'running' }>>([])
@@ -235,6 +244,12 @@ export function ReviewGenerateStep({
     const hasAccessHostOverride = useRef(false)
 
     const handleDeploy = async () => {
+        // Block deployment if there are blocking validation errors
+        if (validation.result && hasBlockingErrors(validation.result)) {
+            setDeployError('Cannot deploy: Please fix the validation errors above before proceeding.')
+            return
+        }
+
         setDeployStatus('deploying')
         setDeploySteps([
             { step: 'Writing .env file...', status: 'running' },
@@ -297,6 +312,63 @@ export function ReviewGenerateStep({
             }
         }
     }, [])
+
+    // Auto-validate configuration when step becomes active
+    useEffect(() => {
+        // Build validation request from current config
+        const validationRequest: ValidationRequest = {
+            config: {
+                dataRoot: config.storagePlan?.dataRoot?.path || DEFAULT_DATA_ROOT,
+                configRoot: config.storagePlan?.config?.path || '/opt/mediastack/config',
+                domain: config.domain,
+                cloudflareToken: config.cloudflareToken,
+                wireguardPrivateKey: config.wireguardPrivateKey,
+                wireguardAddresses: config.wireguardAddresses,
+                selectedServices,
+                deploymentMode: config.deploymentMode,
+            },
+            validators: ['docker', 'path'], // Start with essential validators
+        }
+
+        // Add port validation if we have services selected
+        if (selectedServices.length > 0) {
+            validationRequest.validators?.push('port')
+        }
+
+        // Add VPN validation if VPN/torrent is selected
+        if (selectedServices.includes('vpn') || selectedServices.includes('torrent')) {
+            validationRequest.validators?.push('vpn')
+            validationRequest.validatorConfigs = {
+                ...validationRequest.validatorConfigs,
+                vpn: {
+                    provider: 'custom', // Assuming custom WireGuard config
+                    type: 'wireguard',
+                    credentials: {
+                        privateKey: config.wireguardPrivateKey,
+                        addresses: config.wireguardAddresses,
+                    },
+                },
+            }
+        }
+
+        // Add Cloudflare validation for cloud mode
+        if (config.deploymentMode === 'cloud' && config.cloudflareToken) {
+            validationRequest.validators?.push('cloudflare')
+            validationRequest.validatorConfigs = {
+                ...validationRequest.validatorConfigs,
+                cloudflare: {
+                    tunnelToken: config.cloudflareToken,
+                    testConnectivity: false, // Don't test connectivity by default
+                },
+            }
+        }
+
+        // Trigger validation
+        validation.validate(validationRequest).catch(() => {
+            // Error is already handled by the hook and displayed in the ValidationPanel
+        })
+    }, []) // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (!isLocalMode) return
@@ -654,6 +726,26 @@ export function ReviewGenerateStep({
                 </div>
             </div>
 
+            {/* Pre-deployment Validation */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground/80">Pre-Deployment Validation</h3>
+                    {validation.lastValidatedAt && (
+                        <span className="text-xs text-muted-foreground">
+                            Last checked: {new Date(validation.lastValidatedAt).toLocaleTimeString()}
+                        </span>
+                    )}
+                </div>
+                <ValidationPanel
+                    result={validation.result}
+                    isValidating={validation.isValidating}
+                    error={validation.error}
+                    onRefresh={validation.refresh}
+                    showRefreshButton={true}
+                    compact={false}
+                />
+            </div>
+
             <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
                 <div>
@@ -733,6 +825,19 @@ export function ReviewGenerateStep({
                 </div>
             </div>
 
+            {/* Deployment Blocking Error */}
+            {validation.result && hasBlockingErrors(validation.result) && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+                    <div>
+                        <h3 className="text-sm font-semibold text-red-300">Deployment Blocked</h3>
+                        <p className="text-sm text-red-200/70 mt-1">
+                            Please fix the validation errors above before deploying. You can still download your configuration files.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
                 <button
@@ -744,8 +849,25 @@ export function ReviewGenerateStep({
                 </button>
                 {isLocalMode && (
                     <button
-                        onClick={() => setShowDeployModal(true)}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20 transition-all btn-lift"
+                        onClick={() => {
+                            // Block if validation has blocking errors
+                            if (validation.result && hasBlockingErrors(validation.result)) {
+                                setDeployError('Cannot deploy: Please fix the validation errors above before proceeding.')
+                                return
+                            }
+                            setShowDeployModal(true)
+                        }}
+                        disabled={validation.result ? hasBlockingErrors(validation.result) : false}
+                        className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold shadow-lg transition-all btn-lift ${
+                            validation.result && hasBlockingErrors(validation.result)
+                                ? 'bg-gray-500 cursor-not-allowed opacity-60'
+                                : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-blue-500/20'
+                        }`}
+                        title={
+                            validation.result && hasBlockingErrors(validation.result)
+                                ? 'Fix validation errors before deploying'
+                                : 'Deploy your media stack locally'
+                        }
                     >
                         <Rocket className="w-5 h-5" />
                         Run Local Install

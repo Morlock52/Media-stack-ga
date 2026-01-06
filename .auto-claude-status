@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "001-help-me-review-the-project-and-find-issues-of-the-",
-  "state": "complete",
+  "spec": "005-mobile-responsive-wizard-ui",
+  "state": "building",
   "subtasks": {
-    "completed": 19,
+    "completed": 18,
     "total": 19,
-    "in_progress": 0,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Issue Documentation",
+    "current": "Testing & Polish",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 2,
-    "started_at": "2026-01-05T14:09:31.539006"
+    "number": 20,
+    "started_at": "2026-01-05T14:20:43.545439"
   },
-  "last_update": "2026-01-05T14:14:21.933646"
+  "last_update": "2026-01-05T15:28:53.667897"
 }
