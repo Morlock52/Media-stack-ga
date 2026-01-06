@@ -1,0 +1,342 @@
+# AI-Powered Troubleshooting Expansion - Build Progress
+
+## Status: Phase 1 Complete ✅
+**Last Updated:** 2026-01-05
+
+---
+
+## Phase Summary
+
+| Phase | Name | Subtasks | Status |
+|-------|------|----------|--------|
+| 1 | Knowledge Modules & Error Pattern Database | 6 | ✅ Complete (6/6) |
+| 2 | Enhanced Diagnostic Tools | 5 | ✅ Complete (5/5) |
+| 3 | Troubleshooting History & Context | 3 | ✅ Complete (3/3) |
+| 4 | Configuration Fix Suggestions & Application | 4 | In Progress (1/4) |
+| 5 | Enhanced Troubleshoot Agent | 3 | Pending |
+| 6 | Frontend Integration | 3 | Pending |
+| 7 | Testing & Documentation | 3 | Pending |
+
+**Total Subtasks:** 27
+
+---
+
+## Implementation Plan Created
+
+### Key Architecture Decisions:
+1. **Knowledge Modules** - Separate TypeScript modules for each troubleshooting domain (VPN, Docker networking, Arr services, media scanning)
+2. **Error Pattern Database** - Regex-based pattern matching with severity levels and solution mappings
+3. **Diagnostic Tools** - New tools in `diagnosticTools.ts` extending existing `agentTools.ts`
+4. **Troubleshooting History** - New store service persisting diagnostic sessions
+5. **Configuration Applier** - Safe config changes with backup/rollback
+
+### Files to Create:
+- `control-server/src/knowledge/vpnTroubleshooting.ts`
+- `control-server/src/knowledge/dockerNetworking.ts`
+- `control-server/src/knowledge/arrInterconnection.ts`
+- `control-server/src/knowledge/mediaScanning.ts`
+- `control-server/src/knowledge/errorPatterns.ts`
+- `control-server/src/knowledge/index.ts`
+- `control-server/src/tools/diagnosticTools.ts`
+- `control-server/src/services/troubleshootingStore.ts`
+- `control-server/src/services/configFixGenerator.ts`
+- `control-server/src/services/configApplier.ts`
+- `control-server/src/orchestrator/troubleshootingWorkflow.ts`
+
+### Files to Modify:
+- `control-server/src/routes/ai.ts` - Add new endpoints and tools
+- `control-server/src/agents.ts` - Update troubleshoot agent
+- `control-server/src/tools/agentTools.ts` - Enhance log analysis
+- `docs-site/src/components/AIAssistant.tsx` - Add troubleshooting UI
+
+---
+
+## Session Log
+
+### Session 1 - 2026-01-05 (Planning)
+- [x] Read spec.md and analyzed requirements
+- [x] Explored existing codebase (ai.ts, agents.ts, agentTools.ts, AIAssistant.tsx)
+- [x] Created implementation_plan.json with 7 phases and 27 subtasks
+- [x] Created build-progress.txt
+
+### Session 2 - 2026-01-05 (Phase 1 Implementation)
+- [x] **Subtask 1.1 COMPLETED** - Created VPN troubleshooting knowledge module
+  - File: `control-server/src/knowledge/vpnTroubleshooting.ts` (883 lines)
+  - 7 comprehensive issue patterns with diagnostics and solutions
+  - Patterns: vpn-healthy-but-no-connection, kill-switch-blocking, auth-failed,
+    dns-leak, port-forwarding-failed, connection-timeout, local-network-unreachable
+  - Support for multiple VPN providers (NordVPN, Mullvad, ProtonVPN, Surfshark, PIA)
+  - Search functions and log pattern matching utilities
+  - Commit: 37f5f96
+
+- [x] **Subtask 1.2 COMPLETED** - Created Docker networking knowledge module
+  - File: `control-server/src/knowledge/dockerNetworking.ts` (1,084 lines)
+  - 11 comprehensive issue patterns covering Docker networking problems
+  - Patterns: container-no-internet, inter-container-dns-failed, port-conflict,
+    network-mode-misconfigured, localhost-not-working, dns-resolution-failed,
+    port-mapping-not-working, bridge-network-mtu-issue, ipv6-connectivity-issue,
+    container-network-isolation
+  - Detailed diagnostics with commands and expected results
+  - Solutions with docker-compose examples and configuration best practices
+  - Coverage of network modes (bridge, host, container, custom)
+  - Special focus on *arr stack inter-container communication and VPN integration
+  - Search functions and log pattern matching utilities
+  - Commit: e3aa9e2
+
+- [x] **Subtask 1.3 COMPLETED** - Created Arr interconnection knowledge module
+  - File: `control-server/src/knowledge/arrInterconnection.ts` (1,391 lines)
+  - 8 comprehensive issue patterns covering *arr stack interconnection
+  - Patterns: api-key-invalid, url-connection-failed, download-client-unreachable,
+    prowlarr-sync-failed, category-mapping-failed, import-failed-no-files,
+    test-connection-timeout, indexer-search-failed
+  - Covers API authentication, network configuration, VPN integration, categories,
+    file permissions, path mapping, and Prowlarr integration
+  - Solutions with docker-compose examples and step-by-step fixes
+  - Helper functions: search, filter by service/severity, log matching, related issues
+  - Commit: b3223ac
+
+- [x] **Subtask 1.4 COMPLETED** - Created media scanning knowledge module
+  - File: `control-server/src/knowledge/mediaScanning.ts` (1,276 lines)
+  - 10 comprehensive issue patterns covering Plex/Jellyfin problems
+  - Patterns: library-not-updating, file-naming-incorrect, permission-denied,
+    transcoding-failed, transcoding-permission-failed, metadata-not-loading,
+    codec-not-supported, plex-claim-failed, jellyfin-reverse-proxy
+  - Coverage: library scanning, file naming conventions, permissions (PUID/PGID),
+    transcoding (hardware acceleration, tmpfs, FFmpeg), metadata agents,
+    codec compatibility, Plex authentication, reverse proxy setup
+  - Diagnostic steps with docker exec commands and expected results
+  - Solutions with docker-compose examples and step-by-step instructions
+  - Helper functions: search, filter by server/media type/severity, log matching
+  - Commit: dd23b37
+
+- [x] **Subtask 1.5 COMPLETED** - Created common error patterns database
+  - File: `control-server/src/knowledge/errorPatterns.ts` (1,194 lines)
+  - 30+ comprehensive error patterns covering all service categories
+  - Categories: VPN (5 patterns), Docker networking (6 patterns), Arr stack (6 patterns),
+    media servers (6 patterns), download clients (2 patterns), general errors (5 patterns)
+  - Each pattern includes: regex matching, severity level, causes, quick fixes, KB references
+  - Patterns: vpn-auth-failed, vpn-connection-timeout, vpn-dns-leak, vpn-port-forwarding-failed,
+    vpn-kill-switch-blocking, docker-dns-resolution-failed, docker-port-conflict,
+    docker-network-not-found, docker-container-network-mode-invalid, docker-no-internet-access,
+    docker-inter-container-dns-failed, arr-api-unauthorized, arr-connection-refused,
+    arr-download-client-unreachable, arr-import-failed-no-files, arr-prowlarr-sync-failed,
+    arr-category-mismatch, media-permission-denied, media-library-not-updating,
+    media-transcoding-failed, media-codec-not-supported, plex-claim-failed,
+    media-metadata-not-loading, qbittorrent-webui-unreachable,
+    qbittorrent-connection-status-firewalled, general-out-of-memory, general-disk-full,
+    general-file-not-found, general-timeout, general-ssl-certificate-error
+  - Helper functions: matchErrorPatterns() for log analysis with category filtering,
+    searchErrorPatterns() for keyword search with relevance scoring,
+    analyzeLogOutput() for comprehensive analysis with grouping and summary generation
+  - Supports filtering by category, severity, service name, and pattern ID
+  - Each pattern links back to detailed knowledge base modules for deep troubleshooting
+  - Commit: 93ae474
+
+- [x] **Subtask 1.6 COMPLETED** - Created knowledge base index and search
+  - File: `control-server/src/knowledge/index.ts` (672 lines)
+  - Created comprehensive aggregation index for all knowledge modules
+  - Main function: `searchKnowledge()` - unified search across all modules with relevance scoring
+  - Features: module filtering, severity filtering, relevance scoring, cross-module search
+  - Additional functions: `analyzeLogsComprehensive()` for multi-module log analysis,
+    `getKnowledgeBaseStats()` for statistics, `getIssueById()` for specific lookup,
+    `findRelatedIssues()` for cross-references, `getAllCriticalIssues()` for critical issues
+  - Re-exports all module-specific functions (VPN, Docker, Arr, Media, Error Patterns)
+  - TypeScript interfaces: KnowledgeSearchResult, ComprehensiveSearchResults,
+    ComprehensiveLogAnalysis, KnowledgeBaseStats
+  - Created README.md (360 lines) with comprehensive usage examples and API documentation
+  - Covers all use cases: unified search, module-specific search, log analysis, statistics
+  - Commit: 0925d99
+
+**Phase 1 Complete! ✅**
+
+All 6 knowledge module subtasks completed:
+- ✅ VPN Troubleshooting (7 patterns)
+- ✅ Docker Networking (11 patterns)
+- ✅ Arr Interconnection (8 patterns)
+- ✅ Media Scanning (10 patterns)
+- ✅ Error Patterns Database (30+ patterns)
+- ✅ Knowledge Base Index with unified search
+
+Total: 36+ issue patterns + 30+ error patterns = 66+ troubleshooting entries
+
+**Phase 2 In Progress**
+
+### Session 3 - 2026-01-05 (Phase 2: Enhanced Diagnostic Tools)
+- [x] **Subtask 2.1 COMPLETED** - Created VPN connectivity diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (595 lines)
+  - Implemented `diagnose_vpn_connectivity()` function with comprehensive VPN diagnostics
+  - Performs 10 diagnostic checks:
+    1. Gluetun service health and status
+    2. Log analysis with pattern matching against VPN_TROUBLESHOOTING_KB
+    3. Execution of diagnostic steps from 'vpn-healthy-but-no-connection' knowledge base
+    4. network_mode configuration validation for dependent services
+    5. External connectivity test from Gluetun container (VPN IP verification)
+    6. DNS resolution testing through VPN
+    7. Port forwarding configuration check
+  - Returns detailed `VpnDiagnosticData` including:
+    - Health status boolean
+    - Gluetun service info
+    - Array of DiagnosticCheck results with status/message/output
+    - Matched issue patterns from knowledge base with confidence scores
+    - Prioritized recommendations array with Solution objects
+    - List of affected services not properly configured
+    - Human-readable summary message
+  - Security: Service name validation with allowlist
+  - Tool metadata exported for orchestration support
+  - Follows patterns from agentTools.ts: ToolResult return type, error handling, logging
+  - Commit: e6ccb0c
+
+- [x] **Subtask 2.2 COMPLETED** - Created Arr interconnection diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (567 lines of new code)
+  - Implemented `diagnose_arr_connections()` function with comprehensive Arr diagnostics
+  - Performs 7 diagnostic checks:
+    1. Check Arr service status (running/ready) for Sonarr, Radarr, Prowlarr, etc.
+    2. Extract and validate API keys against live services
+    3. Test service-to-service connectivity (DNS and HTTP) between all running Arr services
+    4. Check download client connectivity and network mode (VPN detection)
+    5. Analyze logs with pattern matching against ARR_INTERCONNECTION_KB
+    6. Generate prioritized recommendations
+    7. Determine overall health
+  - Returns detailed `ArrDiagnosticData` with service status, download client status, checks, matched issues, recommendations
+  - Security: Service name validation with allowlist
+  - Detects VPN network mode and adjusts connectivity tests accordingly
+  - Commit: 9ca22a5
+
+- [x] **Subtask 2.3 COMPLETED** - Created media scanner diagnostic tool
+  - File: `control-server/src/tools/diagnosticTools.ts` (575 lines of new code)
+  - Implemented `diagnoseMediaScanner()` function with comprehensive media scanning diagnostics
+  - Performs 7 diagnostic steps:
+    1. Check media server status (Plex/Jellyfin/Emby running)
+    2. Validate PUID/PGID configuration for file permissions
+    3. Test library path accessibility and scan for media files (mkv, mp4, avi, mov, m4v, wmv, flv)
+    4. Check file naming conventions (movie year format, TV SxxExx format, special characters)
+    5. Analyze server logs with pattern matching against MEDIA_SCANNING_KB
+    6. Generate prioritized recommendations from matched issues
+    7. Determine overall health status
+  - Returns detailed `MediaScannerDiagnosticData` including:
+    - Health status boolean
+    - Per-server status (running, containerName, issues)
+    - Library paths array (path, accessible, hasMedia, fileCount, issues)
+    - Permissions data (puid, pgid, configured, issues)
+    - Naming conventions (checked, sampleFiles, issues)
+    - Array of DiagnosticCheck results
+    - Matched issue patterns with confidence scores
+    - Prioritized recommendations with Solution objects
+    - Summary message
+  - Security: Service name validation with allowlist
+  - Tool metadata: 40s estimated duration, uses mediaScanning knowledge module
+  - Detects permission issues (PUID/PGID missing), path mount issues (volume not accessible), file naming issues
+  - Generates specific recommendations from matched knowledge base patterns (library-not-updating, permission-denied, file-naming-incorrect)
+  - Follows patterns from diagnoseVpnConnectivity and diagnoseArrConnections
+  - Commit: f200d29
+
+- [x] **Subtask 2.4 COMPLETED** - Enhanced log analysis with error pattern matching
+  - File: `control-server/src/tools/agentTools.ts` (enhanced existing function)
+  - Enhanced `analyzeLogs()` function to match log output against ERROR_PATTERNS database
+  - Function now calls `matchErrorPatterns(output)` on full log output
+  - Returns `knownIssues` array containing matched error patterns with:
+    - id, title, description, severity, category
+    - causes array with common root causes
+    - fixes array with quick fix suggestions
+    - knowledgeBaseRef linking to detailed troubleshooting modules
+  - Automatically identifies known patterns from 30+ error patterns across all service categories
+  - Provides actionable solutions directly from comprehensive ERROR_PATTERNS database
+  - Updated TOOL_METADATA description to reflect enhanced capability
+  - Added debug logging for matched error patterns count
+  - Follows existing patterns: ToolResult return type, error handling, logging
+  - Enables AI assistant to provide targeted, context-aware troubleshooting guidance
+  - Commit: d901654
+
+- [x] **Subtask 2.5 COMPLETED** - Created diagnostic command runner with user consent
+  - File: `control-server/src/tools/diagnosticTools.ts` (393 lines)
+  - Implemented `runDiagnosticCommand()` function with explicit user consent flow
+  - Supports 5 diagnostic command types: ping, traceroute, nslookup, curl, wget
+  - Security features: command allowlist, target validation, argument allowlisting, injection prevention
+  - Auto-detects best container (prefers gluetun, falls back to arr services)
+  - User consent flow documented in JSDoc
+  - Commit: 34cfcb6
+
+**Phase 2 Complete! ✅**
+
+All 5 enhanced diagnostic tools subtasks completed:
+- ✅ VPN connectivity diagnostic tool
+- ✅ Arr interconnection diagnostic tool
+- ✅ Media scanner diagnostic tool
+- ✅ Enhanced log analysis with error pattern matching
+- ✅ Diagnostic command runner with user consent
+
+**Phase 3 In Progress**
+
+### Session 4 - 2026-01-05 (Phase 3: Troubleshooting History & Context)
+- [x] **Subtask 3.1 COMPLETED** - Created troubleshooting session store
+  - File: `control-server/src/services/troubleshootingStore.ts` (679 lines)
+  - Core session management: createSession, getSession, saveSession, deleteSession, updateSessionStatus
+  - Diagnostic & fix tracking: addDiagnostic, addAttemptedFix
+  - Stores full diagnostic data (VpnDiagnosticData, ArrDiagnosticData, MediaScannerDiagnosticData)
+  - Session data structure: problem details, diagnostics array, attempted fixes, resolution
+  - Query & search: listSessions, getRecentSessionsForService, getSessionsByConversation, searchSessions
+  - Context generation: getSessionContext for AI prompt injection
+  - Analytics: getSessionMetrics with resolution rates and statistics
+  - Follows conversationStore.ts patterns: file-based storage, index with metrics, automatic cleanup
+  - Commit: ca17905
+
+- [x] **Subtask 3.2 COMPLETED** - Integrate troubleshooting context with AI chat
+  - Commit: e90154d
+
+- [x] **Subtask 3.3 COMPLETED** - Add troubleshooting session API endpoints
+  - Commit: 0d99ee8
+
+**Phase 3 Complete! ✅**
+
+All 3 troubleshooting history & context subtasks completed:
+- ✅ Troubleshooting session store
+- ✅ AI chat context injection
+- ✅ REST API endpoints for session management
+
+**Phase 4 In Progress**
+
+### Session 5 - 2026-01-05 (Phase 4: Configuration Fix Suggestions & Application)
+- [x] **Subtask 4.1 COMPLETED** - Created configuration fix generator service
+  - File: `control-server/src/services/configFixGenerator.ts` (700 lines)
+  - Analyzes detected issues and generates specific, actionable configuration fixes
+  - Core types: ConfigChange, ConfigFix, BackupStrategy, RollbackPlan, GeneratedFixSummary
+  - Main functions:
+    - solutionToConfigFix() - Converts Solution objects from knowledge base into ConfigFix
+    - generateVpnFixes() - Generate fixes from VPN diagnostic results
+    - generateArrFixes() - Generate fixes from Arr diagnostic results
+    - generateMediaScannerFixes() - Generate fixes from Media Scanner diagnostic results
+    - generateFixSummary() - Comprehensive fix generation from all diagnostic types
+  - Helper functions: formatConfigFix(), generateConfigDiff(), createCustomConfigFix()
+  - Features: Parses envVars and configExample, extracts docker-compose changes (network_mode,
+    environment, volumes), risk assessment (low/medium/high/critical), automatic backup strategy,
+    rollback plan with validation, step-by-step apply instructions, service restart detection,
+    estimated time calculation
+  - Filtering options: lowRiskOnly, specific services, exclude change types
+  - Statistics: fixes by category, by risk level, critical fixes
+  - Integration: Works with all knowledge base modules (VPN, Docker, Arr, Media)
+  - Security: All changes require explicit user review, backup strategies, rollback plans
+  - Commit: 668827e
+
+**Next Steps:**
+- Subtask 4.2: Build configApplier service to safely apply configuration fixes
+- Subtask 4.3: Create AI tool to suggest fixes to users
+- Subtask 4.4: Add endpoint for applying fixes with user consent
+
+---
+
+## Notes
+
+### Existing Capabilities to Build On:
+- `analyzeLogs()` in agentTools.ts - basic log analysis
+- `networkDiagnostics()` in agentTools.ts - DNS/VPN/port checks
+- `checkServiceHealth()` - Docker container status
+- `conversationStore.ts` - existing conversation persistence
+- Troubleshoot agent "Dr. Debug" with basic expertise
+
+### Acceptance Criteria from Spec:
+- [x] AI can diagnose 'VPN shows healthy but services can't connect' issues ✅ (Phase 1-2: Knowledge base + diagnostic tool created)
+- [x] AI can analyze Docker logs and identify common error patterns ✅ (Phase 1-2: Knowledge base with log pattern matching, enhanced analyzeLogs())
+- [x] AI can guide users through Arr service interconnection troubleshooting ✅ (Phase 1-2: Knowledge base with 8 patterns + diagnostic tool)
+- [x] AI can run diagnostic commands (ping, traceroute, DNS tests) with user consent ✅ (Phase 2: runDiagnosticCommand() with 5 command types)
+- [x] Troubleshooting history saved for context in follow-up questions ✅ (Phase 3: troubleshootingStore + AI chat context injection)
+- [ ] AI can suggest configuration fixes and offer to apply them (Phase 4: Fix generator created, applier and endpoint pending)
