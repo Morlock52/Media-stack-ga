@@ -23,10 +23,11 @@ const buttonVariants = cva(
         gradient: "bg-gradient-to-r from-emerald-500 via-cyan-500 to-lime-400 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-400/40 hover:scale-105 transition-all duration-300",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
+        default: "h-11 px-4 py-2",
+        sm: "h-11 rounded-md px-3 text-xs",
+        lg: "h-12 rounded-md px-8",
+        icon: "h-11 w-11",
+        touch: "h-12 w-full px-4 py-3 text-base",
       },
     },
     defaultVariants: {

@@ -1,6 +1,8 @@
 import * as React from "react"
-import { Search, Sparkles, Settings, Layers, Server, Key, FileText, BookOpen, Github, ExternalLink } from "lucide-react"
+import { Search, Sparkles, Settings, Layers, Server, Key, FileText, BookOpen, Github, ExternalLink, Database, Plus, RotateCcw, Clock } from "lucide-react"
+import { Link } from "react-router-dom"
 import { useSetupStore } from "../store/setupStore"
+import { useBackupStore } from "../store/backupStore"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Separator } from "./ui/separator"
@@ -59,6 +61,33 @@ const navData = {
       ],
     },
   ],
+  backup: [
+    {
+      title: "Backup & Restore",
+      items: [
+        {
+          title: "Dashboard",
+          icon: Database,
+          url: "/backup",
+        },
+        {
+          title: "Create Backup",
+          icon: Plus,
+          url: "/backup/new",
+        },
+        {
+          title: "Restore",
+          icon: RotateCcw,
+          url: "/backup/restore",
+        },
+        {
+          title: "Schedules",
+          icon: Clock,
+          url: "/backup/schedules",
+        },
+      ],
+    },
+  ],
   secondary: [
     {
       title: "Resources",
@@ -80,6 +109,7 @@ const navData = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentStep } = useSetupStore()
+  const { schedule } = useBackupStore()
 
   return (
     <Sidebar {...props}>
@@ -127,6 +157,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         {isCompleted && (
                           <div className="w-2 h-2 bg-green-500 rounded-full ml-auto" />
                         )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+
+        <Separator />
+
+        {/* Backup Navigation */}
+        {navData.backup.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+              {group.title}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const showScheduleIndicator = item.title === "Schedules" && schedule?.enabled
+
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <Link to={item.url}>
+                          <Icon className="w-4 h-4" />
+                          <span>{item.title}</span>
+                          {showScheduleIndicator && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full ml-auto" title="Schedule active" />
+                          )}
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )

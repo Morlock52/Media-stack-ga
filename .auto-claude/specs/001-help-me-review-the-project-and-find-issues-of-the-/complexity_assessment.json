@@ -1,0 +1,86 @@
+{
+  "complexity": "standard",
+  "workflow_type": "investigation",
+  "confidence": 0.85,
+  "reasoning": "This is a project-wide code review/investigation to find bugs. It spans 3 services (docs-site, control-server, shared) and requires systematic analysis of tests, documentation, and runtime behavior. No external integrations or infrastructure changes needed, but requires thorough cross-service exploration.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 15,
+      "estimated_services": 3,
+      "is_cross_cutting": true,
+      "notes": "Investigation spans docs-site (React), control-server (Fastify), and shared library. Will need to review tests, UI components, API routes, and Docker compose configurations."
+    },
+    "integrations": {
+      "external_services": [],
+      "new_dependencies": [],
+      "research_needed": false,
+      "notes": "No new integrations. Existing integrations (OpenAI, Docker, ElevenLabs) are already configured - just need to verify they work correctly."
+    },
+    "infrastructure": {
+      "docker_changes": false,
+      "database_changes": false,
+      "config_changes": false,
+      "notes": "No infrastructure changes needed. Investigation only - may identify issues in docker-compose.yml or environment configs but won't modify them in this phase."
+    },
+    "knowledge": {
+      "patterns_exist": true,
+      "research_required": false,
+      "unfamiliar_tech": [],
+      "notes": "Well-documented project with CLAUDE.md, existing tests (Vitest, Playwright), and clear architecture. Patterns for testing and validation exist."
+    },
+    "risk": {
+      "level": "low",
+      "concerns": [
+        "May miss subtle bugs without comprehensive test coverage",
+        "Documentation might be outdated vs implementation",
+        "Need running Docker environment to fully test some features"
+      ],
+      "notes": "Investigation is read-only, so low risk of introducing regressions. Main risk is in thoroughness of the review."
+    }
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "requirements",
+    "context",
+    "spec_writing",
+    "planning",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": false,
+    "needs_self_critique": false,
+    "needs_infrastructure_setup": false
+  },
+
+  "validation_recommendations": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "minimal_mode": false,
+    "test_types_required": ["unit", "integration", "e2e"],
+    "security_scan_required": false,
+    "staging_deployment_required": false,
+    "reasoning": "Investigation task should run all existing test suites to identify failures. Unit tests verify component behavior, integration tests check API functionality, and E2E tests validate the complete user workflows described in documentation."
+  },
+
+  "investigation_specific": {
+    "review_targets": [
+      "docs-site/src/components - UI components and wizard flow",
+      "control-server/src/routes - API endpoints and handlers",
+      "docs-site/tests - Playwright E2E tests for expected behavior",
+      "control-server/tests - Vitest unit tests for backend logic",
+      "CLAUDE.md and README - Documentation of expected behavior",
+      "docker-compose.yml files - Infrastructure configuration"
+    ],
+    "verification_methods": [
+      "Run npm run check (lint + tests + smoke)",
+      "Run npm test in both workspaces",
+      "Compare documentation claims vs actual implementation",
+      "Review error handling and edge cases"
+    ]
+  },
+
+  "created_at": "2025-01-05T12:00:00.000Z"
+}

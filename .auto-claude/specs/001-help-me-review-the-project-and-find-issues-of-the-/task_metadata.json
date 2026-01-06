@@ -1,0 +1,20 @@
+{
+  "sourceType": "manual",
+  "model": "sonnet",
+  "thinkingLevel": "medium",
+  "isAutoProfile": false,
+  "phaseModels": {
+    "spec": "opus",
+    "planning": "opus",
+    "coding": "opus",
+    "qa": "opus"
+  },
+  "phaseThinking": {
+    "spec": "ultrathink",
+    "planning": "high",
+    "coding": "low",
+    "qa": "low"
+  },
+  "baseBranch": "main",
+  "requireReviewBeforeCoding": false
+}

@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { PROJECT_ROOT } from './utils/env.js';
 import { FastifyInstance } from 'fastify';
+import { initializeScheduler, shutdownScheduler } from './services/backupScheduler.js';
 
 // Some environments (detached terminals, certain process managers) can trigger
 // stdin read errors (EIO) that crash Node if left unhandled. The control-server
@@ -28,11 +29,12 @@ const isExposedHost = HOST === '0.0.0.0' || HOST === '::' || (!HOST.startsWith('
 // Graceful shutdown handler
 const setupGracefulShutdown = (app: FastifyInstance) => {
     const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
-    
+
     signals.forEach((signal) => {
         process.on(signal, async () => {
             app.log.info(`Received ${signal}, shutting down gracefully...`);
             try {
+                await shutdownScheduler();
                 await app.close();
                 app.log.info('Server closed successfully');
                 process.exit(0);
@@ -86,6 +88,9 @@ const start = async () => {
 
         // Setup graceful shutdown handlers
         setupGracefulShutdown(app);
+
+        // Initialize backup scheduler
+        await initializeScheduler();
 
         try {
             await app.listen({ port: PORT, host: HOST });

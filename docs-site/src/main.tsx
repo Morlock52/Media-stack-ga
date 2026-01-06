@@ -10,6 +10,10 @@ import './index.css'
 
 const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const BackupDashboard = lazy(() => import('./components/BackupDashboard').then((m) => ({ default: m.BackupDashboard })))
+const BackupWizard = lazy(() => import('./components/BackupWizard').then((m) => ({ default: m.BackupWizard })))
+const RestoreWizard = lazy(() => import('./components/RestoreWizard').then((m) => ({ default: m.RestoreWizard })))
+const ScheduleManager = lazy(() => import('./components/backup/ScheduleManager').then((m) => ({ default: m.ScheduleManager })))
 
 const SonnerToaster = Toaster as unknown as React.ComponentType<Record<string, unknown>>
 
@@ -130,6 +134,74 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 								}
 							>
 								<SettingsPage />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="/backup"
+						element={
+							<Suspense
+								fallback={
+									<div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+										<div className="flex items-center gap-3 rounded-xl border border-border bg-card/70 backdrop-blur px-4 py-3 shadow-lg">
+											<div className="h-5 w-5 rounded-full border-2 border-border border-t-transparent animate-spin" />
+											<span className="text-sm">Loading backup dashboard…</span>
+										</div>
+									</div>
+								}
+							>
+								<BackupDashboard />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="/backup/new"
+						element={
+							<Suspense
+								fallback={
+									<div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+										<div className="flex items-center gap-3 rounded-xl border border-border bg-card/70 backdrop-blur px-4 py-3 shadow-lg">
+											<div className="h-5 w-5 rounded-full border-2 border-border border-t-transparent animate-spin" />
+											<span className="text-sm">Loading backup wizard…</span>
+										</div>
+									</div>
+								}
+							>
+								<BackupWizard />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="/backup/restore"
+						element={
+							<Suspense
+								fallback={
+									<div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+										<div className="flex items-center gap-3 rounded-xl border border-border bg-card/70 backdrop-blur px-4 py-3 shadow-lg">
+											<div className="h-5 w-5 rounded-full border-2 border-border border-t-transparent animate-spin" />
+											<span className="text-sm">Loading restore wizard…</span>
+										</div>
+									</div>
+								}
+							>
+								<RestoreWizard />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="/backup/schedules"
+						element={
+							<Suspense
+								fallback={
+									<div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+										<div className="flex items-center gap-3 rounded-xl border border-border bg-card/70 backdrop-blur px-4 py-3 shadow-lg">
+											<div className="h-5 w-5 rounded-full border-2 border-border border-t-transparent animate-spin" />
+											<span className="text-sm">Loading schedule manager…</span>
+										</div>
+									</div>
+								}
+							>
+								<ScheduleManager />
 							</Suspense>
 						}
 					/>
