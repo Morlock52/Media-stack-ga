@@ -1052,7 +1052,40 @@ Return ONLY a JSON object with the following structure:
 
         if (effectiveApiKey) {
             try {
+                // Inject troubleshooting history context if available
+                let troubleshootingContext = '';
+                const conversationId = context.conversationId as string | undefined;
+
+                if (conversationId) {
+                    try {
+                        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+                        const relatedSessions = await troubleshootingStore.getSessionsByConversation(conversationId, 3);
+
+                        if (relatedSessions.length > 0) {
+                            fastify.log.info({ conversationId, sessionCount: relatedSessions.length }, 'Injecting troubleshooting context');
+
+                            troubleshootingContext = '\n\n## Recent Troubleshooting Context\n\n';
+                            troubleshootingContext += 'The user has active troubleshooting sessions. Use this context to provide informed follow-up assistance:\n\n';
+
+                            for (const session of relatedSessions) {
+                                const sessionContext = await troubleshootingStore.getSessionContext(session.id);
+                                if (sessionContext) {
+                                    troubleshootingContext += sessionContext + '\n---\n\n';
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        fastify.log.warn({ err, conversationId }, 'Failed to load troubleshooting context');
+                    }
+                }
+
                 const baseMessages: ChatMessage[] = buildAgentMessages(agent, message, history as ChatMessage[], context);
+
+                // Inject troubleshooting context into system message if available
+                if (troubleshootingContext && baseMessages.length > 0 && baseMessages[0].role === 'system') {
+                    baseMessages[0].content += troubleshootingContext;
+                }
+
                 const openAiMessages: OpenAIRequestMessage[] = baseMessages.map((msg) => ({
                     role: msg.role,
                     content: msg.content,
@@ -1531,7 +1564,39 @@ Return ONLY a JSON object with the following structure:
                 agent = detectAgent(message);
             }
 
+            // Inject troubleshooting history context if available
+            let troubleshootingContext = '';
+            const conversationId = context.conversationId as string | undefined;
+
+            if (conversationId) {
+                try {
+                    const troubleshootingStore = await import('../services/troubleshootingStore.js');
+                    const relatedSessions = await troubleshootingStore.getSessionsByConversation(conversationId, 3);
+
+                    if (relatedSessions.length > 0) {
+                        fastify.log.info({ conversationId, sessionCount: relatedSessions.length }, 'Injecting troubleshooting context (streaming)');
+
+                        troubleshootingContext = '\n\n## Recent Troubleshooting Context\n\n';
+                        troubleshootingContext += 'The user has active troubleshooting sessions. Use this context to provide informed follow-up assistance:\n\n';
+
+                        for (const session of relatedSessions) {
+                            const sessionContext = await troubleshootingStore.getSessionContext(session.id);
+                            if (sessionContext) {
+                                troubleshootingContext += sessionContext + '\n---\n\n';
+                            }
+                        }
+                    }
+                } catch (err) {
+                    fastify.log.warn({ err, conversationId }, 'Failed to load troubleshooting context (streaming)');
+                }
+            }
+
             const messages = buildAgentMessages(agent, message, sanitizedHistory, context as AgentMessageContext);
+
+            // Inject troubleshooting context into system message if available
+            if (troubleshootingContext && messages.length > 0 && messages[0].role === 'system') {
+                messages[0].content += troubleshootingContext;
+            }
 
             // Intelligent model routing for streaming
             const complexity = estimateComplexity(message);
@@ -1877,6 +1942,168 @@ Return ONLY a JSON object with the following structure:
                   const deleted = await conversationStore.deleteConversation(request.params.id);
                   return reply.send({ deleted });
           });
+
+          // ═══════════════════════════════════════════════════════════════════════════
+          // NEW: Troubleshooting Session API Routes
+          // ═══════════════════════════════════════════════════════════════════════════
+
+    // List troubleshooting sessions with optional filtering
+    fastify.get<{
+        Querystring: {
+            limit?: string;
+            status?: 'open' | 'in_progress' | 'resolved' | 'closed';
+            category?: 'vpn' | 'docker' | 'arr' | 'media' | 'network' | 'general';
+            resolved?: string;
+            search?: string;
+            affectedService?: string;
+        };
+    }>('/api/ai/troubleshooting/sessions', async (request, reply) => {
+        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+        const { limit, status, category, resolved, search, affectedService } = request.query;
+
+        const sessions = await troubleshootingStore.listSessions(
+            limit ? parseInt(limit, 10) : 20,
+            {
+                status,
+                category,
+                resolved: resolved !== undefined ? resolved === 'true' : undefined,
+                search,
+                affectedService
+            }
+        );
+
+        return reply.send({ sessions });
+    });
+
+    // Get a specific troubleshooting session
+    fastify.get<{ Params: { sessionId: string } }>(
+        '/api/ai/troubleshooting/sessions/:sessionId',
+        async (request, reply) => {
+            const troubleshootingStore = await import('../services/troubleshootingStore.js');
+            const session = await troubleshootingStore.getSession(request.params.sessionId);
+
+            if (!session) {
+                return reply.status(404).send({ error: 'Troubleshooting session not found' });
+            }
+
+            return reply.send(session);
+        }
+    );
+
+    // Create a new troubleshooting session
+    fastify.post<{
+        Body: {
+            problem: {
+                category: 'vpn' | 'docker' | 'arr' | 'media' | 'network' | 'general';
+                description: string;
+                affectedServices: string[];
+                severity?: 'critical' | 'high' | 'medium' | 'low';
+            };
+            metadata?: {
+                conversationId?: string;
+                userAgent?: string;
+                tags?: string[];
+                [key: string]: unknown;
+            };
+        };
+    }>('/api/ai/troubleshooting/sessions', async (request, reply) => {
+        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+        const { problem, metadata } = request.body;
+
+        if (!problem || !problem.category || !problem.description) {
+            return reply.status(400).send({
+                error: 'problem.category and problem.description are required'
+            });
+        }
+
+        if (!problem.affectedServices || !Array.isArray(problem.affectedServices)) {
+            return reply.status(400).send({
+                error: 'problem.affectedServices must be an array'
+            });
+        }
+
+        try {
+            const session = await troubleshootingStore.createSession(problem, metadata);
+            fastify.log.info({ sessionId: session.id, category: problem.category }, 'Created troubleshooting session via API');
+            return reply.status(201).send(session);
+        } catch (err: unknown) {
+            fastify.log.error({ err }, 'Failed to create troubleshooting session');
+            return reply.status(500).send({ error: 'Failed to create troubleshooting session' });
+        }
+    });
+
+    // Update troubleshooting session status
+    fastify.patch<{
+        Params: { sessionId: string };
+        Body: {
+            status: 'open' | 'in_progress' | 'resolved' | 'closed';
+            resolution?: {
+                summary: string;
+                finalSolution?: string;
+                rootCause?: string;
+            };
+        };
+    }>('/api/ai/troubleshooting/sessions/:sessionId', async (request, reply) => {
+        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+        const { sessionId } = request.params;
+        const { status, resolution } = request.body;
+
+        if (!status) {
+            return reply.status(400).send({ error: 'status is required' });
+        }
+
+        if (status === 'resolved' && !resolution) {
+            return reply.status(400).send({
+                error: 'resolution is required when status is "resolved"'
+            });
+        }
+
+        try {
+            const resolutionWithTimestamp = resolution ? {
+                ...resolution,
+                timestamp: new Date().toISOString()
+            } : undefined;
+
+            const updatedSession = await troubleshootingStore.updateSessionStatus(
+                sessionId,
+                status,
+                resolutionWithTimestamp
+            );
+
+            if (!updatedSession) {
+                return reply.status(404).send({ error: 'Troubleshooting session not found' });
+            }
+
+            fastify.log.info({ sessionId, status }, 'Updated troubleshooting session status via API');
+            return reply.send(updatedSession);
+        } catch (err: unknown) {
+            fastify.log.error({ err, sessionId }, 'Failed to update troubleshooting session');
+            return reply.status(500).send({ error: 'Failed to update troubleshooting session' });
+        }
+    });
+
+    // Delete a troubleshooting session
+    fastify.delete<{ Params: { sessionId: string } }>(
+        '/api/ai/troubleshooting/sessions/:sessionId',
+        async (request, reply) => {
+            const troubleshootingStore = await import('../services/troubleshootingStore.js');
+            const deleted = await troubleshootingStore.deleteSession(request.params.sessionId);
+
+            if (!deleted) {
+                return reply.status(404).send({ error: 'Troubleshooting session not found' });
+            }
+
+            fastify.log.info({ sessionId: request.params.sessionId }, 'Deleted troubleshooting session via API');
+            return reply.send({ deleted: true });
+        }
+    );
+
+    // Get troubleshooting metrics
+    fastify.get('/api/ai/troubleshooting/metrics', async (_request, reply) => {
+        const troubleshootingStore = await import('../services/troubleshootingStore.js');
+        const metrics = await troubleshootingStore.getSessionMetrics();
+        return reply.send(metrics);
+    });
 
           // ═══════════════════════════════════════════════════════════════════════════
           // NEW: AI Provider Status

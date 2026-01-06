@@ -52,6 +52,21 @@ export interface SetupConfig {
     wireguardPrivateKey: string
     wireguardAddresses: string
 
+    // VPN Configuration (for VPN provider wizard)
+    // Selected VPN provider ID (e.g., 'mullvad', 'protonvpn', 'custom-wireguard')
+    selectedVpnProvider?: string
+    // VPN protocol choice: WireGuard (recommended) or OpenVPN
+    vpnProtocol?: 'wireguard' | 'openvpn'
+    // Provider-specific credentials (username, password, API tokens, etc.)
+    // Structure varies by provider - see vpnProviders.ts for details
+    vpnCredentials?: Record<string, string>
+    // Whether port forwarding is enabled (only for supported providers)
+    portForwardingEnabled?: boolean
+    // Flag indicating if a WireGuard config file was imported
+    wireguardConfigImported?: boolean
+    // Kill switch enabled (blocks all traffic if VPN disconnects)
+    killSwitchEnabled?: boolean
+
     // Per-service extra config blobs (key/value maps per service ID).
     // Example:
     //   serviceConfigs: {
@@ -165,6 +180,17 @@ export interface SetupStore {
     // Actions for managing storage paths and storage mode
 
     /** Update a storage path/type pairing for a specific category */
+    // Update VPN configuration (provider, protocol, credentials, port forwarding).
+    updateVpnConfig: (vpnConfig: {
+        selectedVpnProvider?: string
+        vpnProtocol?: 'wireguard' | 'openvpn'
+        vpnCredentials?: Record<string, string>
+        portForwardingEnabled?: boolean
+        wireguardConfigImported?: boolean
+        killSwitchEnabled?: boolean
+    }) => void
+
+    // Update a storage path/type pairing.
     updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void
 
     /** Toggle between simple (single data root) and advanced per-path editing */
@@ -234,11 +260,13 @@ const scrubSecrets = (config: SetupConfig): SetupConfig => {
     const { openaiApiKey: _legacyOpenAiKey, ...rest } = (config as any) || {}
     return {
         ...rest,
-    password: '',
-    cloudflareToken: '',
-    plexClaim: '',
-    wireguardPrivateKey: '',
-    wireguardAddresses: '',
+        password: '',
+        cloudflareToken: '',
+        plexClaim: '',
+        wireguardPrivateKey: '',
+        wireguardAddresses: '',
+        // Scrub VPN credentials but preserve other VPN config
+        vpnCredentials: {},
     } as SetupConfig
 }
 
@@ -338,6 +366,13 @@ export const initialConfig: SetupConfig = {
     plexClaim: '',
     wireguardPrivateKey: '',
     wireguardAddresses: '',
+    // VPN configuration defaults
+    selectedVpnProvider: undefined,
+    vpnProtocol: 'wireguard', // WireGuard recommended by default
+    vpnCredentials: {},
+    portForwardingEnabled: false,
+    wireguardConfigImported: false,
+    killSwitchEnabled: true, // Kill switch enabled by default for security
     serviceConfigs: {},
     storagePlan: mergeStoragePlan(),
 }
@@ -402,6 +437,32 @@ export const useSetupStore = create<SetupStore>()(
                                 ...newConfig,
                             },
                         },
+                    },
+                })),
+
+            // Update VPN configuration with partial updates.
+            updateVpnConfig: (vpnConfig) =>
+                set((state) => ({
+                    config: {
+                        ...state.config,
+                        selectedVpnProvider: vpnConfig.selectedVpnProvider !== undefined
+                            ? vpnConfig.selectedVpnProvider
+                            : state.config.selectedVpnProvider,
+                        vpnProtocol: vpnConfig.vpnProtocol !== undefined
+                            ? vpnConfig.vpnProtocol
+                            : state.config.vpnProtocol,
+                        vpnCredentials: vpnConfig.vpnCredentials !== undefined
+                            ? { ...state.config.vpnCredentials, ...vpnConfig.vpnCredentials }
+                            : state.config.vpnCredentials,
+                        portForwardingEnabled: vpnConfig.portForwardingEnabled !== undefined
+                            ? vpnConfig.portForwardingEnabled
+                            : state.config.portForwardingEnabled,
+                        wireguardConfigImported: vpnConfig.wireguardConfigImported !== undefined
+                            ? vpnConfig.wireguardConfigImported
+                            : state.config.wireguardConfigImported,
+                        killSwitchEnabled: vpnConfig.killSwitchEnabled !== undefined
+                            ? vpnConfig.killSwitchEnabled
+                            : state.config.killSwitchEnabled,
                     },
                 })),
 

@@ -146,8 +146,8 @@ export function StoragePlanner() {
     const isAbsolutePath = (value: string) => !value || absolutePathPattern.test(value)
 
     return (
-        <section className="space-y-4">
-            <div className="flex flex-wrap gap-2">
+        <section className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
                 {([
                     { id: 'simple' as const, label: 'Simple (Single Root)' },
                     { id: 'advanced' as const, label: 'Advanced (Per-Service)' },
@@ -156,7 +156,7 @@ export function StoragePlanner() {
                         key={option.id}
                         type="button"
                         onClick={() => setStorageMode(option.id)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition ${storageMode === option.id
+                        className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-medium transition touch-target-44 ${storageMode === option.id
                             ? 'bg-primary text-white shadow-lg shadow-emerald-500/30'
                             : 'bg-muted/60 text-muted-foreground border border-border hover:border-primary/40'
                             }`}
@@ -166,30 +166,30 @@ export function StoragePlanner() {
                 ))}
             </div>
 
-            <div className="p-4 bg-primary/10 border border-primary/30 rounded-xl flex gap-3 animate-pulse-glow">
-                <div className="p-2 rounded-lg bg-primary/20 text-primary">
+            <div className="p-3 sm:p-4 bg-primary/10 border border-primary/30 rounded-xl flex gap-3 animate-pulse-glow">
+                <div className="p-2 rounded-lg bg-primary/20 text-primary flex-shrink-0">
                     <Network className="w-4 h-4" />
                 </div>
-                <div className="text-sm text-primary/80">
-                    <p className="font-medium text-white">Storage plan</p>
-                    <p className="text-primary/70">
+                <div className="text-xs sm:text-sm text-primary/80 min-w-0">
+                    <p className="font-medium text-white break-words">Storage plan</p>
+                    <p className="text-primary/70 break-words">
                         Paths start with your local data root ({planDataRoot}). Update them if your libraries or
                         downloads live on a NAS or mounted network share.
                     </p>
                 </div>
             </div>
 
-            <div className="p-4 bg-muted/40 border border-border rounded-xl flex gap-3">
-                <div className="p-2 rounded-lg bg-primary/20 text-primary">
+            <div className="p-3 sm:p-4 bg-muted/40 border border-border rounded-xl flex gap-3">
+                <div className="p-2 rounded-lg bg-primary/20 text-primary flex-shrink-0">
                     <HardDrive className="w-4 h-4" />
                 </div>
-                <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-white">Keep file sizes predictable</p>
-                    <p className="text-muted-foreground/80">
+                <div className="text-xs sm:text-sm text-muted-foreground min-w-0">
+                    <p className="font-medium text-white break-words">Keep file sizes predictable</p>
+                    <p className="text-muted-foreground/80 break-words">
                         Set per-quality file-size caps in Sonarr/Radarr (TRaSH Guides) to avoid oversized releases.
                     </p>
                     <a
-                        className="text-xs text-primary hover:text-primary/80 underline"
+                        className="text-xs text-primary hover:text-primary/80 underline break-words touch-target-44 inline-block"
                         href="https://trash-guides.info/Sonarr/Sonarr-Quality-Settings-File-Size/"
                         target="_blank"
                         rel="noopener noreferrer"
@@ -201,21 +201,77 @@ export function StoragePlanner() {
 
             {isSimpleMode ? (
                 <div className="space-y-4">
-                    <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">
-                        <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Data root</label>
+                    <div className="rounded-2xl border border-border bg-muted/40 p-3 sm:p-4 space-y-2">
+                        <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground break-words">Data root</label>
                         <input
                             value={planDataRoot}
                             onChange={(e) => handleSimpleRootChange(e.target.value)}
                             placeholder={DEFAULT_DATA_ROOT}
-                            className="w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            className="w-full bg-background/60 border border-border rounded-lg px-3 py-2 text-base h-11 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                         />
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground break-words">
                             Every path in your compose file is derived from this root. Want per-service overrides? Flip
                             the toggle above to Advanced mode.
                         </p>
                     </div>
 
-                    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                    {/* Mobile Card Layout */}
+                    <div className="sm:hidden space-y-3">
+                        {relevantCategories.map((category) => {
+                            const Icon = CATEGORY_ICONS[category.id] || HardDrive
+                            const servicesForCategory = category.services.filter((service) =>
+                                selectedServices.includes(service)
+                            )
+                            const path =
+                                category.id === 'dataRoot'
+                                    ? planDataRoot
+                                    : defaults[category.id]?.path || ''
+                            return (
+                                <div
+                                    key={category.id}
+                                    className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-inner"
+                                >
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="p-2 rounded-xl bg-muted/60 text-foreground/80 flex-shrink-0">
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <p className="text-sm font-semibold text-foreground break-words">{category.label}</p>
+                                                <button
+                                                    onClick={() => exportRowAsSvg(category, path)}
+                                                    className="p-2 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-all touch-target-44 flex-shrink-0"
+                                                    title="Export as SVG"
+                                                >
+                                                    <DownloadIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground break-words mb-2">{category.description}</p>
+                                            {servicesForCategory.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-3">
+                                                    {servicesForCategory.map((service) => (
+                                                        <span
+                                                            key={`${category.id}-${service}`}
+                                                            className="px-2 py-0.5 rounded-full bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground"
+                                                        >
+                                                            {SERVICE_LABELS[service] || service}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-muted/40 rounded-lg p-2 border border-border">
+                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Path</p>
+                                        <p className="font-mono text-xs text-foreground break-all">{path}</p>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* Desktop Table Layout */}
+                    <div className="hidden sm:block overflow-hidden rounded-2xl border border-border bg-card">
                         <table className="w-full text-sm text-foreground">
                             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                                 <tr>
@@ -237,8 +293,8 @@ export function StoragePlanner() {
                                     return (
                                         <tr key={category.id} className="border-t border-border">
                                             <td className="px-4 py-3 align-top">
-                                                <p className="text-foreground font-medium text-sm">{category.label}</p>
-                                                <p className="text-xs text-muted-foreground">{category.description}</p>
+                                                <p className="text-foreground font-medium text-sm break-words">{category.label}</p>
+                                                <p className="text-xs text-muted-foreground break-words">{category.description}</p>
                                             </td>
                                             <td className="px-4 py-3 align-top text-xs text-muted-foreground">
                                                 {servicesForCategory.length > 0 ? (
@@ -256,14 +312,14 @@ export function StoragePlanner() {
                                                     <span className="text-muted-foreground">All services</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 align-top font-mono text-xs text-foreground">{path}</td>
+                                            <td className="px-4 py-3 align-top font-mono text-xs text-foreground break-all">{path}</td>
                                             <td className="px-4 py-3 align-top text-right">
                                                 <button
                                                     onClick={() => exportRowAsSvg(category, path)}
-                                                    className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-all hover:scale-110"
+                                                    className="p-2 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-all hover:scale-110 touch-target-44"
                                                     title="Export row as SVG"
                                                 >
-                                                    <DownloadIcon className="w-3.5 h-3.5" />
+                                                    <DownloadIcon className="w-4 h-4" />
                                                 </button>
                                             </td>
                                         </tr>
@@ -274,7 +330,7 @@ export function StoragePlanner() {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                     {relevantCategories.map((category) => {
                         const Icon = CATEGORY_ICONS[category.id] || HardDrive
                         const value = plan[category.id]?.path || defaults[category.id]?.path || ''
@@ -286,25 +342,25 @@ export function StoragePlanner() {
                         return (
                             <div
                                 key={category.id}
-                                className="rounded-2xl border border-border bg-card p-4 shadow-inner hover-drop-glow"
+                                className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-inner hover-drop-glow"
                             >
                                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 rounded-xl bg-muted/60 text-foreground/80">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <div className="p-2 rounded-xl bg-muted/60 text-foreground/80 flex-shrink-0">
                                             <Icon className="w-4 h-4" />
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-semibold text-foreground">{category.label}</p>
+                                                <p className="text-sm font-semibold text-foreground break-words">{category.label}</p>
                                                 <button
                                                     onClick={() => exportRowAsSvg(category, value)}
-                                                    className="p-1 hover:bg-muted/60 rounded text-muted-foreground hover:text-foreground transition-all"
+                                                    className="p-2 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-all touch-target-44 flex-shrink-0"
                                                     title="Export as SVG"
                                                 >
-                                                    <DownloadIcon className="w-3 h-3" />
+                                                    <DownloadIcon className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">{category.description}</p>
+                                            <p className="text-xs text-muted-foreground break-words">{category.description}</p>
                                             {servicesForCategory.length > 0 && (
                                                 <div className="flex flex-wrap gap-1 mt-2">
                                                     {servicesForCategory.map((service) => (
@@ -320,15 +376,15 @@ export function StoragePlanner() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground break-words">
                                             Path Type
                                         </label>
                                         <select
                                             aria-label="Path Type"
                                             value={type}
                                             onChange={(e) => handleTypeChange(category.id, e.target.value as StoragePathType)}
-                                            className="bg-background/60 border border-border rounded-lg text-xs text-foreground px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                            className="bg-background/60 border border-border rounded-lg text-xs sm:text-sm text-foreground px-3 py-2 h-11 focus:outline-none focus:ring-1 focus:ring-primary/40"
                                         >
                                             <option value="local">Local disk / mount</option>
                                             <option value="network">Network share (SMB/NFS)</option>
@@ -341,7 +397,7 @@ export function StoragePlanner() {
                                         value={value}
                                         onChange={(e) => handlePathChange(category.id, e.target.value)}
                                         placeholder={defaults[category.id]?.path || ''}
-                                        className={`flex-1 bg-background/60 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${validPath
+                                        className={`flex-1 bg-background/60 rounded-lg px-3 py-2 text-base h-11 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${validPath
                                             ? 'border border-border focus:ring-primary/40'
                                             : 'border border-red-500/60 focus:ring-red-500/40'
                                             }`}
@@ -350,14 +406,14 @@ export function StoragePlanner() {
                                         <button
                                             type="button"
                                             onClick={() => handleBrowse(category.id, value)}
-                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                                            className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-border text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors touch-target-44"
                                         >
                                             Browse
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => handleReset(category.id)}
-                                            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                                            className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-border text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors touch-target-44"
                                         >
                                             Reset
                                         </button>
@@ -365,17 +421,17 @@ export function StoragePlanner() {
                                 </div>
 
                                 {!validPath ? (
-                                    <p className="text-xs text-red-400 mt-2">
+                                    <p className="text-xs text-red-400 mt-2 break-words">
                                         Paths must be absolute (start with `/`, `C:\`, `//`, or `\\\\NAS\\share`). Update the
                                         path or switch to Simple mode if everything lives under one root.
                                     </p>
                                 ) : type === 'network' ? (
-                                    <p className="text-xs text-primary mt-2">
-                                        Tip: Use UNC paths like <code className="font-mono">//NAS/Media</code> or
+                                    <p className="text-xs text-primary mt-2 break-words">
+                                        Tip: Use UNC paths like <code className="font-mono break-all">//NAS/Media</code> or
                                         smb://server/share when pointing at remote storage.
                                     </p>
                                 ) : (
-                                    <p className="text-xs text-muted-foreground mt-2">
+                                    <p className="text-xs text-muted-foreground mt-2 break-words">
                                         This path stays on the local host. For remote shares, switch the type to Network.
                                     </p>
                                 )}

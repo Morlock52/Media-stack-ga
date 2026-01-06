@@ -1,17 +1,17 @@
 {
   "active": true,
-  "spec": "003-refactor-wizard-ui-into-modular-components",
-  "state": "complete",
+  "spec": "005-mobile-responsive-wizard-ui",
+  "state": "building",
   "subtasks": {
-    "completed": 25,
-    "total": 25,
-    "in_progress": 0,
+    "completed": 18,
+    "total": 19,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration and Cleanup",
+    "current": "Testing & Polish",
     "id": null,
-    "total": 3
+    "total": 2
   },
   "workers": {
     "active": 0,
@@ -19,7 +19,7 @@
   },
   "session": {
     "number": 20,
-    "started_at": "2026-01-05T14:09:51.303146"
+    "started_at": "2026-01-05T14:20:43.545439"
   },
-  "last_update": "2026-01-05T15:18:10.233351"
+  "last_update": "2026-01-05T15:28:53.667897"
 }
