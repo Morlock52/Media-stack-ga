@@ -2,15 +2,76 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Activity, RefreshCw, Play, Square, RotateCcw, Clock, Cpu, HardDrive,
-    CheckCircle, AlertCircle, XCircle, Loader2, ChevronDown, ChevronUp
+    CheckCircle, AlertCircle, XCircle, Loader2, ChevronDown, ChevronUp,
+    Database, Plus, Calendar, Shield, ShieldOff
 } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { usePageVisibility } from '../hooks/usePageVisibility'
 import { log } from '../utils/logging'
+import { useBackupStore } from '../store/backupStore'
+import { useBackupList } from '../hooks/useBackup'
+import { useNavigate } from 'react-router-dom'
+import { Button } from './ui/button'
 
 /** Polling interval for health dashboard (15 seconds) */
 const HEALTH_POLL_INTERVAL_MS = 15_000
+
+// Utility function to format bytes to human-readable sizes
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+}
+
+// Utility function to format relative time
+function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffDays > 0) {
+        return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+    } else if (diffHours > 0) {
+        return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`
+    } else if (diffMinutes > 0) {
+        return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`
+    } else {
+        return 'Just now'
+    }
+}
+
+// Utility function to format next run time
+function formatNextRun(nextRunString: string | undefined): string {
+    if (!nextRunString) return 'Not scheduled'
+
+    const nextRun = new Date(nextRunString)
+    const now = new Date()
+    const diffMs = nextRun.getTime() - now.getTime()
+
+    if (diffMs <= 0) return 'Soon'
+
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffDays > 0) {
+        return diffDays === 1 ? 'in 1 day' : `in ${diffDays} days`
+    } else if (diffHours > 0) {
+        return diffHours === 1 ? 'in 1 hour' : `in ${diffHours} hours`
+    } else if (diffMinutes > 0) {
+        return diffMinutes === 1 ? 'in 1 minute' : `in ${diffMinutes} minutes`
+    } else {
+        return 'in a moment'
+    }
+}
 
 interface ContainerHealth {
     id: string
@@ -45,13 +106,22 @@ interface HealthDashboardData {
 type ContainerAction = 'start' | 'stop' | 'restart'
 
 export function HealthDashboard() {
+    const navigate = useNavigate()
     const [data, setData] = useState<HealthDashboardData | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
     const [actionInProgress, setActionInProgress] = useState<Record<string, ContainerAction | null>>({})
     const [expanded, setExpanded] = useState(true)
+    const [backupExpanded, setBackupExpanded] = useState(true)
     const isVisible = usePageVisibility()
+
+    // Backup state
+    const destination = useBackupStore((state) => state.destination)
+    const schedule = useBackupStore((state) => state.schedule)
+    const { listBackups, loading: loadingBackups } = useBackupList()
+    const [backups, setBackups] = useState<any[]>([])
+    const [backupsFetched, setBackupsFetched] = useState(false)
 
     const fetchHealthData = useCallback(async () => {
         try {
@@ -96,10 +166,42 @@ export function HealthDashboard() {
         }
     }, [fetchHealthData])
 
+    // Fetch backup list
+    const fetchBackupList = useCallback(async () => {
+        if (!destination) {
+            log('info', 'No destination configured, skipping backup list fetch')
+            setBackupsFetched(true)
+            return
+        }
+
+        try {
+            const result = await listBackups({
+                destination,
+                limit: 5, // Only fetch last 5 backups for the widget
+                offset: 0,
+            })
+
+            if (result) {
+                setBackups(result.backups || [])
+                setBackupsFetched(true)
+            }
+        } catch (err) {
+            log('error', 'Failed to fetch backup list for widget', { error: err })
+            setBackupsFetched(true)
+        }
+    }, [destination, listBackups])
+
     // Initial fetch
     useEffect(() => {
         fetchHealthData()
     }, [fetchHealthData])
+
+    // Initial backup list fetch
+    useEffect(() => {
+        if (!backupsFetched && destination) {
+            fetchBackupList()
+        }
+    }, [backupsFetched, destination, fetchBackupList])
 
     // Visibility-aware polling
     useEffect(() => {
@@ -164,6 +266,7 @@ export function HealthDashboard() {
     const { summary, containers, systemStats } = data
 
     return (
+        <div className="space-y-4">
         <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
             {/* Header */}
             <button
@@ -380,5 +483,183 @@ export function HealthDashboard() {
                 )}
             </AnimatePresence>
         </div>
+
+        {/* Backup Status Widget */}
+        <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden mt-4">
+            {/* Header */}
+            <button
+                onClick={() => setBackupExpanded(!backupExpanded)}
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+            >
+                <div className="flex items-center gap-3">
+                    <Database className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Backup Status</h3>
+
+                    {/* Status badges */}
+                    {destination && (
+                        <div className="flex items-center gap-2 ml-2">
+                            {backups.length > 0 && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    {backups.length} backup{backups.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            {schedule?.enabled && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                                    scheduled
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            navigate('/backup')
+                        }}
+                        className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Go to Backup Dashboard"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
+                    {backupExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+            </button>
+
+            <AnimatePresence>
+                {backupExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <div className="p-4">
+                            {!destination ? (
+                                /* No destination configured */
+                                <div className="text-center py-6">
+                                    <Database className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        No backup destination configured
+                                    </p>
+                                    <Button
+                                        onClick={() => navigate('/backup/new')}
+                                        variant="default"
+                                        size="sm"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Configure Backup
+                                    </Button>
+                                </div>
+                            ) : (
+                                /* Backup information grid */
+                                <div className="space-y-3">
+                                    {/* Stats grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {/* Last Backup */}
+                                        <div className={`p-3 rounded-lg border ${backups.length > 0 && backups[0]?.status === 'completed'
+                                            ? 'border-emerald-500/30 bg-emerald-500/5'
+                                            : backups.length > 0 && backups[0]?.status === 'failed'
+                                            ? 'border-red-500/30 bg-red-500/5'
+                                            : 'border-gray-500/30 bg-gray-500/5'}`}>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                {backups.length > 0 && backups[0]?.status === 'completed' ? (
+                                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                                ) : backups.length > 0 && backups[0]?.status === 'failed' ? (
+                                                    <XCircle className="w-4 h-4 text-red-400" />
+                                                ) : (
+                                                    <Clock className="w-4 h-4 text-gray-400" />
+                                                )}
+                                                <span className="text-xs font-medium text-muted-foreground">Last Backup</span>
+                                            </div>
+                                            {backups.length > 0 ? (
+                                                <>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {formatRelativeTime(backups[0].createdAt)}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {backups[0].itemCount || 0} items • {formatBytes(backups[0].compressedSize || 0)}
+                                                        {backups[0].encrypted && (
+                                                            <Shield className="inline w-3 h-3 ml-1 text-amber-400" title="Encrypted" />
+                                                        )}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">No backups yet</p>
+                                            )}
+                                        </div>
+
+                                        {/* Next Scheduled Backup */}
+                                        <div className={`p-3 rounded-lg border ${schedule?.enabled
+                                            ? 'border-cyan-500/30 bg-cyan-500/5'
+                                            : 'border-gray-500/30 bg-gray-500/5'}`}>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Calendar className={`w-4 h-4 ${schedule?.enabled ? 'text-cyan-400' : 'text-gray-400'}`} />
+                                                <span className="text-xs font-medium text-muted-foreground">Next Scheduled</span>
+                                            </div>
+                                            {schedule?.enabled ? (
+                                                <>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {formatNextRun(schedule.nextRun)}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                                                        {schedule.frequency} at {schedule.time}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">Not scheduled</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions */}
+                                    <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+                                        <Button
+                                            onClick={() => navigate('/backup/new')}
+                                            variant="default"
+                                            size="sm"
+                                            className="flex-1"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Backup Now
+                                        </Button>
+                                        <Button
+                                            onClick={() => navigate('/backup/restore')}
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1"
+                                        >
+                                            <RotateCcw className="w-4 h-4 mr-2" />
+                                            Restore
+                                        </Button>
+                                    </div>
+
+                                    {/* Warning when backups exist but no schedule */}
+                                    {backups.length > 0 && !schedule?.enabled && (
+                                        <div className="flex items-start gap-2 p-2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs">
+                                            <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium">No backup schedule configured</p>
+                                                <p className="text-amber-400/80 mt-0.5">
+                                                    Set up automatic backups in{' '}
+                                                    <button
+                                                        onClick={() => navigate('/backup/schedules')}
+                                                        className="underline hover:text-amber-300"
+                                                    >
+                                                        backup schedules
+                                                    </button>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    </div>
     )
 }

@@ -71,7 +71,7 @@ export function ComboboxInput({
 
             <div className="relative">
                 {Icon && (
-                    <Icon className="absolute left-3 top-3 w-5 h-5 text-muted-foreground z-10" />
+                    <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                 )}
 
                 <input
@@ -89,7 +89,7 @@ export function ComboboxInput({
                         updateCurrentIndex?.(e.target)
                     }}
                     className={cn(
-                        "w-full bg-background/60 border rounded-lg py-2.5 pr-10 text-foreground placeholder:text-muted-foreground transition-all backdrop-blur-sm focus:ring-2 focus:ring-primary/20",
+                        "w-full h-11 bg-background/60 border rounded-lg pr-10 text-base text-foreground placeholder:text-muted-foreground transition-all backdrop-blur-sm focus:ring-2 focus:ring-primary/20",
                         Icon ? "pl-11" : "pl-4",
                         error ? "border-destructive" : "border-border"
                     )}
@@ -125,22 +125,22 @@ export function ComboboxInput({
                                     type="button"
                                     onClick={() => handleSelect(option.value)}
                                     className={cn(
-                                        "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between group",
+                                        "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between group min-h-[44px]",
                                         currentValue === option.value
                                             ? "bg-primary/20 text-primary"
                                             : "text-foreground hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
-                                    <div>
-                                        <div className="font-medium">{option.value}</div>
+                                    <div className="min-w-0 break-words">
+                                        <div className="font-medium break-words">{option.value}</div>
                                         {(option.label || option.description) && (
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground break-words">
                                                 {option.label || option.description}
                                             </div>
                                         )}
                                     </div>
                                     {currentValue === option.value && (
-                                        <Check className="w-4 h-4 text-primary" />
+                                        <Check className="w-4 h-4 text-primary flex-shrink-0 ml-2" />
                                     )}
                                 </button>
                             ))}

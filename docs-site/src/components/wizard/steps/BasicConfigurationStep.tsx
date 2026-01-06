@@ -156,11 +156,11 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6 px-4 sm:px-0"
         >
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Basic Configuration</h2>
-                <p className="text-muted-foreground">
+            <div className="mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Basic Configuration</h2>
+                <p className="text-sm sm:text-base text-muted-foreground">
                     {isLocalMode
                         ? "Just a few quick settings and you're ready to go!"
                         : "Set up your core environment settings"}
@@ -172,27 +172,27 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl mb-4"
+                    className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg sm:rounded-xl mb-3 sm:mb-4"
                 >
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground break-words">
                         <span className="text-emerald-400 font-medium">💡 Quick tip:</span> Most settings are already set to good defaults.
                         Just create a password and click Next!
                     </p>
                 </motion.div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Domain */}
                 <InteractiveCard className={`md:col-span-2 ${shakeField === 'domain' ? 'animate-shake' : ''}`}>
                     <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                        {isLocalMode ? <Home className="w-4 h-4 text-emerald-400" /> : <Globe className="w-4 h-4" />}
-                        {isLocalMode ? 'Local Hostname' : 'Domain'} <span className="text-destructive">*</span>
+                        {isLocalMode ? <Home className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <Globe className="w-4 h-4 flex-shrink-0" />}
+                        <span className="break-words">{isLocalMode ? 'Local Hostname' : 'Domain'} <span className="text-destructive">*</span></span>
                     </label>
                     <FocusRing focused={document.activeElement === domainInputRef.current}>
                         <div className="relative">
                             {isLocalMode
-                                ? <Home className="absolute left-3 top-3 w-5 h-5 text-emerald-400" />
-                                : <Globe className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                ? <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                : <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground flex-shrink-0" />
                             }
                             <input
                                 {...domainRegister}
@@ -203,18 +203,18 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                                 }}
                                 onKeyDown={handleKeyDown}
                                 onFocus={() => updateCurrentIndex(domainInputRef.current)}
-                                className={`w-full bg-background/60 border ${errors.domain ? 'border-destructive' : 'border-border'} rounded-lg py-2.5 pl-11 pr-11 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
+                                className={`w-full h-11 bg-background/60 border ${errors.domain ? 'border-destructive' : 'border-border'} rounded-lg pl-11 pr-11 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
                                 placeholder={isLocalMode ? 'mediastack.local' : 'yourdomain.com'}
                             />
                             {/* Validation status icon */}
-                            <div className="absolute right-3 top-3">
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                 {getValidationIcon('domain')}
                             </div>
                         </div>
                     </FocusRing>
                     {errors.domain && (
-                        <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> {errors.domain.message as string}
+                        <p className="mt-1 text-xs sm:text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" /> <span className="break-words">{errors.domain.message as string}</span>
                         </p>
                     )}
                     {/* Inline validation errors */}
@@ -231,7 +231,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                             ))}
                         </div>
                     )}
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground break-words">
                         {isLocalMode
                             ? 'Optional: You can leave this as "local" — you\'ll access apps via IP address'
                             : 'Your domain for Cloudflare Tunnel access'}
@@ -296,7 +296,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                     </label>
                     <FocusRing focused={(document.activeElement as HTMLInputElement)?.type === 'password'}>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground flex-shrink-0" />
                             <input
                                 {...passwordRegister}
                                 type="password"
@@ -306,35 +306,17 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
                                 }}
                                 onKeyDown={handleKeyDown}
                                 onFocus={() => updateCurrentIndex(document.activeElement as HTMLInputElement)}
-                                className={`w-full bg-background/60 border ${errors.password ? 'border-destructive' : 'border-border'} rounded-lg py-2.5 pl-11 pr-11 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
+                                className={`w-full h-11 bg-background/60 border ${errors.password ? 'border-destructive' : 'border-border'} rounded-lg pl-11 pr-4 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm`}
                                 placeholder="••••••••"
                             />
-                            {/* Validation status icon */}
-                            <div className="absolute right-3 top-3">
-                                {getValidationIcon('password')}
-                            </div>
                         </div>
                     </FocusRing>
                     {errors.password && (
-                        <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> {errors.password.message as string}
+                        <p className="mt-1 text-xs sm:text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" /> <span className="break-words">{errors.password.message as string}</span>
                         </p>
                     )}
-                    {/* Inline validation errors */}
-                    {!errors.password && inlineValidationIssues.password && inlineValidationIssues.password.length > 0 && (
-                        <div className="mt-1 space-y-1">
-                            {inlineValidationIssues.password.map((issue, idx) => (
-                                <p key={idx} className={`text-sm flex items-center gap-1 ${
-                                    issue.severity === 'error' ? 'text-destructive' :
-                                    issue.severity === 'warning' ? 'text-yellow-500' :
-                                    'text-blue-500'
-                                }`}>
-                                    <AlertCircle className="w-3 h-3" /> {issue.message}
-                                </p>
-                            ))}
-                        </div>
-                    )}
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground break-words">
                         {isLocalMode
                             ? 'This password protects your apps — choose something memorable!'
                             : 'Used for Redis and default service passwords'}

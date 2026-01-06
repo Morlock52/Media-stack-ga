@@ -232,26 +232,26 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6 px-4 sm:px-0"
         >
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Advanced Settings</h2>
-                <p className="text-muted-foreground">
+            <div className="mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Advanced Settings</h2>
+                <p className="text-sm sm:text-base text-muted-foreground break-words">
                     {isLocalMode
                         ? 'Local deployment - just a few optional settings'
                         : 'Optional configurations (can be set later)'}
                 </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
                 {/* Local Mode Banner */}
                 {isLocalMode && (
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-                        <div className="flex items-center gap-3">
-                            <Home className="w-5 h-5 text-emerald-400" />
-                            <div>
-                                <h3 className="font-semibold text-emerald-400">Local Installation Mode</h3>
-                                <p className="text-sm text-muted-foreground">
+                    <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg sm:rounded-xl">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <Home className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                                <h3 className="text-sm sm:text-base font-semibold text-emerald-400 break-words">Local Installation Mode</h3>
+                                <p className="text-xs sm:text-sm text-muted-foreground break-words">
                                     Access via *.local domains. No Cloudflare or external authentication needed.
                                 </p>
                             </div>
@@ -262,17 +262,17 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                 {/* Cloudflare Token - Only show for cloud mode */}
                 {!isLocalMode && (
                     <div>
-                        <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                            <Cloud className="w-4 h-4 text-blue-400" />
-                            Cloudflare Tunnel Token
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                            <Cloud className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                            <span className="break-words">Cloudflare Tunnel Token</span>
                             <a
                                 href="https://one.dash.cloudflare.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-blue-400 hover:text-blue-300 touch-target-44 -m-2.5 p-2.5"
                                 title="Open Cloudflare dashboard in a new tab to get your tunnel token"
                             >
-                                <HelpCircle className="w-4 h-4" />
+                                <HelpCircle className="w-4 h-4 flex-shrink-0" />
                             </a>
                         </label>
                         <div className="relative">
@@ -283,7 +283,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                                     if (e) firstInputRef.current = e
                                 }}
                                 type="password"
-                                className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 pr-11 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
+                                className="w-full h-11 bg-background/60 border border-border rounded-lg px-4 pr-11 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                                 placeholder="ey..."
                             />
                             {/* Validation status icon */}
@@ -295,12 +295,12 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                         {inlineValidationIssues.cloudflareToken && inlineValidationIssues.cloudflareToken.length > 0 && (
                             <div className="mt-1 space-y-1">
                                 {inlineValidationIssues.cloudflareToken.map((issue, idx) => (
-                                    <p key={idx} className={`text-sm flex items-center gap-1 ${
+                                    <p key={idx} className={`text-xs sm:text-sm flex items-center gap-1 break-words ${
                                         issue.severity === 'error' ? 'text-destructive' :
                                         issue.severity === 'warning' ? 'text-yellow-500' :
                                         'text-blue-500'
                                     }`}>
-                                        <AlertCircle className="w-3 h-3" /> {issue.message}
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" /> {issue.message}
                                         {issue.fixSuggestion && (
                                             <span className="text-xs text-muted-foreground ml-1">({issue.fixSuggestion})</span>
                                         )}
@@ -308,23 +308,23 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                                 ))}
                             </div>
                         )}
-                        <p className="mt-1 text-xs text-muted-foreground">Required for remote access via Cloudflare Tunnel</p>
+                        <p className="mt-1 text-xs text-muted-foreground break-words">Required for remote access via Cloudflare Tunnel</p>
                     </div>
                 )}
 
                 {/* Plex Claim */}
                 {selectedServices.includes('plex') && (
                     <div>
-                        <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                            Plex Claim Token
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                            <span className="break-words">Plex Claim Token</span>
                             <a
                                 href="https://www.plex.tv/claim"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-blue-400 hover:text-blue-300 touch-target-44 -m-2.5 p-2.5"
                                 title="Open Plex claim page in a new tab to generate a claim token"
                             >
-                                <HelpCircle className="w-4 h-4" />
+                                <HelpCircle className="w-4 h-4 flex-shrink-0" />
                             </a>
                         </label>
                         <input
@@ -334,27 +334,27 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                                 // Focus this if cloudflare is not shown (local mode)
                                 if (e && isLocalMode && !firstInputRef.current) firstInputRef.current = e
                             }}
-                            className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
+                            className="w-full h-11 bg-background/60 border border-border rounded-lg px-4 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                             placeholder="claim-..."
                         />
-                        <p className="mt-1 text-xs text-muted-foreground">Used to automatically claim your Plex server</p>
+                        <p className="mt-1 text-xs text-muted-foreground break-words">Used to automatically claim your Plex server</p>
                     </div>
                 )}
 
                 {/* VPN Settings */}
                 {selectedServices.includes('vpn') && (
-                    <div className="space-y-4 p-4 bg-background/40 rounded-xl border border-border backdrop-blur-sm">
-                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-green-400" />
-                            VPN Configuration (WireGuard)
+                    <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-background/40 rounded-lg sm:rounded-xl border border-border backdrop-blur-sm">
+                        <h3 className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            <span className="break-words">VPN Configuration (WireGuard)</span>
                         </h3>
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">Private Key</label>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 break-words">Private Key</label>
                             <div className="relative">
                                 <input
                                     {...register('wireguardPrivateKey')}
                                     type="password"
-                                    className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 pr-11 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
+                                    className="w-full h-11 bg-background/60 border border-border rounded-lg px-4 pr-11 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                                 />
                                 {/* Validation status icon */}
                                 <div className="absolute right-3 top-3">
@@ -365,12 +365,12 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                             {inlineValidationIssues.wireguardPrivateKey && inlineValidationIssues.wireguardPrivateKey.length > 0 && (
                                 <div className="mt-1 space-y-1">
                                     {inlineValidationIssues.wireguardPrivateKey.map((issue, idx) => (
-                                        <p key={idx} className={`text-sm flex items-center gap-1 ${
+                                        <p key={idx} className={`text-xs sm:text-sm flex items-center gap-1 break-words ${
                                             issue.severity === 'error' ? 'text-destructive' :
                                             issue.severity === 'warning' ? 'text-yellow-500' :
                                             'text-blue-500'
                                         }`}>
-                                            <AlertCircle className="w-3 h-3" /> {issue.message}
+                                            <AlertCircle className="w-3 h-3 flex-shrink-0" /> {issue.message}
                                             {issue.fixSuggestion && (
                                                 <span className="text-xs text-muted-foreground ml-1">({issue.fixSuggestion})</span>
                                             )}
@@ -380,11 +380,11 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">Address</label>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 break-words">Address</label>
                             <div className="relative">
                                 <input
                                     {...register('wireguardAddresses')}
-                                    className="w-full bg-background/60 border border-border rounded-lg py-2.5 px-4 pr-11 text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
+                                    className="w-full h-11 bg-background/60 border border-border rounded-lg px-4 pr-11 text-base text-foreground placeholder:text-muted-foreground input-focus-glow transition-all backdrop-blur-sm"
                                     placeholder="10.0.0.2/32"
                                 />
                                 {/* Validation status icon */}
@@ -392,27 +392,25 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                                     {getValidationIcon('wireguardAddresses')}
                                 </div>
                             </div>
-                            {errors.wireguardAddresses && (
-                                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" /> {errors.wireguardAddresses.message as string}
-                                </p>
-                            )}
                             {/* Inline validation errors */}
-                            {!errors.wireguardAddresses && inlineValidationIssues.wireguardAddresses && inlineValidationIssues.wireguardAddresses.length > 0 && (
+                            {inlineValidationIssues.wireguardAddresses && inlineValidationIssues.wireguardAddresses.length > 0 && (
                                 <div className="mt-1 space-y-1">
                                     {inlineValidationIssues.wireguardAddresses.map((issue, idx) => (
-                                        <p key={idx} className={`text-sm flex items-center gap-1 ${
+                                        <p key={idx} className={`text-xs sm:text-sm flex items-center gap-1 break-words ${
                                             issue.severity === 'error' ? 'text-destructive' :
                                             issue.severity === 'warning' ? 'text-yellow-500' :
                                             'text-blue-500'
                                         }`}>
-                                            <AlertCircle className="w-3 h-3" /> {issue.message}
+                                            <AlertCircle className="w-3 h-3 flex-shrink-0" /> {issue.message}
                                             {issue.fixSuggestion && (
                                                 <span className="text-xs text-muted-foreground ml-1">({issue.fixSuggestion})</span>
                                             )}
                                         </p>
                                     ))}
                                 </div>
+                            )}
+                            {errors.wireguardAddresses && (
+                                <p className="mt-1 text-xs sm:text-sm text-destructive break-words">{errors.wireguardAddresses.message as string}</p>
                             )}
                         </div>
                     </div>
