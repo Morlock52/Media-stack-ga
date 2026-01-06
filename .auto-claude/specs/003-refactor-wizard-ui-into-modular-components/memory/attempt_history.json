@@ -1,0 +1,249 @@
+{
+  "subtasks": {
+    "2.1": {
+      "attempts": [
+        {
+          "session": 1,
+          "timestamp": "2026-01-05T14:11:36.836061",
+          "approach": "Implemented: Extract the animation variants (fadeInUp, scaleIn) that respect reduced motion preferences into docs",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "2.2": {
+      "attempts": [
+        {
+          "session": 2,
+          "timestamp": "2026-01-05T14:15:43.311883",
+          "approach": "Implemented: Extract YAML/config generation logic (generateAutheliaYaml, generateCloudflareYaml) into docs-site/s",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "2.3": {
+      "attempts": [
+        {
+          "session": 3,
+          "timestamp": "2026-01-05T14:19:33.818069",
+          "approach": "Implemented: Extract file download and clipboard utilities into docs-site/src/hooks/useFileDownload.ts",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "2.4": {
+      "attempts": [
+        {
+          "session": 4,
+          "timestamp": "2026-01-05T14:23:09.052084",
+          "approach": "Implemented: Extract form validation and step navigation logic into docs-site/src/hooks/useWizardValidation.ts",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "2.5": {
+      "attempts": [
+        {
+          "session": 5,
+          "timestamp": "2026-01-05T14:28:18.718889",
+          "approach": "Implemented: Extract voice plan application logic (handleApplyVoicePlan) into docs-site/src/hooks/useVoicePlanHan",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "3.1": {
+      "attempts": [
+        {
+          "session": 6,
+          "timestamp": "2026-01-05T14:31:37.449811",
+          "approach": "Implemented: Extract the auto-save draft recovery modal into docs-site/src/components/wizard/DraftRecoveryModal.t",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "3.2": {
+      "attempts": [
+        {
+          "session": 7,
+          "timestamp": "2026-01-05T14:34:31.171424",
+          "approach": "Implemented: Extract the saved profiles panel/modal into docs-site/src/components/wizard/ProfilesPanel.tsx",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "3.3": {
+      "attempts": [
+        {
+          "session": 8,
+          "timestamp": "2026-01-05T14:36:47.692234",
+          "approach": "Implemented: Extract the tools dialog (import/export/templates) into docs-site/src/components/wizard/ToolsDialog.",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "3.4": {
+      "attempts": [
+        {
+          "session": 9,
+          "timestamp": "2026-01-05T14:39:49.738869",
+          "approach": "Implemented: Extract the floating voice companion button into docs-site/src/components/wizard/VoiceCompanionTrigg",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.1": {
+      "attempts": [
+        {
+          "session": 10,
+          "timestamp": "2026-01-05T14:42:27.617712",
+          "approach": "Implemented: Extract the configuration summary grid from ReviewGenerateStep into docs-site/src/components/wizard/",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.2": {
+      "attempts": [
+        {
+          "session": 11,
+          "timestamp": "2026-01-05T14:45:14.526900",
+          "approach": "Implemented: Extract the storage layout summary from ReviewGenerateStep into docs-site/src/components/wizard/step",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.3": {
+      "attempts": [
+        {
+          "session": 12,
+          "timestamp": "2026-01-05T14:49:44.555454",
+          "approach": "Implemented: Extract the local mode access guide table from ReviewGenerateStep into docs-site/src/components/wiza",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.4": {
+      "attempts": [
+        {
+          "session": 13,
+          "timestamp": "2026-01-05T14:55:52.641823",
+          "approach": "Implemented: Extract the local deployment modal (idle/deploying/success states) from ReviewGenerateStep into docs",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.5": {
+      "attempts": [
+        {
+          "session": 14,
+          "timestamp": "2026-01-05T15:00:20.433278",
+          "approach": "Implemented: Extract the API key bootstrap panel from LocalDeployModal into docs-site/src/components/wizard/steps",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "4.6": {
+      "attempts": [
+        {
+          "session": 15,
+          "timestamp": "2026-01-05T15:03:54.505296",
+          "approach": "Implemented: Update StackSelectionStep.tsx to read from store instead of receiving many props",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "5.1": {
+      "attempts": [
+        {
+          "session": 16,
+          "timestamp": "2026-01-05T15:06:33.983832",
+          "approach": "Implemented: Add selector functions for commonly accessed derived state in docs-site/src/store/setupStore.ts",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "5.2": {
+      "attempts": [
+        {
+          "session": 17,
+          "timestamp": "2026-01-05T15:08:56.247732",
+          "approach": "Implemented: Add JSDoc comments to document each slice/section of the store interface",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "6.1": {
+      "attempts": [
+        {
+          "session": 18,
+          "timestamp": "2026-01-05T15:11:43.223503",
+          "approach": "Implemented: Update SetupWizard.tsx to import and use all extracted components, removing inline code",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "6.2": {
+      "attempts": [
+        {
+          "session": 19,
+          "timestamp": "2026-01-05T15:15:29.546044",
+          "approach": "Implemented: Create docs-site/src/components/wizard/README.md documenting the component structure for contributor",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "6.3": {
+      "attempts": [
+        {
+          "session": 20,
+          "timestamp": "2026-01-05T15:18:05.819765",
+          "approach": "Implemented: Run existing Playwright smoke tests to ensure refactoring didn't break functionality",
+          "success": true,
+          "error": null
+        }
+      ],
+      "status": "completed"
+    }
+  },
+  "stuck_subtasks": [],
+  "metadata": {
+    "created_at": "2026-01-05T14:09:51.301655",
+    "last_updated": "2026-01-05T15:18:05.819790"
+  }
+}

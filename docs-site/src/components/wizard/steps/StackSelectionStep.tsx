@@ -1,16 +1,10 @@
 import { motion, AnimatePresence } from 'motion/react'
 import { Zap, Settings, ChevronRight, Check, AlertCircle, Lightbulb, Plus } from 'lucide-react'
-import { ServiceOption, getServiceRecommendations } from '../../../data/services'
+import { ServiceOption, services, getServiceRecommendations } from '../../../data/services'
+import { useSetupStore } from '../../../store/setupStore'
 
-interface StackSelectionStepProps {
-    mode: 'newbie' | 'expert' | null
-    setMode: (mode: 'newbie' | 'expert') => void
-    selectedServices: string[]
-    services: ServiceOption[]
-    toggleService: (service: string) => void
-}
-
-export function StackSelectionStep({ mode, setMode, selectedServices, services, toggleService }: StackSelectionStepProps) {
+export function StackSelectionStep() {
+    const { mode, setMode, selectedServices, toggleService } = useSetupStore()
     return (
         <motion.div
             key="step2"

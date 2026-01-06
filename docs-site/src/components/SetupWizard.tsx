@@ -1,49 +1,61 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion, AnimatePresence } from 'motion/react'
-import { useReducedMotion } from '../hooks/useReducedMotion'
+import { AnimatePresence } from 'motion/react'
+import { Sparkles, Settings, Layers, Server, Key, FileText, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-    ArrowRight, ArrowLeft, Check, FileDown, FileUp, RotateCcw, Save,
-    Sparkles, Mic, User, Settings, Layers, Server, Key, FileText, MoreHorizontal, Loader2
-} from 'lucide-react'
-import { useSetupStore, type SetupConfig, initialConfig } from '../store/setupStore'
-import type { VoicePlanSummary } from './VoiceCompanion'
 
-// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
-const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
+// Store
+import { useSetupStore, initialConfig } from '../store/setupStore'
+
+// Hooks
+import { useConfigGenerators } from '../hooks/useConfigGenerators'
+import { useFileDownload } from '../hooks/useFileDownload'
+import { useWizardValidation } from '../hooks/useWizardValidation'
+import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
 import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'
-import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
+
+// Schemas
 import {
     basicConfigSchema,
     advancedSettingsSchema,
     type BasicConfigFormData,
     type AdvancedSettingsFormData
 } from '../schemas/setupSchema'
-import { TemplateSelector } from './TemplateSelector'
-import { Template } from '../data/templates'
+
+// Utils
 import { importConfiguration, downloadAsFile } from '../utils/configManager'
-import dockerComposeTemplate from '../../../docker-compose.yml?raw'
-import dockerComposeLocalTemplate from '../../../docker-compose.local.yml?raw'
-import { generateEnvFile as buildEnvFile } from '../utils/generateEnvFile'
+import { Template } from '../data/templates'
+
+// Components
+import { GlassCard } from './ui/glass-card'
+import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
+import { TemplateSelector } from './TemplateSelector'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
 import { ValidationBadge } from './ValidationBadge'
 import { useValidation } from '../hooks/useValidation'
 import type { ValidationRequest } from '../types/validation'
 
-import { Button } from './ui/button'
-import { GlassCard } from './ui/glass-card'
-import { services } from '../data/services'
+// Wizard Components
+import {
+    WizardHeader,
+    WizardProgressBar,
+    WizardStepIndicator,
+    WizardNavigation,
+    DraftRecoveryModal,
+    ProfilesPanel,
+    ToolsDialog,
+    VoiceCompanionTrigger,
+    QuickStartStep,
+    StackSelectionStep,
+    BasicConfigurationStep,
+    AdvancedSettingsStep,
+    ReviewGenerateStep
+} from './wizard'
 
-// New Step Components
-import { BasicConfigurationStep } from './wizard/steps/BasicConfigurationStep'
-import { StackSelectionStep } from './wizard/steps/StackSelectionStep'
-import { AdvancedSettingsStep } from './wizard/steps/AdvancedSettingsStep'
-import { ReviewGenerateStep } from './wizard/steps/ReviewGenerateStep'
-import { QuickStartStep } from './wizard/steps/QuickStartStep'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
+// Lazy load VoiceCompanion (1,455 lines) for better initial bundle size
+const VoiceCompanion = lazy(() => import('./VoiceCompanion').then(m => ({ default: m.VoiceCompanion })))
 
 const steps = [
     { title: 'Welcome', icon: Sparkles },
@@ -56,20 +68,15 @@ const steps = [
 
 export function SetupWizard() {
     const {
-        currentStep, mode, selectedServices, config, savedProfiles, appliedTemplateId,
+        currentStep, mode, selectedServices, config, appliedTemplateId,
         quickStartMode,
-        setMode, toggleService, updateConfig, updateServiceConfig, setSelectedServices,
-        updateStoragePath, setCurrentStep,
+        updateConfig,
         nextStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
-        saveProfile, deleteProfile, loadProfile,
         hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
     } = useSetupStore()
-    const [copied, setCopied] = useState(false)
-    const [shakeField, setShakeField] = useState<string | null>(null)
     const [showTemplates, setShowTemplates] = useState(false)
     const [showProfiles, setShowProfiles] = useState(false)
-    const [newProfileName, setNewProfileName] = useState('')
     const [showVoiceCompanion, setShowVoiceCompanion] = useState(false)
     const [voiceHelperInitialized, setVoiceHelperInitialized] = useState(false)
     const [toolsOpen, setToolsOpen] = useState(false)
@@ -89,6 +96,15 @@ export function SetupWizard() {
     // Proactive suggestions based on current step and config
     const { suggestions, dismiss: dismissSuggestion } = useProactiveSuggestions(currentStep)
 
+    // Config generators for YAML files
+    const { generateAutheliaYaml, generateCloudflareYaml } = useConfigGenerators()
+
+    // File download and clipboard utilities
+    const { copied, copyToClipboard, downloadFile, downloadAllFiles, generateEnvFile } = useFileDownload()
+
+    // Voice plan handler
+    const { handleApplyVoicePlan } = useVoicePlanHandler()
+
     // Handle proactive suggestion actions
     const handleSuggestionAction = useCallback((suggestion: typeof suggestions[0]) => {
         suggestion.action()
@@ -96,19 +112,6 @@ export function SetupWizard() {
             description: suggestion.description
         })
     }, [])
-
-    // Animation variants that respect reduced motion
-    const fadeInUp = useMemo(() => prefersReducedMotion
-        ? { initial: {}, animate: {}, transition: { duration: 0 } }
-        : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },
-        [prefersReducedMotion]
-    )
-
-    const scaleIn = useMemo(() => prefersReducedMotion
-        ? { initial: {}, animate: {}, exit: {}, transition: { duration: 0 } }
-        : { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 } },
-        [prefersReducedMotion]
-    )
 
     // Auto-open voice companion for newbie mode
     useEffect(() => {
@@ -228,27 +231,6 @@ export function SetupWizard() {
     // Ref for the main content area
     const mainContentRef = useRef<HTMLDivElement>(null)
 
-    // Scroll to element and focus
-    const scrollToElement = useCallback((selector: string, shouldFocus = true) => {
-        setTimeout(() => {
-            const element = document.querySelector(selector) as HTMLElement
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                if (shouldFocus && element instanceof HTMLInputElement) {
-                    element.focus()
-                }
-            }
-        }, 100)
-    }, [])
-
-    // Scroll to first error field
-    const scrollToFirstError = useCallback((errors: Record<string, unknown>) => {
-        const firstErrorField = Object.keys(errors)[0]
-        if (firstErrorField) {
-            scrollToElement(`[name="${firstErrorField}"]`, true)
-        }
-    }, [scrollToElement])
-
     // Scroll to content area when step changes, then focus first input
     useEffect(() => {
         // Scroll main content into view
@@ -286,55 +268,8 @@ export function SetupWizard() {
         mode: 'onChange'
     })
 
-    const handleNextStep = async () => {
-        if (currentStep === 0) {
-            // Welcome step handled by component
-            nextStep()
-        } else if (currentStep === 1) {
-            const isValid = await step1Form.trigger()
-            if (!isValid) {
-                const errors = step1Form.formState.errors
-                const firstErrorField = Object.keys(errors)[0]
-                if (firstErrorField) {
-                    setShakeField(firstErrorField)
-                    setTimeout(() => setShakeField(null), 500)
-                    // Scroll to error field and focus
-                    scrollToFirstError(errors)
-                    toast.error(`Please fix the ${firstErrorField} field`)
-                }
-                return
-            }
-            updateConfig(step1Form.getValues())
-            nextStep()
-        } else if (currentStep === 2) {
-            if (selectedServices.length === 0) {
-                toast.error('Please select at least one service')
-                // Scroll to service selection area
-                scrollToElement('.grid.grid-cols-1.sm\\:grid-cols-2', false)
-                return
-            }
-            nextStep()
-        } else if (currentStep === 3) {
-            // Service Config step
-            nextStep()
-        } else if (currentStep === 4) {
-            const isValid = await step4Form.trigger()
-            if (!isValid) {
-                const errors = step4Form.formState.errors
-                scrollToFirstError(errors)
-                toast.error('Please check the form fields')
-                return
-            }
-            const values = step4Form.getValues()
-            updateConfig({
-                cloudflareToken: values.cloudflareToken,
-                plexClaim: values.plexClaim,
-                wireguardPrivateKey: values.wireguardPrivateKey,
-                wireguardAddresses: values.wireguardAddresses,
-            })
-            nextStep()
-        }
-    }
+    // Form validation and step navigation
+    const { handleNextStep, shakeField, setShakeField } = useWizardValidation(step1Form, step4Form)
 
     const handleTemplateSelect = (template: Template) => {
         loadTemplate(template.id, template.services, template.config)
@@ -389,12 +324,6 @@ export function SetupWizard() {
             setShowResetConfirm(true)
             setTimeout(() => setShowResetConfirm(false), 10000)
         }
-    }
-
-    const handleSaveProfile = () => {
-        if (!newProfileName.trim()) return
-        saveProfile(newProfileName)
-        setNewProfileName('')
     }
 
     // Check for recoverable draft on initial mount

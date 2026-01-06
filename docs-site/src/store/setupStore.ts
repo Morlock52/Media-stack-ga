@@ -82,42 +82,104 @@ export interface SetupConfig {
 // ---------------------------------------------------------------------------
 // ZUSTAND STORE INTERFACE
 // ---------------------------------------------------------------------------
+/**
+ * Main Zustand store for the Setup Wizard.
+ *
+ * The store is organized into logical slices:
+ * - Wizard Navigation State: Step tracking and flow control
+ * - Mode & Configuration State: User preferences and config data
+ * - Navigation Actions: Step movement and wizard flow
+ * - Service Selection Actions: Managing selected services
+ * - Configuration Actions: Updating config and service-specific settings
+ * - Storage Management Actions: Controlling storage paths and modes
+ * - Wizard Control Actions: Reset and initialization
+ * - Template & Import/Export Actions: Config sharing and templates
+ * - Profile Management: Named config presets
+ * - Auto-Save Draft: Automatic draft recovery
+ */
 export interface SetupStore {
-    // Wizard step index (0–5 for the 6 steps in the UI).
+    // ---------------------------------------------------------------------------
+    // WIZARD NAVIGATION STATE
+    // ---------------------------------------------------------------------------
+    // Controls the wizard flow and current position
+
+    /** Current wizard step index (0–5 for the 6 steps in the UI) */
     currentStep: number
 
-    // Quick Start mode: simplified 2-step flow for beginners
+    /** Quick Start mode: simplified 2-step flow for beginners */
     quickStartMode: boolean
 
-    // Mode influences defaults: "newbie" pre-selects a safe stack.
+    // ---------------------------------------------------------------------------
+    // MODE & CONFIGURATION STATE
+    // ---------------------------------------------------------------------------
+    // User preferences and the main configuration object
+
+    /** Mode influences defaults: "newbie" pre-selects a safe stack */
     mode: 'newbie' | 'expert' | null
-    // Storage planner mode toggles between single-root (simple) and per-path (advanced).
+
+    /** Storage planner mode toggles between single-root (simple) and per-path (advanced) */
     storageMode: 'simple' | 'advanced'
 
-    // IDs of all services selected in the Stack Selection step.
+    /** IDs of all services selected in the Stack Selection step */
     selectedServices: string[]
 
-    // The full config object the rest of the app reads from.
+    /** The full config object that drives compose generation and .env output */
     config: SetupConfig
-    // Cached advanced plan so we can restore expert overrides after switching back from simple mode.
+
+    /** Cached advanced plan so we can restore expert overrides after switching back from simple mode */
     advancedPlanCache?: StoragePlan
 
-    // Track which template was applied (null if none or reset).
+    /** Track which template was applied (null if none or reset) */
     appliedTemplateId: string | null
 
-    // ------ Actions for navigation & selection ------
+    // ---------------------------------------------------------------------------
+    // NAVIGATION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for controlling wizard flow and step movement
+
+    /** Set the current wizard step directly */
     setCurrentStep: (step: number) => void
+
+    /** Toggle Quick Start mode on/off */
     setQuickStartMode: (enabled: boolean) => void
+
+    /** Move to the next wizard step */
+    nextStep: () => void
+
+    /** Move back to the previous wizard step */
+    prevStep: () => void
+
+    // ---------------------------------------------------------------------------
+    // SERVICE SELECTION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for managing which services are selected
+
+    /** Set wizard mode (newbie auto-selects a starter stack) */
     setMode: (mode: 'newbie' | 'expert') => void
+
+    /** Replace the entire selected services array */
     setSelectedServices: (services: string[]) => void
+
+    /** Toggle a single service on/off in the selection */
     toggleService: (service: string) => void
 
-    // Update top-level config (domain, timezone, PUID, etc.).
+    // ---------------------------------------------------------------------------
+    // CONFIGURATION ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for updating the main config and service-specific settings
+
+    /** Update top-level config fields (domain, timezone, PUID, etc.) */
     updateConfig: (config: Partial<SetupConfig>) => void
 
-    // Update a specific service's custom config map.
+    /** Update a specific service's custom config map */
     updateServiceConfig: (serviceId: string, config: Record<string, string>) => void
 
+    // ---------------------------------------------------------------------------
+    // STORAGE MANAGEMENT ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for managing storage paths and storage mode
+
+    /** Update a storage path/type pairing for a specific category */
     // Update VPN configuration (provider, protocol, credentials, port forwarding).
     updateVpnConfig: (vpnConfig: {
         selectedVpnProvider?: string
@@ -130,43 +192,67 @@ export interface SetupStore {
 
     // Update a storage path/type pairing.
     updateStoragePath: (categoryId: string, update: Partial<StoragePathSetting>) => void
-    // Toggle between simple (single data root) and advanced per-path editing.
+
+    /** Toggle between simple (single data root) and advanced per-path editing */
     setStorageMode: (mode: 'simple' | 'advanced') => void
 
-    // Reset wizard back to initial state.
+    // ---------------------------------------------------------------------------
+    // WIZARD CONTROL ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for resetting and controlling the wizard lifecycle
+
+    /** Reset wizard back to initial state (clears all config and selections) */
     resetWizard: () => void
 
-    // Move forward/backwards between steps.
-    nextStep: () => void
-    prevStep: () => void
+    // ---------------------------------------------------------------------------
+    // TEMPLATE & IMPORT/EXPORT ACTIONS
+    // ---------------------------------------------------------------------------
+    // Actions for sharing configs and using templates
 
-    // ------ Template & Export/Import ------
-    // Load a pre-defined template (sets services + maybe config overrides).
+    /** Load a pre-defined template (sets services + maybe config overrides) */
     loadTemplate: (templateId: string, services: string[], config?: Partial<SetupConfig>) => void
 
-    // Export current config (including selected services) as JSON string.
+    /** Export current config (including selected services) as JSON string */
     exportConfig: () => string
 
-    // Import previously exported JSON config and reset wizard to step 0.
+    /** Import previously exported JSON config and reset wizard to step 0 */
     importConfig: (data: { config: SetupConfig; selectedServices: string[]; mode: string | null }) => void
 
-    // ------ Profile Management ------
-    // Saved named profiles (e.g. "Home Server", "Laptop Lab").
+    // ---------------------------------------------------------------------------
+    // PROFILE MANAGEMENT
+    // ---------------------------------------------------------------------------
+    // Named config presets that users can save, load, and delete
+
+    /** Saved named profiles (e.g. "Home Server", "Laptop Lab") */
     savedProfiles: Record<string, { config: SetupConfig; selectedServices: string[]; mode: string | null }>
+
+    /** Save current config as a named profile */
     saveProfile: (name: string) => void
+
+    /** Delete a saved profile by name */
     deleteProfile: (name: string) => void
+
+    /** Load a saved profile and reset wizard to step 0 */
     loadProfile: (name: string) => void
 
-    // ------ Auto-Save Draft ------
-    // Track last auto-save timestamp
+    // ---------------------------------------------------------------------------
+    // AUTO-SAVE DRAFT
+    // ---------------------------------------------------------------------------
+    // Automatic draft recovery for resuming interrupted wizard sessions
+
+    /** Track last auto-save timestamp */
     lastAutoSaveAt: number | null
-    // Check if there's a recoverable draft
+
+    /** Check if there's a recoverable draft (valid for 7 days) */
     hasRecoverableDraft: () => boolean
-    // Get the recoverable draft data
+
+    /** Get the recoverable draft data with metadata */
     getRecoverableDraft: () => { config: SetupConfig; selectedServices: string[]; mode: string | null; savedAt: number } | null
-    // Dismiss/clear the auto-saved draft
+
+    /** Dismiss/clear the auto-saved draft */
     dismissDraft: () => void
-    // Restore from auto-saved draft
+
+    /** Restore from auto-saved draft */
     restoreDraft: () => void
 }
 
@@ -686,3 +772,112 @@ useSetupStore.subscribe((state, prevState) => {
         })
     }
 })
+
+// ---------------------------------------------------------------------------
+// SELECTOR FUNCTIONS
+// ---------------------------------------------------------------------------
+// Convenience hooks for commonly accessed derived state. Use these instead of
+// calculating the same values repeatedly in components.
+
+/**
+ * Returns true if deployment mode is set to 'local' (LAN-only, no cloud access).
+ * Use this to conditionally show local vs cloud UI elements.
+ */
+export const useIsLocalMode = () => useSetupStore((state) => state.config.deploymentMode === 'local')
+
+/**
+ * Returns the number of currently selected services.
+ * Useful for validation and display purposes.
+ */
+export const useSelectedServiceCount = () => useSetupStore((state) => state.selectedServices.length)
+
+/**
+ * Checks if a specific service is currently selected.
+ * @param serviceId - The service ID to check (e.g. 'plex', 'arr', 'vpn')
+ */
+export const useHasService = (serviceId: string) =>
+    useSetupStore((state) => state.selectedServices.includes(serviceId))
+
+/**
+ * Returns wizard progress as a percentage (0-100).
+ * Automatically accounts for quick start mode.
+ * @param totalSteps - Total number of steps in the wizard (default: 6)
+ */
+export const useWizardProgress = (totalSteps = 6) =>
+    useSetupStore((state) => {
+        const currentStep = state.currentStep
+        return ((currentStep + 1) / totalSteps) * 100
+    })
+
+/**
+ * Returns true if the user can navigate to a specific step.
+ * In quick start mode, only steps 0-1 are accessible. In normal mode, you can
+ * navigate to any completed step or the next uncompleted step.
+ * @param targetStep - The step index to check
+ */
+export const useCanNavigateToStep = (targetStep: number) =>
+    useSetupStore((state) => {
+        const { currentStep, quickStartMode } = state
+
+        // Quick start mode: only steps 0-1 accessible
+        if (quickStartMode) {
+            return targetStep <= 1
+        }
+
+        // Normal mode: can go to any previous step or current step
+        return targetStep <= currentStep
+    })
+
+/**
+ * Returns the current step title and icon.
+ * Useful for breadcrumbs and step indicators.
+ * Note: You still need to pass the steps array with titles/icons.
+ * @param steps - Array of step objects with title and icon
+ */
+export const useCurrentStepInfo = <T extends { title: string }>(steps: T[]) =>
+    useSetupStore((state) => {
+        const step = steps[state.currentStep]
+        return {
+            currentStep: state.currentStep,
+            totalSteps: steps.length,
+            stepInfo: step,
+        }
+    })
+
+/**
+ * Returns true if selected services include a torrent client but no VPN.
+ * Used to show security warnings about IP exposure.
+ */
+export const useHasTorrentWithoutVPN = () =>
+    useSetupStore((state) => {
+        const { selectedServices } = state
+        return selectedServices.includes('torrent') && !selectedServices.includes('vpn')
+    })
+
+/**
+ * Returns true if the wizard is in quick start mode.
+ * Quick start is a simplified 2-step flow for beginners.
+ */
+export const useIsQuickStartMode = () => useSetupStore((state) => state.quickStartMode)
+
+/**
+ * Returns the current wizard mode ('newbie', 'expert', or null).
+ * Use this to customize UI hints and defaults.
+ */
+export const useWizardMode = () => useSetupStore((state) => state.mode)
+
+/**
+ * Returns true if storage mode is set to 'simple' (single root path).
+ * Use this to show/hide advanced per-category storage path controls.
+ */
+export const useIsSimpleStorageMode = () => useSetupStore((state) => state.storageMode === 'simple')
+
+/**
+ * Returns the data root path from the storage plan.
+ * Fallback to DEFAULT_DATA_ROOT if not set.
+ */
+export const useDataRootPath = () =>
+    useSetupStore((state) => {
+        const storagePlan = state.config.storagePlan
+        return storagePlan?.dataRoot?.path || DEFAULT_DATA_ROOT
+    })
