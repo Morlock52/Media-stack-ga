@@ -1,11 +1,8 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AnimatePresence, motion } from 'motion/react'
-import { 
-    Sparkles, Settings, Layers, Server, Key, FileText, Loader2,
-    MoreHorizontal, Save, FileDown, FileUp, RotateCcw, ArrowLeft, ArrowRight, Check
-} from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
+import { Sparkles, Settings, Layers, Server, Key, FileText, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Store
@@ -17,7 +14,6 @@ import { useFileDownload } from '../hooks/useFileDownload'
 import { useWizardValidation } from '../hooks/useWizardValidation'
 import { useVoicePlanHandler } from '../hooks/useVoicePlanHandler'
 import { useProactiveSuggestions } from '../hooks/useProactiveSuggestions'
-import { useReducedMotion } from '../hooks/useReducedMotion'
 
 // Schemas
 import {
@@ -32,8 +28,6 @@ import { importConfiguration, downloadAsFile } from '../utils/configManager'
 import { Template } from '../data/templates'
 
 // Components
-import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { GlassCard } from './ui/glass-card'
 import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
 import { TemplateSelector } from './TemplateSelector'
@@ -89,59 +83,9 @@ export function SetupWizard() {
     const [showResetConfirm, setShowResetConfirm] = useState(false)
     const [showDraftRecovery, setShowDraftRecovery] = useState(false)
     const [draftInfo, setDraftInfo] = useState<{ savedAt: number; serviceCount: number } | null>(null)
-    const [newProfileName, setNewProfileName] = useState('')
-    const [savedProfiles, setSavedProfiles] = useState<string[]>([])
-    
-    // Load saved profiles from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem('wizard-profiles')
-        if (saved) {
-            try {
-                setSavedProfiles(JSON.parse(saved))
-            } catch {
-                // ignore invalid JSON
-            }
-        }
-    }, [])
-    
-    const handleSaveProfile = () => {
-        if (!newProfileName.trim()) return
-        const profileData = exportConfig()
-        localStorage.setItem(`wizard-profile-${newProfileName}`, profileData)
-        const updated = [...savedProfiles, newProfileName]
-        setSavedProfiles(updated)
-        localStorage.setItem('wizard-profiles', JSON.stringify(updated))
-        setNewProfileName('')
-        toast.success(`Profile "${newProfileName}" saved`)
-    }
-    
-    const loadProfile = (profileName: string) => {
-        const data = localStorage.getItem(`wizard-profile-${profileName}`)
-        if (data) {
-            const parsed = importConfiguration(data)
-            if (parsed) {
-                importConfig(parsed)
-                toast.success(`Loaded profile "${profileName}"`)
-            }
-        }
-    }
-    
-    const deleteProfile = (profileName: string) => {
-        localStorage.removeItem(`wizard-profile-${profileName}`)
-        const updated = savedProfiles.filter(p => p !== profileName)
-        setSavedProfiles(updated)
-        localStorage.setItem('wizard-profiles', JSON.stringify(updated))
-        toast.success(`Deleted profile "${profileName}"`)
-    }
 
     // Accessibility: Respect user's reduced motion preference
     const prefersReducedMotion = useReducedMotion()
-    
-    // Animation variants that respect reduced motion
-    const fadeInUp = useMemo(() => prefersReducedMotion
-        ? { initial: {}, animate: {}, transition: { duration: 0 } }
-        : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },
-    [prefersReducedMotion])
 
     // Validation state - persists across steps
     const { result: validationResult, isValidating, error: validationError, validate } = useValidation({
@@ -217,6 +161,55 @@ export function SetupWizard() {
 
         validate(validationRequest)
     }, [currentStep, config.storagePlan?.dataRoot, config.storagePlan?.configRoot, config.domain, config.cloudflareToken, config.wireguardPrivateKey, config.wireguardAddresses, config.deploymentMode, selectedServices, validate])
+
+    // Apply voice plan to wizard
+    const handleApplyVoicePlan = (plan: VoicePlanSummary) => {
+        const appliedChanges: string[] = []
+
+        if (plan.services?.length) {
+            setSelectedServices(Array.from(new Set(plan.services)))
+            appliedChanges.push(`${plan.services.length} services`)
+        }
+        const configUpdates: Partial<SetupConfig> = {}
+        if (plan.domain) {
+            configUpdates.domain = plan.domain
+            appliedChanges.push(`domain: ${plan.domain}`)
+        }
+        if (Object.keys(configUpdates).length) {
+            updateConfig(configUpdates)
+        }
+        if (plan.storagePaths?.media) {
+            updateServiceConfig('plex', { mediaPath: plan.storagePaths.media })
+            updateStoragePath('movies', { path: plan.storagePaths.media })
+            updateStoragePath('tv', { path: plan.storagePaths.media })
+            appliedChanges.push('media paths')
+        }
+        if (plan.storagePaths?.downloads) {
+            updateServiceConfig('torrent', { downloadsPath: plan.storagePaths.downloads })
+            updateStoragePath('downloads', { path: plan.storagePaths.downloads })
+            appliedChanges.push('download paths')
+        }
+        setShowVoiceCompanion(false)
+
+        // Agentic: Show success feedback and navigate to Stack Selection
+        if (appliedChanges.length > 0) {
+            toast.success('Voice plan applied!', {
+                description: `Set up: ${appliedChanges.join(', ')}`,
+                action: {
+                    label: 'Undo',
+                    onClick: () => {
+                        setSelectedServices([])
+                        updateConfig({ domain: '' })
+                        toast.info('Plan changes undone')
+                    }
+                }
+            })
+            // Navigate to Stack Selection step to review services
+            if (plan.services?.length && currentStep < 2) {
+                setCurrentStep(2)
+            }
+        }
+    }
 
     // Load config from URL on mount
     useEffect(() => {
