@@ -10,7 +10,8 @@ import {
     randomBytes,
 } from 'crypto';
 import { createReadStream, createWriteStream } from 'fs';
-import { unlink } from 'fs/promises';
+import { open, unlink } from 'fs/promises';
+import { Writable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { createLogger } from './logger.js';
 import { getErrorMessage } from './errors.js';
@@ -178,8 +179,7 @@ export async function encryptFile(
         metadata.authTag = cipher.getAuthTag();
 
         // Update header with real auth tag
-        const fs = await import('fs');
-        const fd = await fs.promises.open(outputPath, 'r+');
+        const fd = await open(outputPath, 'r+');
         try {
             const authTagOffset = HEADER_MAGIC.length + 1 + SALT_LENGTH + IV_LENGTH;
             await fd.write(metadata.authTag, 0, AUTH_TAG_LENGTH, authTagOffset);
@@ -222,8 +222,7 @@ export async function decryptFile(
 
     try {
         // Read header
-        const fs = await import('fs');
-        const fd = await fs.promises.open(inputPath, 'r');
+        const fd = await open(inputPath, 'r');
         const headerSize = HEADER_MAGIC.length + 1 + SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH;
         const headerBuffer = Buffer.allocUnsafe(headerSize);
 
@@ -289,8 +288,7 @@ export async function verifyPassword(
 
     try {
         // Read header
-        const fs = await import('fs');
-        const fd = await fs.promises.open(inputPath, 'r');
+        const fd = await open(inputPath, 'r');
         const headerSize = HEADER_MAGIC.length + 1 + SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH;
         const headerBuffer = Buffer.allocUnsafe(headerSize);
 
@@ -310,14 +308,17 @@ export async function verifyPassword(
         const decipher = createDecipheriv(ALGORITHM, key, metadata.iv);
         decipher.setAuthTag(metadata.authTag);
 
-        // Try to decrypt a small chunk
-        const inputStream = createReadStream(inputPath, {
-            start: headerSize,
-            end: headerSize + 1024 // Read just 1KB
+        // AES-GCM authenticates the whole ciphertext, so the auth tag can only be
+        // checked after every byte has been through the decipher. Decrypt the full
+        // body into a discarding sink (nothing is written to disk).
+        const inputStream = createReadStream(inputPath, { start: headerSize });
+        const discard = new Writable({
+            write(_chunk, _encoding, callback) {
+                callback();
+            },
         });
 
-        // Test decryption
-        await pipeline(inputStream, decipher);
+        await pipeline(inputStream, decipher, discard);
 
         logger.debug({ inputPath }, 'Password verification successful');
         return true;

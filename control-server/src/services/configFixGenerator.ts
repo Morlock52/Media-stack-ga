@@ -214,7 +214,7 @@ export function solutionToConfigFix(
     }
 
     // Determine risk level based on changes and severity
-    let riskLevel: RiskLevel = 'low';
+    let riskLevel = 'low' as RiskLevel;
     if (severity === 'critical' || severity === 'high') {
         riskLevel = 'medium';
     }

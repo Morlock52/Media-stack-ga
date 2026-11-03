@@ -338,13 +338,14 @@ function validateProviderSpecific(
 
     // Provider-specific credential validation
     switch (provider.toLowerCase()) {
-        case 'mullvad':
+        case 'mullvad': {
             // Mullvad uses account number (16 digits)
             const mullvadAccount = credentials.WIREGUARD_PRIVATE_KEY;
             if (mullvadAccount && mullvadAccount.length === 16 && /^\d+$/.test(mullvadAccount)) {
                 warnings.push('Mullvad account number detected. Make sure you are using WireGuard keys, not the account number.');
             }
             break;
+        }
 
         case 'protonvpn':
             // ProtonVPN port forwarding requires specific configuration
@@ -363,13 +364,14 @@ function validateProviderSpecific(
             }
             break;
 
-        case 'expressvpn':
+        case 'expressvpn': {
             // ExpressVPN requires API token
             const apiToken = credentials.EXPRESSVPN_API_TOKEN;
             if (!apiToken) {
                 warnings.push('ExpressVPN requires an API token from your account settings');
             }
             break;
+        }
     }
 
     return {

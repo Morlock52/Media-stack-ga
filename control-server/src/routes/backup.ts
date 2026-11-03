@@ -561,10 +561,10 @@ export async function backupRoutes(fastify: FastifyInstance) {
             const scheduleData = request.body;
 
             // Validate required fields
-            if (!scheduleData.destination || !scheduleData.items || !scheduleData.frequency || !scheduleData.time) {
+            if (!scheduleData.config?.destination || !scheduleData.config?.items || !scheduleData.frequency || !scheduleData.time) {
                 return reply.status(400).send({
                     success: false,
-                    error: 'Missing required fields: destination, items, frequency, time',
+                    error: 'Missing required fields: config.destination, config.items, frequency, time',
                 });
             }
 
@@ -714,7 +714,7 @@ async function executeBackup(backupId: string, config: BackupConfig): Promise<vo
         });
 
         // Encrypt if needed
-        let finalArchivePath = archivePath;
+        const finalArchivePath = archivePath;
         if (config.encryption.enabled && config.encryption.password) {
             updateProgress({
                 status: 'encrypting',
