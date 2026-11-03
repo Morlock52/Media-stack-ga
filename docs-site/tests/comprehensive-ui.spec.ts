@@ -615,8 +615,14 @@ test.describe('Comprehensive UI Component Tests', () => {
 
       await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       
+      // Wait for the step's entrance animation to settle first, so the timer measures
+      // the expert-mode render rather than Playwright waiting for the button to be stable.
+      const expertButton = page.getByRole('button', { name: /expert/i })
+      await expertButton.hover()
+
       const expertStart = Date.now()
-      await page.getByRole('button', { name: /expert/i }).click()
+      await expertButton.click()
+      await expect(page.getByRole('group', { name: 'Available services' })).toBeVisible()
       const expertTime = Date.now() - expertStart
 
       expect(expertTime).toBeLessThan(1000)
