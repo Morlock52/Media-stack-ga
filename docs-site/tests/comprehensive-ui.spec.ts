@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 /**
  * Comprehensive UI Test Suite for Media Stack Wizard
@@ -159,8 +159,6 @@ test.describe('Comprehensive UI Component Tests', () => {
 
       // Check if value persisted
       await expect(page.getByRole('heading', { name: /basic|configuration/i })).toBeVisible({ timeout: 15000 })
-      const reloadedInput = page.locator('input[name="domain"]').first()
-      
       // May or may not persist depending on implementation
       console.log('✅ Form persistence behavior verified')
     })
@@ -313,7 +311,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       }
     })
 
-    test('bitrate calculations are accurate', async ({ page }) => {
+    test('bitrate calculations are accurate', async () => {
       // This would test the storage calculator functionality
       // Implementation depends on component structure
       console.log('ℹ️ Bitrate calculation test - requires component inspection')
@@ -478,8 +476,6 @@ test.describe('Comprehensive UI Component Tests', () => {
 
   test.describe('Accessibility (A11y)', () => {
     test('keyboard navigation works throughout wizard', async ({ page }) => {
-      const startButton = page.getByRole('button', { name: /let'?s go|start/i }).first()
-      
       // Tab to start button
       await page.keyboard.press('Tab')
       await page.keyboard.press('Tab')
@@ -572,7 +568,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       console.log('✅ Validation error display verified')
     })
 
-    test('error boundary catches component crashes', async ({ page }) => {
+    test('error boundary catches component crashes', async () => {
       // This would require intentionally breaking a component
       // or using a test-specific error trigger
       

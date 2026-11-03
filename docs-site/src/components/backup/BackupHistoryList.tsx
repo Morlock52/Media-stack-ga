@@ -24,7 +24,7 @@ import {
     Filter,
     X
 } from 'lucide-react'
-import { useBackupStore, type BackupHistoryEntry, type BackupDestination } from '../../store/backupStore'
+import { useBackupStore, type BackupHistoryEntry } from '../../store/backupStore'
 import { useBackupList, useBackupDelete, useRestorePreview, type BackupPreview } from '../../hooks/useBackup'
 import { Button } from '../ui/button'
 import { InteractiveCard } from '../ui/interactive-card'
@@ -135,7 +135,7 @@ export function BackupHistoryList() {
             `Are you sure you want to delete backup "${backup.name || backup.id}"?\n\n` +
             `This action cannot be undone and will permanently delete:\n` +
             `• ${backup.itemCount} items\n` +
-            `• ${formatBytes(backup.totalCompressedSize)} of data\n\n` +
+            `• ${formatBytes(backup.compressedSize)} of data\n\n` +
             `Created: ${formatDate(backup.createdAt)}`
         )
 
@@ -409,7 +409,7 @@ export function BackupHistoryList() {
                                                 <span className="font-medium">Date:</span> {formatDate(backup.createdAt)}
                                             </div>
                                             <div>
-                                                <span className="font-medium">Size:</span> {formatBytes(backup.totalCompressedSize)}
+                                                <span className="font-medium">Size:</span> {formatBytes(backup.compressedSize)}
                                             </div>
                                             <div>
                                                 <span className="font-medium">Items:</span> {backup.itemCount}

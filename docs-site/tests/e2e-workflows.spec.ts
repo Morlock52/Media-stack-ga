@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 /**
  * End-to-End User Workflow Tests
@@ -182,6 +182,7 @@ test.describe('End-to-End User Workflows', () => {
       // Should contain VPN profile reference
       const hasVpnConfig = previewText.toLowerCase().includes('gluetun') || 
                            previewText.toLowerCase().includes('vpn')
+      console.log(`VPN reference in preview: ${hasVpnConfig}`)
 
       // Download all configs
       const downloads: any[] = []

@@ -67,10 +67,10 @@ export function ReviewStep() {
     } = useBackupStore()
 
     const { createBackup, loading: creatingBackup } = useBackupCreate()
-    const { progress, startPolling, stopPolling, isPolling } = useBackupProgress()
+    const { progress, startPolling, stopPolling } = useBackupProgress()
 
     const [backupStarted, setBackupStarted] = useState(false)
-    const [backupId, setBackupId] = useState<string | null>(null)
+    const [, setBackupId] = useState<string | null>(null)
 
     // Calculate total size of selected items
     const totalSize = selectedItems.reduce((sum, item) => sum + (item.estimatedSize || 0), 0)

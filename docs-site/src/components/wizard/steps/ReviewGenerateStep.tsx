@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { AlertCircle, Check, Copy, Download, Package, Globe, CheckCircle2, Rocket } from 'lucide-react'
 import { PostInstallChecklist } from '../../PostInstallChecklist'
@@ -12,181 +12,6 @@ import { ValidationPanel } from '../../ValidationPanel'
 import { useValidation } from '../../../hooks/useValidation'
 import { hasBlockingErrors } from '../../../types/validation'
 import type { ValidationRequest } from '../../../types/validation'
-
-type BootstrapCredentialKind = 'API key' | 'token' | 'password' | 'secret'
-
-const maskSecret = (value: string, head = 6, tail = 4) => {
-    const trimmed = String(value || '').trim()
-    if (!trimmed) return ''
-    if (trimmed.length <= head + tail) return `${trimmed.slice(0, Math.min(head, trimmed.length))}...`
-    return `${trimmed.slice(0, head)}...${trimmed.slice(-tail)}`
-}
-
-const BOOTSTRAP_KEY_META: Record<string, { app: string; kind: BootstrapCredentialKind }> = {
-    SONARR_API_KEY: { app: 'Sonarr', kind: 'API key' },
-    RADARR_API_KEY: { app: 'Radarr', kind: 'API key' },
-    PROWLARR_API_KEY: { app: 'Prowlarr', kind: 'API key' },
-    READARR_API_KEY: { app: 'Readarr', kind: 'API key' },
-    LIDARR_API_KEY: { app: 'Lidarr', kind: 'API key' },
-    WHISPARR_API_KEY: { app: 'Whisparr', kind: 'API key' },
-    BAZARR_API_KEY: { app: 'Bazarr', kind: 'API key' },
-    OVERSEERR_API_KEY: { app: 'Overseerr', kind: 'API key' },
-    JELLYSEERR_API_KEY: { app: 'Jellyseerr', kind: 'API key' },
-    OMBI_API_KEY: { app: 'Ombi', kind: 'API key' },
-    TAUTULLI_API_KEY: { app: 'Tautulli', kind: 'API key' },
-    JACKETT_API_KEY: { app: 'Jackett', kind: 'API key' },
-    SABNZBD_API_KEY: { app: 'SABnzbd', kind: 'API key' },
-    NOTIFIARR_API_KEY: { app: 'Notifiarr', kind: 'API key' },
-    TDARR_API_KEY: { app: 'Tdarr', kind: 'API key' },
-    UNPACKERR_API_KEY: { app: 'Unpackerr', kind: 'API key' },
-    REQUESTRR_API_KEY: { app: 'Requestrr', kind: 'API key' },
-    HOMEPAGE_API_KEY: { app: 'Homepage', kind: 'API key' },
-    ORGANIZR_API_KEY: { app: 'Organizr', kind: 'API key' },
-    PLEX_TOKEN: { app: 'Plex', kind: 'token' },
-    JELLYFIN_API_KEY: { app: 'Jellyfin', kind: 'API key' },
-    QBITTORRENT_API_KEY: { app: 'qBittorrent', kind: 'secret' },
-    DELUGE_PASSWORD: { app: 'Deluge', kind: 'password' },
-    TRANSMISSION_PASSWORD: { app: 'Transmission', kind: 'password' },
-    NZBGET_PASSWORD: { app: 'NZBGet', kind: 'password' },
-}
-
-const titleCase = (value: string) =>
-    value
-        .split(/[\s_]+/g)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-        .join(' ')
-
-const describeBootstrapKey = (envKey: string): { app: string; kind: BootstrapCredentialKind } => {
-    const direct = BOOTSTRAP_KEY_META[envKey]
-    if (direct) return direct
-
-    if (envKey.endsWith('_API_KEY')) return { app: titleCase(envKey.replace(/_API_KEY$/, '')), kind: 'API key' }
-    if (envKey.endsWith('_TOKEN')) return { app: titleCase(envKey.replace(/_TOKEN$/, '')), kind: 'token' }
-    if (envKey.endsWith('_PASSWORD')) return { app: titleCase(envKey.replace(/_PASSWORD$/, '')), kind: 'password' }
-    return { app: titleCase(envKey), kind: 'secret' }
-}
-
-const isLoopbackHost = (host: string) => {
-    const normalized = String(host || '').trim().toLowerCase()
-    return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
-}
-
-const ACCESS_HOST_STORAGE_KEY = 'mediastack.accessHost'
-
-const hostForUrl = (host: string) => {
-    const trimmed = String(host || '').trim()
-    if (!trimmed) return 'localhost'
-    if (trimmed.includes(':') && !trimmed.startsWith('[') && !trimmed.endsWith(']')) return `[${trimmed}]`
-    return trimmed
-}
-
-const buildLocalHttpUrl = (host: string, port: number, path = '') => {
-    const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : ''
-    return `http://${hostForUrl(host)}:${port}${normalizedPath}`
-}
-
-type LocalAccessApp = {
-    id: string
-    label: string
-    description: string
-    port: number
-    path?: string
-    showWhenSelected: (selected: string[]) => boolean
-    containerNames: string[]
-}
-
-const LOCAL_ACCESS_APPS: LocalAccessApp[] = [
-    {
-        id: 'homepage',
-        label: 'Dashboard',
-        description: 'Links to all your apps',
-        port: 3000,
-        showWhenSelected: () => true,
-        containerNames: ['homepage'],
-    },
-    {
-        id: 'plex',
-        label: 'Plex',
-        description: 'Stream your media',
-        port: 32400,
-        path: '/web',
-        showWhenSelected: (s) => s.includes('plex'),
-        containerNames: ['plex'],
-    },
-    {
-        id: 'jellyfin',
-        label: 'Jellyfin',
-        description: 'Stream your media (free)',
-        port: 8096,
-        showWhenSelected: (s) => s.includes('jellyfin'),
-        containerNames: ['jellyfin'],
-    },
-    {
-        id: 'sonarr',
-        label: 'Sonarr',
-        description: 'TV show automation',
-        port: 8989,
-        showWhenSelected: (s) => s.includes('arr') || s.includes('sonarr'),
-        containerNames: ['sonarr'],
-    },
-    {
-        id: 'radarr',
-        label: 'Radarr',
-        description: 'Movie automation',
-        port: 7878,
-        showWhenSelected: (s) => s.includes('arr') || s.includes('radarr'),
-        containerNames: ['radarr'],
-    },
-    {
-        id: 'prowlarr',
-        label: 'Prowlarr',
-        description: 'Indexer management',
-        port: 9696,
-        showWhenSelected: (s) => s.includes('arr') || s.includes('prowlarr'),
-        containerNames: ['prowlarr'],
-    },
-    {
-        id: 'bazarr',
-        label: 'Bazarr',
-        description: 'Subtitle automation',
-        port: 6767,
-        showWhenSelected: (s) => s.includes('arr') || s.includes('bazarr'),
-        containerNames: ['bazarr'],
-    },
-    {
-        id: 'overseerr',
-        label: 'Overseerr',
-        description: 'Requests & discovery',
-        port: 5055,
-        showWhenSelected: (s) => s.includes('arr') || s.includes('overseerr'),
-        containerNames: ['overseerr'],
-    },
-    {
-        id: 'qbittorrent',
-        label: 'qBittorrent',
-        description: 'Download client',
-        port: 8081,
-        showWhenSelected: (s) => s.includes('torrent'),
-        containerNames: ['qbittorrent'],
-    },
-    {
-        id: 'tautulli',
-        label: 'Tautulli',
-        description: 'Plex statistics',
-        port: 8181,
-        showWhenSelected: (s) => s.includes('stats'),
-        containerNames: ['tautulli'],
-    },
-    {
-        id: 'grafana',
-        label: 'Grafana',
-        description: 'Logs & metrics',
-        port: 3003,
-        showWhenSelected: () => false,
-        containerNames: ['grafana'],
-    },
-]
 
 interface ReviewGenerateStepProps {
     config: SetupConfig
@@ -216,106 +41,6 @@ export function ReviewGenerateStep({
         autoValidate: false, // We'll trigger manually when step becomes active
     })
 
-    // Deploy state
-    const [deployStatus, setDeployStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle')
-    const [deploySteps, setDeploySteps] = useState<Array<{ step: string; status: 'done' | 'error' | 'running' }>>([])
-    const [deployError, setDeployError] = useState('')
-    const [deployContainers, setDeployContainers] = useState<Array<{ name: string; on: boolean }>>([])
-
-    // Bootstrap state
-    const [bootstrapStatus, setBootstrapStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-    const [bootstrapMessage, setBootstrapMessage] = useState('')
-    const [bootstrapKeys, setBootstrapKeys] = useState<Record<string, string>>({})
-    const [bootstrapValidations, setBootstrapValidations] = useState<Record<string, { ok: boolean; tested: boolean; status?: number; error?: string }>>({})
-    const [bootstrapProgress, setBootstrapProgress] = useState<{ ready: number; running: number; total: number }>({ ready: 0, running: 0, total: 0 })
-    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const pollInFlightRef = useRef(false)
-    const [revealedBootstrapKeys, setRevealedBootstrapKeys] = useState<Set<string>>(() => new Set())
-    const [copiedBootstrapKey, setCopiedBootstrapKey] = useState<string | null>(null)
-
-    const [accessHost, setAccessHost] = useState(() => {
-        if (typeof window === 'undefined') return 'localhost'
-        try {
-            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
-            if (stored && stored.trim()) return stored.trim()
-        } catch {
-            // ignore storage failures
-        }
-        return window.location.hostname || 'localhost'
-    })
-    const [lanIpv4, setLanIpv4] = useState<string | null>(null)
-    const hasAccessHostOverride = useRef(false)
-
-    const handleDeploy = async () => {
-        // Block deployment if there are blocking validation errors
-        if (validation.result && hasBlockingErrors(validation.result)) {
-            setDeployError('Cannot deploy: Please fix the validation errors above before proceeding.')
-            return
-        }
-
-        setDeployStatus('deploying')
-        setDeploySteps([
-            { step: 'Writing .env file...', status: 'running' },
-        ])
-        setDeployError('')
-
-        // Simulate progress steps with timeouts for better UX feedback
-        const progressTimers: ReturnType<typeof setTimeout>[] = []
-        
-        progressTimers.push(setTimeout(() => {
-            setDeploySteps(() => [
-                { step: 'Wrote .env file', status: 'done' },
-                { step: 'Creating data directories...', status: 'running' },
-            ])
-        }, 1500))
-        
-        progressTimers.push(setTimeout(() => {
-            setDeploySteps(() => [
-                { step: 'Wrote .env file', status: 'done' },
-                { step: 'Created data directories', status: 'done' },
-                { step: 'Starting containers (this may take 1-2 minutes)...', status: 'running' },
-            ])
-        }, 3000))
-
-        try {
-            const envContent = generateEnvFile()
-            const result = await controlServer.localDeploy({
-                envContent,
-                profiles: selectedServices,
-                composeFile: 'docker-compose.local.yml',
-            })
-
-            // Clear progress timers
-            progressTimers.forEach(t => clearTimeout(t))
-
-            setDeploySteps(result.steps.map(s => ({ ...s, status: s.status as 'done' | 'error' })))
-
-            if (result.success) {
-                setDeployStatus('success')
-                setDeployContainers(result.containers || [])
-            } else {
-                setDeployStatus('error')
-                setDeployError(result.error || 'Deployment failed')
-            }
-        } catch (err) {
-            // Clear progress timers
-            progressTimers.forEach(t => clearTimeout(t))
-            
-            setDeployStatus('error')
-            setDeployError(err instanceof Error ? err.message : 'Deployment failed')
-            setDeploySteps([{ step: 'Deployment failed', status: 'error' }])
-        }
-    }
-
-    // Cleanup polling on unmount
-    useEffect(() => {
-        return () => {
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current)
-            }
-        }
-    }, [])
-
     // Auto-validate configuration when step becomes active
     useEffect(() => {
         // Build validation request from current config
@@ -344,11 +69,14 @@ export function ReviewGenerateStep({
             validationRequest.validatorConfigs = {
                 ...validationRequest.validatorConfigs,
                 vpn: {
-                    provider: 'custom', // Assuming custom WireGuard config
-                    type: 'wireguard',
-                    credentials: {
-                        privateKey: config.wireguardPrivateKey,
-                        addresses: config.wireguardAddresses,
+                    enabled: true,
+                    options: {
+                        provider: 'custom', // Assuming custom WireGuard config
+                        type: 'wireguard',
+                        credentials: {
+                            privateKey: config.wireguardPrivateKey,
+                            addresses: config.wireguardAddresses,
+                        },
                     },
                 },
             }
@@ -360,8 +88,11 @@ export function ReviewGenerateStep({
             validationRequest.validatorConfigs = {
                 ...validationRequest.validatorConfigs,
                 cloudflare: {
-                    tunnelToken: config.cloudflareToken,
-                    testConnectivity: false, // Don't test connectivity by default
+                    enabled: true,
+                    options: {
+                        tunnelToken: config.cloudflareToken,
+                        testConnectivity: false, // Don't test connectivity by default
+                    },
                 },
             }
         }
@@ -371,162 +102,6 @@ export function ReviewGenerateStep({
             // Error is already handled by the hook and displayed in the ValidationPanel
         })
     }, []) // Run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        if (!isLocalMode) return
-        if (typeof window === 'undefined') return
-
-        try {
-            const stored = window.localStorage.getItem(ACCESS_HOST_STORAGE_KEY)
-            hasAccessHostOverride.current = Boolean(stored && stored.trim())
-        } catch {
-            hasAccessHostOverride.current = false
-        }
-
-        const host = window.location.hostname || 'localhost'
-        if (!isLoopbackHost(host)) {
-            if (!hasAccessHostOverride.current) setAccessHost(host)
-            return
-        }
-
-        let cancelled = false
-        void (async () => {
-            try {
-                const info = await controlServer.getNetworkInfo()
-                if (cancelled) return
-
-                if (info?.success && info.lanIpv4) {
-                    setLanIpv4(info.lanIpv4)
-                    if (!hasAccessHostOverride.current) setAccessHost(info.lanIpv4)
-                    return
-                }
-
-                if (info?.success && Array.isArray(info.ipv4) && info.ipv4.length) {
-                    setLanIpv4(info.ipv4[0] || null)
-                }
-            } catch {
-                // best-effort only
-            }
-        })()
-
-        return () => {
-            cancelled = true
-        }
-    }, [isLocalMode])
-
-    const updateAccessHost = (nextHost: string) => {
-        const normalized = String(nextHost || '').trim()
-        setAccessHost(normalized || 'localhost')
-        if (typeof window === 'undefined') return
-        try {
-            if (!normalized) window.localStorage.removeItem(ACCESS_HOST_STORAGE_KEY)
-            else window.localStorage.setItem(ACCESS_HOST_STORAGE_KEY, normalized)
-            hasAccessHostOverride.current = Boolean(normalized)
-        } catch {
-            // ignore storage failures
-        }
-    }
-
-    const toggleRevealBootstrapKey = (envKey: string) => {
-        setRevealedBootstrapKeys((prev) => {
-            const next = new Set(prev)
-            if (next.has(envKey)) next.delete(envKey)
-            else next.add(envKey)
-            return next
-        })
-    }
-
-    const copyBootstrapSecret = async (envKey: string, secret: string) => {
-        const value = String(secret || '')
-        if (!value) return
-        try {
-            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(value)
-            } else {
-                copyToClipboard(value)
-            }
-            setCopiedBootstrapKey(envKey)
-            setTimeout(() => setCopiedBootstrapKey((current) => (current === envKey ? null : current)), 1500)
-        } catch {
-            copyToClipboard(value)
-            setCopiedBootstrapKey(envKey)
-            setTimeout(() => setCopiedBootstrapKey((current) => (current === envKey ? null : current)), 1500)
-        }
-    }
-
-    const handleBootstrapKeys = async () => {
-        setBootstrapStatus('loading')
-        setBootstrapProgress({ ready: 0, running: 0, total: 0 })
-        setBootstrapMessage('Checking *arr services...')
-        setBootstrapKeys({})
-        setBootstrapValidations({})
-        setRevealedBootstrapKeys(new Set())
-        setCopiedBootstrapKey(null)
-
-        // Start polling for status updates
-        const pollStatus = async () => {
-            if (pollInFlightRef.current) return
-            pollInFlightRef.current = true
-            try {
-                const status = await controlServer.getArrStatus()
-                if (status.success && status.services) {
-                    const running = status.services.filter(s => s.running).length
-                    const ready = status.services.filter(s => s.ready).length
-                    const notReady = status.services.filter(s => s.running && !s.ready).map(s => s.id)
-                    setBootstrapProgress({ ready, running, total: status.services.length })
-                    setBootstrapMessage(
-                        notReady.length
-                            ? `Services ready: ${ready}/${running} running (waiting on: ${notReady.join(', ')})`
-                            : `Services ready: ${ready}/${running} running`
-                    )
-                }
-            } catch {
-                // Ignore polling errors, the main request will handle failure
-            } finally {
-                pollInFlightRef.current = false
-            }
-        }
-
-        // Initial poll
-        await pollStatus()
-
-        // Continue polling every 3 seconds
-        pollingRef.current = setInterval(() => { void pollStatus() }, 5000)
-
-        try {
-            const result = await controlServer.autoBootstrapArr({ timeout: 120000, pollInterval: 5000 })
-
-            // Stop polling
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current)
-                pollingRef.current = null
-            }
-
-            if (result.success) {
-                setBootstrapStatus('success')
-                setBootstrapKeys(result.keys)
-                setBootstrapValidations(result.validations || {})
-                const readyCount = result.services?.filter(s => s.ready).length || 0
-                setBootstrapProgress({ ready: readyCount, running: readyCount, total: result.services?.length || 0 })
-                const tested = Object.values(result.validations || {}).filter((v) => v.tested).length
-                const ok = Object.values(result.validations || {}).filter((v) => v.tested && v.ok).length
-                const suffix = tested > 0 ? ` (verified ${ok}/${tested})` : ''
-                setBootstrapMessage(`Successfully extracted ${Object.keys(result.keys).length} keys and wrote to .env${suffix}`)
-            } else {
-                setBootstrapStatus('error')
-                setBootstrapMessage(result.error || `Failed at step: ${result.step}`)
-            }
-        } catch (err) {
-            // Stop polling on error
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current)
-                pollingRef.current = null
-            }
-            setBootstrapStatus('error')
-            setBootstrapMessage(err instanceof Error ? err.message : 'Failed to bootstrap API keys')
-        }
-    }
 
     const storagePlan = config.storagePlan || createDefaultStoragePlan(DEFAULT_DATA_ROOT)
     const planRoot = storagePlan.dataRoot?.path || DEFAULT_DATA_ROOT
@@ -724,7 +299,6 @@ export function ReviewGenerateStep({
                         onClick={() => {
                             // Block if validation has blocking errors
                             if (validation.result && hasBlockingErrors(validation.result)) {
-                                setDeployError('Cannot deploy: Please fix the validation errors above before proceeding.')
                                 return
                             }
                             setShowDeployModal(true)

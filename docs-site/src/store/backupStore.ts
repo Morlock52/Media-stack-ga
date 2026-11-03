@@ -95,6 +95,7 @@ export interface RestoreProgress {
     bytesTotal: number;
     startedAt: string;
     estimatedCompletionAt?: string;
+    transferSpeed?: number;
     error?: string;
 }
 
@@ -106,6 +107,14 @@ export interface BackupSchedule {
     retentionCount: number;
     lastRun?: string;
     nextRun?: string;
+    // Backup config as returned by the control server's schedule API
+    config?: {
+        destination?: BackupDestination;
+        items?: BackupItem[];
+        encryption?: EncryptionConfig;
+        compress?: boolean;
+        name?: string;
+    };
 }
 
 export interface BackupHistoryEntry {

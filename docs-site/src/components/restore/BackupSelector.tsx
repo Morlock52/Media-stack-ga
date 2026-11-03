@@ -12,8 +12,7 @@ import {
     RefreshCw,
     CheckCircle2,
     Search,
-    ArrowUpDown,
-    Clock
+    ArrowUpDown
 } from 'lucide-react'
 import { useBackupStore, type BackupHistoryEntry, type BackupDestination } from '../../store/backupStore'
 import { useBackupList } from '../../hooks/useBackup'

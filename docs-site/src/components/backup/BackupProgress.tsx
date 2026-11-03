@@ -37,7 +37,7 @@ function formatSpeed(bytesPerSecond: number | undefined): string {
 }
 
 // Utility function to format estimated time remaining
-function formatETA(estimatedCompletionAt: string | undefined, startedAt: string): string {
+function formatETA(estimatedCompletionAt: string | undefined, _startedAt: string): string {
     if (!estimatedCompletionAt) return 'Calculating...'
 
     const now = new Date()

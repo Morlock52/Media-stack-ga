@@ -118,6 +118,8 @@ function saveDismissedNudge(nudge: string): void {
     }
 }
 
+type StreamMeta = { nudges?: Array<{ message: string }>; nextSteps?: string[] }
+
 export function AIAssistant({ currentApp }: AIAssistantProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([])
@@ -138,7 +140,7 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
     const inputRef = useRef<HTMLInputElement>(null)
     const sendMessageRef = useRef<(text: string) => void>(() => {})
     const spokenTextRef = useRef('') // Track what's been spoken for streaming TTS
-    const streamMetaRef = useRef<{ nudges?: Array<{ message: string }>; nextSteps?: string[] } | null>(null)
+    const streamMetaRef = useRef<StreamMeta | null>(null)
 
     // Voice I/O integration
     const voice = useVoice()
@@ -380,7 +382,8 @@ export function AIAssistant({ currentApp }: AIAssistantProps) {
                 content: response || 'Sorry, I could not respond.',
                 agent: streamingAgent || { id: 'general', name: 'AI Assistant', icon: '🤖' },
                 aiPowered: true,
-                nextSteps: streamMetaRef.current?.nextSteps,
+                // Cast: TS narrows the ref to null after the reset above, but the stream callback sets it
+                nextSteps: (streamMetaRef.current as StreamMeta | null)?.nextSteps,
                 confidence: calculateConfidence({
                     isValidated: Boolean(response),
                     hasExamples: true, // Streaming implies LLM processing

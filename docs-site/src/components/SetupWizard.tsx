@@ -39,20 +39,11 @@ import { ProactiveSuggestionCard } from './ProactiveSuggestionCard'
 import { TemplateSelector } from './TemplateSelector'
 import { WelcomeStep } from './WelcomeStep'
 import { ServiceConfigStep } from './ServiceConfigStep'
-import { ValidationBadge } from './ValidationBadge'
 import { useValidation } from '../hooks/useValidation'
 import type { ValidationRequest } from '../types/validation'
 
 // Wizard Components
 import {
-    WizardHeader,
-    WizardProgressBar,
-    WizardStepIndicator,
-    WizardNavigation,
-    DraftRecoveryModal,
-    ProfilesPanel,
-    ToolsDialog,
-    VoiceCompanionTrigger,
     QuickStartStep,
     StackSelectionStep,
     BasicConfigurationStep,
@@ -76,8 +67,7 @@ export function SetupWizard() {
     const {
         currentStep, mode, selectedServices, config, appliedTemplateId,
         quickStartMode,
-        updateConfig,
-        nextStep, prevStep,
+        setCurrentStep, prevStep,
         loadTemplate, exportConfig, importConfig, resetWizard,
         hasRecoverableDraft, getRecoverableDraft, dismissDraft, restoreDraft
     } = useSetupStore()
@@ -144,7 +134,7 @@ export function SetupWizard() {
     [prefersReducedMotion])
 
     // Validation state - persists across steps
-    const { result: validationResult, isValidating, error: validationError, validate } = useValidation({
+    const { validate } = useValidation({
         autoValidate: false,
         debounceMs: 500,
     })
@@ -276,7 +266,7 @@ export function SetupWizard() {
     })
 
     // Form validation and step navigation
-    const { handleNextStep, shakeField, setShakeField } = useWizardValidation(step1Form, step4Form)
+    const { handleNextStep, shakeField } = useWizardValidation(step1Form, step4Form)
 
     const handleTemplateSelect = (template: Template) => {
         loadTemplate(template.id, template.services, template.config)
@@ -359,6 +349,21 @@ export function SetupWizard() {
         dismissDraft()
         setShowDraftRecovery(false)
         setDraftInfo(null)
+    }
+
+    const handleShare = () => {
+        const data = { mode, selectedServices, config }
+        const encoded = btoa(JSON.stringify(data))
+        const url = `${window.location.origin}${window.location.pathname}?config=${encoded}`
+        navigator.clipboard
+            .writeText(url)
+            .then(() => {
+                toast.success('Share link copied to clipboard!')
+            })
+            .catch((err) => {
+                console.error('SetupWizard: failed to copy share link', err)
+                toast.error('Failed to copy share link')
+            })
     }
 
     return (
@@ -518,13 +523,17 @@ export function SetupWizard() {
                         <AnimatePresence mode="wait">
                             {currentStep === 0 && (
                                 <motion.div key="welcome" {...fadeInUp}>
-                                    <WelcomeStep
-                                        onVoiceClick={() => setShowVoiceCompanion(true)}
-                                    />
+                                    <WelcomeStep />
                                 </motion.div>
                             )}
 
-                            {currentStep === 1 && (
+                            {currentStep === 1 && quickStartMode && (
+                                <motion.div key="quick-start" {...fadeInUp}>
+                                    <QuickStartStep />
+                                </motion.div>
+                            )}
+
+                            {currentStep === 1 && !quickStartMode && (
                                 <motion.div key="basic-config" {...fadeInUp}>
                                     <BasicConfigurationStep
                                         form={step1Form}
@@ -547,16 +556,25 @@ export function SetupWizard() {
 
                             {currentStep === 4 && (
                                 <motion.div key="advanced-settings" {...fadeInUp}>
-                                    <AdvancedSettingsStep form={step4Form} />
+                                    <AdvancedSettingsStep form={step4Form} selectedServices={selectedServices} />
                                 </motion.div>
                             )}
 
                             {currentStep === 5 && (
                                 <motion.div key="review-generate" {...fadeInUp}>
                                     <ReviewGenerateStep
-                                        validationResult={validationResult}
-                                        isValidating={isValidating}
-                                        validationError={validationError}
+                                        config={config}
+                                        mode={mode}
+                                        selectedServices={selectedServices}
+                                        appliedTemplateId={appliedTemplateId}
+                                        generateEnvFile={generateEnvFile}
+                                        generateAutheliaYaml={generateAutheliaYaml}
+                                        generateCloudflareYaml={generateCloudflareYaml}
+                                        copyToClipboard={copyToClipboard}
+                                        downloadFile={downloadFile}
+                                        downloadAllFiles={downloadAllFiles}
+                                        handleShare={handleShare}
+                                        copied={copied}
                                     />
                                 </motion.div>
                             )}
@@ -575,22 +593,12 @@ export function SetupWizard() {
                             Previous
                         </Button>
 
-                        {/* Proactive suggestions */}
-                        {suggestions.length > 0 && (
-                            <div className="flex gap-2">
-                                {suggestions.map((suggestion, index) => (
-                                    <ProactiveSuggestionCard
-                                        key={index}
-                                        suggestion={suggestion}
-                                        onAction={() => {
-                                            handleSuggestionAction(suggestion)
-                                            dismissSuggestion(index)
-                                        }}
-                                        onDismiss={() => dismissSuggestion(index)}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        {/* Proactive suggestions (fixed-position card; dismisses itself after an action) */}
+                        <ProactiveSuggestionCard
+                            suggestions={suggestions}
+                            onAction={handleSuggestionAction}
+                            onDismiss={dismissSuggestion}
+                        />
 
                         <Button
                             onClick={handleNextStep}
@@ -610,7 +618,8 @@ export function SetupWizard() {
                     <VoiceCompanion
                         isOpen={showVoiceCompanion}
                         onClose={() => setShowVoiceCompanion(false)}
-                        onPlanApplied={handleApplyVoicePlan}
+                        onApplyPlan={(plan) => handleApplyVoicePlan(plan, () => setShowVoiceCompanion(false))}
+                        templateMode={mode}
                     />
                 </Suspense>
             )}
@@ -618,8 +627,8 @@ export function SetupWizard() {
             {/* Template selector modal */}
             {showTemplates && (
                 <TemplateSelector
-                    onSelect={handleTemplateSelect}
-                    onClose={() => setShowTemplates(false)}
+                    onSelectTemplate={handleTemplateSelect}
+                    onSkip={() => setShowTemplates(false)}
                 />
             )}
 

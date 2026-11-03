@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Activity, RefreshCw, Play, Square, RotateCcw, Clock, Cpu, HardDrive,
     CheckCircle, AlertCircle, XCircle, Loader2, ChevronDown, ChevronUp,
-    Database, Plus, Calendar, Shield, ShieldOff
+    Database, Plus, Calendar, Shield
 } from 'lucide-react'
 import { buildControlServerUrl, controlServerAuthHeaders } from '../utils/controlServer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
@@ -119,7 +119,7 @@ export function HealthDashboard() {
     // Backup state
     const destination = useBackupStore((state) => state.destination)
     const schedule = useBackupStore((state) => state.schedule)
-    const { listBackups, loading: loadingBackups } = useBackupList()
+    const { listBackups } = useBackupList()
     const [backups, setBackups] = useState<any[]>([])
     const [backupsFetched, setBackupsFetched] = useState(false)
 
@@ -581,7 +581,7 @@ export function HealthDashboard() {
                                                     <p className="text-xs text-muted-foreground mt-1">
                                                         {backups[0].itemCount || 0} items • {formatBytes(backups[0].compressedSize || 0)}
                                                         {backups[0].encrypted && (
-                                                            <Shield className="inline w-3 h-3 ml-1 text-amber-400" title="Encrypted" />
+                                                            <span title="Encrypted"><Shield className="inline w-3 h-3 ml-1 text-amber-400" /></span>
                                                         )}
                                                     </p>
                                                 </>

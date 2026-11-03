@@ -8,7 +8,6 @@ import {
     Check,
     ExternalLink,
     AlertCircle,
-    CheckCircle,
     Info,
     Download,
     Shield,
@@ -151,7 +150,7 @@ export function PortForwardingGuide({ provider, className }: PortForwardingGuide
                         title: 'Port Assignment is Automatic',
                         description:
                             'PIA will automatically assign a port when you connect. Gluetun will detect and use this port.',
-                        note: 'No manual port assignment needed - it's all handled automatically',
+                        note: "No manual port assignment needed - it's all handled automatically",
                     },
                     {
                         title: 'Check Gluetun Logs for Port',

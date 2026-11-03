@@ -119,7 +119,7 @@ export function ScheduleManager() {
             const result = await getSchedules()
             setSchedules(result.schedules)
             setScheduleHealth(result.health)
-        } catch (error) {
+        } catch {
             toast.error('Failed to load schedules')
         }
     }, [getSchedules])
@@ -147,7 +147,7 @@ export function ScheduleManager() {
             if (schedules.length === 1) {
                 setSchedule(updated)
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to update schedule')
         }
     }
@@ -179,7 +179,7 @@ export function ScheduleManager() {
             if (schedules.length === 1) {
                 setSchedule(updated)
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to update schedule')
         }
     }
@@ -209,7 +209,7 @@ export function ScheduleManager() {
             if (schedules.length === 1) {
                 setSchedule(null)
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete schedule')
         }
     }
@@ -219,7 +219,7 @@ export function ScheduleManager() {
         try {
             await triggerSchedule(scheduleId)
             toast.success('Backup triggered successfully')
-        } catch (error) {
+        } catch {
             toast.error('Failed to trigger backup')
         }
     }
@@ -601,18 +601,18 @@ export function ScheduleManager() {
                                                 <Database className="w-4 h-4 text-muted-foreground" />
                                                 <span className="text-muted-foreground">Items:</span>
                                                 <span className="font-medium">
-                                                    {schedule.items?.length || 0}
+                                                    {schedule.config?.items?.length || 0}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {schedule.encryption?.enabled ? (
+                                                {schedule.config?.encryption?.enabled ? (
                                                     <Shield className="w-4 h-4 text-primary" />
                                                 ) : (
                                                     <ShieldOff className="w-4 h-4 text-muted-foreground" />
                                                 )}
                                                 <span className="text-muted-foreground">Encryption:</span>
                                                 <span className="font-medium">
-                                                    {schedule.encryption?.enabled ? 'Enabled' : 'Disabled'}
+                                                    {schedule.config?.encryption?.enabled ? 'Enabled' : 'Disabled'}
                                                 </span>
                                             </div>
                                         </div>

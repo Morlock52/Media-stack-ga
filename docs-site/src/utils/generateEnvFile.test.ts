@@ -100,20 +100,20 @@ describe('generateEnvFile', () => {
       const config = createMockConfig({ deploymentMode: 'local' })
       const result = generateEnvFile(config, ['plex'])
 
+      // Local mode (docker-compose.local.yml) uses direct ports, no Traefik
       expect(result).toContain('DEPLOYMENT_MODE=local')
-      expect(result).toContain('TRAEFIK_DASHBOARD_PORT=8080')
-      expect(result).toContain('TRAEFIK_HTTP_PORT=80')
-      expect(result).toContain('TRAEFIK_HTTPS_PORT=443')
-      expect(result).toContain('LOCAL_DOMAIN=example.com')
+      expect(result).toContain('GRAFANA_PORT=3003')
+      expect(result).toContain('DOMAIN=example.com')
+      expect(result).not.toContain('TRAEFIK_')
     })
 
-    it('should include service URLs for local deployment', () => {
+    it('should not include cloud-only secrets for local deployment', () => {
       const config = createMockConfig({ deploymentMode: 'local' })
-      const result = generateEnvFile(config, ['plex'])
+      const result = generateEnvFile(config, ['plex', 'arr'])
 
-      expect(result).toContain('PLEX_URL=http://plex.local')
-      expect(result).toContain('SONARR_URL=http://sonarr.local')
-      expect(result).toContain('RADARR_URL=http://radarr.local')
+      expect(result).not.toContain('CLOUDFLARE_TUNNEL_TOKEN=')
+      expect(result).not.toContain('AUTHELIA_SESSION_SECRET=')
+      expect(result).not.toContain('POSTGRES_USER=')
     })
 
     it('should generate cloud deployment config', () => {
@@ -132,8 +132,8 @@ describe('generateEnvFile', () => {
   })
 
   describe('database credentials', () => {
-    it('should include PostgreSQL credentials', () => {
-      const config = createMockConfig()
+    it('should include PostgreSQL credentials for cloud deployment', () => {
+      const config = createMockConfig({ deploymentMode: 'cloud' })
       const result = generateEnvFile(config, ['plex'])
 
       expect(result).toContain('POSTGRES_USER=mediastack')
@@ -221,7 +221,7 @@ describe('generateEnvFile', () => {
 
   describe('file structure', () => {
     it('should include proper section headers', () => {
-      const config = createMockConfig()
+      const config = createMockConfig({ deploymentMode: 'cloud' })
       const result = generateEnvFile(config, ['plex'])
 
       expect(result).toContain('# GENERAL SETTINGS')

@@ -119,7 +119,6 @@ export function EncryptionStep() {
 
     useEffect(() => {
         updateEncryptionConfig()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enabled, password, confirmPassword, passwordsMatch])
 
     const handleToggleEncryption = () => {
