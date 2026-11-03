@@ -1,0 +1,5 @@
+.env
+compose.override.yaml
+*.tar.gz
+/appdata/
+/data/

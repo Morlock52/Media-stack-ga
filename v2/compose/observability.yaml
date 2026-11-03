@@ -1,0 +1,52 @@
+# =============================================================================
+#  OBSERVABILITY — profile: observability (optional; Dozzle covers day-to-day)
+#  Promtail reached EOL → Grafana Alloy collects container logs.
+# =============================================================================
+x-common: &common
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  profiles: ["observability"]
+
+services:
+  loki:
+    <<: *common
+    image: grafana/loki:3.5
+    container_name: loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./config/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - ${CONFIG_ROOT}/loki:/loki
+    networks: [proxy]
+
+  alloy:
+    <<: *common
+    image: grafana/alloy:latest
+    container_name: alloy
+    depends_on: [loki, socket-proxy]
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ${CONFIG_ROOT}/alloy:/var/lib/alloy/data
+    networks: [proxy, socket]
+
+  grafana:
+    <<: *common
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on: [loki]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: https://grafana.${DOMAIN}
+    volumes:
+      - ${CONFIG_ROOT}/grafana:/var/lib/grafana
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
+      - traefik.http.routers.grafana.middlewares=tinyauth
+      - traefik.http.services.grafana.loadbalancer.server.port=3000

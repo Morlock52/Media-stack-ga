@@ -1,0 +1,27 @@
+# =============================================================================
+#  Media Stack v2 — root compose file
+#  Each functional layer lives in its own file under compose/ and is pulled in
+#  with `include:` (Compose ≥ 2.20). Turn layers on/off with COMPOSE_PROFILES
+#  in .env — never by editing these files.
+#
+#    docker compose up -d            # starts whatever COMPOSE_PROFILES lists
+#    docker compose --profile observability up -d
+# =============================================================================
+name: mediastack
+
+# project_directory: . → ./config paths resolve from the repo root
+include:
+  - { path: compose/core.yaml,          project_directory: . }  # socket-proxy, traefik, tinyauth, cloudflared, homepage
+  - { path: compose/downloads.yaml,     project_directory: . }  # gluetun (PIA + port-forward), qbittorrent, unpackerr, cleanuparr
+  - { path: compose/arr.yaml,           project_directory: . }  # prowlarr, byparr, sonarr, radarr, lidarr, bazarr, recyclarr, seerr
+  - { path: compose/media.yaml,         project_directory: . }  # plex, jellyfin, tautulli, audiobookshelf
+  - { path: compose/ops.yaml,           project_directory: . }  # dozzle, wud, autoheal, backrest
+  - { path: compose/observability.yaml, project_directory: . }  # loki, alloy, grafana (optional)
+  - { path: compose/extras.yaml,        project_directory: . }  # sabnzbd, cross-seed, radarr-4k, chaptarr, jellystat (opt-in)
+
+networks:
+  proxy:          # anything Traefik routes to
+    name: mediastack_proxy
+  socket:         # ONLY socket-proxy + its consumers; no internet egress
+    name: mediastack_socket
+    internal: true
