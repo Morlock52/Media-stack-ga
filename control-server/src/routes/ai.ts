@@ -998,7 +998,7 @@ Return ONLY a JSON object with the following structure:
             });
         }
 
-        const { message, agentId, history = [], context = {}, orchestrate = false, strategy } = request.body;
+        const { message, agentId, history = [], context = {}, orchestrate = false, strategy } = request.body || {};
         const effectiveApiKey = getOpenAIKey();
 
         const nudges = getProactiveNudges(context);
@@ -1457,7 +1457,7 @@ Return ONLY a JSON object with the following structure:
 
     // Suggestions endpoint for docs site
     fastify.post<{ Body: { currentApp: string } }>('/api/agent/suggestions', async (request, _reply) => {
-        const { currentApp } = request.body;
+        const { currentApp } = request.body || {};
         const suggestions: AppSuggestion[] = [];
 
         const appSuggestions: Record<string, string[]> = {
@@ -1931,7 +1931,7 @@ Return ONLY a JSON object with the following structure:
 
           fastify.post('/api/ai/conversations', async (request, reply) => {
                   const conversationStore = await import('../services/conversationStore.js');
-                  const { message, metadata } = request.body as { message?: string; metadata?: ConversationMetadata };
+                  const { message, metadata } = (request.body || {}) as { message?: string; metadata?: ConversationMetadata };
                   const initialMessage = message ? { role: 'user' as const, content: message, timestamp: new Date().toISOString() } : undefined;
                   const conversation = await conversationStore.createConversation(initialMessage, metadata);
                   return reply.send(conversation);
@@ -2008,7 +2008,7 @@ Return ONLY a JSON object with the following structure:
         };
     }>('/api/ai/troubleshooting/sessions', async (request, reply) => {
         const troubleshootingStore = await import('../services/troubleshootingStore.js');
-        const { problem, metadata } = request.body;
+        const { problem, metadata } = request.body || {};
 
         if (!problem || !problem.category || !problem.description) {
             return reply.status(400).send({
@@ -2046,7 +2046,7 @@ Return ONLY a JSON object with the following structure:
     }>('/api/ai/troubleshooting/sessions/:sessionId', async (request, reply) => {
         const troubleshootingStore = await import('../services/troubleshootingStore.js');
         const { sessionId } = request.params;
-        const { status, resolution } = request.body;
+        const { status, resolution } = request.body || {};
 
         if (!status) {
             return reply.status(400).send({ error: 'status is required' });
@@ -2220,8 +2220,8 @@ Return ONLY a JSON object with the following structure:
             }
 
             const sessionConfig = createSessionConfig({
-                voice: request.body.voice as RealtimeVoice,
-                instructions: request.body.instructions
+                voice: request.body?.voice as RealtimeVoice,
+                instructions: request.body?.instructions
             });
 
             return reply.send({
@@ -2276,8 +2276,8 @@ Return ONLY a JSON object with the following structure:
                         'OpenAI-Beta': `realtime=${config.apiVersion}`,
                     },
                     body: JSON.stringify({
-                        model: request.body.model || config.model,
-                        voice: request.body.voice || 'cedar',
+                        model: request.body?.model || config.model,
+                        voice: request.body?.voice || 'cedar',
                     }),
                 });
 

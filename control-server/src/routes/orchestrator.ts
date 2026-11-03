@@ -39,7 +39,7 @@ export async function orchestratorRoutes(fastify: FastifyInstance) {
             maxAgents,
             timeout,
             strategy,
-        } = request.body;
+        } = request.body || {};
 
         if (!message || typeof message !== 'string') {
             return reply.status(400).send({
@@ -383,7 +383,7 @@ export async function orchestratorRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: { tool: string; params?: Record<string, unknown> } }>(
         '/api/orchestrator/tools/execute',
         async (request, reply) => {
-            const { tool, params = {} } = request.body;
+            const { tool, params = {} } = request.body || {};
 
             if (!tool || typeof tool !== 'string') {
                 return reply.status(400).send({
@@ -447,7 +447,7 @@ export async function orchestratorRoutes(fastify: FastifyInstance) {
         '/api/orchestrator/category/:action',
         async (request, reply) => {
             const { action } = request.params;
-            const { category } = request.body;
+            const { category } = request.body || {};
 
             if (!['start', 'stop'].includes(action)) {
                 return reply.status(400).send({

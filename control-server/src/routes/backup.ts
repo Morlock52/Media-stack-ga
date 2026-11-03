@@ -335,7 +335,7 @@ export async function backupRoutes(fastify: FastifyInstance) {
         const { id } = request.params;
         const parseResult = BackupDeleteRequestSchema.safeParse({
             backupId: id,
-            destination: request.body.destination,
+            destination: request.body?.destination,
         });
 
         if (!parseResult.success) {
@@ -561,7 +561,7 @@ export async function backupRoutes(fastify: FastifyInstance) {
             const scheduleData = request.body;
 
             // Validate required fields
-            if (!scheduleData.config?.destination || !scheduleData.config?.items || !scheduleData.frequency || !scheduleData.time) {
+            if (!scheduleData?.config?.destination || !scheduleData.config?.items || !scheduleData.frequency || !scheduleData.time) {
                 return reply.status(400).send({
                     success: false,
                     error: 'Missing required fields: config.destination, config.items, frequency, time',
@@ -657,6 +657,13 @@ export async function backupRoutes(fastify: FastifyInstance) {
         Params: { id: string };
     }>('/api/backup/schedules/:id/trigger', async (request, reply) => {
         const { id } = request.params;
+
+        if (!getSchedule(id)) {
+            return reply.status(404).send({
+                success: false,
+                error: 'Schedule not found',
+            });
+        }
 
         try {
             await triggerSchedule(id);
