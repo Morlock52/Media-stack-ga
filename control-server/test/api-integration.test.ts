@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
-import { build } from '../src/app.js'
+import { buildApp } from '../src/app.js'
 import { FastifyInstance } from 'fastify'
 
 /**
@@ -15,10 +15,8 @@ describe('Control Server API Integration Tests', () => {
   let app: FastifyInstance
 
   beforeAll(async () => {
-    app = await build({
-      logger: false,
-      disableRequestLogging: true
-    })
+    app = await buildApp()
+    await app.ready()
   })
 
   afterAll(async () => {

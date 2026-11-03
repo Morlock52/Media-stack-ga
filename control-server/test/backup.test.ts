@@ -7,6 +7,7 @@ import * as dockerUtils from '../src/utils/docker.js';
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as crypto from 'crypto';
+import { tmpdir } from 'os';
 
 // Mock dependencies
 vi.mock('../src/utils/docker.js', () => ({
@@ -207,10 +208,11 @@ describe('Backup Service', () => {
             };
 
             // Mock file reading for checksum calculation
-            const mockHash = {
-                update: vi.fn().mockReturnThis(),
-                digest: vi.fn().mockReturnValue('abc123'),
-            };
+            // calculateChecksum pipes the file into the hash, so the mock must be writable
+            const mockHash = Object.assign(
+                new Writable({ write(_chunk, _encoding, callback) { callback(); } }),
+                { digest: vi.fn().mockReturnValue('abc123') }
+            );
 
             const mockStream = new Readable({
                 read() {
@@ -256,10 +258,11 @@ describe('Backup Service', () => {
             };
 
             // Mock checksum that doesn't match
-            const mockHash = {
-                update: vi.fn().mockReturnThis(),
-                digest: vi.fn().mockReturnValue('different-hash'),
-            };
+            // calculateChecksum pipes the file into the hash, so the mock must be writable
+            const mockHash = Object.assign(
+                new Writable({ write(_chunk, _encoding, callback) { callback(); } }),
+                { digest: vi.fn().mockReturnValue('different-hash') }
+            );
 
             const mockStream = new Readable({
                 read() {
@@ -392,74 +395,46 @@ describe('Backup Service', () => {
 });
 
 describe('Encryption Utilities', () => {
+    // Round-trip tests use the real crypto, fs and fs/promises implementations
+    // behind the module mocks, against real files in a temp directory.
+    async function useRealCryptoAndFs() {
+        const realCrypto = await vi.importActual<typeof import('crypto')>('crypto');
+        const realFs = await vi.importActual<typeof import('fs')>('fs');
+        const realFsPromises = await vi.importActual<typeof import('fs/promises')>('fs/promises');
+        vi.mocked(crypto.randomBytes).mockImplementation(realCrypto.randomBytes as any);
+        vi.mocked(crypto.pbkdf2).mockImplementation(realCrypto.pbkdf2 as any);
+        vi.mocked(crypto.createCipheriv).mockImplementation(realCrypto.createCipheriv as any);
+        vi.mocked(crypto.createDecipheriv).mockImplementation(realCrypto.createDecipheriv as any);
+        vi.mocked(fs.createReadStream).mockImplementation(realFs.createReadStream as any);
+        vi.mocked(fs.createWriteStream).mockImplementation(realFs.createWriteStream as any);
+        vi.mocked(fsPromises.open).mockImplementation(realFsPromises.open as any);
+        const dir = await realFsPromises.mkdtemp(`${tmpdir()}/enc-test-`);
+        // ~20 KB, so ciphertext is well past any single read chunk
+        const plaintext = Buffer.from('media-stack backup payload\n'.repeat(800));
+        const plainPath = `${dir}/plain.bin`;
+        await realFsPromises.writeFile(plainPath, plaintext);
+        return { realFsPromises, dir, plaintext, plainPath, encPath: `${dir}/plain.enc`, outPath: `${dir}/out.bin` };
+    }
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     describe('encryptFile', () => {
         it('should encrypt a file with password', async () => {
-            // Mock crypto functions
-            const mockSalt = Buffer.from('mock-salt-32-bytes-long-string!!');
-            const mockIv = Buffer.from('mock-iv-16-bytes!');
-            const mockAuthTag = Buffer.from('mock-auth-tag-16!');
-            const mockKey = Buffer.from('mock-key-32-bytes-long-string!!!');
+            const { realFsPromises, dir, plaintext, plainPath, encPath } = await useRealCryptoAndFs();
+            try {
+                const result = await encryption.encryptFile(plainPath, encPath, 'password123');
 
-            vi.mocked(crypto.randomBytes)
-                .mockReturnValueOnce(mockSalt) // salt
-                .mockReturnValueOnce(mockIv);  // iv
-
-            vi.mocked(crypto.pbkdf2).mockImplementation((password, salt, iterations, keylen, digest, callback) => {
-                callback(null, mockKey);
-            });
-
-            const mockCipher = {
-                getAuthTag: vi.fn().mockReturnValue(mockAuthTag),
-                update: vi.fn(),
-                final: vi.fn(),
-                pipe: vi.fn().mockReturnThis(),
-                on: vi.fn(),
-                once: vi.fn(),
-                emit: vi.fn(),
-                write: vi.fn(),
-                end: vi.fn(),
-            };
-
-            vi.mocked(crypto.createCipheriv).mockReturnValue(mockCipher as any);
-
-            // Mock file streams
-            const mockReadStream = new Readable({
-                read() {
-                    this.push('test data');
-                    this.push(null);
-                }
-            });
-
-            const mockWriteStream = new Writable({
-                write(chunk, encoding, callback) {
-                    callback();
-                },
-                final(callback) {
-                    callback();
-                }
-            });
-
-            vi.mocked(fs.createReadStream).mockReturnValue(mockReadStream as any);
-            vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream as any);
-
-            // Mock fs.promises.open for updating auth tag
-            const mockFileHandle = {
-                write: vi.fn().mockResolvedValue({ bytesWritten: 16 }),
-                close: vi.fn().mockResolvedValue(undefined),
-            };
-            vi.mocked(fsPromises.open).mockResolvedValue(mockFileHandle as any);
-
-            const result = await encryption.encryptFile('/tmp/test.txt', '/tmp/test.enc', 'password123');
-
-            expect(result).toBeDefined();
-            expect(result.algorithm).toBe('aes-256-gcm');
-            expect(crypto.randomBytes).toHaveBeenCalledTimes(2);
-            expect(crypto.pbkdf2).toHaveBeenCalled();
-            expect(crypto.createCipheriv).toHaveBeenCalled();
+                expect(result.algorithm).toBe('aes-256-gcm');
+                expect(result.authTag.equals(Buffer.alloc(16))).toBe(false);
+                const encrypted = await realFsPromises.readFile(encPath);
+                expect(encrypted.subarray(0, 8).toString()).toBe('MSBKUP01');
+                expect(encrypted.includes(plaintext.subarray(0, 64))).toBe(false);
+                expect(crypto.pbkdf2).toHaveBeenCalled();
+                expect(crypto.createCipheriv).toHaveBeenCalled();
+            } finally {
+                await realFsPromises.rm(dir, { recursive: true, force: true });
+            }
         });
 
         it('should clean up on encryption failure', async () => {
@@ -478,65 +453,17 @@ describe('Encryption Utilities', () => {
 
     describe('decryptFile', () => {
         it('should decrypt an encrypted file with correct password', async () => {
-            const mockSalt = Buffer.from('mock-salt-32-bytes-long-string!!');
-            const mockIv = Buffer.from('mock-iv-16-bytes!');
-            const mockAuthTag = Buffer.from('mock-auth-tag-16!');
-            const mockKey = Buffer.from('mock-key-32-bytes-long-string!!!');
+            const { realFsPromises, dir, plaintext, plainPath, encPath, outPath } = await useRealCryptoAndFs();
+            try {
+                const written = await encryption.encryptFile(plainPath, encPath, 'password123');
+                const result = await encryption.decryptFile(encPath, outPath, 'password123');
 
-            // Mock header reading
-            const headerBuffer = Buffer.alloc(73); // 8 + 1 + 32 + 16 + 16
-            headerBuffer.write('MSBKUP01', 0);
-            headerBuffer.writeUInt8(1, 8);
-            mockSalt.copy(headerBuffer, 9);
-            mockIv.copy(headerBuffer, 41);
-            mockAuthTag.copy(headerBuffer, 57);
-
-            const mockFileHandle = {
-                read: vi.fn().mockResolvedValue({ bytesRead: 73, buffer: headerBuffer }),
-                close: vi.fn().mockResolvedValue(undefined),
-            };
-            vi.mocked(fsPromises.open).mockResolvedValue(mockFileHandle as any);
-
-            vi.mocked(crypto.pbkdf2).mockImplementation((password, salt, iterations, keylen, digest, callback) => {
-                callback(null, mockKey);
-            });
-
-            const mockDecipher = {
-                setAuthTag: vi.fn(),
-                update: vi.fn(),
-                final: vi.fn(),
-                pipe: vi.fn().mockReturnThis(),
-                on: vi.fn(),
-                once: vi.fn(),
-                emit: vi.fn(),
-            };
-
-            vi.mocked(crypto.createDecipheriv).mockReturnValue(mockDecipher as any);
-
-            const mockReadStream = new Readable({
-                read() {
-                    this.push('encrypted data');
-                    this.push(null);
-                }
-            });
-
-            const mockWriteStream = new Writable({
-                write(chunk, encoding, callback) {
-                    callback();
-                },
-                final(callback) {
-                    callback();
-                }
-            });
-
-            vi.mocked(fs.createReadStream).mockReturnValue(mockReadStream as any);
-            vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream as any);
-
-            const result = await encryption.decryptFile('/tmp/test.enc', '/tmp/test.txt', 'password123');
-
-            expect(result).toBeDefined();
-            expect(mockDecipher.setAuthTag).toHaveBeenCalledWith(mockAuthTag);
-            expect(crypto.createDecipheriv).toHaveBeenCalled();
+                expect(result.authTag.equals(written.authTag)).toBe(true);
+                expect((await realFsPromises.readFile(outPath)).equals(plaintext)).toBe(true);
+                expect(crypto.createDecipheriv).toHaveBeenCalled();
+            } finally {
+                await realFsPromises.rm(dir, { recursive: true, force: true });
+            }
         });
 
         it('should throw error on invalid password', async () => {
@@ -597,49 +524,15 @@ describe('Encryption Utilities', () => {
 
     describe('verifyPassword', () => {
         it('should return true for correct password', async () => {
-            const mockSalt = Buffer.from('mock-salt-32-bytes-long-string!!');
-            const mockIv = Buffer.from('mock-iv-16-bytes!');
-            const mockAuthTag = Buffer.from('mock-auth-tag-16!');
+            const { realFsPromises, dir, plainPath, encPath } = await useRealCryptoAndFs();
+            try {
+                await encryption.encryptFile(plainPath, encPath, 'correct-password');
 
-            const headerBuffer = Buffer.alloc(73);
-            headerBuffer.write('MSBKUP01', 0);
-            headerBuffer.writeUInt8(1, 8);
-            mockSalt.copy(headerBuffer, 9);
-            mockIv.copy(headerBuffer, 41);
-            mockAuthTag.copy(headerBuffer, 57);
-
-            const mockFileHandle = {
-                read: vi.fn().mockResolvedValue({ bytesRead: 73, buffer: headerBuffer }),
-                close: vi.fn().mockResolvedValue(undefined),
-            };
-            vi.mocked(fsPromises.open).mockResolvedValue(mockFileHandle as any);
-
-            vi.mocked(crypto.pbkdf2).mockImplementation((password, salt, iterations, keylen, digest, callback) => {
-                callback(null, Buffer.from('correct-key'));
-            });
-
-            const mockDecipher = {
-                setAuthTag: vi.fn(),
-                update: vi.fn(),
-                final: vi.fn(),
-                pipe: vi.fn().mockReturnThis(),
-                on: vi.fn(),
-                once: vi.fn(),
-            };
-
-            vi.mocked(crypto.createDecipheriv).mockReturnValue(mockDecipher as any);
-
-            const mockReadStream = new Readable({
-                read() {
-                    this.push('test');
-                    this.push(null);
-                }
-            });
-
-            vi.mocked(fs.createReadStream).mockReturnValue(mockReadStream as any);
-
-            const result = await encryption.verifyPassword('/tmp/test.enc', 'correct-password');
-            expect(result).toBe(true);
+                expect(await encryption.verifyPassword(encPath, 'correct-password')).toBe(true);
+                expect(await encryption.verifyPassword(encPath, 'wrong-password')).toBe(false);
+            } finally {
+                await realFsPromises.rm(dir, { recursive: true, force: true });
+            }
         });
 
         it('should return false for incorrect password', async () => {
