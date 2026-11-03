@@ -28,7 +28,9 @@ api() {
 }
 getkey() { grep -oP '(?<=<ApiKey>)[^<]+' "$CONFIG_ROOT/$1/config.xml" 2>/dev/null || true; }
 setenv() { if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
-jstr()   { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }   # escape for a JSON string value
+# escape for a JSON string value (quotes, backslashes and control chars); sed fallback if python3 is missing
+jstr()   { python3 -c 'import sys,json;sys.stdout.write(json.dumps(sys.argv[1])[1:-1])' "$1" 2>/dev/null \
+           || printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g'; }
 firstid() { python3 -c 'import sys,json;d=json.load(sys.stdin);print(d[0]["id"] if d else "")' 2>/dev/null || true; }
 urlenc() { python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$1" 2>/dev/null || printf %s "$1"; }
 
@@ -75,8 +77,8 @@ wire_arr() {
     local rf="{\"path\":\"$root\"}"
     if [[ $app == lidarr ]]; then
       local qp mp
-      qp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/qualityprofile" | firstid)
-      mp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/metadataprofile" | firstid)
+      qp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/qualityprofile" | firstid || true)
+      mp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/metadataprofile" | firstid || true)
       rf="{\"name\":\"Music\",\"path\":\"$root\",\"defaultQualityProfileId\":${qp:-1},\"defaultMetadataProfileId\":${mp:-1}}"
     fi
     api "$app" "$port" "$v" "$k" POST rootfolder "$rf" >/dev/null && ok "root folder $root" || warn "root folder $root failed"
