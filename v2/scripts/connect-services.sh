@@ -28,6 +28,8 @@ api() {
 }
 getkey() { grep -oP '(?<=<ApiKey>)[^<]+' "$CONFIG_ROOT/$1/config.xml" 2>/dev/null || true; }
 setenv() { if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+jstr()   { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }   # escape for a JSON string value
+firstid() { python3 -c 'import sys,json;d=json.load(sys.stdin);print(d[0]["id"] if d else "")' 2>/dev/null || true; }
 urlenc() { python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$1" 2>/dev/null || printf %s "$1"; }
 
 # ---------------------------------------------------------------------------- keys
@@ -62,32 +64,42 @@ if [[ -n "$SAB_KEY" ]] && running sabnzbd; then
 fi
 
 # ---------------------------------------------------------------------- *arr apps
-# wire_arr <container> <port> <rootfolder> <categoryField> <category>
+# wire_arr <container> <port> <apiVersion> <rootfolder> <categoryField> <category>
+#   Sonarr/Radarr use /api/v3; Lidarr uses /api/v1 and needs profile ids on its root folder.
 wire_arr() {
-  local app=$1 port=$2 root=$3 catf=$4 cat=$5 k=${KEY[$1]:-}
+  local app=$1 port=$2 v=$3 root=$4 catf=$5 cat=$6 k=${KEY[$1]:-}
   [[ -z "$k" ]] && return 0
   echo "▸ $app"
-  if api "$app" "$port" v3 "$k" GET rootfolder | grep -q "\"path\":\"$root\""; then skip "root folder $root exists"
-  else api "$app" "$port" v3 "$k" POST rootfolder "{\"path\":\"$root\"}" >/dev/null && ok "root folder $root" || warn "root folder $root failed"; fi
+  if api "$app" "$port" "$v" "$k" GET rootfolder 2>/dev/null | grep -q "\"path\":\"$root\""; then skip "root folder $root exists"
+  else
+    local rf="{\"path\":\"$root\"}"
+    if [[ $app == lidarr ]]; then
+      local qp mp
+      qp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/qualityprofile" | firstid)
+      mp=$(docker exec "$app" curl -sf -H "X-Api-Key: $k" "http://localhost:$port/api/$v/metadataprofile" | firstid)
+      rf="{\"name\":\"Music\",\"path\":\"$root\",\"defaultQualityProfileId\":${qp:-1},\"defaultMetadataProfileId\":${mp:-1}}"
+    fi
+    api "$app" "$port" "$v" "$k" POST rootfolder "$rf" >/dev/null && ok "root folder $root" || warn "root folder $root failed"
+  fi
 
-  local clients; clients=$(api "$app" "$port" v3 "$k" GET downloadclient)
+  local clients; clients=$(api "$app" "$port" "$v" "$k" GET downloadclient 2>/dev/null || true)
   if grep -q '"implementation":"QBittorrent"' <<<"$clients"; then skip "qBittorrent client exists"
   elif ! $HAVE_QBIT; then skip "qBittorrent not running — enable the torrent profile and re-run"
   else
-    api "$app" "$port" v3 "$k" POST "downloadclient?forceSave=true" "{
+    api "$app" "$port" "$v" "$k" POST "downloadclient?forceSave=true" "{
       \"enable\":true,\"protocol\":\"torrent\",\"priority\":1,\"name\":\"qBittorrent\",
       \"implementation\":\"QBittorrent\",\"configContract\":\"QBittorrentSettings\",\"tags\":[],
       \"removeCompletedDownloads\":true,\"removeFailedDownloads\":true,
       \"fields\":[{\"name\":\"host\",\"value\":\"gluetun\"},{\"name\":\"port\",\"value\":8080},
-        {\"name\":\"useSsl\",\"value\":false},{\"name\":\"username\",\"value\":\"$QBIT_USER\"},
-        {\"name\":\"password\",\"value\":\"$QBIT_PASS\"},{\"name\":\"$catf\",\"value\":\"$cat\"}]}" >/dev/null \
+        {\"name\":\"useSsl\",\"value\":false},{\"name\":\"username\",\"value\":\"$(jstr "$QBIT_USER")\"},
+        {\"name\":\"password\",\"value\":\"$(jstr "$QBIT_PASS")\"},{\"name\":\"$catf\",\"value\":\"$cat\"}]}" >/dev/null \
       && ok "qBittorrent (gluetun:8080, category $cat)" || warn "qBittorrent failed — check QBIT_USER/QBIT_PASS"
   fi
 
   if grep -q '"implementation":"Sabnzbd"' <<<"$clients"; then skip "SABnzbd client exists"
   elif [[ -z "$SAB_KEY" ]] || ! running sabnzbd; then :
   else
-    api "$app" "$port" v3 "$k" POST "downloadclient?forceSave=true" "{
+    api "$app" "$port" "$v" "$k" POST "downloadclient?forceSave=true" "{
       \"enable\":true,\"protocol\":\"usenet\",\"priority\":1,\"name\":\"SABnzbd\",
       \"implementation\":\"Sabnzbd\",\"configContract\":\"SabnzbdSettings\",\"tags\":[],
       \"removeCompletedDownloads\":true,\"removeFailedDownloads\":true,
@@ -97,10 +109,10 @@ wire_arr() {
       && ok "SABnzbd (sabnzbd:8080, category $cat)" || warn "SABnzbd client failed"
   fi
 }
-running sonarr    && wire_arr sonarr    8989 /data/media/tv        tvCategory    tv
-running radarr    && wire_arr radarr    7878 /data/media/movies    movieCategory movies
-running radarr-4k && wire_arr radarr-4k 7878 /data/media/movies-4k movieCategory movies-4k
-running lidarr    && wire_arr lidarr    8686 /data/media/music     musicCategory music
+running sonarr    && wire_arr sonarr    8989 v3 /data/media/tv        tvCategory    tv
+running radarr    && wire_arr radarr    7878 v3 /data/media/movies    movieCategory movies
+running radarr-4k && wire_arr radarr-4k 7878 v3 /data/media/movies-4k movieCategory movies-4k
+running lidarr    && wire_arr lidarr    8686 v1 /data/media/music     musicCategory music
 
 # ----------------------------------------------------------------------- prowlarr
 if running prowlarr && [[ -n "${KEY[prowlarr]:-}" ]]; then
