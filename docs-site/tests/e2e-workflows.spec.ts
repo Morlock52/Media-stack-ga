@@ -545,7 +545,8 @@ test.describe('End-to-End User Workflows', () => {
         latency: 500               // 500ms
       })
 
-      await page.goto('/')
+      // Measure the production build (what users load), not the unbundled dev server.
+      await page.goto(process.env.PLAYWRIGHT_PREVIEW_URL || 'http://localhost:4175')
 
       // Should show loading indicators
       const loadingIndicator = page.locator('[class*="loading"], [class*="spinner"], [aria-label*="loading"]')
