@@ -82,7 +82,11 @@ export function StackSelectionStep() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                    <div
+                        role="group"
+                        aria-label="Available services"
+                        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4"
+                    >
                         {services.map((service: ServiceOption) => {
                             const isSelected = selectedServices.includes(service.profile)
                             const Icon = service.icon
@@ -91,6 +95,7 @@ export function StackSelectionStep() {
                             return (
                                 <motion.button
                                     key={service.id}
+                                    data-service={service.id}
                                     onClick={() => !isDisabled && toggleService(service.profile)}
                                     disabled={isDisabled}
                                     className={`relative p-3 sm:p-4 rounded-xl border transition-all touch-target-44 min-h-[44px] ${isSelected

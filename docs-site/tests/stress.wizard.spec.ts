@@ -210,10 +210,12 @@ test.describe('Docs Site Stress Tests', () => {
       // Step 3: Stack selection
       await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       await page.getByRole('button', { name: /expert mode/i }).click()
-      await page.getByText('*Arr Stack', { exact: true }).click()
-      await page.getByText('Plex', { exact: true }).click()
-      await page.getByText('Torrent Client', { exact: true }).click()
-      await page.getByText('Gluetun VPN', { exact: true }).click()
+      // Scope to the service grid: the "Recommended additions" panel repeats service names
+      const serviceGrid = page.getByRole('group', { name: 'Available services' })
+      await serviceGrid.getByText('*Arr Stack', { exact: true }).click()
+      await serviceGrid.getByText('Plex', { exact: true }).click()
+      await serviceGrid.getByText('Torrent Client', { exact: true }).click()
+      await serviceGrid.getByText('Gluetun VPN', { exact: true }).click()
       await page.getByRole('button', { name: /^next$/i }).click()
 
       // Step 4: Service config

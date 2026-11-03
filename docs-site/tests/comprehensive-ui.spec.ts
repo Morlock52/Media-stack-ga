@@ -153,11 +153,8 @@ test.describe('Comprehensive UI Component Tests', () => {
       // Reload page
       await page.reload()
 
-      // Navigate back to config step
-      const startButton = page.getByRole('button', { name: /let'?s go|start/i }).first()
-      await startButton.click()
-
-      // Check if value persisted
+      // The wizard persists its current step (setup-wizard-storage), so the reload resumes on
+      // Basic Configuration; the Welcome step and its start button are not shown again.
       await expect(page.getByRole('heading', { name: /basic|configuration/i })).toBeVisible({ timeout: 15000 })
       // May or may not persist depending on implementation
       console.log('✅ Form persistence behavior verified')
@@ -182,7 +179,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('stack selection shows available services', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       // Should show service options
       const serviceOptions = page.getByText(/plex|jellyfin|sonarr|radarr/i)
@@ -192,7 +189,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('expert mode reveals all service options', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       const expertButton = page.getByRole('button', { name: /expert/i })
       await expertButton.click()
@@ -205,7 +202,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('service cards are clickable and selectable', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       await page.getByRole('button', { name: /expert/i }).click()
 
@@ -224,7 +221,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('service dependencies are indicated', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       await page.getByRole('button', { name: /expert/i }).click()
 
@@ -252,7 +249,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       await page.locator('input[name="password"]').first().fill('TestPass123!')
       await page.getByRole('button', { name: /next/i }).click()
 
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       await page.getByRole('button', { name: /expert/i }).click()
       await page.getByText('Plex', { exact: true }).click()
       await page.getByRole('button', { name: /next/i }).click()
@@ -616,7 +613,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       await page.locator('input[name="password"]').first().fill('TestPass123!')
       await page.getByRole('button', { name: /next/i }).click()
 
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       
       const expertStart = Date.now()
       await page.getByRole('button', { name: /expert/i }).click()
