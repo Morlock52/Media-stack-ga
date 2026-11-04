@@ -258,7 +258,7 @@ export function VPNConfigStep() {
 
                 {/* Sub-step Pills */}
                 <div className="flex flex-wrap gap-2">
-                    {relevantSubSteps.map((step, index) => {
+                    {relevantSubSteps.map((step) => {
                         const Icon = step.icon
                         const isActive = step.id === currentSubStep
                         const isCompleted = completedSubSteps.has(step.id)

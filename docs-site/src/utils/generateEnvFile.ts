@@ -1,7 +1,7 @@
 import { createDefaultStoragePlan, DEFAULT_DATA_ROOT } from '../data/storagePlan'
 import type { SetupConfig } from '../store/setupStore'
-import { getVPNProviderById, commonGluetunEnvVars } from '../data/vpnProviders'
-import type { VPNProvider, VPNEnvironmentVariable } from '../data/vpnProviders'
+import { getVPNProviderById } from '../data/vpnProviders'
+import type { VPNEnvironmentVariable } from '../data/vpnProviders'
 
 /**
  * Generate a cryptographically secure random string for secrets
@@ -19,14 +19,22 @@ function generateSecureSecret(length: number = 32): string {
  * Returns a formatted string with all necessary VPN environment variables
  */
 function generateVpnEnvVars(config: SetupConfig): string {
-    // If no VPN provider selected, return empty string
-    if (!config.selectedVpnProvider) {
-        return ''
-    }
+    const provider = config.selectedVpnProvider ? getVPNProviderById(config.selectedVpnProvider) : undefined
 
-    const provider = getVPNProviderById(config.selectedVpnProvider)
+    // No provider picked in the VPN step: still keep WireGuard credentials entered in
+    // Advanced Settings, which docker-compose.yml passes to Gluetun.
     if (!provider) {
-        return ''
+        if (!config.wireguardPrivateKey && !config.wireguardAddresses) {
+            return ''
+        }
+        return [
+            '# =============================================================================',
+            '# VPN (WIREGUARD)',
+            '# =============================================================================',
+            `WIREGUARD_PRIVATE_KEY=${config.wireguardPrivateKey || ''}`,
+            `WIREGUARD_ADDRESSES=${config.wireguardAddresses || ''}`,
+            '',
+        ].join('\n')
     }
 
     const protocol = config.vpnProtocol || 'wireguard'

@@ -78,7 +78,6 @@ export function ValidationStep() {
         }
 
         autoValidate()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBackupForRestore, destination])
 
     const handleValidate = async () => {

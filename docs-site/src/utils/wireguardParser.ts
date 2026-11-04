@@ -95,7 +95,7 @@ export function parseWireGuardConfig(content: string): ParseResult {
                 case 'presharedkey':
                     config.presharedKey = trimmedValue
                     break
-                case 'endpoint':
+                case 'endpoint': {
                     // Parse endpoint (format: IP:Port or hostname:port)
                     const endpointMatch = trimmedValue.match(/^(.+):(\d+)$/)
                     if (endpointMatch) {
@@ -105,6 +105,7 @@ export function parseWireGuardConfig(content: string): ParseResult {
                         errors.push(`Invalid endpoint format: ${trimmedValue}. Expected format: IP:Port`)
                     }
                     break
+                }
                 case 'allowedips':
                     config.allowedIps = trimmedValue
                     break

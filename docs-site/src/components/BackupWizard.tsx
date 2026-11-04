@@ -30,7 +30,6 @@ export function BackupWizard() {
         destination,
         selectedItems,
         encryption,
-        schedule,
         setCurrentStep,
         nextStep,
         prevStep

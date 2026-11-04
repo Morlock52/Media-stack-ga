@@ -15,6 +15,7 @@ import type {
     BackupFileInfo,
     ProgressCallback,
 } from './destinationAdapter.js';
+import { backupIdFromFilename, isBackupFile } from './backupFiles.js';
 
 const logger = createLogger('localAdapter');
 
@@ -165,14 +166,14 @@ export class LocalAdapter implements DestinationAdapter {
             const entries = await readdir(searchPath, { withFileTypes: true });
 
             for (const entry of entries) {
-                if (entry.isFile() && (entry.name.endsWith('.tar.gz') || entry.name.endsWith('.enc'))) {
+                if (entry.isFile() && isBackupFile(entry.name)) {
                     const fullPath = join(searchPath, entry.name);
                     const stats = await stat(fullPath);
                     const relativePath = prefix ? join(prefix, entry.name) : entry.name;
 
                     // Extract backup ID from filename
                     // Expected format: backup-<timestamp>.tar.gz or backup-<timestamp>.enc
-                    const id = entry.name.replace(/\.(tar\.gz|enc)$/, '');
+                    const id = backupIdFromFilename(entry.name);
 
                     files.push({
                         id,

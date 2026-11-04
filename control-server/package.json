@@ -19,7 +19,7 @@
     "@fastify/multipart": "^9.0.3",
     "@fastify/rate-limit": "^10.3.0",
     "@media-stack/shared": "*",
-    "fastify": "^5.2.1",
+    "fastify": "^5.12.8",
     "node-cron": "^3.0.3",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
@@ -37,6 +37,6 @@
     "tsx": "^4.20.5",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.48.0",
-    "vitest": "^4.0.16"
+    "vitest": "^4.1.12"
   }
 }
