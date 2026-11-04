@@ -3,9 +3,9 @@
  * Automated backup scheduling using node-cron with retention policies and health checks
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { randomUUID } from 'crypto';
-import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm, unlink } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../utils/env.js';
 import { createLogger } from '../utils/logger.js';
@@ -14,7 +14,8 @@ import type { BackupSchedule, BackupConfig, BackupHistoryEntry } from '../types/
 import { BackupIdSchema } from '../types/backup.js';
 import { discoverBackupTargets, createBackupArchive } from './backupService.js';
 import { createAdapter } from './backup/destinationAdapter.js';
-import { encryptFile } from '../utils/encryption.js';
+import { uploadBackupFiles } from './backup/backupTransfer.js';
+import { itemArchiveName, legacyItemArchiveName } from './backup/backupFiles.js';
 
 const logger = createLogger('backupScheduler');
 
@@ -34,7 +35,7 @@ interface ScheduleStore {
 /**
  * Active cron jobs keyed by schedule ID
  */
-const activeCronJobs = new Map<string, cron.ScheduledTask>();
+const activeCronJobs = new Map<string, ScheduledTask>();
 
 /**
  * In-memory schedule store
@@ -186,32 +187,15 @@ async function executeScheduledBackup(schedule: BackupSchedule): Promise<void> {
         // Create backup archive
         const { archivePath, manifest } = await createBackupArchive(config);
 
-        // Save manifest to file
-        const manifestPath = join(TEMP_DIR, `${manifest.id}-manifest.json`);
-        await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-
-        // Encrypt if needed
-        let finalArchivePath = archivePath;
-        if (config.encryption.enabled && config.encryption.password) {
-            const encryptedPath = `${archivePath}.enc`;
-            await encryptFile(archivePath, encryptedPath, config.encryption.password);
-            finalArchivePath = encryptedPath;
-        }
-
-        // Upload to destination
+        // Upload each item's archive under its own `<backup id>-<item>` name, then the
+        // manifest. (Before, the scheduler uploaded the temp folder path as one
+        // `<id>.tar.gz`, so nothing usable reached the destination.)
         const adapter = await createAdapter(config.destination);
-        const archiveFileName = config.encryption.enabled ? `${manifest.id}.tar.gz.enc` : `${manifest.id}.tar.gz`;
-        const manifestFileName = `${manifest.id}-manifest.json`;
-
-        await adapter.upload(finalArchivePath, archiveFileName);
-        await adapter.upload(manifestPath, manifestFileName);
-
-        // Cleanup temporary files
-        await unlink(archivePath).catch(() => {});
-        await unlink(manifestPath).catch(() => {});
-        if (finalArchivePath !== archivePath) {
-            await unlink(finalArchivePath).catch(() => {});
-        }
+        await uploadBackupFiles(adapter, manifest, {
+            tempDir: TEMP_DIR,
+            encryptionPassword: config.encryption.enabled ? config.encryption.password : undefined,
+        });
+        await rm(archivePath, { recursive: true, force: true }).catch(() => {});
 
         // Update schedule metadata
         schedule.lastRun = startTime;
@@ -280,17 +264,17 @@ export async function applyRetentionPolicy(schedule: BackupSchedule): Promise<vo
                     const createdAt = new Date(manifest.createdAt);
                     const encrypted = manifest.encrypted;
 
-                    // Collect all files associated with this backup. Scheduled backups
-                    // upload one archive named after the backup id; backups made from
-                    // the API upload one archive per item, named after the item.
+                    // Collect all files associated with this backup: its manifest and
+                    // its own `<id>-<item>` archives. Older backups stored archives as
+                    // `<id>.tar.gz` or under the shared `<item>.tar.gz` name.
                     const backupFiles: string[] = [
                         `${backupId}-manifest.json`,
                         encrypted ? `${backupId}.tar.gz.enc` : `${backupId}.tar.gz`,
                     ];
                     const itemFiles: string[] = [];
                     for (const item of manifest.items ?? []) {
-                        const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        itemFiles.push(encrypted ? `${sanitizedName}.tar.gz.enc` : `${sanitizedName}.tar.gz`);
+                        backupFiles.push(itemArchiveName(backupId, item.name, !!encrypted));
+                        itemFiles.push(legacyItemArchiveName(item.name, !!encrypted));
                     }
 
                     backupHistory.push({ id: backupId, createdAt, files: backupFiles, itemFiles });
@@ -309,8 +293,8 @@ export async function applyRetentionPolicy(schedule: BackupSchedule): Promise<vo
         // Delete backups beyond retention count
         const toDelete = backupHistory.slice(schedule.retentionCount);
 
-        // Per-item archive names are shared by every backup of the same item, so
-        // only delete one when no backup we keep still points at it.
+        // Legacy per-item archive names are shared by every older backup of the same
+        // item, so only delete one when no backup we keep still points at it.
         const keptItemFiles = new Set(backupHistory.slice(0, schedule.retentionCount).flatMap((b) => b.itemFiles));
         const listed = new Set(files.map((f) => f.name));
         for (const backup of toDelete) {
@@ -351,7 +335,9 @@ export async function applyRetentionPolicy(schedule: BackupSchedule): Promise<vo
 function scheduleJob(schedule: BackupSchedule): void {
     try {
         const cronExpression = getCronExpression(schedule);
-        const task = cron.schedule(
+        // node-cron 4: createTask() makes a stopped task (schedule() would start it
+        // straight away), so disabled schedules stay registered but idle.
+        const task = cron.createTask(
             cronExpression,
             () => {
                 executeScheduledBackup(schedule).catch((error) => {
@@ -359,10 +345,17 @@ function scheduleJob(schedule: BackupSchedule): void {
                 });
             },
             {
-                scheduled: schedule.enabled,
+                name: `backup-${schedule.id}`,
                 timezone: 'UTC',
+                // Never start a second run of the same schedule while one is still going
+                noOverlap: true,
             }
         );
+        if (schedule.enabled) {
+            Promise.resolve(task.start()).catch((error) => {
+                logger.error({ scheduleId: schedule.id, error: getErrorMessage(error) }, 'Failed to start backup job');
+            });
+        }
 
         activeCronJobs.set(schedule.id, task);
         logger.info({ scheduleId: schedule.id, cronExpression, enabled: schedule.enabled }, 'Scheduled backup job');
@@ -417,7 +410,7 @@ export async function updateSchedule(id: string, updates: Partial<BackupSchedule
     // Restart cron job
     const existingJob = activeCronJobs.get(id);
     if (existingJob) {
-        existingJob.stop();
+        await existingJob.destroy();
         activeCronJobs.delete(id);
     }
 
@@ -442,7 +435,7 @@ export async function deleteSchedule(id: string): Promise<boolean> {
     // Stop cron job
     const existingJob = activeCronJobs.get(id);
     if (existingJob) {
-        existingJob.stop();
+        await existingJob.destroy();
         activeCronJobs.delete(id);
     }
 
@@ -520,7 +513,7 @@ export async function shutdownScheduler(): Promise<void> {
     logger.info('Shutting down backup scheduler');
 
     for (const [id, task] of activeCronJobs.entries()) {
-        task.stop();
+        await task.destroy();
         logger.debug({ scheduleId: id }, 'Stopped scheduled job');
     }
 

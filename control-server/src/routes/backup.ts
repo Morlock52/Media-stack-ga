@@ -6,7 +6,7 @@
 import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { join } from 'path';
-import { readFile, unlink } from 'fs/promises';
+import { readFile, rm, unlink } from 'fs/promises';
 import { getErrorMessage } from '../utils/errors.js';
 import { createLogger } from '../utils/logger.js';
 import { PROJECT_ROOT } from '../utils/env.js';
@@ -30,7 +30,9 @@ import {
     validateBackup as validateBackupIntegrity,
 } from '../services/backupService.js';
 import { createAdapter } from '../services/backup/destinationAdapter.js';
-import { encryptFile, decryptFile } from '../utils/encryption.js';
+import { downloadItemArchive, uploadBackupFiles } from '../services/backup/backupTransfer.js';
+import { itemArchiveName, legacyItemArchiveName, sanitizeItemName } from '../services/backup/backupFiles.js';
+import { decryptFile } from '../utils/encryption.js';
 import {
     getSchedules,
     getSchedule,
@@ -268,16 +270,15 @@ export async function backupRoutes(fastify: FastifyInstance) {
             const tempDir = join(TEMP_DIR, `validate-${backupId}-${Date.now()}`);
 
             for (const item of manifest.items) {
-                const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const sanitizedName = sanitizeItemName(item.name);
                 const archiveFileName = `${sanitizedName}.tar.gz`;
-                const encryptedFileName = `${sanitizedName}.tar.gz.enc`;
                 const tempArchivePath = join(tempDir, archiveFileName);
 
                 try {
                     // Try encrypted file first if backup is encrypted
                     if (manifest.encrypted && decryptionPassword) {
-                        const tempEncryptedPath = join(tempDir, encryptedFileName);
-                        await adapter.download(encryptedFileName, tempEncryptedPath);
+                        const tempEncryptedPath = join(tempDir, `${archiveFileName}.enc`);
+                        await downloadItemArchive(adapter, manifest.id, item.name, true, tempEncryptedPath);
 
                         // Decrypt file
                         await decryptFile(tempEncryptedPath, tempArchivePath, decryptionPassword);
@@ -286,7 +287,7 @@ export async function backupRoutes(fastify: FastifyInstance) {
                         await unlink(tempEncryptedPath).catch(() => {});
                     } else {
                         // Download unencrypted archive
-                        await adapter.download(archiveFileName, tempArchivePath);
+                        await downloadItemArchive(adapter, manifest.id, item.name, false, tempArchivePath);
                     }
 
                     // Validate checksum (handled by validateBackupIntegrity)
@@ -372,17 +373,25 @@ export async function backupRoutes(fastify: FastifyInstance) {
             const deletedFiles: string[] = [];
             const deleteErrors: string[] = [];
 
+            const encryptedOptions = manifest.encrypted ? [true, false] : [false];
             for (const item of manifest.items) {
-                const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                const archiveFileName = `${sanitizedName}.tar.gz`;
-                const encryptedFileName = `${sanitizedName}.tar.gz.enc`;
+                // This backup's own archives first. Only an older backup that has none
+                // falls back to the shared `<item>.tar.gz` name it was stored under.
+                let deletedOwn = false;
+                for (const encrypted of encryptedOptions) {
+                    const fileName = itemArchiveName(manifest.id, item.name, encrypted);
+                    try {
+                        await adapter.delete(fileName);
+                        deletedFiles.push(fileName);
+                        deletedOwn = true;
+                    } catch (error) {
+                        logger.debug({ fileName, error: getErrorMessage(error) }, 'File not found during delete');
+                    }
+                }
+                if (deletedOwn) continue;
 
-                // Try to delete both encrypted and unencrypted versions
-                const filesToDelete = manifest.encrypted
-                    ? [encryptedFileName, archiveFileName]
-                    : [archiveFileName];
-
-                for (const fileName of filesToDelete) {
+                for (const encrypted of encryptedOptions) {
+                    const fileName = legacyItemArchiveName(item.name, encrypted);
                     try {
                         await adapter.delete(fileName);
                         deletedFiles.push(fileName);
@@ -720,80 +729,35 @@ async function executeBackup(backupId: string, config: BackupConfig): Promise<vo
             });
         });
 
-        // Encrypt if needed
-        const finalArchivePath = archivePath;
-        if (config.encryption.enabled && config.encryption.password) {
-            updateProgress({
-                status: 'encrypting',
-                currentOperation: 'Encrypting backup...',
-            });
-
-            for (const item of manifest.items) {
-                const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                const itemArchivePath = join(TEMP_DIR, `${sanitizedName}.tar.gz`);
-                const encryptedPath = `${itemArchivePath}.enc`;
-
-                await encryptFile(itemArchivePath, encryptedPath, config.encryption.password);
-
-                // Remove unencrypted file
-                await unlink(itemArchivePath).catch(() => {});
-            }
-        }
-
-        // Upload to destination
+        // Encrypt and upload: each item under its own `<backup id>-<item>` name, so a
+        // later backup of the same item can't overwrite this one's archive
+        const encrypting = config.encryption.enabled && !!config.encryption.password;
         updateProgress({
-            status: 'uploading',
-            currentOperation: 'Uploading backup to destination...',
+            status: encrypting ? 'encrypting' : 'uploading',
+            currentOperation: encrypting ? 'Encrypting and uploading backup...' : 'Uploading backup to destination...',
         });
 
         const adapter = await createAdapter(config.destination);
-
-        // Upload manifest
-        const manifestPath = join(TEMP_DIR, `${manifest.id}-manifest.json`);
-        const manifestFileName = `${manifest.id}-manifest.json`;
-        await adapter.upload(manifestPath, manifestFileName, (progress) => {
-            updateProgress({
-                bytesProcessed: progress.bytesTransferred,
-                transferSpeed: progress.bytesTransferred / ((Date.now() - new Date(activeBackups.get(backupId)!.startedAt).getTime()) / 1000),
-            });
-        });
-
-        // Upload archive files
-        for (let i = 0; i < manifest.items.length; i++) {
-            const item = manifest.items[i];
-            const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const fileName = config.encryption.enabled
-                ? `${sanitizedName}.tar.gz.enc`
-                : `${sanitizedName}.tar.gz`;
-            const localPath = join(TEMP_DIR, fileName);
-
-            updateProgress({
-                currentOperation: `Uploading ${item.name}...`,
-                currentItem: item.name,
-                itemsProcessed: i,
-            });
-
-            await adapter.upload(localPath, fileName, (progress) => {
+        const startedAt = new Date(activeBackups.get(backupId)!.startedAt).getTime();
+        await uploadBackupFiles(adapter, manifest, {
+            tempDir: TEMP_DIR,
+            encryptionPassword: encrypting ? config.encryption.password : undefined,
+            onItem: (itemName, index) => {
+                updateProgress({
+                    status: 'uploading',
+                    currentOperation: `Uploading ${itemName}...`,
+                    currentItem: itemName,
+                    itemsProcessed: index,
+                });
+            },
+            onProgress: (progress) => {
                 updateProgress({
                     bytesProcessed: progress.bytesTransferred,
-                    transferSpeed: progress.bytesTransferred / ((Date.now() - new Date(activeBackups.get(backupId)!.startedAt).getTime()) / 1000),
+                    transferSpeed: progress.bytesTransferred / ((Date.now() - startedAt) / 1000),
                 });
-            });
-        }
-
-        // Cleanup temp files
-        for (const item of manifest.items) {
-            const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const files = [
-                join(TEMP_DIR, `${sanitizedName}.tar.gz`),
-                join(TEMP_DIR, `${sanitizedName}.tar.gz.enc`),
-            ];
-
-            for (const file of files) {
-                await unlink(file).catch(() => {});
-            }
-        }
-        await unlink(manifestPath).catch(() => {});
+            },
+        });
+        await rm(archivePath, { recursive: true, force: true }).catch(() => {});
 
         // Mark as completed
         updateProgress({
