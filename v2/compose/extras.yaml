@@ -1,0 +1,181 @@
+# =============================================================================
+#  EXTRAS — all opt-in via COMPOSE_PROFILES:
+#    usenet     SABnzbd                         → /data/usenet
+#    crossseed  cross-seed v6 (hardlink inject) → /data/torrents
+#    4k         Radarr-4K (separate UHD library)→ /data/media/movies-4k
+#    books      Chaptarr (beta, Readarr fork)   → /data/media/{books,audiobooks}
+#    jellystat  Jellystat + its own Postgres    (Jellyfin stats)
+# =============================================================================
+x-common: &common
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  networks: [proxy]
+
+x-lsio-env: &lsio-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  UMASK: "002"
+  TZ: ${TZ}
+
+services:
+  # ---------------------------------------------------------------------------
+  # SABnzbd — Usenet. Off the VPN (SSL to your provider is enough; TRaSH default).
+  # connect-services.sh sets complete/incomplete dirs, categories, host whitelist.
+  # ---------------------------------------------------------------------------
+  sabnzbd:
+    <<: *common
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    profiles: ["usenet"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/sabnzbd:/config
+      - ${DATA_ROOT}/usenet:/data/usenet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ -o /dev/null || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sabnzbd.rule=Host(`sab.${DOMAIN}`)
+      - traefik.http.routers.sabnzbd.middlewares=tinyauth
+      - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
+      - homepage.group=Downloads
+      - homepage.name=SABnzbd
+      - homepage.icon=sabnzbd.png
+      - homepage.href=https://sab.${DOMAIN}
+      - homepage.widget.type=sabnzbd
+      - homepage.widget.url=http://sabnzbd:8080
+      - homepage.widget.key=${SABNZBD_API_KEY}
+
+  # ---------------------------------------------------------------------------
+  # cross-seed v6 — finds the same release on your other trackers and injects
+  # it into qBittorrent as a hardlink (zero extra disk). Config: see
+  # scripts/connect-services.sh (generates + patches config.js).
+  # Runs as PUID:PGID — must match qBittorrent's user.
+  # ---------------------------------------------------------------------------
+  cross-seed:
+    <<: *common
+    image: ghcr.io/cross-seed/cross-seed:6
+    container_name: cross-seed
+    profiles: ["crossseed"]
+    user: ${PUID}:${PGID}
+    command: daemon
+    environment: { TZ: "${TZ}" }
+    volumes:
+      - ${CONFIG_ROOT}/cross-seed:/config
+      - ${DATA_ROOT}/torrents:/data/torrents
+    labels:
+      - homepage.group=Downloads
+      - homepage.name=cross-seed
+      - homepage.icon=cross-seed.png
+
+  # ---------------------------------------------------------------------------
+  # Radarr-4K — second instance, own DB + UHD profile (recyclarr: radarr-4k).
+  # Keeps 4K out of the main library so remote/mobile clients don't transcode.
+  # ---------------------------------------------------------------------------
+  radarr-4k:
+    <<: *common
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr-4k
+    profiles: ["4k"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/radarr-4k:/config
+      - ${DATA_ROOT}:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7878/ping"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr4k.rule=Host(`radarr4k.${DOMAIN}`)
+      - traefik.http.routers.radarr4k.middlewares=tinyauth
+      - traefik.http.services.radarr4k.loadbalancer.server.port=7878
+      - homepage.group=Automation
+      - homepage.name=Radarr 4K
+      - homepage.icon=radarr-4k.png
+      - homepage.href=https://radarr4k.${DOMAIN}
+      - homepage.widget.type=radarr
+      - homepage.widget.url=http://radarr-4k:7878
+      - homepage.widget.key=${RADARR_4K_API_KEY}
+
+  # ---------------------------------------------------------------------------
+  # Chaptarr — Readarr successor (BETA). eBooks + audiobooks in one instance.
+  # Root folders: /data/media/books and /data/media/audiobooks (Audiobookshelf
+  # reads the same audiobooks folder).
+  # ---------------------------------------------------------------------------
+  chaptarr:
+    <<: *common
+    image: chaptarr/chaptarr:latest
+    container_name: chaptarr
+    profiles: ["books"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/chaptarr:/config
+      - ${DATA_ROOT}:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chaptarr.rule=Host(`chaptarr.${DOMAIN}`)
+      - traefik.http.routers.chaptarr.middlewares=tinyauth
+      - traefik.http.services.chaptarr.loadbalancer.server.port=8789
+      - homepage.group=Automation
+      - homepage.name=Chaptarr
+      - homepage.icon=chaptarr.png
+      - homepage.href=https://chaptarr.${DOMAIN}
+
+  # ---------------------------------------------------------------------------
+  # Jellystat — Tautulli-style stats for Jellyfin. Own Postgres (pinned).
+  # ---------------------------------------------------------------------------
+  jellystat-db:
+    <<: *common
+    image: postgres:18.6
+    container_name: jellystat-db
+    profiles: ["jellystat"]
+    shm_size: 1gb
+    environment:
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: ${JELLYSTAT_DB_PASSWORD}
+    volumes:
+      - ${CONFIG_ROOT}/jellystat/db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jellystat -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jellystat:
+    <<: *common
+    image: cyfershepard/jellystat:latest
+    container_name: jellystat
+    profiles: ["jellystat"]
+    depends_on:
+      jellystat-db: { condition: service_healthy }
+    environment:
+      TZ: ${TZ}
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: ${JELLYSTAT_DB_PASSWORD}
+      POSTGRES_IP: jellystat-db
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ${JELLYSTAT_JWT_SECRET}
+    volumes:
+      - ${CONFIG_ROOT}/jellystat/backup:/app/backend/backup-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/auth/isConfigured || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jellystat.rule=Host(`jellystat.${DOMAIN}`)
+      - traefik.http.routers.jellystat.middlewares=tinyauth
+      - traefik.http.services.jellystat.loadbalancer.server.port=3000
+      - homepage.group=Media
+      - homepage.name=Jellystat
+      - homepage.icon=jellystat.png
+      - homepage.href=https://jellystat.${DOMAIN}

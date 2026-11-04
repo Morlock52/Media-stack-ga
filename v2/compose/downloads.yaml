@@ -1,0 +1,130 @@
+# =============================================================================
+#  DOWNLOADS — profile: torrent
+#  Gluetun (PIA OpenVPN, native port forwarding) → qBittorrent shares its netns.
+#  qBittorrent sees ONLY ${DATA_ROOT}/torrents (as /data/torrents) so paths match
+#  the *arrs exactly → hardlinks + atomic moves (TRaSH layout).
+# =============================================================================
+x-common: &common
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+
+x-lsio-env: &lsio-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  UMASK: "002"
+  TZ: ${TZ}
+
+services:
+  gluetun:
+    <<: *common
+    image: qmcgaw/gluetun:v3.41.3       # v3.41.2 has a port-forward up/down deadlock
+    container_name: gluetun
+    profiles: ["torrent"]
+    cap_add: [NET_ADMIN]
+    devices: ["/dev/net/tun:/dev/net/tun"]
+    environment:
+      TZ: ${TZ}
+      VPN_SERVICE_PROVIDER: private internet access
+      VPN_TYPE: openvpn                  # PIA WireGuard isn't native in gluetun
+      OPENVPN_USER: ${PIA_USER}
+      OPENVPN_PASSWORD: ${PIA_PASS}
+      SERVER_REGIONS: ${PIA_REGIONS:-CA Montreal,CA Toronto}
+      PORT_FORWARD_ONLY: "true"
+      VPN_PORT_FORWARDING: "on"
+      # Push the forwarded port into qBittorrent and bind it to the tunnel.
+      # Requires qBittorrent: Options → WebUI → "Bypass authentication for clients on localhost".
+      VPN_PORT_FORWARDING_UP_COMMAND: >-
+        /bin/sh -c 'wget -qO- --retry-connrefused
+        --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}"
+        http://127.0.0.1:8080/api/v2/app/setPreferences 2>&1'
+      VPN_PORT_FORWARDING_DOWN_COMMAND: >-
+        /bin/sh -c 'wget -qO- --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}"
+        http://127.0.0.1:8080/api/v2/app/setPreferences 2>&1'
+      FIREWALL_OUTBOUND_SUBNETS: ${LAN_SUBNET:-192.168.1.0/24}
+      HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE: '{"auth":"apikey","apikey":"${GLUETUN_API_KEY}"}'
+    volumes:
+      - ${CONFIG_ROOT}/gluetun:/gluetun
+    networks: [proxy]
+    # NOTE: no healthcheck override — gluetun ships its own. The old
+    # `curl localhost:8000` check failed forever (image has no curl).
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.qbt.rule=Host(`qbt.${DOMAIN}`)
+      - traefik.http.routers.qbt.middlewares=tinyauth
+      - traefik.http.services.qbt.loadbalancer.server.port=8080
+      - homepage.group=Downloads
+      - homepage.name=Gluetun
+      - homepage.icon=gluetun.png
+      - homepage.widget.type=gluetun
+      - homepage.widget.url=http://gluetun:8000
+      - homepage.widget.key=${GLUETUN_API_KEY}
+
+  qbittorrent:
+    <<: *common
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    profiles: ["torrent"]
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true                    # re-attach netns when gluetun restarts
+    environment:
+      <<: *lsio-env
+      WEBUI_PORT: 8080                   # listen port is set by gluetun's port-forward hook
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${DATA_ROOT}/torrents:/data/torrents
+    healthcheck:
+      # Fails if the tunnel dropped → autoheal restarts it into the new netns
+      test: ["CMD-SHELL", "curl -sf --max-time 5 http://127.0.0.1:8080/api/v2/app/version || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal=true
+      - homepage.group=Downloads
+      - homepage.name=qBittorrent
+      - homepage.icon=qbittorrent.png
+      - homepage.href=https://qbt.${DOMAIN}
+      - homepage.widget.type=qbittorrent
+      - homepage.widget.url=http://gluetun:8080
+
+  # Extracts RAR'd releases so the *arrs can import them
+  unpackerr:
+    <<: *common
+    image: golift/unpackerr:latest
+    container_name: unpackerr
+    profiles: ["torrent"]
+    user: ${PUID}:${PGID}
+    environment:
+      TZ: ${TZ}
+      UN_SONARR_0_URL: http://sonarr:8989
+      UN_SONARR_0_API_KEY: ${SONARR_API_KEY}
+      UN_SONARR_0_PATHS_0: /data/torrents/tv
+      UN_RADARR_0_URL: http://radarr:7878
+      UN_RADARR_0_API_KEY: ${RADARR_API_KEY}
+      UN_RADARR_0_PATHS_0: /data/torrents/movies
+    volumes:
+      - ${DATA_ROOT}/torrents:/data/torrents
+    networks: [proxy]
+
+  # Stalled / slow / malware / failed-import cleanup + seeding-time cleanup.
+  # Replaces Decluttarr and the abandoned Huntarr.
+  cleanuparr:
+    <<: *common
+    image: ghcr.io/cleanuparr/cleanuparr:latest
+    container_name: cleanuparr
+    profiles: ["torrent"]
+    environment:
+      <<: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/cleanuparr:/config
+      - ${DATA_ROOT}/torrents:/data/torrents
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cleanuparr.rule=Host(`cleanuparr.${DOMAIN}`)
+      - traefik.http.routers.cleanuparr.middlewares=tinyauth
+      - traefik.http.services.cleanuparr.loadbalancer.server.port=11011

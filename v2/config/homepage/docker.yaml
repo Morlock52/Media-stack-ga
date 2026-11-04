@@ -1,0 +1,4 @@
+# Homepage discovers services from container labels via the read-only socket proxy
+mediastack:
+  host: socket-proxy
+  port: 2375

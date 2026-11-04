@@ -1,0 +1,179 @@
+# =============================================================================
+#  *ARR — profile: arr  (lidarr: music)
+#  Every *arr mounts the WHOLE ${DATA_ROOT} as /data (TRaSH-Guides layout).
+#  Databases: SQLite (default). The old POSTGRES_* env vars never configured
+#  the *arrs — they need SONARR__POSTGRES__* — so Postgres was idle anyway.
+# =============================================================================
+x-common: &common
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  networks: [proxy]
+
+x-lsio-env: &lsio-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  UMASK: "002"
+  TZ: ${TZ}
+
+x-arr-health: &arr-health
+  interval: 60s
+  timeout: 10s
+  retries: 3
+  start_period: 60s
+
+services:
+  prowlarr:
+    <<: *common
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    profiles: ["arr"]
+    environment: *lsio-env
+    volumes: ["${CONFIG_ROOT}/prowlarr:/config"]
+    healthcheck: { <<: *arr-health, test: ["CMD", "curl", "-sf", "http://localhost:9696/ping"] }
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN}`)
+      - traefik.http.routers.prowlarr.middlewares=tinyauth
+      - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+      - homepage.group=Automation
+      - homepage.name=Prowlarr
+      - homepage.icon=prowlarr.png
+      - homepage.href=https://prowlarr.${DOMAIN}
+      - homepage.widget.type=prowlarr
+      - homepage.widget.url=http://prowlarr:9696
+      - homepage.widget.key=${PROWLARR_API_KEY}
+
+  # FlareSolverr-compatible API (same :8191/v1), better 2026 Cloudflare success.
+  # In Prowlarr: Settings → Indexers → add FlareSolverr proxy → http://byparr:8191
+  byparr:
+    <<: *common
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: byparr
+    profiles: ["arr"]
+    environment: { TZ: "${TZ}" }
+
+  sonarr:
+    <<: *common
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    profiles: ["arr"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config
+      - ${DATA_ROOT}:/data
+    healthcheck: { <<: *arr-health, test: ["CMD", "curl", "-sf", "http://localhost:8989/ping"] }
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN}`)
+      - traefik.http.routers.sonarr.middlewares=tinyauth
+      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+      - homepage.group=Automation
+      - homepage.name=Sonarr
+      - homepage.icon=sonarr.png
+      - homepage.href=https://sonarr.${DOMAIN}
+      - homepage.widget.type=sonarr
+      - homepage.widget.url=http://sonarr:8989
+      - homepage.widget.key=${SONARR_API_KEY}
+
+  radarr:
+    <<: *common
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    profiles: ["arr"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${DATA_ROOT}:/data
+    healthcheck: { <<: *arr-health, test: ["CMD", "curl", "-sf", "http://localhost:7878/ping"] }
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN}`)
+      - traefik.http.routers.radarr.middlewares=tinyauth
+      - traefik.http.services.radarr.loadbalancer.server.port=7878
+      - homepage.group=Automation
+      - homepage.name=Radarr
+      - homepage.icon=radarr.png
+      - homepage.href=https://radarr.${DOMAIN}
+      - homepage.widget.type=radarr
+      - homepage.widget.url=http://radarr:7878
+      - homepage.widget.key=${RADARR_API_KEY}
+
+  lidarr:
+    <<: *common
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    profiles: ["music"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/lidarr:/config
+      - ${DATA_ROOT}:/data
+    healthcheck: { <<: *arr-health, test: ["CMD", "curl", "-sf", "http://localhost:8686/ping"] }
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lidarr.rule=Host(`lidarr.${DOMAIN}`)
+      - traefik.http.routers.lidarr.middlewares=tinyauth
+      - traefik.http.services.lidarr.loadbalancer.server.port=8686
+
+  bazarr:
+    <<: *common
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    profiles: ["arr"]
+    environment: *lsio-env
+    volumes:
+      - ${CONFIG_ROOT}/bazarr:/config
+      - ${DATA_ROOT}/media:/data/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.bazarr.rule=Host(`bazarr.${DOMAIN}`)
+      - traefik.http.routers.bazarr.middlewares=tinyauth
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+
+  # TRaSH custom formats + quality profiles as code. Runs on its own cron.
+  # Recyclarr 8.4+ no longer publishes :latest — pin the major.
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    restart: unless-stopped
+    profiles: ["arr"]
+    user: ${PUID}:${PGID}
+    networks: [proxy]
+    volumes:
+      - ${CONFIG_ROOT}/recyclarr:/config                                  # state/cache
+      - ./config/recyclarr/recyclarr.yml:/config/recyclarr.yml:ro         # config-as-code (git)
+      - ./config/recyclarr/configs:/config/configs:ro                     # optional instances (radarr-4k)
+    environment:
+      TZ: ${TZ}
+      CRON_SCHEDULE: "@daily"
+      SONARR_API_KEY: ${SONARR_API_KEY}
+      RADARR_API_KEY: ${RADARR_API_KEY}
+      RADARR_4K_API_KEY: ${RADARR_4K_API_KEY:-}
+
+  # Seerr = merged Overseerr + Jellyseerr (originals sunset May 2026).
+  # Plex AND Jellyfin users in one request app. Public-facing → no tinyauth;
+  # Seerr does its own Plex/Jellyfin login.
+  seerr:
+    <<: *common
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    profiles: ["arr"]
+    init: true
+    environment: { TZ: "${TZ}", LOG_LEVEL: info, PORT: "5055" }
+    volumes: ["${CONFIG_ROOT}/seerr:/app/config"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5055/api/v1/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.seerr.rule=Host(`request.${DOMAIN}`)
+      - traefik.http.services.seerr.loadbalancer.server.port=5055
+      - homepage.group=Media
+      - homepage.name=Seerr
+      - homepage.icon=jellyseerr.png
+      - homepage.href=https://request.${DOMAIN}
+      - homepage.widget.type=jellyseerr
+      - homepage.widget.url=http://seerr:5055
+      - homepage.widget.key=${SEERR_API_KEY}

@@ -1,0 +1,105 @@
+# =============================================================================
+#  OPS — always on: logs, update notifications, self-healing. Backups: profile.
+# =============================================================================
+x-common: &common
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  dozzle:
+    <<: *common
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    depends_on: [socket-proxy]
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
+      DOZZLE_NO_ANALYTICS: "true"
+    networks: [proxy, socket]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dozzle.rule=Host(`dozzle.${DOMAIN}`)
+      - traefik.http.routers.dozzle.middlewares=tinyauth
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+
+  # What's Up Docker — replaces Watchtower (archived Dec 2025).
+  # Notify-only by default; you click "update" (or enable the docker-compose
+  # trigger per container once you trust it).
+  wud:
+    <<: *common
+    image: getwud/wud:latest
+    container_name: wud
+    depends_on: [socket-proxy]
+    environment:
+      TZ: ${TZ}
+      WUD_WATCHER_LOCAL_HOST: socket-proxy
+      WUD_WATCHER_LOCAL_PORT: 2375
+      WUD_WATCHER_LOCAL_CRON: "0 6 * * *"
+      WUD_WATCHER_LOCAL_WATCHBYDEFAULT: "true"
+      # Current WUD refuses to start without an admin account
+      WUD_AUTH_ADMIN_USER: admin
+      WUD_AUTH_ADMIN_PASSWORD: ${WUD_ADMIN_PASSWORD}
+      # Push notifications: add WUD_TRIGGER_NTFY_MAIN_TOPIC (+ _URL for self-hosted
+      # ntfy) in compose.override.yaml. Without _URL it posts to PUBLIC ntfy.sh,
+      # so use an unguessable topic.
+    volumes:
+      - ${CONFIG_ROOT}/wud:/store
+    networks: [proxy, socket]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wud.rule=Host(`updates.${DOMAIN}`)
+      - traefik.http.routers.wud.middlewares=tinyauth
+      - traefik.http.services.wud.loadbalancer.server.port=3000
+
+  # Restarts ONLY containers labelled autoheal=true (qBittorrent after a VPN
+  # reconnect). Talks to a restart-only socket proxy, not the raw socket.
+  autoheal:
+    <<: *common
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    depends_on: [socket-proxy-restart]
+    environment:
+      DOCKER_SOCK: tcp://socket-proxy-restart:2375
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: 30
+    networks: [socket]
+
+  socket-proxy-restart:
+    <<: *common
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy-restart
+    read_only: true
+    tmpfs: ["/run"]
+    environment:
+      CONTAINERS: 1
+      ALLOW_RESTARTS: 1
+      POST: 0
+      DISABLE_IPV6: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [socket]
+
+  # Restic-based backups of ${CONFIG_ROOT} (app DBs, keys) with a web UI.
+  # Media itself belongs on the NAS's own snapshot/parity, not here.
+  backrest:
+    <<: *common
+    image: garethgeorge/backrest:latest
+    container_name: backrest
+    profiles: ["backup"]
+    hostname: backrest
+    environment:
+      TZ: ${TZ}
+      BACKREST_DATA: /data
+      BACKREST_CONFIG: /config/config.json
+      XDG_CACHE_HOME: /cache
+    volumes:
+      - ${CONFIG_ROOT}/backrest/data:/data
+      - ${CONFIG_ROOT}/backrest/config:/config
+      - ${CONFIG_ROOT}/backrest/cache:/cache
+      - ${CONFIG_ROOT}:/userdata:ro
+      - ${BACKUP_REPO_PATH:-/srv/backups}:/repos
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backrest.rule=Host(`backup.${DOMAIN}`)
+      - traefik.http.routers.backrest.middlewares=tinyauth
+      - traefik.http.services.backrest.loadbalancer.server.port=9898
