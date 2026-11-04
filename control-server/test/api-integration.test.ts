@@ -1755,6 +1755,89 @@ describe('Control Server API integration (buildApp)', () => {
       expect(res.json()).toEqual({ success: true, backups: [], total: 0, limit: 100, offset: 0 })
     })
 
+    it('POST /api/backup/list returns backups that have a manifest', async () => {
+      const dest = localDestination('list-found')
+      fs.mkdirSync(dest.path, { recursive: true })
+      const manifest = (id: string, createdAt: string) => ({
+        id,
+        name: `Backup ${id}`,
+        createdAt,
+        totalSize: 2048,
+        totalCompressedSize: 1024,
+        encrypted: false,
+        items: [{ name: 'sonarr' }],
+      })
+      fs.writeFileSync(path.join(dest.path, 'old-1-manifest.json'), JSON.stringify(manifest('old-1', '2026-01-01T00:00:00.000Z')))
+      fs.writeFileSync(path.join(dest.path, 'old-1.tar.gz'), 'archive')
+      fs.writeFileSync(path.join(dest.path, 'new-2-manifest.json'), JSON.stringify(manifest('new-2', '2026-02-01T00:00:00.000Z')))
+      fs.writeFileSync(path.join(dest.path, 'notes.txt'), 'not a backup')
+
+      const res = await app.inject({ method: 'POST', url: '/api/backup/list', payload: { destination: dest } })
+
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.total).toBe(2)
+      expect(body.backups.map((b: { id: string }) => b.id)).toEqual(['new-2', 'old-1'])
+      expect(body.backups[0]).toMatchObject({ itemCount: 1, size: 2048, encrypted: false, status: 'completed' })
+    })
+
+    it('scheduled retention deletes old backups and keeps shared archives still in use', async () => {
+      const { applyRetentionPolicy } = await import('../src/services/backupScheduler.js')
+      const dest = localDestination('retention')
+      fs.mkdirSync(dest.path, { recursive: true })
+      const write = (name: string, body = 'x') => fs.writeFileSync(path.join(dest.path, name), body)
+      const manifest = (id: string, day: number, items: string[]) =>
+        write(`${id}-manifest.json`, JSON.stringify({
+          id,
+          createdAt: `2026-01-0${day}T00:00:00.000Z`,
+          encrypted: false,
+          items: items.map((name) => ({ name })),
+        }))
+
+      // Made from the API: one archive per item, named after the item
+      manifest('m-1', 1, ['sonarr', 'radarr'])
+      write('sonarr.tar.gz')
+      write('radarr.tar.gz')
+      // Scheduled: one archive named after the backup id
+      manifest('s-1', 2, ['lidarr']); write('s-1.tar.gz')
+      manifest('s-2', 3, ['lidarr']); write('s-2.tar.gz')
+      manifest('m-2', 4, ['sonarr'])
+      manifest('s-3', 5, ['lidarr']); write('s-3.tar.gz')
+      // A manifest whose id would point outside the folder is never acted on
+      write('evil-manifest.json', JSON.stringify({ id: '../outside', createdAt: '2025-01-01T00:00:00.000Z', items: [] }))
+      fs.writeFileSync(path.join(dest.path, '..', 'outside-manifest.json'), 'keep me')
+
+      await applyRetentionPolicy({ id: 'sched-1', retentionCount: 3, config: { destination: dest } } as never)
+
+      expect(fs.readdirSync(dest.path).sort()).toEqual([
+        'evil-manifest.json',
+        'm-2-manifest.json',
+        's-2-manifest.json',
+        's-2.tar.gz',
+        's-3-manifest.json',
+        's-3.tar.gz',
+        'sonarr.tar.gz',
+      ])
+      expect(fs.existsSync(path.join(dest.path, '..', 'outside-manifest.json'))).toBe(true)
+    })
+
+    it('rejects backup ids that could reach outside the backup folder', async () => {
+      const dest = localDestination('traversal')
+      for (const backupId of ['../secrets', '..', 'a/b', 'x.y', '.hidden']) {
+        const validate = await app.inject({ method: 'POST', url: '/api/backup/validate', payload: { backupId, destination: dest } })
+        expect(validate.statusCode, `validate ${backupId}`).toBe(400)
+
+        const preview = await app.inject({ method: 'POST', url: '/api/restore/preview', payload: { backupId, destination: dest } })
+        expect(preview.statusCode, `preview ${backupId}`).toBe(400)
+
+        const restore = await app.inject({ method: 'POST', url: '/api/restore/execute', payload: { backupId, destination: dest } })
+        expect(restore.statusCode, `restore ${backupId}`).toBe(400)
+      }
+
+      const del = await app.inject({ method: 'DELETE', url: '/api/backup/..%2Fsecrets', payload: { destination: dest } })
+      expect(del.statusCode).toBe(400)
+    })
+
     it('POST /api/backup/list validates the destination', async () => {
       const res = await app.inject({ method: 'POST', url: '/api/backup/list', payload: { destination: { type: 's3' } } })
 

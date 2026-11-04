@@ -11,6 +11,7 @@ import { PROJECT_ROOT } from '../utils/env.js';
 import { createLogger } from '../utils/logger.js';
 import { getErrorMessage } from '../utils/errors.js';
 import type { BackupSchedule, BackupConfig, BackupHistoryEntry } from '../types/backup.js';
+import { BackupIdSchema } from '../types/backup.js';
 import { discoverBackupTargets, createBackupArchive } from './backupService.js';
 import { createAdapter } from './backup/destinationAdapter.js';
 import { encryptFile } from '../utils/encryption.js';
@@ -249,7 +250,7 @@ async function executeScheduledBackup(schedule: BackupSchedule): Promise<void> {
  * Apply retention policy to backup history
  * Keeps only the N most recent backups and deletes older ones
  */
-async function applyRetentionPolicy(schedule: BackupSchedule): Promise<void> {
+export async function applyRetentionPolicy(schedule: BackupSchedule): Promise<void> {
     try {
         const adapter = await createAdapter(schedule.config.destination);
 
@@ -257,7 +258,7 @@ async function applyRetentionPolicy(schedule: BackupSchedule): Promise<void> {
         const files = await adapter.list();
 
         // Filter for manifest files and parse backup info
-        const backupHistory: Array<{ id: string; createdAt: Date; files: string[] }> = [];
+        const backupHistory: Array<{ id: string; createdAt: Date; files: string[]; itemFiles: string[] }> = [];
 
         for (const file of files) {
             if (file.name.endsWith('-manifest.json')) {
@@ -269,18 +270,30 @@ async function applyRetentionPolicy(schedule: BackupSchedule): Promise<void> {
                     const manifest = JSON.parse(manifestContent);
 
                     const backupId = manifest.id;
+                    // The id is read back from storage and turned into file names to
+                    // delete, so never trust one that could point outside the backups.
+                    if (!BackupIdSchema.safeParse(backupId).success) {
+                        logger.warn({ file: file.name }, 'Skipping manifest with an invalid backup id');
+                        await unlink(tempManifestPath).catch(() => {});
+                        continue;
+                    }
                     const createdAt = new Date(manifest.createdAt);
                     const encrypted = manifest.encrypted;
 
-                    // Collect all files associated with this backup
-                    const backupFiles: string[] = [`${backupId}-manifest.json`];
-                    for (const item of manifest.items) {
+                    // Collect all files associated with this backup. Scheduled backups
+                    // upload one archive named after the backup id; backups made from
+                    // the API upload one archive per item, named after the item.
+                    const backupFiles: string[] = [
+                        `${backupId}-manifest.json`,
+                        encrypted ? `${backupId}.tar.gz.enc` : `${backupId}.tar.gz`,
+                    ];
+                    const itemFiles: string[] = [];
+                    for (const item of manifest.items ?? []) {
                         const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        const fileName = encrypted ? `${sanitizedName}.tar.gz.enc` : `${sanitizedName}.tar.gz`;
-                        backupFiles.push(fileName);
+                        itemFiles.push(encrypted ? `${sanitizedName}.tar.gz.enc` : `${sanitizedName}.tar.gz`);
                     }
 
-                    backupHistory.push({ id: backupId, createdAt, files: backupFiles });
+                    backupHistory.push({ id: backupId, createdAt, files: backupFiles, itemFiles });
 
                     // Cleanup temp manifest
                     await unlink(tempManifestPath).catch(() => {});
@@ -295,6 +308,15 @@ async function applyRetentionPolicy(schedule: BackupSchedule): Promise<void> {
 
         // Delete backups beyond retention count
         const toDelete = backupHistory.slice(schedule.retentionCount);
+
+        // Per-item archive names are shared by every backup of the same item, so
+        // only delete one when no backup we keep still points at it.
+        const keptItemFiles = new Set(backupHistory.slice(0, schedule.retentionCount).flatMap((b) => b.itemFiles));
+        const listed = new Set(files.map((f) => f.name));
+        for (const backup of toDelete) {
+            const candidates = [...backup.files, ...backup.itemFiles.filter((f) => !keptItemFiles.has(f))];
+            backup.files = [...new Set(candidates)].filter((f) => listed.has(f));
+        }
 
         if (toDelete.length > 0) {
             logger.info(
