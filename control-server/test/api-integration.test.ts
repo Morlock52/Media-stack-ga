@@ -2447,6 +2447,34 @@ describe('Control Server API integration (buildApp)', () => {
       }
     })
 
+    it('applies the stricter per-prefix limits (orchestrator 10/min, agent 15/min, tts 20/min)', async () => {
+      const limited = await buildApp()
+      try {
+        await limited.ready()
+        const hit = async (method: 'GET' | 'POST', url: string, n: number) => {
+          const codes: number[] = []
+          for (let i = 0; i < n; i++) codes.push((await limited.inject({ method, url, payload: method === 'POST' ? {} : undefined })).statusCode)
+          return codes
+        }
+
+        const orchestrator = await hit('GET', '/api/orchestrator/capabilities', 11)
+        expect(orchestrator.slice(0, 10)).toEqual(Array(10).fill(200))
+        expect(orchestrator[10]).toBe(429)
+        const blocked = await limited.inject({ method: 'GET', url: '/api/orchestrator/capabilities' })
+        expect(blocked.json()).toMatchObject({ statusCode: 429, error: 'Orchestrator Rate Limit Exceeded' })
+        expect(blocked.headers['x-ratelimit-limit']).toBe('10')
+
+        const agent = await hit('POST', '/api/agent/suggestions', 16)
+        expect(agent.filter((c) => c === 429)).toHaveLength(1)
+        expect(agent[15]).toBe(429)
+
+        // Separate buckets: other endpoints are unaffected
+        expect((await limited.inject({ method: 'GET', url: '/api/system/status' })).statusCode).toBe(200)
+      } finally {
+        await limited.close()
+      }
+    })
+
     it('can disable rate limiting (CONTROL_SERVER_RATE_LIMIT_DISABLED)', async () => {
       process.env.CONTROL_SERVER_RATE_LIMIT_DISABLED = 'true'
       process.env.CONTROL_SERVER_RATE_LIMIT_MAX = '1'

@@ -177,6 +177,44 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     const globalRateLimitMax = parsePositiveInt(process.env.CONTROL_SERVER_RATE_LIMIT_MAX) ?? 1000;
     const globalRateLimitWindow = parseTimeWindow(process.env.CONTROL_SERVER_RATE_LIMIT_WINDOW, '1 minute');
 
+    // Stricter per-prefix limits for expensive endpoints. These are applied as
+    // per-route overrides of the global limiter: registering separate limiter
+    // instances in route-less child plugins (as before) never matched any route.
+    // This onRoute hook must be added before the rate-limit plugin's own onRoute
+    // hook, so the config is in place when the plugin reads it.
+    const prefixRateLimits: Array<{ prefix: string; bucket: string; max: number; label: string }> = [
+        { prefix: '/api/agent', bucket: 'ai', max: 15, label: 'AI' },                  // prevents cost overrun
+        { prefix: '/api/tts', bucket: 'tts', max: 20, label: 'TTS' },
+        { prefix: '/api/orchestrator', bucket: 'orchestrator', max: 10, label: 'Orchestrator' }, // multi-agent orchestration is expensive
+        { prefix: '/api/validate', bucket: 'validation', max: 50, label: 'Validation' }, // moderate resource usage
+    ];
+
+    if (!rateLimitDisabled) {
+        app.addHook('onRoute', (routeOptions) => {
+            const url = routeOptions.url;
+            const limit = prefixRateLimits.find(
+                (l) => url === l.prefix || url.startsWith(`${l.prefix}/`)
+            );
+            if (!limit) return;
+            const config = (routeOptions.config ?? {}) as Record<string, unknown>;
+            if (config.rateLimit !== undefined) return; // an explicit per-route limit wins
+            routeOptions.config = {
+                ...config,
+                rateLimit: {
+                    max: limit.max,
+                    timeWindow: '1 minute',
+                    keyGenerator: (request: FastifyRequest) => `${limit.bucket}:${request.ip || 'unknown'}`,
+                    errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
+                        statusCode: 429,
+                        error: `${limit.label} Rate Limit Exceeded`,
+                        message: `Too many ${limit.label === 'AI' ? 'AI' : limit.label.toLowerCase()} requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
+                        retryAfter: Math.ceil(context.ttl / 1000)
+                    }),
+                },
+            } as typeof routeOptions.config;
+        });
+    }
+
     // Global rate limiting with stricter limits for AI endpoints
     if (!rateLimitDisabled) {
         await app.register(rateLimit, {
@@ -215,65 +253,6 @@ export const buildApp = async (): Promise<FastifyInstance> => {
             }
         } as RateLimitPluginOptions);
     }
-
-    // Stricter rate limits for AI-intensive endpoints
-    app.register(async (aiApp) => {
-        await aiApp.register(rateLimit, {
-            max: 15, // 15 AI requests per minute (prevents cost overrun)
-            timeWindow: '1 minute',
-            keyGenerator: (request: FastifyRequest) => `ai:${request.ip || 'unknown'}`,
-            errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
-                statusCode: 429,
-                error: 'AI Rate Limit Exceeded',
-                message: `Too many AI requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
-                retryAfter: Math.ceil(context.ttl / 1000)
-            })
-        } as RateLimitPluginOptions);
-    }, { prefix: '/api/agent' });
-
-    app.register(async (ttsApp) => {
-        await ttsApp.register(rateLimit, {
-            max: 20, // 20 TTS requests per minute
-            timeWindow: '1 minute',
-            keyGenerator: (request: FastifyRequest) => `tts:${request.ip || 'unknown'}`,
-            errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
-                statusCode: 429,
-                error: 'TTS Rate Limit Exceeded',
-                message: `Too many TTS requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
-                retryAfter: Math.ceil(context.ttl / 1000)
-            })
-        } as RateLimitPluginOptions);
-    }, { prefix: '/api/tts' });
-
-    // Rate limits for orchestrator endpoints (multi-agent orchestration is expensive)
-    app.register(async (orchestratorApp) => {
-        await orchestratorApp.register(rateLimit, {
-            max: 10, // 10 orchestration requests per minute
-            timeWindow: '1 minute',
-            keyGenerator: (request: FastifyRequest) => `orchestrator:${request.ip || 'unknown'}`,
-            errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
-                statusCode: 429,
-                error: 'Orchestrator Rate Limit Exceeded',
-                message: `Too many orchestration requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
-                retryAfter: Math.ceil(context.ttl / 1000)
-            })
-        } as RateLimitPluginOptions);
-    }, { prefix: '/api/orchestrator' });
-
-    // Rate limits for validation endpoints (moderate resource usage)
-    app.register(async (validationApp) => {
-        await validationApp.register(rateLimit, {
-            max: 50, // 50 validation requests per minute
-            timeWindow: '1 minute',
-            keyGenerator: (request: FastifyRequest) => `validation:${request.ip || 'unknown'}`,
-            errorResponseBuilder: (_request: FastifyRequest, context: RateLimitContext) => ({
-                statusCode: 429,
-                error: 'Validation Rate Limit Exceeded',
-                message: `Too many validation requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
-                retryAfter: Math.ceil(context.ttl / 1000)
-            })
-        } as RateLimitPluginOptions);
-    }, { prefix: '/api/validate' });
 
     // Register multipart for file uploads (audio transcription)
     await app.register(multipart, {
