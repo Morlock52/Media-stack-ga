@@ -27,12 +27,12 @@ export async function validationRoutes(fastify: FastifyInstance) {
             try {
                 // Validate request body schema
                 const parseBody = z.object({
-                    config: z.record(z.unknown()),
+                    config: z.record(z.string(), z.unknown()),
                     validators: z.array(z.enum(['path', 'port', 'vpn', 'cloudflare', 'docker', 'environment'])).optional(),
-                    validatorConfigs: z.record(z.object({
+                    validatorConfigs: z.record(z.string(), z.object({
                         enabled: z.boolean(),
                         timeout: z.number().optional(),
-                        options: z.record(z.unknown()).optional()
+                        options: z.record(z.string(), z.unknown()).optional()
                     })).optional()
                 }).safeParse(request.body);
 
@@ -76,7 +76,7 @@ export async function validationRoutes(fastify: FastifyInstance) {
         async (request, reply) => {
             try {
                 const parseBody = z.object({
-                    config: z.record(z.unknown())
+                    config: z.record(z.string(), z.unknown())
                 }).safeParse(request.body);
 
                 if (!parseBody.success) {
@@ -112,7 +112,7 @@ export async function validationRoutes(fastify: FastifyInstance) {
         async (request, reply) => {
             try {
                 const parseBody = z.object({
-                    config: z.record(z.unknown())
+                    config: z.record(z.string(), z.unknown())
                 }).safeParse(request.body);
 
                 if (!parseBody.success) {
@@ -148,7 +148,7 @@ export async function validationRoutes(fastify: FastifyInstance) {
         async (request, reply) => {
             try {
                 const parseBody = z.object({
-                    config: z.record(z.unknown())
+                    config: z.record(z.string(), z.unknown())
                 }).safeParse(request.body);
 
                 if (!parseBody.success) {
@@ -184,7 +184,7 @@ export async function validationRoutes(fastify: FastifyInstance) {
         async (request, reply) => {
             try {
                 const parseBody = z.object({
-                    config: z.record(z.unknown())
+                    config: z.record(z.string(), z.unknown())
                 }).safeParse(request.body);
 
                 if (!parseBody.success) {
@@ -220,7 +220,7 @@ export async function validationRoutes(fastify: FastifyInstance) {
         async (request, reply) => {
             try {
                 const parseBody = z.object({
-                    config: z.record(z.unknown())
+                    config: z.record(z.string(), z.unknown())
                 }).safeParse(request.body);
 
                 if (!parseBody.success) {

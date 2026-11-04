@@ -3,7 +3,7 @@
  * Automated backup scheduling using node-cron with retention policies and health checks
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { randomUUID } from 'crypto';
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -34,7 +34,7 @@ interface ScheduleStore {
 /**
  * Active cron jobs keyed by schedule ID
  */
-const activeCronJobs = new Map<string, cron.ScheduledTask>();
+const activeCronJobs = new Map<string, ScheduledTask>();
 
 /**
  * In-memory schedule store
@@ -351,7 +351,9 @@ export async function applyRetentionPolicy(schedule: BackupSchedule): Promise<vo
 function scheduleJob(schedule: BackupSchedule): void {
     try {
         const cronExpression = getCronExpression(schedule);
-        const task = cron.schedule(
+        // node-cron 4: createTask() makes a stopped task (schedule() would start it
+        // straight away), so disabled schedules stay registered but idle.
+        const task = cron.createTask(
             cronExpression,
             () => {
                 executeScheduledBackup(schedule).catch((error) => {
@@ -359,10 +361,17 @@ function scheduleJob(schedule: BackupSchedule): void {
                 });
             },
             {
-                scheduled: schedule.enabled,
+                name: `backup-${schedule.id}`,
                 timezone: 'UTC',
+                // Never start a second run of the same schedule while one is still going
+                noOverlap: true,
             }
         );
+        if (schedule.enabled) {
+            Promise.resolve(task.start()).catch((error) => {
+                logger.error({ scheduleId: schedule.id, error: getErrorMessage(error) }, 'Failed to start backup job');
+            });
+        }
 
         activeCronJobs.set(schedule.id, task);
         logger.info({ scheduleId: schedule.id, cronExpression, enabled: schedule.enabled }, 'Scheduled backup job');
@@ -417,7 +426,7 @@ export async function updateSchedule(id: string, updates: Partial<BackupSchedule
     // Restart cron job
     const existingJob = activeCronJobs.get(id);
     if (existingJob) {
-        existingJob.stop();
+        await existingJob.destroy();
         activeCronJobs.delete(id);
     }
 
@@ -442,7 +451,7 @@ export async function deleteSchedule(id: string): Promise<boolean> {
     // Stop cron job
     const existingJob = activeCronJobs.get(id);
     if (existingJob) {
-        existingJob.stop();
+        await existingJob.destroy();
         activeCronJobs.delete(id);
     }
 
@@ -520,7 +529,7 @@ export async function shutdownScheduler(): Promise<void> {
     logger.info('Shutting down backup scheduler');
 
     for (const [id, task] of activeCronJobs.entries()) {
-        task.stop();
+        await task.destroy();
         logger.debug({ scheduleId: id }, 'Stopped scheduled job');
     }
 

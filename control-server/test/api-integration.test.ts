@@ -1941,6 +1941,46 @@ describe('Control Server API integration (buildApp)', () => {
       }
     })
 
+    it('starts an enabled schedule as a cron task and removes it when disabled or deleted', async () => {
+      const cron = (await import('node-cron')).default
+      const taskFor = (id: string) => [...cron.getTasks().values()].find((t) => t.name === `backup-${id}`)
+
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/backup/schedules',
+        payload: {
+          enabled: true,
+          frequency: 'daily',
+          time: '02:15',
+          retentionCount: 2,
+          config: {
+            destination: localDestination('cron'),
+            items: [{ type: 'config', name: 'radarr', path: '/config' }],
+            encryption: { enabled: false },
+            compress: true,
+          },
+        },
+      })
+      expect(created.statusCode).toBe(201)
+      const { id } = created.json().schedule
+
+      const task = taskFor(id)
+      expect(task, 'enabled schedule has a cron task').toBeDefined()
+      expect(task!.getStatus()).not.toBe('stopped')
+      expect(task!.getPattern()).toBe('15 2 * * *')
+
+      const disabled = await app.inject({ method: 'PUT', url: `/api/backup/schedules/${id}`, payload: { enabled: false } })
+      expect(disabled.statusCode).toBe(200)
+      expect(taskFor(id), 'disabled schedule has no cron task').toBeUndefined()
+
+      const enabled = await app.inject({ method: 'PUT', url: `/api/backup/schedules/${id}`, payload: { enabled: true } })
+      expect(enabled.statusCode).toBe(200)
+      expect(taskFor(id)).toBeDefined()
+
+      await app.inject({ method: 'DELETE', url: `/api/backup/schedules/${id}` })
+      expect(taskFor(id), 'deleted schedule has no cron task').toBeUndefined()
+    })
+
     it('POST /api/restore/preview validates input and returns 404 for unknown backups', async () => {
       const invalid = await app.inject({ method: 'POST', url: '/api/restore/preview', payload: { backupId: '' } })
       expect(invalid.statusCode).toBe(400)

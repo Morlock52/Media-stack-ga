@@ -41,7 +41,7 @@ export async function vpnRoutes(fastify: FastifyInstance) {
                     return reply.status(400).send({
                         success: false,
                         valid: false,
-                        errors: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+                        errors: validationResult.error.issues.map(e => `${e.path.join('.')}: ${e.message}`),
                         warnings: [],
                     });
                 }
