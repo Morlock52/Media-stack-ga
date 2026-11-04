@@ -14,6 +14,7 @@ import type {
     BackupFileInfo,
     ProgressCallback,
 } from './destinationAdapter.js';
+import { backupIdFromFilename, isBackupFile } from './backupFiles.js';
 
 const logger = createLogger('rcloneAdapter');
 
@@ -80,9 +81,9 @@ export class RcloneAdapter implements DestinationAdapter {
             const filename = basename(path);
 
             // Filter for backup files
-            if (filename.endsWith('.tar.gz') || filename.endsWith('.enc')) {
+            if (isBackupFile(filename)) {
                 // Extract backup ID from filename
-                const id = filename.replace(/\.(tar\.gz|enc)$/, '');
+                const id = backupIdFromFilename(filename);
 
                 files.push({
                     id,
@@ -116,9 +117,9 @@ export class RcloneAdapter implements DestinationAdapter {
             const filename = basename(path);
 
             // Filter for backup files
-            if (filename.endsWith('.tar.gz') || filename.endsWith('.enc')) {
+            if (isBackupFile(filename)) {
                 // Extract backup ID from filename
-                const id = filename.replace(/\.(tar\.gz|enc)$/, '');
+                const id = backupIdFromFilename(filename);
 
                 // Parse timestamp
                 let createdAt: Date;

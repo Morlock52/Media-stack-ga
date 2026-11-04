@@ -629,6 +629,7 @@ describe('Local Adapter', () => {
             vi.mocked(fsPromises.readdir).mockResolvedValue([
                 { name: 'backup-123.tar.gz', isFile: () => true, isDirectory: () => false } as any,
                 { name: 'backup-456.enc', isFile: () => true, isDirectory: () => false } as any,
+                { name: 'backup-123-manifest.json', isFile: () => true, isDirectory: () => false } as any,
                 { name: 'other.txt', isFile: () => true, isDirectory: () => false } as any,
             ]);
 
@@ -639,8 +640,9 @@ describe('Local Adapter', () => {
 
             const files = await adapter.list();
 
-            expect(files).toHaveLength(2); // Only .tar.gz and .enc files
-            expect(files[0].name).toContain('backup-');
+            // Archives and manifests; the backup list and retention read the manifests
+            expect(files.map((f) => f.name)).toEqual(['backup-123.tar.gz', 'backup-456.enc', 'backup-123-manifest.json']);
+            expect(files.map((f) => f.id)).toEqual(['backup-123', 'backup-456', 'backup-123']);
             expect(files[0].size).toBe(1024);
             expect(files[0].id).toBeDefined();
         });

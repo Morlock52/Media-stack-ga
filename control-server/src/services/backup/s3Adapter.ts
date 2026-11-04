@@ -13,6 +13,7 @@ import type {
     BackupFileInfo,
     ProgressCallback,
 } from './destinationAdapter.js';
+import { backupIdFromFilename, isBackupFile } from './backupFiles.js';
 
 const logger = createLogger('s3Adapter');
 
@@ -237,7 +238,7 @@ export class S3Adapter implements DestinationAdapter {
                     if (!object.Key) continue;
 
                     // Filter for backup files
-                    if (object.Key.endsWith('.tar.gz') || object.Key.endsWith('.enc')) {
+                    if (isBackupFile(object.Key)) {
                         // Remove prefix from key to get relative path
                         let relativePath = object.Key;
                         if (this.config.pathPrefix) {
@@ -249,7 +250,7 @@ export class S3Adapter implements DestinationAdapter {
 
                         // Extract backup ID from filename
                         const filename = object.Key.split('/').pop() || object.Key;
-                        const id = filename.replace(/\.(tar\.gz|enc)$/, '');
+                        const id = backupIdFromFilename(filename);
 
                         files.push({
                             id,

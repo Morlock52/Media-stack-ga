@@ -235,8 +235,17 @@ export const BackupConfigSchema = z.object({
     name: z.string().max(255).optional(),
 });
 
+// Backup ids end up in file and object names (`<id>-manifest.json`), so only
+// allow the characters real ids use (UUIDs and `backup-<timestamp>`): no path
+// separators, dots or `..` that could reach outside the backup location.
+export const BackupIdSchema = z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/, 'Invalid backup id');
+
 export const RestoreConfigSchema = z.object({
-    backupId: z.string().min(1).max(255),
+    backupId: BackupIdSchema,
     destination: BackupDestinationSchema,
     items: z.array(z.string().max(255)).max(1000).optional(),
     stopServices: z.boolean().default(true),
@@ -256,13 +265,13 @@ export const BackupScheduleSchema = z.object({
 });
 
 export const BackupValidateRequestSchema = z.object({
-    backupId: z.string().min(1).max(255),
+    backupId: BackupIdSchema,
     destination: BackupDestinationSchema,
     decryptionPassword: z.string().min(8).max(255).optional(),
 });
 
 export const BackupDeleteRequestSchema = z.object({
-    backupId: z.string().min(1).max(255),
+    backupId: BackupIdSchema,
     destination: BackupDestinationSchema,
 });
 
@@ -273,7 +282,7 @@ export const BackupListRequestSchema = z.object({
 });
 
 export const RestorePreviewRequestSchema = z.object({
-    backupId: z.string().min(1).max(255),
+    backupId: BackupIdSchema,
     destination: BackupDestinationSchema,
     decryptionPassword: z.string().min(8).max(255).optional(),
 });
