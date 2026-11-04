@@ -30,6 +30,8 @@ import {
 } from '../services/backupService.js';
 import { createAdapter } from '../services/backup/destinationAdapter.js';
 import { decryptFile } from '../utils/encryption.js';
+import { downloadItemArchive } from '../services/backup/backupTransfer.js';
+import { sanitizeItemName } from '../services/backup/backupFiles.js';
 
 const logger = createLogger('restoreRoutes');
 
@@ -255,9 +257,7 @@ async function executeRestore(restoreId: string, config: RestoreConfig): Promise
 
         for (let i = 0; i < itemsToRestore.length; i++) {
             const item = itemsToRestore[i];
-            const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const archiveFileName = `${sanitizedName}.tar.gz`;
-            const encryptedFileName = `${sanitizedName}.tar.gz.enc`;
+            const archiveFileName = `${sanitizeItemName(item.name)}.tar.gz`;
             const tempArchivePath = join(restoreDir, archiveFileName);
 
             updateProgress({
@@ -268,8 +268,8 @@ async function executeRestore(restoreId: string, config: RestoreConfig): Promise
 
             // Download (encrypted or unencrypted)
             if (manifest.encrypted && config.decryptionPassword) {
-                const tempEncryptedPath = join(restoreDir, encryptedFileName);
-                await adapter.download(encryptedFileName, tempEncryptedPath);
+                const tempEncryptedPath = join(restoreDir, `${archiveFileName}.enc`);
+                await downloadItemArchive(adapter, manifest.id, item.name, true, tempEncryptedPath);
 
                 updateProgress({
                     status: 'decrypting',
@@ -279,7 +279,7 @@ async function executeRestore(restoreId: string, config: RestoreConfig): Promise
                 await decryptFile(tempEncryptedPath, tempArchivePath, config.decryptionPassword);
                 await unlink(tempEncryptedPath).catch(() => {});
             } else {
-                await adapter.download(archiveFileName, tempArchivePath);
+                await downloadItemArchive(adapter, manifest.id, item.name, false, tempArchivePath);
             }
         }
 

@@ -1803,6 +1803,8 @@ describe('Control Server API integration (buildApp)', () => {
       manifest('s-2', 3, ['lidarr']); write('s-2.tar.gz')
       manifest('m-2', 4, ['sonarr'])
       manifest('s-3', 5, ['lidarr']); write('s-3.tar.gz')
+      // Current naming: archives carry the backup id and are never shared
+      manifest('n-0', 1, ['bazarr']); write('n-0-bazarr.tar.gz')
       // A manifest whose id would point outside the folder is never acted on
       write('evil-manifest.json', JSON.stringify({ id: '../outside', createdAt: '2025-01-01T00:00:00.000Z', items: [] }))
       fs.writeFileSync(path.join(dest.path, '..', 'outside-manifest.json'), 'keep me')
@@ -1819,6 +1821,76 @@ describe('Control Server API integration (buildApp)', () => {
         'sonarr.tar.gz',
       ])
       expect(fs.existsSync(path.join(dest.path, '..', 'outside-manifest.json'))).toBe(true)
+    })
+
+    it('keeps each backup of the same item separate so validate, restore and delete get the right one', async () => {
+      const { uploadBackupFiles } = await import('../src/services/backup/backupTransfer.js')
+      const { createAdapter } = await import('../src/services/backup/destinationAdapter.js')
+      const { createHash } = await import('node:crypto')
+      const dest = localDestination('per-backup-names')
+      const tempDir = path.join(h.root, 'data', 'temp')
+      const adapter = await createAdapter(dest)
+
+      // Store two backups of the same item, the way createBackupArchive leaves them in temp
+      const store = async (id: string, content: string, password?: string) => {
+        fs.mkdirSync(tempDir, { recursive: true })
+        fs.writeFileSync(path.join(tempDir, 'sonarr.tar.gz'), content)
+        const manifest = {
+          id,
+          version: '1.0',
+          name: id,
+          createdAt: '2026-03-01T00:00:00.000Z',
+          items: [{ type: 'config', name: 'sonarr', path: 'sonarr:/config', size: content.length, checksum: createHash('sha256').update(content).digest('hex') }],
+          totalSize: content.length,
+          totalCompressedSize: content.length,
+          encrypted: !!password,
+          checksumAlgorithm: 'sha256',
+          metadata: {},
+        }
+        fs.writeFileSync(path.join(tempDir, `${id}-manifest.json`), JSON.stringify(manifest))
+        return uploadBackupFiles(adapter, manifest as never, { tempDir, encryptionPassword: password })
+      }
+
+      expect(await store('bk-a', 'first backup of sonarr')).toEqual(['bk-a-sonarr.tar.gz', 'bk-a-manifest.json'])
+      expect(await store('bk-b', 'second backup of sonarr')).toEqual(['bk-b-sonarr.tar.gz', 'bk-b-manifest.json'])
+      expect(await store('bk-c', 'encrypted sonarr', 'correct horse battery')).toEqual(['bk-c-sonarr.tar.gz.enc', 'bk-c-manifest.json'])
+      // Temp archives are cleaned up after upload
+      expect(fs.existsSync(path.join(tempDir, 'sonarr.tar.gz'))).toBe(false)
+
+      const validate = (backupId: string, decryptionPassword?: string) =>
+        app.inject({ method: 'POST', url: '/api/backup/validate', payload: { backupId, destination: dest, decryptionPassword } })
+
+      // With shared names the second backup overwrote the first, so the older one failed its checksum
+      for (const id of ['bk-a', 'bk-b']) {
+        const res = await validate(id)
+        expect(res.json(), id).toMatchObject({ valid: true, errors: [] })
+      }
+      expect((await validate('bk-c', 'correct horse battery')).json()).toMatchObject({ valid: true, errors: [] })
+
+      // Deleting one backup leaves the other's archive alone
+      const del = await app.inject({ method: 'DELETE', url: '/api/backup/bk-a', payload: { destination: dest } })
+      expect(del.json()).toMatchObject({ success: true, deletedFiles: ['bk-a-sonarr.tar.gz', 'bk-a-manifest.json'] })
+      expect(fs.existsSync(path.join(dest.path, 'bk-b-sonarr.tar.gz'))).toBe(true)
+      expect((await validate('bk-b')).json()).toMatchObject({ valid: true })
+    })
+
+    it('still validates and deletes older backups stored under the shared item name', async () => {
+      const { createHash } = await import('node:crypto')
+      const dest = localDestination('legacy-names')
+      fs.mkdirSync(dest.path, { recursive: true })
+      const content = 'legacy sonarr archive'
+      fs.writeFileSync(path.join(dest.path, 'sonarr.tar.gz'), content)
+      fs.writeFileSync(path.join(dest.path, 'old-1-manifest.json'), JSON.stringify({
+        id: 'old-1', name: 'old-1', createdAt: '2025-12-01T00:00:00.000Z', encrypted: false, checksumAlgorithm: 'sha256',
+        totalSize: 1, totalCompressedSize: 1, metadata: {},
+        items: [{ type: 'config', name: 'sonarr', path: 'sonarr:/config', size: 1, checksum: createHash('sha256').update(content).digest('hex') }],
+      }))
+
+      const res = await app.inject({ method: 'POST', url: '/api/backup/validate', payload: { backupId: 'old-1', destination: dest } })
+      expect(res.json()).toMatchObject({ valid: true, errors: [] })
+
+      const del = await app.inject({ method: 'DELETE', url: '/api/backup/old-1', payload: { destination: dest } })
+      expect(del.json()).toMatchObject({ success: true, deletedFiles: ['sonarr.tar.gz', 'old-1-manifest.json'] })
     })
 
     it('rejects backup ids that could reach outside the backup folder', async () => {
