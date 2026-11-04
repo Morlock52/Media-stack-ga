@@ -10,7 +10,7 @@ x-common: &common
 services:
   loki:
     <<: *common
-    image: grafana/loki:3.5
+    image: grafana/loki:3.7
     container_name: loki
     command: -config.file=/etc/loki/loki-config.yaml
     volumes:

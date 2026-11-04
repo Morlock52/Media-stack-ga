@@ -38,3 +38,10 @@ ruler:
 
 limits_config:
   retention_period: 168h
+
+# retention_period is only enforced by the compactor; without this block old
+# logs are never deleted.
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
