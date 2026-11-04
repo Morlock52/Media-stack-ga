@@ -6,12 +6,61 @@
 
 import { createLogger } from '../utils/logger.js';
 
-// Re-export all knowledge bases and their types
+// Re-export all knowledge bases and their types.
+// The VPN, Docker, Arr and media modules share helper and type names (getCriticalIssues,
+// matchLogPatterns, IssueSeverity, ...), so star-exporting all of them is ambiguous (TS2308).
+// Bare shared names resolve to the VPN module; the others are re-exported explicitly, with
+// their shared helpers under module-prefixed names.
 export * from './vpnTroubleshooting.js';
-export * from './dockerNetworking.js';
-export * from './arrInterconnection.js';
-export * from './mediaScanning.js';
 export * from './errorPatterns.js';
+export type { IssueSeverity, DiagnosticStep, Solution } from './vpnTroubleshooting.js';
+
+export type { NetworkMode, DockerNetworkingIssuePattern } from './dockerNetworking.js';
+export {
+    DOCKER_NETWORKING_KB,
+    searchDockerNetworkingKnowledge,
+    getIssuesByNetworkMode,
+    getIssuesBySeverity as getDockerIssuesBySeverity,
+    getCriticalIssues as getDockerCriticalIssues,
+    getHighSeverityIssues as getDockerHighSeverityIssues,
+    matchLogPatterns as matchDockerLogPatterns,
+    getRelatedIssues as getDockerRelatedIssues
+} from './dockerNetworking.js';
+
+export type { ArrService, DownloadClient, ArrInterconnectionIssuePattern } from './arrInterconnection.js';
+export {
+    ARR_INTERCONNECTION_KB,
+    searchArrInterconnectionKnowledge,
+    getIssuesByService,
+    getIssuesBySeverity as getArrIssuesBySeverity,
+    getCriticalIssues as getArrCriticalIssues,
+    getHighSeverityIssues as getArrHighSeverityIssues,
+    matchLogPatterns as matchArrLogPatterns,
+    getRelatedIssues as getArrRelatedIssues,
+    getCommonConnectionIssues,
+    getDownloadClientIssues,
+    getProwlarrIssues
+} from './arrInterconnection.js';
+
+export type { MediaServer, MediaType, MediaScanningIssuePattern } from './mediaScanning.js';
+export {
+    MEDIA_SCANNING_KB,
+    searchMediaScanningKB,
+    getIssuesByServer,
+    getPlexIssues,
+    getJellyfinIssues,
+    getIssuesByMediaType,
+    getIssuesBySeverity as getMediaIssuesBySeverity,
+    getCriticalIssues as getMediaCriticalIssues,
+    getHighSeverityIssues as getMediaHighSeverityIssues,
+    matchLogPatterns as matchMediaLogPatterns,
+    getRelatedIssues as getMediaRelatedIssues,
+    getScanningIssues,
+    getPermissionIssues,
+    getTranscodingIssues,
+    getMetadataIssues,
+    getCommonIssues
+} from './mediaScanning.js';
 
 // Import specific items for aggregation
 import {

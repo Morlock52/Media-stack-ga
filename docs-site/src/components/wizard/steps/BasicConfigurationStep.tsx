@@ -26,7 +26,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
     // Inline validation state
     const [inlineValidationIssues, setInlineValidationIssues] = useState<Record<string, ValidationIssue[]>>({})
     const [validatingFields, setValidatingFields] = useState<Record<string, boolean>>({})
-    const debounceTimerRef = useRef<Record<string, NodeJS.Timeout>>({})
+    const debounceTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
     const { validateSpecific } = useValidation({ autoValidate: false })
 
@@ -67,7 +67,7 @@ export function BasicConfigurationStep({ form, shakeField }: BasicConfigurationS
 
                     // Clear validation state since we don't have specific validators for these fields yet
                     setInlineValidationIssues((prev) => ({ ...prev, [fieldName]: [] }))
-                } catch (error) {
+                } catch {
                     // Error during validation - clear issues
                     setInlineValidationIssues((prev) => ({ ...prev, [fieldName]: [] }))
                 } finally {

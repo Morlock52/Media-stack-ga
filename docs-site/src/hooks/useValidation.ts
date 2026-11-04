@@ -92,9 +92,8 @@ export interface UseValidationResult {
  * @returns Validation state and control functions
  */
 export function useValidation(options: UseValidationOptions = {}): UseValidationResult {
+    // Note: `autoValidate` and `debounceMs` are accepted in UseValidationOptions but not implemented yet
     const {
-        autoValidate = false,
-        debounceMs = 500,
         bypassCache = false,
         onValidationComplete,
         onValidationError,
@@ -107,7 +106,7 @@ export function useValidation(options: UseValidationOptions = {}): UseValidation
 
     // Store last request for refresh functionality
     const lastRequestRef = useRef<ValidationRequest | null>(null)
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const abortControllerRef = useRef<AbortController | null>(null)
 
     /**
@@ -317,25 +316,6 @@ export function useValidation(options: UseValidationOptions = {}): UseValidation
             abortControllerRef.current = null
         }
     }, [])
-
-    /**
-     * Auto-validate with debouncing when enabled
-     */
-    const debouncedValidate = useCallback(
-        (request: ValidationRequest) => {
-            // Clear any existing timer
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current)
-            }
-
-            // Set new timer
-            debounceTimerRef.current = setTimeout(() => {
-                validate(request)
-                debounceTimerRef.current = null
-            }, debounceMs)
-        },
-        [validate, debounceMs]
-    )
 
     /**
      * Cleanup on unmount

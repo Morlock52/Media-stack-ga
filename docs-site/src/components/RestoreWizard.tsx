@@ -30,7 +30,6 @@ export function RestoreWizard() {
         restoreCurrentStep,
         selectedBackupForRestore,
         restoreValidationResult,
-        restoreSelectedItems,
         restoreDecryptionPassword,
         setRestoreCurrentStep,
         restoreNextStep,

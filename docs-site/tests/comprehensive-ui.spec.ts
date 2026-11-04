@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 /**
  * Comprehensive UI Test Suite for Media Stack Wizard
@@ -153,14 +153,9 @@ test.describe('Comprehensive UI Component Tests', () => {
       // Reload page
       await page.reload()
 
-      // Navigate back to config step
-      const startButton = page.getByRole('button', { name: /let'?s go|start/i }).first()
-      await startButton.click()
-
-      // Check if value persisted
+      // The wizard persists its current step (setup-wizard-storage), so the reload resumes on
+      // Basic Configuration; the Welcome step and its start button are not shown again.
       await expect(page.getByRole('heading', { name: /basic|configuration/i })).toBeVisible({ timeout: 15000 })
-      const reloadedInput = page.locator('input[name="domain"]').first()
-      
       // May or may not persist depending on implementation
       console.log('✅ Form persistence behavior verified')
     })
@@ -184,7 +179,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('stack selection shows available services', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       // Should show service options
       const serviceOptions = page.getByText(/plex|jellyfin|sonarr|radarr/i)
@@ -194,7 +189,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('expert mode reveals all service options', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       const expertButton = page.getByRole('button', { name: /expert/i })
       await expertButton.click()
@@ -207,7 +202,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('service cards are clickable and selectable', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       await page.getByRole('button', { name: /expert/i }).click()
 
@@ -226,7 +221,7 @@ test.describe('Comprehensive UI Component Tests', () => {
     })
 
     test('service dependencies are indicated', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
 
       await page.getByRole('button', { name: /expert/i }).click()
 
@@ -254,7 +249,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       await page.locator('input[name="password"]').first().fill('TestPass123!')
       await page.getByRole('button', { name: /next/i }).click()
 
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       await page.getByRole('button', { name: /expert/i }).click()
       await page.getByText('Plex', { exact: true }).click()
       await page.getByRole('button', { name: /next/i }).click()
@@ -313,7 +308,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       }
     })
 
-    test('bitrate calculations are accurate', async ({ page }) => {
+    test('bitrate calculations are accurate', async () => {
       // This would test the storage calculator functionality
       // Implementation depends on component structure
       console.log('ℹ️ Bitrate calculation test - requires component inspection')
@@ -478,8 +473,6 @@ test.describe('Comprehensive UI Component Tests', () => {
 
   test.describe('Accessibility (A11y)', () => {
     test('keyboard navigation works throughout wizard', async ({ page }) => {
-      const startButton = page.getByRole('button', { name: /let'?s go|start/i }).first()
-      
       // Tab to start button
       await page.keyboard.press('Tab')
       await page.keyboard.press('Tab')
@@ -572,7 +565,7 @@ test.describe('Comprehensive UI Component Tests', () => {
       console.log('✅ Validation error display verified')
     })
 
-    test('error boundary catches component crashes', async ({ page }) => {
+    test('error boundary catches component crashes', async () => {
       // This would require intentionally breaking a component
       // or using a test-specific error trigger
       
@@ -620,10 +613,16 @@ test.describe('Comprehensive UI Component Tests', () => {
       await page.locator('input[name="password"]').first().fill('TestPass123!')
       await page.getByRole('button', { name: /next/i }).click()
 
-      await expect(page.getByRole('heading', { name: /stack|choose/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       
+      // Wait for the step's entrance animation to settle first, so the timer measures
+      // the expert-mode render rather than Playwright waiting for the button to be stable.
+      const expertButton = page.getByRole('button', { name: /expert/i })
+      await expertButton.hover()
+
       const expertStart = Date.now()
-      await page.getByRole('button', { name: /expert/i }).click()
+      await expertButton.click()
+      await expect(page.getByRole('group', { name: 'Available services' })).toBeVisible()
       const expertTime = Date.now() - expertStart
 
       expect(expertTime).toBeLessThan(1000)

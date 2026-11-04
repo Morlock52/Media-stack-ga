@@ -882,9 +882,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             envPrivateKey,
             envPassword,
             envPath,
-        } = request.body;
+        } = request.body || {};
 
-        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+        const authType: 'key' | 'password' = request.body?.authType || (password ? 'password' : 'key');
 
         if (!host || !username) {
             fastify.log.warn({ host, username }, '[arr/bootstrap-remote] validation failed: missing host/username');
@@ -1115,9 +1115,9 @@ export async function remoteRoutes(fastify: FastifyInstance) {
             envPath,
             timeout = 120000,
             pollInterval = 5000,
-        } = request.body;
+        } = request.body || {};
 
-        const authType: 'key' | 'password' = request.body.authType || (password ? 'password' : 'key');
+        const authType: 'key' | 'password' = request.body?.authType || (password ? 'password' : 'key');
 
         if (!host || !username) {
             return reply.status(400).send({ success: false, error: 'Host and username are required' });

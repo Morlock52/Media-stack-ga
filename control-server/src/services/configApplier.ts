@@ -5,7 +5,7 @@
  * Updated: January 2026
  */
 
-import { readFile, writeFile, mkdir, copyFile, unlink, stat } from 'fs/promises';
+import { readFile, writeFile, mkdir, copyFile, unlink, stat, readdir } from 'fs/promises';
 import { join } from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -248,7 +248,7 @@ async function applyEnvChanges(changes: ConfigChange[]): Promise<void> {
     if (envChanges.length === 0) return;
 
     // Read current .env content
-    let envContent = readEnvFile();
+    const envContent = readEnvFile();
     const lines = envContent.split('\n');
 
     // Apply each change

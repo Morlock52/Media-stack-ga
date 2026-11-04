@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 /**
  * End-to-End User Workflow Tests
@@ -41,11 +41,16 @@ test.describe('End-to-End User Workflows', () => {
 
       await page.getByRole('button', { name: /next/i }).click()
 
-      // Step 3: Stack Selection - Simple mode (default)
-      await expect(page.getByRole('heading', { name: /choose|stack/i })).toBeVisible({ timeout: 15000 })
+      // Step 3: Stack Selection. There is no default mode: the step first asks Newbie vs Expert.
+      // Newbie preselects a 6-service stack (and opens the voice companion), so pick Expert
+      // to build the minimal stack this test is about.
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
+      await page.getByRole('button', { name: /expert mode/i }).click()
 
       // Select basic Plex stack
-      const plexOption = page.getByText('Plex', { exact: true }).first()
+      const plexOption = page
+        .getByRole('group', { name: 'Available services' })
+        .getByText('Plex', { exact: true })
       await plexOption.click()
 
       await page.getByRole('button', { name: /next/i }).click()
@@ -63,10 +68,12 @@ test.describe('End-to-End User Workflows', () => {
       }
 
       // Step 5: Review & Generate
-      await expect(page.getByText(/review|generate/i)).toBeVisible({ timeout: 15000 })
+      // (an unanchored /review|generate/ also matches the hero copy and the step indicator)
+      await expect(page.getByText('Review & Generate', { exact: true })).toBeVisible({ timeout: 15000 })
 
-      // Verify configuration preview
-      const preview = page.locator('pre, code').first()
+      // Verify configuration preview (the .env preview is the first <pre>; the first <code>
+      // on the page is the hero's ".env" label)
+      const preview = page.locator('pre').first()
       if (await preview.isVisible({ timeout: 5000 }).catch(() => false)) {
         const previewText = await preview.textContent()
         expect(previewText).toContain(domain)
@@ -105,7 +112,7 @@ test.describe('End-to-End User Workflows', () => {
       await page.getByRole('button', { name: /next/i }).click()
 
       // Stack selection - Expert mode
-      await expect(page.getByRole('heading', { name: /stack/i })).toBeVisible({ timeout: 15000 })
+      await expect(page.getByRole('heading', { name: /choose your stack/i })).toBeVisible({ timeout: 15000 })
       
       const expertButton = page.getByRole('button', { name: /expert/i })
       await expertButton.click()
@@ -134,46 +141,47 @@ test.describe('End-to-End User Workflows', () => {
 
       await page.getByRole('button', { name: /next/i }).click()
 
-      // Service configuration
+      // Service configuration (always step 4 of the wizard).
+      // Wait for it: isVisible() ignores its timeout and returns at once, which raced the
+      // step transition and skipped this whole step.
       const serviceConfigHeading = page.getByRole('heading', { name: /service|configuration/i })
-      if (await serviceConfigHeading.isVisible({ timeout: 10000 }).catch(() => false)) {
-        
-        // Configure advanced settings if available
-        const advancedButton = page.getByRole('button', { name: /advanced/i })
-        if (await advancedButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await advancedButton.click()
-          await page.waitForTimeout(500)
+      await expect(serviceConfigHeading).toBeVisible({ timeout: 10000 })
 
-          // Configure paths
-          const pathInputs = page.locator('input[name*="path"], input[placeholder*="path"]')
-          const count = await pathInputs.count()
-          
-          for (let i = 0; i < count; i++) {
-            const input = pathInputs.nth(i)
-            if (await input.isVisible()) {
-              await input.fill(`/mnt/media/service${i}`)
-            }
+      // Configure advanced settings if available
+      const advancedButton = page.getByRole('button', { name: /advanced/i })
+      if (await advancedButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await advancedButton.click()
+        await page.waitForTimeout(500)
+
+        // Configure paths
+        const pathInputs = page.locator('input[name*="path"], input[placeholder*="path"]')
+        const count = await pathInputs.count()
+
+        for (let i = 0; i < count; i++) {
+          const input = pathInputs.nth(i)
+          if (await input.isVisible()) {
+            await input.fill(`/mnt/media/service${i}`)
           }
         }
-
-        await page.getByRole('button', { name: /next/i }).click()
       }
 
-      // Advanced options
+      await page.getByRole('button', { name: /next/i }).click()
+
+      // Advanced options (always step 5 of the wizard)
       const advancedHeading = page.getByRole('heading', { name: /advanced/i })
-      if (await advancedHeading.isVisible({ timeout: 10000 }).catch(() => false)) {
-        
-        // Configure timezone
-        const timezoneSelect = page.locator('select[name*="timezone"], input[name*="timezone"]').first()
-        if (await timezoneSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await timezoneSelect.fill('America/New_York')
-        }
+      await expect(advancedHeading).toBeVisible({ timeout: 10000 })
 
-        await page.getByRole('button', { name: /next/i }).click()
+      // Configure timezone
+      const timezoneSelect = page.locator('select[name*="timezone"], input[name*="timezone"]').first()
+      if (await timezoneSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await timezoneSelect.fill('America/New_York')
       }
+
+      await page.getByRole('button', { name: /next/i }).click()
 
       // Review & Generate
-      await expect(page.getByText(/review|generate/i)).toBeVisible({ timeout: 15000 })
+      // (an unanchored /review|generate/ also matches the hero copy and the step indicator)
+      await expect(page.getByText('Review & Generate', { exact: true })).toBeVisible({ timeout: 15000 })
 
       // Verify all services in preview
       const preview = page.locator('pre').first()
@@ -182,6 +190,7 @@ test.describe('End-to-End User Workflows', () => {
       // Should contain VPN profile reference
       const hasVpnConfig = previewText.toLowerCase().includes('gluetun') || 
                            previewText.toLowerCase().includes('vpn')
+      console.log(`VPN reference in preview: ${hasVpnConfig}`)
 
       // Download all configs
       const downloads: any[] = []
@@ -425,7 +434,7 @@ test.describe('End-to-End User Workflows', () => {
       await page.waitForTimeout(1000)
 
       // Should advance to next step
-      const nextStepHeading = page.getByRole('heading', { name: /stack|choose/i })
+      const nextStepHeading = page.getByRole('heading', { name: /choose your stack/i })
       await expect(nextStepHeading).toBeVisible({ timeout: 10000 })
 
       console.log('✅ Error recovery workflow completed')
@@ -494,9 +503,8 @@ test.describe('End-to-End User Workflows', () => {
       const newPage = await context.newPage()
       await newPage.goto('/')
 
-      const newStartButton = newPage.getByRole('button', { name: /let'?s go|start/i }).first()
-      await newStartButton.click()
-
+      // The wizard persists its current step (setup-wizard-storage), so the new session resumes
+      // on Basic Configuration; the Welcome step and its start button are not shown again.
       await expect(newPage.getByRole('heading', { name: /basic/i })).toBeVisible({ timeout: 15000 })
       
       const domainInput = newPage.locator('input[name="domain"]').first()
@@ -537,7 +545,8 @@ test.describe('End-to-End User Workflows', () => {
         latency: 500               // 500ms
       })
 
-      await page.goto('/')
+      // Measure the production build (what users load), not the unbundled dev server.
+      await page.goto(process.env.PLAYWRIGHT_PREVIEW_URL || 'http://localhost:4175')
 
       // Should show loading indicators
       const loadingIndicator = page.locator('[class*="loading"], [class*="spinner"], [aria-label*="loading"]')

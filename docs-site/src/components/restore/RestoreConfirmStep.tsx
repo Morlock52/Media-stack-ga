@@ -38,10 +38,10 @@ export function RestoreConfirmStep() {
     } = useBackupStore()
 
     const { executeRestore, loading: executingRestore } = useRestoreExecute()
-    const { progress, startPolling, stopPolling, isPolling } = useRestoreProgress()
+    const { progress, startPolling, stopPolling } = useRestoreProgress()
 
     const [restoreStarted, setRestoreStarted] = useState(false)
-    const [restoreId, setRestoreId] = useState<string | null>(null)
+    const [, setRestoreId] = useState<string | null>(null)
 
     // Update store when progress changes
     useEffect(() => {

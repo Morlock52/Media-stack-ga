@@ -21,7 +21,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
     // Inline validation state
     const [inlineValidationIssues, setInlineValidationIssues] = useState<Record<string, ValidationIssue[]>>({})
     const [validatingFields, setValidatingFields] = useState<Record<string, boolean>>({})
-    const debounceTimerRef = useRef<Record<string, NodeJS.Timeout>>({})
+    const debounceTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
     const { validateSpecific } = useValidation({ autoValidate: false })
 
@@ -74,7 +74,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
 
                     // Validation successful (no issues returned means it passed)
                     setInlineValidationIssues((prev) => ({ ...prev, cloudflareToken: [] }))
-                } catch (error) {
+                } catch {
                     // Validation will update the result state, but we need to extract issues from it
                     // For now, clear issues as the validation hook handles errors internally
                     setInlineValidationIssues((prev) => ({ ...prev, cloudflareToken: [] }))
@@ -128,7 +128,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                         {
                             vpn: {
                                 enabled: true,
-                                options: options as Record<string, unknown>,
+                                options: options as unknown as Record<string, unknown>,
                             },
                         }
                     )
@@ -139,7 +139,7 @@ export function AdvancedSettingsStep({ form, selectedServices }: AdvancedSetting
                         wireguardPrivateKey: [],
                         wireguardAddresses: [],
                     }))
-                } catch (error) {
+                } catch {
                     // Clear issues as the validation hook handles errors internally
                     setInlineValidationIssues((prev) => ({
                         ...prev,

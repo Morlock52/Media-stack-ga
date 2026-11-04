@@ -89,9 +89,10 @@ export async function createAdapter(destination: BackupDestination): Promise<Des
             const { RcloneAdapter } = await import('./rcloneAdapter.js');
             return new RcloneAdapter(destination);
         }
-        default:
+        default: {
             // TypeScript exhaustiveness check
             const _exhaustive: never = destination;
             throw new Error(`Unknown destination type: ${(_exhaustive as BackupDestination).type}`);
+        }
     }
 }

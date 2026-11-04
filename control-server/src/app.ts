@@ -141,6 +141,10 @@ export const buildApp = async (): Promise<FastifyInstance> => {
         }
     };
 
+    // Disallowed origins are a client policy violation, not a server fault:
+    // reject with 403 instead of letting the error surface as a 500.
+    const corsRejection = () => Object.assign(new Error('Not allowed by CORS'), { statusCode: 403 });
+
     await app.register(cors, {
         origin: (origin, cb) => {
             // Non-browser requests often have no Origin (curl, server-to-server).
@@ -149,14 +153,14 @@ export const buildApp = async (): Promise<FastifyInstance> => {
             // If CONTROL_SERVER_CORS_ORIGINS is set, only allow explicitly listed origins.
             if (rawCorsOrigins) {
                 if (allowedOrigins.includes(origin)) return cb(null, true);
-                return cb(new Error('Not allowed by CORS'), false);
+                return cb(corsRejection(), false);
             }
 
             // Default dev behavior: allow local network origins (loopback, LAN IPs, .local).
             // This supports accessing the UI from another device on the same network.
             if (isLocalNetworkOrigin(origin)) return cb(null, true);
             if (allowedOrigins.includes(origin)) return cb(null, true);
-            return cb(new Error('Not allowed by CORS'), false);
+            return cb(corsRejection(), false);
         }
     });
 

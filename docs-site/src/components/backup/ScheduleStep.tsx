@@ -91,7 +91,6 @@ export function ScheduleStep() {
         } else {
             setSchedule(null)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enabled, frequency, time, retentionCount])
 
     const handleToggleSchedule = () => {

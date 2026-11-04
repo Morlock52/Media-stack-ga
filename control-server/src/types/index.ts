@@ -35,4 +35,4 @@ export type {
     VpnValidationOptions,
     CloudflareValidationOptions,
     DockerValidationOptions,
-} from './validation';
+} from './validation.js';

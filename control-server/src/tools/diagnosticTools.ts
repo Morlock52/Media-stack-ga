@@ -332,7 +332,7 @@ export async function diagnoseVpnConnectivity(options: {
         const checks: DiagnosticCheck[] = [];
         const matchedIssues: VpnDiagnosticData['matchedIssues'] = [];
         const recommendations: VpnDiagnosticData['recommendations'] = [];
-        let affectedServices: string[] = [];
+        const affectedServices: string[] = [];
 
         // Step 1: Check if Gluetun is running
         const gluetunHealth = await checkServiceHealth('gluetun');
@@ -984,7 +984,7 @@ export async function diagnoseArrConnections(options: {
                 const clientPort = portMap[clientName];
 
                 // Determine the correct hostname (might be gluetun if using VPN)
-                let targetHostname = clientName;
+                let targetHostname: string = clientName;
                 try {
                     const networkMode = await runCommand('docker', [
                         'inspect',
@@ -1535,7 +1535,7 @@ export async function diagnoseMediaScanner(options: {
                         }
 
                         // Check for problematic characters
-                        if (/[^\x00-\x7F]/.test(basename)) {
+                        if (/[^\p{ASCII}]/u.test(basename)) {
                             namingIssues.push(`Non-ASCII characters: ${basename}`);
                         }
                     }
@@ -1880,12 +1880,13 @@ function interpretDiagnosticOutput(commandType: DiagnosticCommandType, output: s
             }
             return 'Ping completed with unknown result';
 
-        case 'traceroute':
+        case 'traceroute': {
             const hops = output.split('\n').filter(line => /^\s*\d+\s+/.test(line)).length;
             if (hops === 0) {
                 return 'No route to host - connection blocked or target unreachable';
             }
             return `Route traced with ${hops} hop(s). Check output for network path details.`;
+        }
 
         case 'nslookup':
             if (lowerOutput.includes('can\'t find') || lowerOutput.includes('nxdomain')) {

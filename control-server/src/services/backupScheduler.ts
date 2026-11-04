@@ -136,7 +136,7 @@ function calculateNextRun(schedule: BackupSchedule): string {
                 next.setDate(next.getDate() + 1);
             }
             break;
-        case 'weekly':
+        case 'weekly': {
             // Set to next Sunday
             const daysUntilSunday = (7 - next.getDay()) % 7;
             next.setDate(next.getDate() + daysUntilSunday);
@@ -144,6 +144,7 @@ function calculateNextRun(schedule: BackupSchedule): string {
                 next.setDate(next.getDate() + 7);
             }
             break;
+        }
         case 'monthly':
             // Set to 1st of month
             next.setDate(1);

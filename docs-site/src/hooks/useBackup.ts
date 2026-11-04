@@ -247,7 +247,7 @@ export function useBackupProgress(): UseBackupProgressResult {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backupIdRef = useRef<string | null>(null);
 
     const fetchProgress = useCallback(async (backupId: string) => {
@@ -581,7 +581,7 @@ export function useRestoreProgress(): UseRestoreProgressResult {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const restoreIdRef = useRef<string | null>(null);
 
     const fetchProgress = useCallback(async (restoreId: string) => {
